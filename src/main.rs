@@ -1,6 +1,5 @@
+mod hello_world;
+
 fn main() {
-  {
-    let str = String::from("Harry Potter 🧙");
-    println!("Hello, {}", str);
-  }
+  hello_world::print_hello("Harry Potter 🧙")
 }
