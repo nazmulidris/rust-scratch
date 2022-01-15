@@ -1,5 +1,7 @@
 mod hello_world;
+mod guessing_game;
 
 fn main() {
-  hello_world::print_hello("Harry Potter 🧙")
+  hello_world::run();
+  guessing_game::run();
 }
