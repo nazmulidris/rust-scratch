@@ -1,9 +1,10 @@
+use crate::utils::{print_header2};
+
 pub fn run() {
-  let name: String = String::from("John Doe");
-  print_hello(&name)
+  print_hello("John Doe")
 }
 
-pub fn print_hello(arg: &String) {
-  // let copy = String::from(arg);
-  println!("Hello, {}", arg);
+pub fn print_hello(text: &str) {
+  print_header2("hello_world");
+  println!("Hello, {}", text);
 }
