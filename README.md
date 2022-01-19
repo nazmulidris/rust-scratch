@@ -13,3 +13,4 @@ Code snippets and experiments for learning Rust.
 - [String <-> &str conversions](https://stackoverflow.com/a/29026565/2085356)
 - [Unwrap & expect, Result -> Ok, Err](https://learning-rust.github.io/docs/e4.unwrap_and_expect.html)
 - [Rust turbofish](https://techblog.tonsser.com/posts/what-is-rusts-turbofish)
+- [Unit testing](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html)
