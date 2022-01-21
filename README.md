@@ -2,6 +2,35 @@
 
 Code snippets and experiments for learning Rust.
 
+# Test snippets
+
+[More info](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html)
+
+## Single / inline
+
+```rust
+#[test]
+fn test_something() {
+  let tuple1: (i32, String) = (100, "123".to_string());
+  let (number, text) = tuple1;
+  assert_eq!(number, 100);
+  assert_eq!(text, "123");
+}
+```
+
+## Module
+
+```rust
+///
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_template() {}
+}
+```
+
 # References
 
 - [The Rust Programming Language book](https://doc.rust-lang.org/book/)

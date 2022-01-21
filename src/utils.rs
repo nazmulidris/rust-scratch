@@ -3,8 +3,10 @@ use ansi_term::Color::{Blue, Green, Red, White};
 use ansi_term::Colour::Purple;
 use std::io::stdin;
 
-/// ANSI colorized text: /// https://github.com/ogham/rust-ansi-term
-/// Equivalent for template string literal. One way to do this using format!
+/// ANSI colorized text:
+/// - https://github.com/ogham/rust-ansi-term
+///
+/// Equivalent for template string literal. One way to do this using `format!`
 /// 1. https://doc.rust-lang.org/std/fmt/
 /// 2. https://internals.rust-lang.org/t/string-interpolation-template-literals-like-js/9082/3
 pub fn print_header(msg: &str) {
@@ -13,7 +15,7 @@ pub fn print_header(msg: &str) {
   println!("{}", Purple.paint(&msg));
 }
 
-/// Equivalent for template string literal. Another way to do this using += and insert_str.
+/// Equivalent for template string literal. Another way to do this using `+=` and `insert_str`.
 pub fn print_header2(arg: &str) {
   let hamburger = "☰";
   let mut msg = String::from(hamburger);
@@ -40,7 +42,8 @@ pub fn style_dimmed(text: &str) -> ANSIGenericString<str> {
   return White.underline().paint(text);
 }
 
-/// Return String not &str due to "struct lifetime" - https://stackoverflow.com/a/29026565/2085356
+/// Return String not &str due to "struct lifetime"
+/// - https://stackoverflow.com/a/29026565/2085356
 pub fn readline() -> (usize, String) {
   let mut temp_string_buffer: String = String::new();
   // https://learning-rust.github.io/docs/e4.unwrap_and_expect.html
