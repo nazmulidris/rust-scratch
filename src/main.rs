@@ -4,6 +4,7 @@ mod strings;
 mod utils;
 mod variables;
 mod control_flow;
+mod ownership;
 
 fn main() {
   hello_world::run();
@@ -11,4 +12,5 @@ fn main() {
   guessing_game::run();
   variables::run();
   control_flow::run();
+  ownership::run();
 }
