@@ -44,3 +44,4 @@ mod tests {
 - [Rust turbofish](https://techblog.tonsser.com/posts/what-is-rusts-turbofish)
 - [Unit testing](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html)
 - [Error handling - array index out of bounds](https://users.rust-lang.org/t/array-out-of-bound-error-handling/26939)
+- [Range and borrowing limitations, clone instead](https://stackoverflow.com/a/62480671/2085356)
