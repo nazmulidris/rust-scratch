@@ -55,3 +55,47 @@ fn test_tuples_complex_2() {
   assert_eq!(*tuple1.0, 100);
   assert_eq!(*tuple1.1, "123");
 }
+
+#[test]
+fn test_array_1() {
+  let mut weekdays = ["Mon", "Tue", "Wed", "Thr", "Fri", ];
+  assert_eq!(weekdays.len(), 5);
+  assert_eq!(weekdays[0], "Mon");
+  weekdays.rotate_left(1);
+  assert_eq!(weekdays[0], "Tue");
+}
+
+#[test]
+fn test_array_2() {
+  let num_ray: [i32; 5] = [0, 1, 2, 3, 4];
+  assert_eq!(num_ray.len(), 5)
+}
+
+#[test]
+fn test_array_3() {
+  let num_ray: [i32; 5] = [/* initial value*/ -1; /* length */ 5];
+  assert_eq!(num_ray.len(), 5);
+  num_ray.iter()
+    .enumerate()
+    .for_each(|(index, value)| {
+      assert_eq!(*value, -1);
+      assert_eq!(*value, num_ray[index]);
+    });
+}
+
+/// Array index out of bounds & error handling via, `match`, `Option` from `get()` / `get_mut()`.
+/// - https://doc.rust-lang.org/std/primitive.slice.html#method.get_mut
+/// - https://users.rust-lang.org/t/array-out-of-bound-error-handling/26939
+#[test]
+fn test_array_4() {
+  let num_ray: [i32; 5] = [/* initial value*/ -1; /* length */ 5];
+  assert_eq!(num_ray.len(), 5);
+  num_ray.iter()
+    .enumerate()
+    .for_each(|(index, _value)| {
+      match num_ray.get(index) {
+        None => { /* Index out of bounds handled here. */ }
+        Some(value) => { assert_eq!(*value, num_ray[index]); }
+      }
+    });
+}

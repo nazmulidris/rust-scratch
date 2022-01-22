@@ -43,3 +43,4 @@ mod tests {
 - [Unwrap & expect, Result -> Ok, Err](https://learning-rust.github.io/docs/e4.unwrap_and_expect.html)
 - [Rust turbofish](https://techblog.tonsser.com/posts/what-is-rusts-turbofish)
 - [Unit testing](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html)
+- [Error handling - array index out of bounds](https://users.rust-lang.org/t/array-out-of-bound-error-handling/26939)
