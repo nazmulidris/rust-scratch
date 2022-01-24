@@ -5,6 +5,7 @@ mod utils;
 mod variables;
 mod control_flow;
 mod ownership;
+mod structs;
 
 fn main() {
   hello_world::run();
@@ -13,4 +14,5 @@ fn main() {
   variables::run();
   control_flow::run();
   ownership::run();
+  structs::run();
 }

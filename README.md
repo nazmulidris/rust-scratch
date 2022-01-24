@@ -46,3 +46,9 @@ mod tests {
 - [Error handling - array index out of bounds](https://users.rust-lang.org/t/array-out-of-bound-error-handling/26939)
 - [Range and borrowing limitations, clone instead](https://stackoverflow.com/a/62480671/2085356)
 - [Deref and Ref as different type](https://stackoverflow.com/a/41273331/2085356)
+- [Roll your own typeof function](https://stackoverflow.com/a/58119924/2085356)
+
+# Videos
+
+- [Memory layout in Rust](https://youtu.be/rDoqT-a6UFg)
+- [Rust Book](https://www.youtube.com/playlist?list=PLai5B987bZ9CoVR-QEIN9foz4QCJ0H2Y8)
