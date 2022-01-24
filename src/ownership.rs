@@ -1,5 +1,6 @@
 /// Rust book: https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html
 /// Rust book: https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html
+/// Rust book: https://doc.rust-lang.org/book/ch04-03-slices.html
 pub fn run() {}
 
 // Functions that exercise borrowing, moving, etc. used in tests.
@@ -136,4 +137,47 @@ fn test_borrowing_both_mutably_and_immutably_with_functions() {
 
   // 🧨 The following line will fail. The scope mixes immutable & mutable references simultaneously.
   // println!("{}, {}, and {}", immut_ref_1, immut_ref_2, mut_ref_1);
+}
+
+/// https://doc.rust-lang.org/book/ch04-03-slices.html
+#[test]
+fn test_slice_string() {
+  let mut my_string = "word1 word2".to_string();
+
+  // 👎 This is the sub-optimal way of doing things.
+  fn find_first_word_in_string_without_using_slice(
+    string: &String
+  ) -> usize {
+    let bytes = string.as_bytes();
+    for (index, &byte) in bytes.iter().enumerate() {
+      if byte == b' ' { return index; }
+    }
+    string.len()
+  }
+  assert_eq!(find_first_word_in_string_without_using_slice(&my_string), 5);
+
+  // 👍 This is the optimal way of doing things (using slices).
+  fn find_first_word_in_string(
+    string: &String // 🧙 Note that making the argument type &str is more flexible.
+  ) -> &str {
+    let bytes = string.as_bytes();
+    for (index, &byte) in bytes.iter().enumerate() {
+      if byte == b' ' { return &string[..index]; }
+    }
+    return &string[..];
+  }
+  let slice_to_my_string = find_first_word_in_string(&my_string);
+  assert_eq!(slice_to_my_string, "word1");
+  my_string.clear();
+
+  // 🧨 The following line is no longer possible, since clearing the my_string impacted the slice
+  // slice_to_my_string that was dependent on it.
+  // assert_eq!(slice_to_my_string, "");
+}
+
+#[test]
+fn test_slice_array() {
+  let array = [1, 2, 3, 4, 5];
+  assert_eq!(&array[..2], &[1, 2]);
+  assert_eq!(&array[2..], &[3, 4, 5]);
 }
