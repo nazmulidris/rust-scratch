@@ -6,6 +6,7 @@ mod variables;
 mod control_flow;
 mod ownership;
 mod structs;
+mod enum_variants;
 
 fn main() {
   hello_world::run();
@@ -15,4 +16,5 @@ fn main() {
   control_flow::run();
   ownership::run();
   structs::run();
+  enum_variants::run();
 }

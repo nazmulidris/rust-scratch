@@ -1,5 +1,5 @@
 pub use std::fmt::{Debug, Formatter};
-pub use crate::utils::print_type_of;
+pub use crate::utils::type_of;
 
 /// Rust book: https://doc.rust-lang.org/book/ch05-01-defining-structs.html
 pub fn run() {}
@@ -101,7 +101,7 @@ fn test_unit_like_struct_with_no_fields() {
   }
 
   let subject = AlwaysEqual;
-  assert_eq!(print_type_of(&subject), "rust_example::structs::test_unit_like_struct_with_no_fields::AlwaysEqual");
+  assert_eq!(type_of(&subject), "rust_example::structs::test_unit_like_struct_with_no_fields::AlwaysEqual");
 }
 
 /// https://doc.rust-lang.org/book/ch05-02-example-structs.html
