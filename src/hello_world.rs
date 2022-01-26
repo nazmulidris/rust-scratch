@@ -1,4 +1,4 @@
-use crate::utils::{print_header2};
+use crate::lib::print_header2;
 
 pub fn run() {
   print_hello("John Doe")

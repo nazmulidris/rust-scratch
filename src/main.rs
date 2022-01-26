@@ -1,7 +1,7 @@
+mod lib;
 mod guessing_game;
 mod hello_world;
 mod strings;
-mod utils;
 mod variables;
 mod control_flow;
 mod ownership;

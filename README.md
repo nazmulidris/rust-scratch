@@ -2,6 +2,10 @@
 
 Code snippets and experiments for learning Rust.
 
+# Packages and Modules (`Cargo.toml`)
+
+![](./docs/rust-package.svg)
+
 # Test snippets
 
 [More info](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html)

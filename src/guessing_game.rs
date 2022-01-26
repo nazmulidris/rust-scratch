@@ -2,9 +2,7 @@ use std::cmp::Ordering;
 
 use ansi_term::Colour::Blue;
 use rand::{Rng, thread_rng};
-
-use crate::utils;
-use crate::utils::{print_header, style_dimmed, style_error, style_primary, style_prompt};
+use crate::lib::{print_header, readline, style_dimmed, style_error, style_primary, style_prompt};
 
 /// Rust book - https://doc.rust-lang.org/book/ch02-00-guessing-game-tutorial.html
 pub fn run() {
@@ -25,7 +23,7 @@ pub fn run() {
 /// String not &str due to "struct lifetime" - https://stackoverflow.com/a/29026565/2085356
 fn make_a_guess() -> String {
   println!("{}", Blue.paint("Please input your guess."));
-  let (bytes_read, guess) = utils::readline();
+  let (bytes_read, guess) = readline();
   println!("{} {}, {} {}",
     style_dimmed("#bytes read:"),
     style_primary(&bytes_read.to_string()),

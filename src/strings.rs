@@ -1,5 +1,5 @@
-use crate::utils::print_header;
 use ansi_term::Colour::Green;
+use crate::lib::print_header;
 
 /// https://www.ameyalokare.com/rust/2017/10/12/rust-str-vs-String.html
 ///
@@ -17,7 +17,7 @@ pub fn run() {
 fn string_buffer() {
   let mut string_buffer: String = String::from(
     "String (like Java StringBuffer) is growable & heap allocated");
-  string_buffer+=".";
+  string_buffer += ".";
   println!("string_buffer:String = '{}'", Green.paint(&string_buffer));
   println!("string_buffer:String has capacity(): {}", string_buffer.capacity());
   println!("string_buffer:String has len(): {}", string_buffer.len());

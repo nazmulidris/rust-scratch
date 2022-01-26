@@ -1,7 +1,16 @@
+use std::io::stdin;
+
 use ansi_term::ANSIGenericString;
 use ansi_term::Color::{Blue, Green, Red, White};
 use ansi_term::Colour::Purple;
-use std::io::stdin;
+
+#[cfg(test)]
+mod tests {
+  #[test]
+  fn it_works() {
+    assert_eq!(2 + 2, 4);
+  }
+}
 
 /// ANSI colorized text:
 /// - https://github.com/ogham/rust-ansi-term
@@ -64,4 +73,3 @@ pub fn readline() -> (usize, String) {
 pub fn type_of<T>(_: &T) -> String {
   format!("{}", std::any::type_name::<T>())
 }
-

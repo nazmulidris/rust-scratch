@@ -1,5 +1,5 @@
-pub use std::fmt::{Debug, Formatter};
-pub use crate::utils::type_of;
+use std::fmt::{Debug, Formatter};
+use crate::lib::type_of;
 
 /// Rust book: https://doc.rust-lang.org/book/ch05-01-defining-structs.html
 pub fn run() {}

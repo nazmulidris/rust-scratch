@@ -1,4 +1,4 @@
-pub use crate::structs::type_of;
+use crate::lib::type_of;
 
 /// Enums and variants are like TypeScript discriminated unions and Kotlin sealed classes. They're
 /// **not** like Java enums.
