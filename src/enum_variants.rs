@@ -4,6 +4,7 @@ pub use crate::structs::type_of;
 /// **not** like Java enums.
 /// Rust book: https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html
 /// Rust book: https://doc.rust-lang.org/book/ch06-02-match.html
+/// Rust book: https://doc.rust-lang.org/book/ch06-03-if-let.html
 pub fn run() {}
 
 #[test]
@@ -158,15 +159,24 @@ fn test_enum_and_pattern_match_with_option() {
     }
   }
 
-  let five = Some(5);
-  let six = increment(five);
-  let none = increment(None);
+  let five_holder: Option<i32> = Some(5);
+  let six_holder: Option<i32> = increment(five_holder);
+  let none_holder: Option<i32> = increment(None);
 
-  assert!(five.is_some());
-  assert!(six.is_some());
-  assert!(none.is_none());
+  assert!(five_holder.is_some());
+  assert!(six_holder.is_some());
+  assert!(none_holder.is_none());
 
-  assert_eq!(six.unwrap(), 6);
-  assert_eq!(five.unwrap(), 5);
-  assert_eq!(none.unwrap_or_else(|| -1), -1);
+  assert_eq!(six_holder.unwrap(), 6);
+  assert_eq!(five_holder.unwrap(), 5);
+  assert_eq!(none_holder.unwrap_or_else(|| -1), -1);
+}
+
+#[test]
+fn test_enum_flow_control_using_if_let() {
+  let config_max_holder: Option<u8> = Some(3u8);
+  assert_eq!(config_max_holder.unwrap(), 3);
+  if let Some(value) = config_max_holder {
+    assert_eq!(value, 3);
+  }
 }
