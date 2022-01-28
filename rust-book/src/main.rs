@@ -23,6 +23,7 @@ mod ownership;
 mod structs;
 mod enum_variants;
 mod guessing_game;
+mod data_structures;
 
 fn main() {
   hello_world::run();
@@ -33,4 +34,5 @@ fn main() {
   ownership::run();
   structs::run();
   enum_variants::run();
+  data_structures::run();
 }

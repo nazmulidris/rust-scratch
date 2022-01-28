@@ -93,6 +93,7 @@ mod tests {
 - [Range and borrowing limitations, clone instead](https://stackoverflow.com/a/62480671/2085356)
 - [Deref and Ref as different type](https://stackoverflow.com/a/41273331/2085356)
 - [Roll your own typeof function](https://stackoverflow.com/a/58119924/2085356)
+- [Rustfmt options](https://rust-lang.github.io/rustfmt/)
 
 # Videos
 
