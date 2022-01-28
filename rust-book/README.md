@@ -25,12 +25,23 @@ system is very similar to TypeScript namespaces.
      see how modules work. Instead of having this library crate, the code could have more simply
      been added to a `utils.rs`.
 
-3. All the code that is written in this project has to be "attached" to either the binary or library
-   crate.
+3. All the code that is written in this project (stored in separate `.rs` files) has to be
+   "attached" to either the binary or library crate.
 
-   - This is done via the the `mod` declaration in a `rs` file.
+   - This is done via the the `mod` declaration in a `main.rs` or `lib.rs` file.
+
+     1. If you prefix this declaration w/ `pub` then it will make this module public. This is kind
+        of module re-exports in TypeScript.
+     2. Otherwise it will be a private module, won't be visible externally. So in `lib.rs` if you
+        write `mod color_text;` instead of `pub mod color_text;` then `color_text` module (loaded
+        from `color_text.rs` which exports `mod color_text`) won't be available to other code for
+        `use`.
+     3. You can also take the code inside of `file.rs` and move it into `lib.rs` / `main.rs` and
+        avoid the need for the `mod <file>` at the top of `lib.rs` / `main.rs`.
+
    - If one symbol is exported via `mod` in both the library and binary crate then there will be
      problems when importing them via `use`. Here's are examples of this kind of collision:
+
      1. `main.rs` has `mod guessing_game` which attaches the `guessing_game` module to the binary
         crate. In `lib.rs` if you add `mod guessing_game` then you will have attached this module to
         the library crate as well! And it won't be clear anymore which namespace to import this

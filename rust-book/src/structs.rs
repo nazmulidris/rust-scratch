@@ -15,7 +15,7 @@
  */
 
 use std::fmt::{Debug, Formatter};
-use rust_example_lib::type_utils::type_of;
+use rust_example_lib::type_utils::type_utils::type_of;
 
 /// Rust book: https://doc.rust-lang.org/book/ch05-01-defining-structs.html
 pub fn run() {}

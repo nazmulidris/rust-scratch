@@ -40,10 +40,13 @@
   <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="18.333" y="213.05">INSIDE RS FILE</text>
   <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="201.736" y="81.928">ROOT NAMESPACE "crate"</text>
   <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="189.189" y="213.05">NESTED INSIDE "crate" ROOT</text>
-  <text style="fill: rgb(207, 70, 196); font-family: Arial, sans-serif; white-space: pre; font-size: 15px;" x="51.597" y="272.112">mod ==</text>
-  <text style="fill: rgb(77, 100, 27); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="51.597" y="290.306">export &amp; namespace</text>
-  <text style="fill: rgb(77, 100, 27); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="212.831" y="290.306">import</text>
-  <text style="fill: rgb(207, 70, 196); font-family: Arial, sans-serif; white-space: pre; font-size: 15px;" x="212.831" y="272.112">mod ==</text>
-  <rect x="44.736" y="257.985" width="150" height="36.388" style="fill: none; stroke: rgb(88, 107, 164);"/>
-  <rect x="204.736" y="257.985" width="150" height="36.388" style="fill: none; stroke: rgb(88, 107, 164);"/>
+  <text style="fill: rgb(207, 70, 196); font-family: Arial, sans-serif; white-space: pre; font-size: 15px;" x="25.194" y="272.112">mod ==</text>
+  <text style="fill: rgb(77, 100, 27); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="25.194" y="290.306">namespace</text>
+  <text style="fill: rgb(77, 100, 27); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="152.831" y="290.306">import</text>
+  <text style="fill: rgb(207, 70, 196); font-family: Arial, sans-serif; white-space: pre; font-size: 15px;" x="152.831" y="272.112">use ==</text>
+  <rect x="18.333" y="257.985" width="110.055" height="36.388" style="fill: none; stroke: rgb(88, 107, 164);"/>
+  <rect x="144.736" y="257.985" width="104.846" height="36.388" style="fill: none; stroke: rgb(88, 107, 164);"/>
+  <text style="fill: rgb(77, 100, 27); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="272.831" y="290.306">export</text>
+  <text style="fill: rgb(207, 70, 196); font-family: Arial, sans-serif; white-space: pre; font-size: 15px;" x="272.831" y="272.112">pub ==<tspan x="272.83099365234375" dy="1em">​</tspan></text>
+  <rect x="264.736" y="257.985" width="104.846" height="36.388" style="fill: none; stroke: rgb(88, 107, 164);"/>
 </svg>

@@ -14,23 +14,10 @@
  * limitations under the License.
  */
 
-// Attach the following files to the binary module.
-mod hello_world;
-mod strings;
-mod variables;
-mod control_flow;
-mod ownership;
-mod structs;
-mod enum_variants;
-mod guessing_game;
-
-fn main() {
-  hello_world::run();
-  strings::run();
-  guessing_game::run();
-  variables::run();
-  control_flow::run();
-  ownership::run();
-  structs::run();
-  enum_variants::run();
+pub mod type_utils {
+  /// Mimics the typeof operator in JavaScript.
+  /// https://stackoverflow.com/a/58119924/2085356
+  pub fn type_of<T>(_: &T) -> String {
+    format!("{}", std::any::type_name::<T>())
+  }
 }
