@@ -4,9 +4,38 @@ Code snippets and experiments for learning Rust.
 
 # Packages and Modules (`Cargo.toml`)
 
-![](./docs/rust-package.svg)
+![Diagram](./docs/rust-package.svg)
 
-- [Great article about lib and bin crate namespaces](https://stackoverflow.com/a/57767413/2085356)
+- [Great SO answer about lib and bin crate namespaces](https://stackoverflow.com/a/57767413/2085356)
+
+Here's the layout of the modules in this project, just repeating what is in `Cargo.toml`. The module
+system is very similar to TypeScript namespaces.
+
+1. There's a single `bin` binary crate (`main.rs`).
+
+   - The namespace of this binary crate is `rust_example`.
+   - The `[[bin]]` entry in `Cargo.toml` has this information.
+
+2. There's a single `lib` library crate (`lib.rs`).
+
+   - The namespace of this library is `rust_example_lib`. This is to avoid confusion w/ the name of
+     the binary crate. The `[lib]` entry in `Cargo.toml` has this information.
+   - While there may be multiple binary crates, there can only be max of 1 library crate.
+   - There's really no need for this crate in this example. It is added to generate complexity to
+     see how modules work. Instead of having this library crate, the code could have more simply
+     been added to a `utils.rs`.
+
+3. All the code that is written in this project has to be "attached" to either the binary or library
+   crate.
+
+   - This is done via the the `mod` declaration in a `rs` file.
+   - If one symbol is exported via `mod` in both the library and binary crate then there will be
+     problems when importing them via `use`. Here's are examples of this kind of collision:
+     1. `main.rs` has `mod guessing_game` which attaches the `guessing_game` module to the binary
+        crate. In `lib.rs` if you add `mod guessing_game` then you will have attached this module to
+        the library crate as well! And it won't be clear anymore which namespace to import this
+        symbol (via `use`).
+     2. In `main.rs` add `mod lib`. This will cause a collision w/ the code exported by `lib.rs`.
 
 # Test snippets
 
