@@ -6,6 +6,8 @@ Code snippets and experiments for learning Rust.
 
 ![](./docs/rust-package.svg)
 
+- [Great article about lib and bin crate namespaces](https://stackoverflow.com/a/57767413/2085356)
+
 # Test snippets
 
 [More info](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html)

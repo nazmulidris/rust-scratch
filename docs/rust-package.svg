@@ -1,37 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  - Copyright (c) 2022 Nazmul Idris. All rights reserved.
-  -
-  - Licensed under the Apache License, Version 2.0 (the "License");
-  - you may not use this file except in compliance with the License.
-  - You may obtain a copy of the License at
-  -
-  -     http://www.apache.org/licenses/LICENSE-2.0
-  -
-  - Unless required by applicable law or agreed to in writing, software
-  - distributed under the License is distributed on an "AS IS" BASIS,
-  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  - See the License for the specific language governing permissions and
-  - limitations under the License.
-  -->
-
-<svg viewBox="10.574 27.135 374.9 152.035" xmlns="http://www.w3.org/2000/svg" xmlns:bx="https://boxy-svg.com">
+<svg viewBox="10.574 27.135 374.9 271.226" xmlns="http://www.w3.org/2000/svg" xmlns:bx="https://boxy-svg.com">
   <defs>
     <bx:grid x="0" y="0" width="17.199" height="17.199"/>
+    <linearGradient gradientUnits="userSpaceOnUse" x1="198.024" y1="27.135" x2="198.024" y2="179.17" id="gradient-0" gradientTransform="matrix(1, 0, 0, 1.786938, 0, -21.353558)">
+      <stop offset="0" style="stop-color: rgba(218, 207, 149, 1)"/>
+      <stop offset="1" style="stop-color: rgba(192, 172, 73, 1)"/>
+    </linearGradient>
   </defs>
-  <rect x="10.574" y="27.135" width="374.9" height="152.035" style="fill: rgb(216, 216, 216); stroke: rgb(0, 0, 0);"/>
-  <g transform="matrix(1, 0, 0, 1, -1, 8)">
-    <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="34.398" y="47.608">Cargo.toml</text>
-    <path d="M 54.992 33.111 H 87.722 L 87.722 26.661 L 104.921 35.261 L 87.722 43.86 L 87.722 37.411 H 54.992 V 33.111 Z" style="fill: rgb(178, 136, 220);" transform="matrix(1, -0.000029, 0.000029, 1, 94.969536, 7.741021)" bx:shape="arrow 54.992 26.661 49.929 17.199 4.3 17.199 0 1@5381f3d7"/>
-    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="206.388" y="47.609">Package</text>
-    <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="34.398" y="82.762">src/lib.rs</text>
-    <path d="M 54.992 33.111 H 87.722 L 87.722 26.661 L 104.921 35.261 L 87.722 43.86 L 87.722 37.411 H 54.992 V 33.111 Z" style="fill: rgb(178, 136, 220);" transform="matrix(1, -0.000029, 0.000029, 1, 94.969536, 42.8955)" bx:shape="arrow 54.992 26.661 49.929 17.199 4.3 17.199 0 1@5381f3d7"/>
-    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="206.388" y="82.763">library crate</text>
-    <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="34.398" y="117.16">src/main.rs</text>
-    <path d="M 54.992 33.111 H 87.722 L 87.722 26.661 L 104.921 35.261 L 87.722 43.86 L 87.722 37.411 H 54.992 V 33.111 Z" style="fill: rgb(178, 136, 220);" transform="matrix(1, -0.000029, 0.000029, 1, 94.969536, 77.293983)" bx:shape="arrow 54.992 26.661 49.929 17.199 4.3 17.199 0 1@5381f3d7"/>
-    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="206.388" y="117.161">binary crate</text>
-    <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="34.398" y="151.558">src/bin/*rs</text>
-    <path d="M 54.992 33.111 H 87.722 L 87.722 26.661 L 104.921 35.261 L 87.722 43.86 L 87.722 37.411 H 54.992 V 33.111 Z" style="fill: rgb(178, 136, 220);" transform="matrix(1, -0.000029, 0.000029, 1, 94.969536, 111.692467)" bx:shape="arrow 54.992 26.661 49.929 17.199 4.3 17.199 0 1@5381f3d7"/>
-    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="206.388" y="151.559">multiple binary crates</text>
+  <rect x="10.574" y="27.135" width="374.9" height="271.677" style="fill: url(#gradient-0);">
+    <title>bg</title>
+  </rect>
+  <rect x="201.736" y="81.24" width="161.443" height="102.921" style="fill: none; stroke: rgb(88, 107, 164);"/>
+  <g transform="matrix(1, 0, 0, 1, 1.007375, 9.612625)">
+    <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="33.398" y="55.608">Cargo.toml</text>
+    <path d="M 54.992 33.111 H 87.722 L 87.722 26.661 L 104.921 35.261 L 87.722 43.86 L 87.722 37.411 H 54.992 V 33.111 Z" style="fill: rgb(178, 136, 220);" transform="matrix(1, -0.000029, 0.000029, 1, 93.969536, 15.741021)" bx:shape="arrow 54.992 26.661 49.929 17.199 4.3 17.199 0 1@5381f3d7"/>
+    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="205.388" y="55.609">Package</text>
   </g>
+  <g transform="matrix(1, 0, 0, 1, 1.007375, 9.612625)">
+    <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="33.398" y="90.762">src/lib.rs</text>
+    <path d="M 54.992 33.111 H 87.722 L 87.722 26.661 L 104.921 35.261 L 87.722 43.86 L 87.722 37.411 H 54.992 V 33.111 Z" style="fill: rgb(178, 136, 220);" transform="matrix(1, -0.000029, 0.000029, 1, 93.969536, 50.8955)" bx:shape="arrow 54.992 26.661 49.929 17.199 4.3 17.199 0 1@5381f3d7"/>
+    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="205.388" y="90.763">library crate</text>
+  </g>
+  <g transform="matrix(1, 0, 0, 1, 1.007375, 9.612625)">
+    <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="33.398" y="125.16">src/main.rs</text>
+    <path d="M 54.992 33.111 H 87.722 L 87.722 26.661 L 104.921 35.261 L 87.722 43.86 L 87.722 37.411 H 54.992 V 33.111 Z" style="fill: rgb(178, 136, 220);" transform="matrix(1, -0.000029, 0.000029, 1, 93.969536, 85.293983)" bx:shape="arrow 54.992 26.661 49.929 17.199 4.3 17.199 0 1@5381f3d7"/>
+    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="205.388" y="125.161">binary crate</text>
+  </g>
+  <g transform="matrix(1, 0, 0, 1, 1.007375, 9.612625)">
+    <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="33.398" y="159.558">src/bin/*rs</text>
+    <path d="M 54.992 33.111 H 87.722 L 87.722 26.661 L 104.921 35.261 L 87.722 43.86 L 87.722 37.411 H 54.992 V 33.111 Z" style="fill: rgb(178, 136, 220);" transform="matrix(1, -0.000029, 0.000029, 1, 93.969536, 119.692467)" bx:shape="arrow 54.992 26.661 49.929 17.199 4.3 17.199 0 1@5381f3d7"/>
+    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="205.388" y="159.559">multiple binary crates</text>
+  </g>
+  <g transform="matrix(1, 0, 0, 1, 1.007375, 100.466125)">
+    <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="33.398" y="159.558">mod</text>
+    <path d="M 54.992 33.111 H 87.722 L 87.722 26.661 L 104.921 35.261 L 87.722 43.86 L 87.722 37.411 H 54.992 V 33.111 Z" style="fill: rgb(178, 136, 220);" transform="matrix(1, -0.000029, 0.000029, 1, 93.969536, 119.692467)" bx:shape="arrow 54.992 26.661 49.929 17.199 4.3 17.199 0 1@5381f3d7"/>
+    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="205.388" y="159.559">namespace</text>
+  </g>
+  <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 10.6px;" x="18.333" y="44.05">PACKAGE</text>
+  <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 10.6px;" x="18.333" y="234.05">INSIDE RS FILE</text>
+  <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 10.6px;" x="227.82" y="78.453">ROOT NAMESPACE "crate"</text>
+  <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 10.6px;" x="206.396" y="241.316">NESTED INSIDE "crate" ROOT</text>
+  <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 12.5px;" x="425.816" y="68.312">Enter your text here.</text>
 </svg>

@@ -1,9 +1,19 @@
 [package]
-name = "rust-example"
+name = "rust_example"
 version = "0.1.0"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# https://stackoverflow.com/a/57767413/2085356
+
+[[bin]]
+name = "rust_example"
+path = "src/main.rs"
+
+[lib]
+name = "rust_example_lib"
+path = "src/lib.rs"
 
 [dependencies]
 

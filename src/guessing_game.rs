@@ -18,7 +18,9 @@ use std::cmp::Ordering;
 
 use ansi_term::Colour::Blue;
 use rand::{Rng, thread_rng};
-use crate::lib::{print_header, readline, style_dimmed, style_error, style_primary, style_prompt};
+use rust_example_lib::color_text::{print_header};
+use rust_example_lib::color_text::styles::{style_dimmed, style_error, style_primary, style_prompt};
+use rust_example_lib::tty::readline;
 
 /// Rust book - https://doc.rust-lang.org/book/ch02-00-guessing-game-tutorial.html
 pub fn run() {

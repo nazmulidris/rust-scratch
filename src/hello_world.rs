@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use crate::lib::print_header2;
+use rust_example_lib::color_text::print_header2;
 
 pub fn run() {
   print_hello("John Doe")

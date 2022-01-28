@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-mod lib;
-mod guessing_game;
+// Attach the following files to the main module.
 mod hello_world;
 mod strings;
 mod variables;
@@ -23,6 +22,7 @@ mod control_flow;
 mod ownership;
 mod structs;
 mod enum_variants;
+mod guessing_game;
 
 fn main() {
   hello_world::run();

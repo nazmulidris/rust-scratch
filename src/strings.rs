@@ -15,7 +15,7 @@
  */
 
 use ansi_term::Colour::Green;
-use crate::lib::print_header;
+use rust_example_lib::color_text::print_header;
 
 /// https://www.ameyalokare.com/rust/2017/10/12/rust-str-vs-String.html
 ///

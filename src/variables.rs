@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-use crate::lib::print_header;
+
+use rust_example_lib::color_text::print_header;
 
 /// https://stackoverflow.com/a/25877389/2085356
 #[allow(dead_code)]
