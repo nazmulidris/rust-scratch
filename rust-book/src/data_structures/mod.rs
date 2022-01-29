@@ -14,32 +14,6 @@
  * limitations under the License.
  */
 
-
-// Attach the following files to the binary module.
-mod control_flow;
-mod data_structures;
-mod enum_variants;
-mod guessing_game;
-mod hello_world;
-mod ownership;
-mod simple_strings;
-mod structs;
-mod variables;
-
-use crate::data_structures::vector;
-use crate::data_structures::hashmap;
-use crate::data_structures::strings;
-
-fn main() {
-  hello_world::run();
-  simple_strings::run();
-  guessing_game::run();
-  variables::run();
-  control_flow::run();
-  ownership::run();
-  structs::run();
-  enum_variants::run();
-  vector::run();
-  strings::run();
-  hashmap::run();
-}
+pub mod vector;
+pub mod strings;
+pub mod hashmap;
