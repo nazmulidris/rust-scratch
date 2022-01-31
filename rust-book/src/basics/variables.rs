@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-use rust_example_lib::utils::color_text::color_text::print_header;
-
 /// https://stackoverflow.com/a/25877389/2085356
-#[allow(dead_code)]
 const MS_IN_MIN: i32 = 60 * 1_000; // Must not be something that has to be calculated at runtime.
 
 /// Rust book - https://doc.rust-lang.org/book/ch03-02-data-types.html
-pub fn run() {
-  print_header("variables");
-}
+pub fn run() {}
 
 #[test]
 fn test_shadowing() {
@@ -74,7 +69,7 @@ fn test_tuples_complex_2() {
 
 #[test]
 fn test_array_1() {
-  let mut weekdays = ["Mon", "Tue", "Wed", "Thr", "Fri", ];
+  let mut weekdays = ["Mon", "Tue", "Wed", "Thr", "Fri"];
   assert_eq!(weekdays.len(), 5);
   assert_eq!(weekdays[0], "Mon");
   weekdays.rotate_left(1);
@@ -91,12 +86,10 @@ fn test_array_2() {
 fn test_array_3() {
   let num_ray: [i32; 5] = [/* initial value*/ -1; /* length */ 5];
   assert_eq!(num_ray.len(), 5);
-  num_ray.iter()
-    .enumerate()
-    .for_each(|(index, value)| {
-      assert_eq!(*value, -1);
-      assert_eq!(*value, num_ray[index]);
-    });
+  num_ray.iter().enumerate().for_each(|(index, value)| {
+    assert_eq!(*value, -1);
+    assert_eq!(*value, num_ray[index]);
+  });
 }
 
 /// Array index out of bounds & error handling via, `match`, `Option` from `get()` / `get_mut()`.
@@ -106,12 +99,12 @@ fn test_array_3() {
 fn test_array_4() {
   let num_ray: [i32; 5] = [/* initial value*/ -1; /* length */ 5];
   assert_eq!(num_ray.len(), 5);
-  num_ray.iter()
-    .enumerate()
-    .for_each(|(index, _value)| {
-      match num_ray.get(index) {
-        None => { /* Index out of bounds handled here. */ }
-        Some(value) => { assert_eq!(*value, num_ray[index]); }
+  num_ray.iter().enumerate().for_each(|(index, _value)| {
+    match num_ray.get(index) {
+      None => { /* Index out of bounds handled here. */ }
+      Some(value) => {
+        assert_eq!(*value, num_ray[index]);
       }
-    });
+    }
+  });
 }

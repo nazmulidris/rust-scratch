@@ -14,32 +14,28 @@
  * limitations under the License.
  */
 
+// Disable warnings for dead code & unused imports since they're needed by tests.
+#![allow(dead_code)]
+#![allow(unused_imports)]
 
 // Attach the following files to the binary module.
-mod control_flow;
-mod data_structures;
-mod enum_variants;
-mod guessing_game;
-mod hello_world;
-mod ownership;
-mod simple_strings;
-mod structs;
-mod variables;
-
-use crate::data_structures::vector;
-use crate::data_structures::hashmap;
-use crate::data_structures::strings;
+mod basics; // This is a module that contains many other files.
+mod data_structures; // This is a module that contains many other files.
+mod runnable; // This is a module that contains many other files.
 
 fn main() {
-  hello_world::run();
-  simple_strings::run();
-  guessing_game::run();
-  variables::run();
-  control_flow::run();
-  ownership::run();
-  structs::run();
-  enum_variants::run();
-  vector::run();
-  strings::run();
-  hashmap::run();
+  // The following have runnable code.
+  runnable::hello_world::run();
+  runnable::simple_strings::run();
+  runnable::guessing_game::run();
+
+  // The following only have tests.
+  basics::variables::run();
+  basics::control_flow::run();
+  basics::ownership::run();
+  basics::structs::run();
+  basics::enum_variants::run();
+  data_structures::vector::run();
+  data_structures::strings::run();
+  data_structures::hashmap::run();
 }

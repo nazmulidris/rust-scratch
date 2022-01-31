@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-use std::fmt::{Debug, Formatter};
 use rust_example_lib::utils::type_utils::type_utils::type_of;
+use std::fmt::{Debug, Formatter};
 
 /// Rust book: https://doc.rust-lang.org/book/ch05-01-defining-structs.html
 pub fn run() {}
@@ -50,7 +50,13 @@ fn test_simple_struct_with_to_string_trait() {
   }
   impl ToString for User {
     fn to_string(self: &Self) -> String {
-      format!("({}, {}, {}, {})", self.active, self.name.to_string(), self.email, self.sign_in_count)
+      format!(
+        "({}, {}, {}, {})",
+        self.active,
+        self.name.to_string(),
+        self.email,
+        self.sign_in_count
+      )
     }
   }
 
@@ -58,7 +64,10 @@ fn test_simple_struct_with_to_string_trait() {
   fn build_user(first: &str, last: &str, email: &str) -> User {
     User {
       active: true,
-      name: Name { first: first.to_string(), last: last.to_string() },
+      name: Name {
+        first: first.to_string(),
+        last: last.to_string(),
+      },
       email: email.to_string(),
       sign_in_count: 0,
     }
@@ -67,7 +76,10 @@ fn test_simple_struct_with_to_string_trait() {
   let u1 = build_user("john", "doe", "jd@gmail");
   assert_eq!(u1.to_string(), "(true, john, doe, jd@gmail, 0)");
   let u2 = User {
-    name: Name { first: "un".to_string(), last: "known".to_string() },
+    name: Name {
+      first: "un".to_string(),
+      last: "known".to_string(),
+    },
     ..u1
   };
   assert_eq!(u2.to_string(), "(true, un, known, jd@gmail, 0)");
@@ -82,7 +94,9 @@ fn test_tuple_struct() {
   // Color.
   struct Color(i32, i32, i32);
   impl ToString for Color {
-    fn to_string(self: &Self) -> String { format!("(r:{}, g:{}, b:{})", self.0, self.1, self.2) }
+    fn to_string(self: &Self) -> String {
+      format!("(r:{}, g:{}, b:{})", self.0, self.1, self.2)
+    }
   }
 
   // Point2d.
@@ -117,7 +131,10 @@ fn test_unit_like_struct_with_no_fields() {
   }
 
   let subject = AlwaysEqual;
-  assert_eq!(type_of(&subject), "rust_example::structs::test_unit_like_struct_with_no_fields::AlwaysEqual");
+  assert_eq!(
+    dbg!(type_of(&subject)),
+    "rust_example::basics::structs::test_unit_like_struct_with_no_fields::AlwaysEqual"
+  );
 }
 
 /// https://doc.rust-lang.org/book/ch05-02-example-structs.html
@@ -129,9 +146,15 @@ fn test_struct_that_derives_debug_trait() {
     height: u32,
   }
 
-  let rect1 = dbg!(Rect { width: 30, height: 30 });
+  let rect1 = dbg!(Rect {
+    width: 30,
+    height: 30
+  });
   assert_eq!(format!("{:?}", rect1), "Rect { width: 30, height: 30 }");
-  assert_eq!(format!("{:#?}", rect1), "Rect {\n    width: 30,\n    height: 30,\n}");
+  assert_eq!(
+    format!("{:#?}", rect1),
+    "Rect {\n    width: 30,\n    height: 30,\n}"
+  );
 }
 
 /// https://doc.rust-lang.org/book/ch05-03-method-syntax.html
@@ -143,16 +166,24 @@ fn test_struct_with_methods() {
     height: u32,
   }
   impl Rect {
-    fn area(self: &Self) -> u32 { self.width * self.height }
+    fn area(self: &Self) -> u32 {
+      self.width * self.height
+    }
 
     fn can_hold(self: &Self, other: &Self) -> bool {
       self.width > other.width && self.height > other.height
     }
   }
 
-  let rect1 = Rect { width: 30, height: 30 };
+  let rect1 = Rect {
+    width: 30,
+    height: 30,
+  };
   assert_eq!(rect1.area(), 30 * 30);
-  let rect2 = Rect { width: 100, height: 100 };
+  let rect2 = Rect {
+    width: 100,
+    height: 100,
+  };
   assert_eq!(rect2.can_hold(&rect1), true);
 }
 
@@ -166,7 +197,10 @@ fn test_struct_with_associated_functions() {
   impl Rect {
     /// Not a method (no `self: &Self`), but an associated function.
     fn square(size: u32) -> Self {
-      Rect { width: size, height: size }
+      Rect {
+        width: size,
+        height: size,
+      }
     }
   }
 

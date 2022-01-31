@@ -21,22 +21,17 @@ pub fn run() {}
 
 // Functions that exercise borrowing, moving, etc. used in tests.
 
-#[allow(dead_code)]
 fn borrow_str(string: &str) -> usize { string.len() }
 
-#[allow(dead_code)]
 fn borrow_string(string: &String) -> usize { string.len() }
 
-#[allow(dead_code)]
 fn borrow_and_mutate_string(string: &mut String) -> usize {
   string.push_str("_mutated");
   string.len()
 }
 
-#[allow(dead_code)]
 fn give_ownership_of_string() -> String { String::from("a_new_string") }
 
-#[allow(dead_code)]
 fn take_and_gives_back_ownership_of_string(string: String) -> String { string }
 
 // Tests.
@@ -81,7 +76,6 @@ fn test_move_aka_shallow_copy_and_invalidate() {
   assert_eq!(new_owner_of_s1.len(), 5);
 }
 
-#[allow(dead_code)]
 fn take_ownership_of_string(_param: String) {}
 
 /// https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html#ways-variables-and-data-interact-clone

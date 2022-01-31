@@ -16,21 +16,3 @@
 
 // Attach the following files to the library module.
 pub mod utils;
-
-/// Test block example.
-#[cfg(test)]
-mod tests {
-  #[test]
-  fn it_works() {
-    assert_eq!(2 + 2, 4);
-  }
-}
-
-/// Single test case.
-#[test]
-fn test_something() {
-  let tuple1: (i32, String) = (100, "123".to_string());
-  let (number, text) = tuple1;
-  assert_eq!(number, 100);
-  assert_eq!(text, "123");
-}
