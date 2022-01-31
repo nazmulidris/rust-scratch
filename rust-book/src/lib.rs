@@ -15,9 +15,7 @@
  */
 
 // Attach the following files to the library module.
-pub mod color_text;
-pub mod tty;
-pub mod type_utils;
+pub mod utils;
 
 /// Test block example.
 #[cfg(test)]

@@ -15,8 +15,8 @@
  */
 
 pub mod tty {
+  use crate::utils::color_text::color_text::styles::style_error;
   use std::io::stdin;
-  use crate::color_text::color_text::styles::style_error;
 
   /// Return String not &str due to "struct lifetime"
   /// - https://stackoverflow.com/a/29026565/2085356
@@ -29,7 +29,10 @@ pub mod tty {
         (bytes_read, guess)
       }
       Err(_) => {
-        println!("{}", style_error("Something went wrong when reading input from terminal."));
+        println!(
+          "{}",
+          style_error("Something went wrong when reading input from terminal.")
+        );
         (0, "".to_string())
       }
     }

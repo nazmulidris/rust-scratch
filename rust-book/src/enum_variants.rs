@@ -1,3 +1,5 @@
+use rust_example_lib::utils::type_utils::type_utils::type_of;
+
 /*
  * Copyright (c) 2022 Nazmul Idris. All rights reserved.
  *
@@ -14,7 +16,6 @@
  * limitations under the License.
  */
 
-use rust_example_lib::type_utils::type_utils::type_of;
 
 /// Enums and variants are like TypeScript discriminated unions and Kotlin sealed classes. They're
 /// **not** like Java enums.
