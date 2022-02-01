@@ -20,3 +20,4 @@ pub mod structs;
 pub mod control_flow;
 pub mod ownership;
 pub mod variables;
+pub mod error_handling;

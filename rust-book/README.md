@@ -93,8 +93,12 @@ mod tests {
 - [Range and borrowing limitations, clone instead](https://stackoverflow.com/a/62480671/2085356)
 - [Deref and Ref as different type](https://stackoverflow.com/a/41273331/2085356)
 - [Roll your own typeof function](https://stackoverflow.com/a/58119924/2085356)
+- [`?` operator](https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-question-mark-operator)
+- [Error handling](https://stevedonovan.github.io/rust-gentle-intro/6-error-handling.html)
+- [Handle panics in test](https://stackoverflow.com/questions/26469715/how-do-i-write-a-rust-unit-test-that-ensures-that-a-panic-has-occurred)
 
 # Tools and tool configuration
+
 - [Rustfmt options](https://rust-lang.github.io/rustfmt/)
 - [cargo-watch](https://crates.io/crates/cargo-watch)
 

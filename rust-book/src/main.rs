@@ -38,4 +38,5 @@ fn main() {
   data_structures::vector::run();
   data_structures::strings::run();
   data_structures::hashmap::run();
+  basics::error_handling::run();
 }
