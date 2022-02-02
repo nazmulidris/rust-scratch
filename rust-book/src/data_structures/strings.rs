@@ -4,6 +4,7 @@ pub fn run() {}
 #[test]
 fn test_basic_strings_with_simple_trait() {
   // Person struct.
+  #[derive(Debug)]
   struct Person {
     name: String,
     age: u64,

@@ -36,9 +36,11 @@ fn main() {
   basics::ownership::run();
   basics::structs::run();
   basics::enum_variants::run();
+
   data_structures::vector::run();
   data_structures::strings::run();
   data_structures::hashmap::run();
+
   intermediate::error_handling::run();
   intermediate::generic_types::run();
   intermediate::traits::run();

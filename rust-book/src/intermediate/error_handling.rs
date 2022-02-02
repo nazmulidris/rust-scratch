@@ -72,7 +72,7 @@ fn test_fine_grained_error_handling_via_result() {
 }
 
 #[test]
-fn test_fine_grained_error_handling_via_question_mark_operator_and_result_ok_err() {
+fn test_fine_grained_error_handling_via_question_mark_operator_and_result() {
   /// Returns Ok or Err.
   fn get_file_metadata_as_string(file_name: &str) -> Result<String, Box<dyn std::error::Error>> {
     Ok(format!("{:?}", File::open(file_name)?.metadata()?))
@@ -86,7 +86,19 @@ fn test_fine_grained_error_handling_via_question_mark_operator_and_result_ok_err
 }
 
 #[test]
-fn test_fine_grained_error_handling_via_question_mark_operator_and_option_some_none() {
+fn test_function_that_returns_nothing_but_might_have_error_in_result() {
+  fn try_to_get_metadata_silently_fail(file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let file = File::open(file_name)?;
+    let metadata = file.metadata()?;
+    println!("{:?}", metadata);
+    Ok(())
+  }
+  let result = try_to_get_metadata_silently_fail("file does not exist.txt");
+  assert!(result.is_err());
+}
+
+#[test]
+fn test_fine_grained_error_handling_via_question_mark_operator_and_option() {
   /// Returns Some or None.
   fn get_file_metadata_as_string(file_name: &str) -> Option<String> {
     Some(format!(
@@ -96,16 +108,5 @@ fn test_fine_grained_error_handling_via_question_mark_operator_and_option_some_n
   }
   let option = get_file_metadata_as_string("file does not exist.txt");
   assert!(option.is_none());
-}
-
-#[test]
-fn test_function_that_returns_nothing_but_might_have_error() {
-  fn try_to_get_metadata_silently_fail(file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let file = File::open(file_name)?;
-    let metadata = file.metadata()?;
-    println!("{:?}", metadata);
-    Ok(())
-  }
-  let result = try_to_get_metadata_silently_fail("file does not exist.txt");
-  assert!(result.is_err());
+  assert_eq!(option.unwrap_or("-1".to_string()), "-1");
 }

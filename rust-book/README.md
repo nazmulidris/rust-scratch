@@ -106,3 +106,4 @@ mod tests {
 
 - [Memory layout in Rust](https://youtu.be/rDoqT-a6UFg)
 - [Rust Book](https://www.youtube.com/playlist?list=PLai5B987bZ9CoVR-QEIN9foz4QCJ0H2Y8)
+- [JT's introduction to Rust 4 parts](https://www.youtube.com/playlist?list=PLP2yfE2-FXdQmXLvrQ5QN64enbF_KCYQW)

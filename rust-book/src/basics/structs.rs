@@ -29,6 +29,7 @@ pub fn run() {}
 fn test_simple_struct_with_to_string_trait() {
   /// Name.
   /// String and not &str since struct should own this data.
+  #[derive(Debug)]
   struct Name {
     pub first: String,
     pub last: String,
@@ -42,6 +43,7 @@ fn test_simple_struct_with_to_string_trait() {
   /// User.
   /// Name and not &Name since struct should own this data.
   /// String and not &str since struct should own this data.
+  #[derive(Debug)]
   struct User {
     pub active: bool,
     pub name: Name,
@@ -92,6 +94,7 @@ fn test_simple_struct_with_to_string_trait() {
 #[test]
 fn test_tuple_struct() {
   // Color.
+  #[derive(Debug)]
   struct Color(i32, i32, i32);
   impl ToString for Color {
     fn to_string(self: &Self) -> String {
@@ -100,9 +103,11 @@ fn test_tuple_struct() {
   }
 
   // Point2d.
+  #[derive(Debug)]
   struct Point2d(i32, i32);
 
   // Point3d.
+  #[derive(Debug)]
   struct Point3d(i32, i32, i32);
 
   let black = Color(0, 0, 0);
