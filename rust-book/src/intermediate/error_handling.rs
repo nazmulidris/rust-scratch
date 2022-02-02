@@ -1,5 +1,3 @@
-use std::fs::File;
-
 /*
  Copyright 2022 Nazmul Idris
 
@@ -15,6 +13,8 @@ use std::fs::File;
  See the License for the specific language governing permissions and
  limitations under the License.
 */
+
+use std::fs::File;
 
 /// Rust book: https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html
 /// ? operator: https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-question-mark-operator

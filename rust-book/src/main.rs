@@ -21,6 +21,7 @@
 // Attach the following files to the binary module.
 mod basics; // This is a module that contains many other files.
 mod data_structures; // This is a module that contains many other files.
+mod intermediate; // This is a module that contains many other files.
 mod runnable; // This is a module that contains many other files.
 
 fn main() {
@@ -38,5 +39,8 @@ fn main() {
   data_structures::vector::run();
   data_structures::strings::run();
   data_structures::hashmap::run();
-  basics::error_handling::run();
+  intermediate::error_handling::run();
+  intermediate::generic_types::run();
+  intermediate::traits::run();
+  intermediate::lifetimes::run();
 }
