@@ -1,0 +1,12 @@
+[
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "More information about notebooks in vscode\n\n1. https://marketplace.visualstudio.com/items?itemName=tanhakabir.rest-book\n2. https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-github-issue-notebooks\n3. https://code.visualstudio.com/blogs/2021/11/08/custom-notebooks"
+  },
+  {
+    "kind": 2,
+    "language": "github-issues",
+    "value": "repo:nazmulidris/rust_scratch is:open"
+  }
+]

@@ -101,6 +101,8 @@ mod tests {
 
 - [Rustfmt options](https://rust-lang.github.io/rustfmt/)
 - [cargo-watch](https://crates.io/crates/cargo-watch)
+- [rust-analyzer prefix, postfix completions](https://rust-analyzer.github.io/manual.html#user-snippet-completions)
+- [VSCode notebooks](https://code.visualstudio.com/blogs/2021/11/08/custom-notebooks)
 
 # Videos
 
