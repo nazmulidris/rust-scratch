@@ -15,9 +15,11 @@
 */
 
 use chrono::{DateTime, Utc};
-use std::fmt::Display;
+use std::{fmt::Display, ops::Add};
 
-/// Rust book: https://doc.rust-lang.org/book/ch10-02-traits.html
+/// Rust book:
+/// 1. https://doc.rust-lang.org/book/ch10-02-traits.html
+/// 2. https://doc.rust-lang.org/book/ch19-03-advanced-traits.html
 pub fn run() {}
 
 #[test]
@@ -294,4 +296,38 @@ fn test_blanket_implementations_for_trait() {
   // Becuase `Contact` struct implements `StringableIF`, the "blanket implementation" from
   // `ConsoleLoggableIF` is available.
   contact_1.log();
+}
+
+/// https://doc.rust-lang.org/book/ch19-03-advanced-traits.html
+#[test]
+fn test_associated_types_in_traits_instead_of_generics() {
+  // MyString "class".
+  #[derive(Debug, Clone, PartialEq)]
+  struct MyString {
+    contents: String,
+  }
+
+  impl MyString {
+    fn new(arg: &str) -> Self {
+      Self {
+        contents: arg.to_string(),
+      }
+    }
+  }
+
+  // Operator overloading for `+` where we will see associated types instead of generics.
+  impl Add for MyString {
+    type Output = MyString; // Associated type of Add trait determines the type returned by `add()`.
+
+    fn add(self, other: Self::Output) -> Self::Output {
+      Self::Output {
+        contents: self.contents + &other.contents,
+      }
+    }
+  }
+
+  assert_eq!(
+    MyString::new("hello") + MyString::new("world"),
+    MyString::new("helloworld")
+  );
 }

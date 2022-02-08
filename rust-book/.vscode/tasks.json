@@ -15,11 +15,19 @@
       "type": "cargo",
       "command": "test",
       "problemMatcher": ["$rustc"],
+      "group": "test",
+      "label": "rust: cargo test"
+    },
+    {
+      "type": "cargo",
+      "command": "watch",
+      "args": ["-x", "test"],
+      "problemMatcher": ["$rustc"],
       "group": {
         "kind": "test",
         "isDefault": true
       },
-      "label": "rust: cargo test"
+      "label": "rust: cargo test --watch"
     }
   ]
 }
