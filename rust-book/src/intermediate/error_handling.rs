@@ -33,6 +33,16 @@ fn test_should_panic() {
   };
 }
 
+/// https://doc.rust-lang.org/book/ch11-01-writing-tests.html#using-resultt-e-in-tests
+#[test]
+fn test_similar_to_should_panic() -> Result<(), String> {
+  let file_result: Result<File, std::io::Error> = File::open("does not exist.txt");
+  match file_result {
+    Ok(_) => Err(String::from("File exists - but it should not!")),
+    Err(_) => Ok(()), // This is expected to fail.
+  }
+}
+
 /// https://stackoverflow.com/a/42649833/2085356
 #[test]
 fn test_should_panic_alternative() {
