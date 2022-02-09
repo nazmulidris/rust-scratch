@@ -45,4 +45,5 @@ fn main() {
   intermediate::generic_types::run();
   intermediate::traits::run();
   intermediate::lifetimes::run();
+  intermediate::closures::run();
 }

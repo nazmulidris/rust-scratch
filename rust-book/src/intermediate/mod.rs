@@ -18,3 +18,4 @@ pub mod error_handling;
 pub mod generic_types;
 pub mod traits;
 pub mod lifetimes;
+pub mod closures;
