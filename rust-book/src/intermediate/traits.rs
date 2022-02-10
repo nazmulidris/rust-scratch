@@ -15,7 +15,10 @@
 */
 
 use chrono::{DateTime, Utc};
-use std::{fmt::Display, ops::Add};
+use std::{
+  fmt::{Display, Formatter, Result},
+  ops::Add,
+};
 
 /// Rust book:
 /// 1. https://doc.rust-lang.org/book/ch10-02-traits.html
@@ -119,13 +122,13 @@ fn test_traits_comprehensively() {
 
   // Implement Display trait for structs.
   impl Display for Tweet {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
       write!(f, "Tweet: {}", Stringable::to_string(self))
     }
   }
 
   impl Display for NewsArticle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
       write!(f, "NewsArticle: {}", Stringable::to_string(self))
     }
   }
@@ -330,4 +333,64 @@ fn test_associated_types_in_traits_instead_of_generics() {
     MyString::new("hello") + MyString::new("world"),
     MyString::new("helloworld")
   );
+}
+
+#[test]
+fn test_more_associated_types_in_traits() {
+  // Trait.
+  trait Pair {
+    // Associated types aka output types.
+    type First;
+    type Second;
+
+    fn new(first: Self::First, second: Self::Second) -> Self;
+    fn first(&self) -> &Self::First;
+    fn second(&self) -> &Self::Second;
+  }
+
+  // Struct that impls trait.
+  #[derive(Debug, Clone, PartialEq)]
+  struct PairImpl<T, U>
+  where
+    T: Clone + PartialEq + Display,
+    U: Clone + PartialEq + Display,
+  {
+    first: T,
+    second: U,
+  }
+
+  impl<T, U> Display for PairImpl<T, U>
+  where
+    T: Clone + PartialEq + Display,
+    U: Clone + PartialEq + Display,
+  {
+    fn fmt(self: &Self, f: &mut Formatter<'_>) -> Result {
+      write!(f, "({}, {})", self.first, self.second)
+    }
+  }
+
+  impl<T, U> Pair for PairImpl<T, U>
+  where
+    T: Clone + PartialEq + Display,
+    U: Clone + PartialEq + Display,
+  {
+    type First = T;
+    type Second = U;
+
+    fn new(first: Self::First, second: Self::Second) -> Self {
+      Self { first, second }
+    }
+
+    fn first(&self) -> &Self::First {
+      &self.first
+    }
+
+    fn second(&self) -> &Self::Second {
+      &self.second
+    }
+  }
+
+  let pair_1 = PairImpl::<i32, i32>::new(1, 2);
+  assert_eq!(pair_1.first(), &1);
+  assert_eq!(pair_1.second(), &2);
 }

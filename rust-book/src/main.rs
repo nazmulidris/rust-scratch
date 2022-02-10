@@ -46,4 +46,5 @@ fn main() {
   intermediate::traits::run();
   intermediate::lifetimes::run();
   intermediate::closures::run();
+  intermediate::iterators::run();
 }

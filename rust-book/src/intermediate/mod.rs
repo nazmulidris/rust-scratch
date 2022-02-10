@@ -19,3 +19,4 @@ pub mod generic_types;
 pub mod traits;
 pub mod lifetimes;
 pub mod closures;
+pub mod iterators;
