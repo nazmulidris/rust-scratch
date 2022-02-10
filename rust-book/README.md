@@ -79,23 +79,37 @@ mod tests {
 
 # References
 
+## General
+
 - [The Rust Programming Language book](https://doc.rust-lang.org/book/)
 - [String, &String, &str](https://www.ameyalokare.com/rust/2017/10/12/rust-str-vs-String.html)
-- [rust-ansi-term](https://github.com/ogham/rust-ansi-term)
 - [std::fmt](https://doc.rust-lang.org/std/fmt/)
 - [Primitive data types](https://learning-rust.github.io/docs/a8.primitive_data_types.html)
 - [String <-> &str conversions](https://blog.mgattozzi.dev/how-do-i-str-string/)
 - [String <-> &str conversions](https://stackoverflow.com/a/29026565/2085356)
 - [Unwrap & expect, Result -> Ok, Err](https://learning-rust.github.io/docs/e4.unwrap_and_expect.html)
 - [Rust turbofish](https://techblog.tonsser.com/posts/what-is-rusts-turbofish)
-- [Unit testing](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html)
 - [Error handling - array index out of bounds](https://users.rust-lang.org/t/array-out-of-bound-error-handling/26939)
 - [Range and borrowing limitations, clone instead](https://stackoverflow.com/a/62480671/2085356)
 - [Deref and Ref as different type](https://stackoverflow.com/a/41273331/2085356)
 - [Roll your own typeof function](https://stackoverflow.com/a/58119924/2085356)
 - [`?` operator](https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-question-mark-operator)
 - [Error handling](https://stevedonovan.github.io/rust-gentle-intro/6-error-handling.html)
+
+## Testing
+
+- [Unit test mock cli args](https://stackoverflow.com/a/54594023/2085356)
+- [Unit testing](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html)
 - [Handle panics in test](https://stackoverflow.com/questions/26469715/how-do-i-write-a-rust-unit-test-that-ensures-that-a-panic-has-occurred)
+
+## Performance
+
+- [Performance of iterators](https://doc.rust-lang.org/book/ch13-04-performance.html)
+
+## ANSI terminal, TUI
+
+- [rust-ansi-term](https://github.com/ogham/rust-ansi-term)
+- [crossterm for TUI](https://www.jntrnr.com/porting-the-pikachu/)
 
 # Tools and tool configuration
 
