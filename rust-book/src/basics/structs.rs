@@ -16,7 +16,7 @@
 
 //! Rust book: <https://doc.rust-lang.org/book/ch05-01-defining-structs.html>
 
-use rust_example_lib::utils::type_of;
+use rust_book_lib::utils::type_of;
 use std::fmt::{Debug, Formatter};
 
 pub fn run() {}
@@ -139,7 +139,7 @@ fn test_unit_like_struct_with_no_fields() {
   let subject = AlwaysEqual;
   assert_eq!(
     dbg!(type_of(&subject)),
-    "rust_example::basics::structs::test_unit_like_struct_with_no_fields::AlwaysEqual"
+    "rust_book::basics::structs::test_unit_like_struct_with_no_fields::AlwaysEqual"
   );
 }
 

@@ -119,7 +119,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust_example"
+name = "rust_book"
 version = "0.1.0"
 dependencies = [
  "ansi_term",

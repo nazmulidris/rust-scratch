@@ -13,13 +13,13 @@ system is very similar to TypeScript namespaces.
 
 1. There's a single `bin` binary crate (`main.rs`).
 
-   - The namespace of this binary crate is `rust_example`.
+   - The namespace of this binary crate is `rust_book`.
    - The `[[bin]]` entry in `Cargo.toml` has this information.
 
 2. There's a single `lib` library crate (`lib.rs`).
 
-   - The namespace of this library is `rust_example_lib`. This is to avoid confusion w/ the name of
-     the binary crate. The `[lib]` entry in `Cargo.toml` has this information.
+   - The namespace of this library is `rust_book_lib`. This is to avoid confusion w/ the name of the
+     binary crate. The `[lib]` entry in `Cargo.toml` has this information.
    - While there may be multiple binary crates, there can only be max of 1 library crate.
    - There's really no need for this crate in this example. It is added to generate complexity to
      see how modules work. Instead of having this library crate, the code could have more simply
