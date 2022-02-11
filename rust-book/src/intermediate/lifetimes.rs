@@ -14,13 +14,14 @@
  limitations under the License.
 */
 
+//! Rust book:
+//! 1. <https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html>
+//! 2. <https://doc.rust-lang.org/book/ch11-03-test-organization.html#the-tests-module-and-cfgtest>
+
 use std::{fmt::Display, result, sync::Barrier};
 
 use chrono::{DateTime, Utc};
 
-/// Rust book:
-/// 1. https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html
-/// 2. https://doc.rust-lang.org/book/ch11-03-test-organization.html#the-tests-module-and-cfgtest
 pub fn run() {}
 
 /// Using testing module.

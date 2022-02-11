@@ -14,25 +14,34 @@
  * limitations under the License.
  */
 
-/// Rust book: https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html
-/// Rust book: https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html
-/// Rust book: https://doc.rust-lang.org/book/ch04-03-slices.html
+//! 1. Rust book: <https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html>
+//! 2. Rust book: <https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html>
+//! 3. Rust book: <https://doc.rust-lang.org/book/ch04-03-slices.html>
+
 pub fn run() {}
 
 // Functions that exercise borrowing, moving, etc. used in tests.
 
-fn borrow_str(string: &str) -> usize { string.len() }
+fn borrow_str(string: &str) -> usize {
+  string.len()
+}
 
-fn borrow_string(string: &String) -> usize { string.len() }
+fn borrow_string(string: &String) -> usize {
+  string.len()
+}
 
 fn borrow_and_mutate_string(string: &mut String) -> usize {
   string.push_str("_mutated");
   string.len()
 }
 
-fn give_ownership_of_string() -> String { String::from("a_new_string") }
+fn give_ownership_of_string() -> String {
+  String::from("a_new_string")
+}
 
-fn take_and_gives_back_ownership_of_string(string: String) -> String { string }
+fn take_and_gives_back_ownership_of_string(string: String) -> String {
+  string
+}
 
 // Tests.
 
@@ -155,12 +164,12 @@ fn test_slice_string() {
   let mut my_string = "word1 word2".to_string();
 
   // 👎 This is the sub-optimal way of doing things.
-  fn find_first_word_in_string_without_using_slice(
-    string: &String
-  ) -> usize {
+  fn find_first_word_in_string_without_using_slice(string: &String) -> usize {
     let bytes = string.as_bytes();
     for (index, &byte) in bytes.iter().enumerate() {
-      if byte == b' ' { return index; }
+      if byte == b' ' {
+        return index;
+      }
     }
     string.len()
   }
@@ -168,11 +177,13 @@ fn test_slice_string() {
 
   // 👍 This is the optimal way of doing things (using slices).
   fn find_first_word_in_string(
-    string: &String // 🧙 Note that making the argument type &str is more flexible.
+    string: &String, // 🧙 Note that making the argument type &str is more flexible.
   ) -> &str {
     let bytes = string.as_bytes();
     for (index, &byte) in bytes.iter().enumerate() {
-      if byte == b' ' { return &string[..index]; }
+      if byte == b' ' {
+        return &string[..index];
+      }
     }
     return &string[..];
   }

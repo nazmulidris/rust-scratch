@@ -14,15 +14,16 @@
  limitations under the License.
 */
 
+//! Rust book:
+//! 1. <https://doc.rust-lang.org/book/ch10-02-traits.html>
+//! 2. <https://doc.rust-lang.org/book/ch19-03-advanced-traits.html>
+
 use chrono::{DateTime, Utc};
 use std::{
   fmt::{Display, Formatter, Result},
   ops::Add,
 };
 
-/// Rust book:
-/// 1. https://doc.rust-lang.org/book/ch10-02-traits.html
-/// 2. https://doc.rust-lang.org/book/ch19-03-advanced-traits.html
 pub fn run() {}
 
 #[test]

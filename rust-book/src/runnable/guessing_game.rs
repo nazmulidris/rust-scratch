@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
+//! Rust book: <https://doc.rust-lang.org/book/ch02-00-guessing-game-tutorial.html>
+
 use std::cmp::Ordering;
 
 use ansi_term::Colour::Blue;
-use rand::{Rng, thread_rng};
-use rust_example_lib::utils::color_text::color_text::{print_header};
-use rust_example_lib::utils::color_text::color_text::styles::{style_dimmed, style_error, style_primary, style_prompt};
+use rand::{thread_rng, Rng};
+use rust_example_lib::utils::color_text::color_text::print_header;
+use rust_example_lib::utils::color_text::color_text::styles::{
+  style_dimmed, style_error, style_primary, style_prompt,
+};
 use rust_example_lib::utils::tty::tty::readline;
 
-/// Rust book - https://doc.rust-lang.org/book/ch02-00-guessing-game-tutorial.html
 pub fn run() {
   print_header("guessing_game");
   println!("Guess the number game :)");
@@ -32,17 +35,22 @@ pub fn run() {
   loop {
     let guess: String = make_a_guess();
     match guess.as_str().cmp("quit") {
-      Ordering::Equal => { break; }
-      _ => { match_guess(&answer, &guess); }
+      Ordering::Equal => {
+        break;
+      }
+      _ => {
+        match_guess(&answer, &guess);
+      }
     }
   }
 }
 
-/// String not &str due to "struct lifetime" - https://stackoverflow.com/a/29026565/2085356
+/// String not &str due to "struct lifetime" - <https://stackoverflow.com/a/29026565/2085356>
 fn make_a_guess() -> String {
   println!("{}", Blue.paint("Please input your guess."));
   let (bytes_read, guess) = readline();
-  println!("{} {}, {} {}",
+  println!(
+    "{} {}, {} {}",
     style_dimmed("#bytes read:"),
     style_primary(&bytes_read.to_string()),
     style_dimmed("You guessed:"),
@@ -52,10 +60,16 @@ fn make_a_guess() -> String {
 }
 
 fn match_guess(answer: &u32, guess: &String) {
-  // https://learning-rust.github.io/docs/e4.unwrap_and_expect.html
-  match guess.parse::<u32>() { // https://techblog.tonsser.com/posts/what-is-rusts-turbofish
-    Ok(value) => { perform_match(answer, &value) }
-    Err(_) => { println!("{}", style_error("Invalid input, must be a number, try again.")) }
+  // <https://learning-rust.github.io/docs/e4.unwrap_and_expect.html>
+  match guess.parse::<u32>() {
+    // <https://techblog.tonsser.com/posts/what-is-rusts-turbofish>
+    Ok(value) => perform_match(answer, &value),
+    Err(_) => {
+      println!(
+        "{}",
+        style_error("Invalid input, must be a number, try again.")
+      )
+    }
   }
 }
 

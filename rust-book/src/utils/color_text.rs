@@ -18,11 +18,11 @@ pub mod color_text {
   use ansi_term::Colour::Purple;
 
   /// ANSI colorized text:
-  /// - https://github.com/ogham/rust-ansi-term
+  /// - <https://github.com/ogham/rust-ansi-term>
   ///
   /// Equivalent for template string literal. One way to do this using `format!`
-  /// 1. https://doc.rust-lang.org/std/fmt/
-  /// 2. https://internals.rust-lang.org/t/string-interpolation-template-literals-like-js/9082/3
+  /// 1. <https://doc.rust-lang.org/std/fmt/>
+  /// 2. <https://internals.rust-lang.org/t/string-interpolation-template-literals-like-js/9082/3>
   pub fn print_header(msg: &str) {
     let hamburger = "☰";
     let msg = format!("{0} {1} {0}", hamburger, msg);

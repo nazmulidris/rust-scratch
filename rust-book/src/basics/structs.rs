@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
+//! Rust book: <https://doc.rust-lang.org/book/ch05-01-defining-structs.html>
+
 use rust_example_lib::utils::type_utils::type_utils::type_of;
 use std::fmt::{Debug, Formatter};
 
-/// Rust book: https://doc.rust-lang.org/book/ch05-01-defining-structs.html
 pub fn run() {}
 
-/// https://doc.rust-lang.org/std/fmt/trait.Display.html
-/// https://doc.rust-lang.org/std/fmt/trait.Debug.html
-/// https://doc.rust-lang.org/std/string/trait.ToString.html
-/// https://loige.co/how-to-to-string-in-rust/
-/// https://doc.rust-lang.org/book/ch05-01-defining-structs.html#ownership-of-struct-data
+/// <https://doc.rust-lang.org/std/fmt/trait.Display.html>
+/// <https://doc.rust-lang.org/std/fmt/trait.Debug.html>
+/// <https://doc.rust-lang.org/std/string/trait.ToString.html>
+/// <https://loige.co/how-to-to-string-in-rust/>
+/// <https://doc.rust-lang.org/book/ch05-01-defining-structs.html#ownership-of-struct-data>
 #[test]
 fn test_simple_struct_with_to_string_trait() {
   /// Name.

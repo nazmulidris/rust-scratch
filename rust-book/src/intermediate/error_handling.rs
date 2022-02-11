@@ -14,12 +14,13 @@
  limitations under the License.
 */
 
+//! - Rust book: <https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html>
+//! - ? operator: <https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-question-mark-operator>
+//! - Handling errors: <https://stevedonovan.github.io/rust-gentle-intro/6-error-handling.html>
+//! - Test that expects panic: <https://stackoverflow.com/questions/26469715/how-do-i-write-a-rust-unit-test-that-ensures-that-a-panic-has-occurred>
+
 use std::fs::File;
 
-/// Rust book: https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html
-/// ? operator: https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-question-mark-operator
-/// Handling errors: https://stevedonovan.github.io/rust-gentle-intro/6-error-handling.html
-/// Test that expects panic: https://stackoverflow.com/questions/26469715/how-do-i-write-a-rust-unit-test-that-ensures-that-a-panic-has-occurred
 pub fn run() {}
 
 /// https://stackoverflow.com/a/26470361/2085356

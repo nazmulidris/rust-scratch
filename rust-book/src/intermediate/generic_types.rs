@@ -14,9 +14,10 @@
  limitations under the License.
 */
 
+//! Rust book: <https://doc.rust-lang.org/book/ch10-00-generics.html>
+
 use std::fmt::Display;
 
-/// Rust book: https://doc.rust-lang.org/book/ch10-00-generics.html
 pub fn run() {}
 
 #[test]

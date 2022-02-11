@@ -14,12 +14,13 @@
  limitations under the License.
 */
 
+//! - Rust book: <https://doc.rust-lang.org/book/ch13-02-iterators.html>
+//! - Impl iterator type: <https://stackoverflow.com/a/27535594/2085356>
+//! - Mock CLI args: <https://stackoverflow.com/a/54594023/2085356>
+//! - Performance of iterators: <https://doc.rust-lang.org/book/ch13-04-performance.html>
+
 use std::{env::Args, result::Iter};
 
-/// Rust book: https://doc.rust-lang.org/book/ch13-02-iterators.html
-/// Impl iterator type: https://stackoverflow.com/a/27535594/2085356
-/// Mock CLI args: https://stackoverflow.com/a/54594023/2085356
-/// Performance of iterators: https://doc.rust-lang.org/book/ch13-04-performance.html
 pub fn run() {}
 
 #[test]

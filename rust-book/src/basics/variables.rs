@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-/// https://stackoverflow.com/a/25877389/2085356
+//! Rust book: <https://doc.rust-lang.org/book/ch03-02-data-types.html>
+
+/// <https://stackoverflow.com/a/25877389/2085356>
 const MS_IN_MIN: i32 = 60 * 1_000; // Must not be something that has to be calculated at runtime.
 
-/// Rust book - https://doc.rust-lang.org/book/ch03-02-data-types.html
 pub fn run() {}
 
 #[test]

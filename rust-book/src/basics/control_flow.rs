@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-/// Rust book: https://doc.rust-lang.org/book/ch03-05-control-flow.html
+//! Rust book: <https://doc.rust-lang.org/book/ch03-05-control-flow.html>
+
 pub fn run() {}
 
 /// Return values from loop.
@@ -39,10 +40,14 @@ fn test_loop_2() {
     outer_count += 1;
     'INNER: loop {
       inner_count += 1;
-      if inner_count == 9 { break 'INNER; }
-      if outer_count == 2 { break 'OUTER; }
-    };
-  };
+      if inner_count == 9 {
+        break 'INNER;
+      }
+      if outer_count == 2 {
+        break 'OUTER;
+      }
+    }
+  }
   assert_eq!(inner_count, 10);
   assert_eq!(outer_count, 2);
 }
@@ -51,18 +56,19 @@ fn test_loop_2() {
 #[test]
 fn test_for_loop() {
   let array = [0, 10, 20];
-  for element in array { assert!(array.contains(&element)); }
+  for element in array {
+    assert!(array.contains(&element));
+  }
 }
 
 /// for each loop.
 #[test]
 fn test_for_each_loop() {
   let array = [0, 10, 20];
-  array.iter()
+  array
+    .iter()
     .enumerate()
-    .for_each(|(_index, value)| {
-      assert!(array.contains(value))
-    });
+    .for_each(|(_index, value)| assert!(array.contains(value)));
 }
 
 /// Range and for loop.

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-/// Rust book: https://doc.rust-lang.org/book/ch08-01-vectors.html
+//! Rust book: <https://doc.rust-lang.org/book/ch08-01-vectors.html>
+
 pub fn run() {}
 
 #[test]

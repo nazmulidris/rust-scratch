@@ -19,10 +19,10 @@ pub mod tty {
   use std::io::stdin;
 
   /// Return String not &str due to "struct lifetime"
-  /// - https://stackoverflow.com/a/29026565/2085356
+  /// - <https://stackoverflow.com/a/29026565/2085356>
   pub fn readline() -> (usize, String) {
     let mut temp_string_buffer: String = String::new();
-    // https://learning-rust.github.io/docs/e4.unwrap_and_expect.html
+    // <https://learning-rust.github.io/docs/e4.unwrap_and_expect.html>
     match stdin().read_line(&mut temp_string_buffer) {
       Ok(bytes_read) => {
         let guess: String = temp_string_buffer.trim().to_string(); // Remove any whitespace (including \n).
