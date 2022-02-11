@@ -96,6 +96,12 @@ mod tests {
 - [`?` operator](https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-question-mark-operator)
 - [Error handling](https://stevedonovan.github.io/rust-gentle-intro/6-error-handling.html)
 
+## Publishing crates, documentation, module re-exports
+
+- [Module re-exports](https://doc.rust-lang.org/book/ch14-02-publishing-to-crates-io.html#documentation-comments-as-tests)
+- [Documentation generation](https://doc.rust-lang.org/book/ch14-02-publishing-to-crates-io.html#making-useful-documentation-comments)
+- [Publish a crate](https://doc.rust-lang.org/book/ch14-02-publishing-to-crates-io.html#setting-up-a-cratesio-account)
+
 ## Testing
 
 - [Unit test mock cli args](https://stackoverflow.com/a/54594023/2085356)

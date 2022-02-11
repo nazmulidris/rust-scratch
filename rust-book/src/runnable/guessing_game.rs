@@ -20,11 +20,9 @@ use std::cmp::Ordering;
 
 use ansi_term::Colour::Blue;
 use rand::{thread_rng, Rng};
-use rust_example_lib::utils::color_text::color_text::print_header;
-use rust_example_lib::utils::color_text::color_text::styles::{
-  style_dimmed, style_error, style_primary, style_prompt,
+use rust_example_lib::utils::{
+  print_header, readline, style_dimmed, style_error, style_primary, style_prompt,
 };
-use rust_example_lib::utils::tty::tty::readline;
 
 pub fn run() {
   print_header("guessing_game");

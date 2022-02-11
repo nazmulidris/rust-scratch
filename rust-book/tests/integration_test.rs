@@ -1,6 +1,5 @@
 use ansi_term::Colour::Green;
-use rust_example_lib::utils::color_text::color_text::styles::style_primary;
-use rust_example_lib::utils::type_utils::type_utils::type_of;
+use rust_example_lib::utils::{style_primary, type_of};
 
 /// Rust book: https://doc.rust-lang.org/book/ch11-03-test-organization.html#the-tests-directory
 #[test]

@@ -15,8 +15,9 @@
  */
 
 pub mod tty {
-  use crate::utils::color_text::color_text::styles::style_error;
   use std::io::stdin;
+
+  use crate::utils::style_error;
 
   /// Return String not &str due to "struct lifetime"
   /// - <https://stackoverflow.com/a/29026565/2085356>
