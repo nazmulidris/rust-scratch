@@ -79,9 +79,13 @@ mod tests {
 
 # References
 
-## General
+## Books
 
 - [The Rust Programming Language book](https://doc.rust-lang.org/book/)
+- [Writing Rust in Easy English](https://fongyoong.github.io/easy_rust/Chapter_3.html)
+
+## General
+
 - [String, &String, &str](https://www.ameyalokare.com/rust/2017/10/12/rust-str-vs-String.html)
 - [std::fmt](https://doc.rust-lang.org/std/fmt/)
 - [Primitive data types](https://learning-rust.github.io/docs/a8.primitive_data_types.html)
@@ -95,6 +99,11 @@ mod tests {
 - [Roll your own typeof function](https://stackoverflow.com/a/58119924/2085356)
 - [`?` operator](https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-question-mark-operator)
 - [Error handling](https://stevedonovan.github.io/rust-gentle-intro/6-error-handling.html)
+
+## Mutability, concurrency, parallelism
+
+- [Box, RC, Arc, Cell, RefCell, Mutex](https://tekshinobi.com/rust-tips-box-rc-arc-cell-refcell-mutex)
+- [Arc & Mutex](https://aeshirey.github.io/code/2020/12/23/arc-mutex-in-rust.html)
 
 ## Publishing crates, documentation, module re-exports
 

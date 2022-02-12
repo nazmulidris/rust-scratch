@@ -47,4 +47,5 @@ fn main() {
   intermediate::lifetimes::run();
   intermediate::closures::run();
   intermediate::iterators::run();
+  intermediate::smart_pointers::run();
 }

@@ -20,3 +20,4 @@ pub mod traits;
 pub mod lifetimes;
 pub mod closures;
 pub mod iterators;
+pub mod smart_pointers;
