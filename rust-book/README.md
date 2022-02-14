@@ -82,7 +82,8 @@ mod tests {
 ## Books
 
 - [The Rust Programming Language book](https://doc.rust-lang.org/book/)
-- [Writing Rust in Easy English](https://fongyoong.github.io/easy_rust/Chapter_3.html)
+- [Easy Rust book](https://fongyoong.github.io/easy_rust/)
+- [Rust style guide](https://doc.rust-lang.org/1.0.0/style/ownership/builders.html)
 
 ## General
 

@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-// Disable warnings for dead code & unused imports since they're needed by tests.
+//! Disable warnings for dead code, unused imports, etc. since they're needed by tests. This applies
+//! to all the files that is touched by `main.rs`.
 #![allow(dead_code)]
 #![allow(unused_imports)]
+#![allow(unused_variables)]
 
 // Attach the following files to the binary module.
 mod basics; // This is a module that contains many other files.
