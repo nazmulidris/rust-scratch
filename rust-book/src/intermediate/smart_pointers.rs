@@ -32,7 +32,7 @@ use std::{
   fmt::Display,
   ops::Deref,
   rc::{Rc, Weak},
-  sync::{Arc, Mutex},
+  sync::{Arc, Mutex, RwLock},
 };
 
 pub fn run() {}
@@ -281,4 +281,48 @@ fn test_use_arc_mutex_for_concurrency_or_paralellism() {
   assert_eq!(ref_to_my_data.lock().unwrap().len(), 5);
   assert_eq!(ref_to_my_data.lock().unwrap()[0], 1);
   assert_eq!(*ref_to_my_data.lock().unwrap(), vec![1, 2, 3, 20, 30]);
+}
+
+/// `Arc` w/ `RwLock` is even better than using `Arc` w/ `Mutex`. It allows fine grained locking and
+/// interior mutability.
+/// 1. <https://fongyoong.github.io/easy_rust/Chapter_44.html>
+#[test]
+fn test_use_arc_rwlock_for_concurrency_or_paralellism() {
+  fn wrap_my_data<T>(arg: &[T]) -> Arc<RwLock<Vec<T>>>
+  where
+    T: Clone + Sized,
+  {
+    let my_data = arg.to_vec();
+    let my_data = RwLock::new(my_data);
+    let my_data = Arc::new(my_data);
+    my_data
+  }
+
+  fn modify_my_data_1<T>(arg: Arc<RwLock<Vec<T>>>, value: T)
+  where
+    T: Clone + Sized,
+  {
+    if let Ok(mut my_data) = arg.write() {
+      my_data.push(value);
+    }
+  }
+
+  fn modify_my_data_2<T>(arg: Arc<RwLock<Vec<T>>>, value: T)
+  where
+    T: Clone + Sized,
+  {
+    if let Ok(mut my_data) = arg.write() {
+      my_data.push(value);
+    }
+  }
+
+  let ref_to_my_data = wrap_my_data(&[1, 2, 3]);
+  assert_eq!(ref_to_my_data.read().unwrap().len(), 3);
+
+  modify_my_data_1(ref_to_my_data.clone(), 20);
+  modify_my_data_1(ref_to_my_data.clone(), 30);
+
+  assert_eq!(ref_to_my_data.read().unwrap().len(), 5);
+  assert_eq!(ref_to_my_data.read().unwrap()[0], 1);
+  assert_eq!(*ref_to_my_data.read().unwrap(), vec![1, 2, 3, 20, 30]);
 }
