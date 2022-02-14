@@ -40,6 +40,8 @@ fn main() {
   data_structures::vector::run();
   data_structures::strings::run();
   data_structures::hashmap::run();
+  data_structures::memo::run(); // TODO: Move closures.rs#test_memoize_closure#LazyMemoValues here.
+  data_structures::tree::run(); // TODO: Move smart_pointers.rs#test_weak_refs#Node here.
 
   intermediate::error_handling::run();
   intermediate::generic_types::run();

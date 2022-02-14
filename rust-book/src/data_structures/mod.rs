@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
-pub mod vector;
-pub mod strings;
 pub mod hashmap;
+pub mod memo;
+pub mod strings;
+pub mod tree;
+pub mod vector;
