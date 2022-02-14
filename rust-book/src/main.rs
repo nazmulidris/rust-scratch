@@ -20,9 +20,10 @@
 
 // Attach the following files to the binary module.
 mod basics; // This is a module that contains many other files.
+mod concurrency;
 mod data_structures; // This is a module that contains many other files.
 mod intermediate; // This is a module that contains many other files.
-mod runnable; // This is a module that contains many other files.
+mod runnable; // This is a module that contains many other files. // This is a module that contains many other files.
 
 fn main() {
   // The following have runnable code.
@@ -50,4 +51,9 @@ fn main() {
   intermediate::closures::run();
   intermediate::iterators::run();
   intermediate::smart_pointers::run();
+
+  concurrency::threads::run(); // TODO: Chapter 16.
+  concurrency::message_passing::run(); // TODO: Chapter 16.
+  concurrency::shared_state::run(); // TODO: Chapter 16.
+  concurrency::sync_send_traits::run(); // TODO: Chapter 16.
 }
