@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="10.574 27.135 374.9 271.226" xmlns="http://www.w3.org/2000/svg" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <bx:grid x="0" y="0" width="17.199" height="17.199"/>
+    <linearGradient gradientUnits="userSpaceOnUse" x1="198.024" y1="27.135" x2="198.024" y2="179.17" id="gradient-0" gradientTransform="matrix(1, 0, 0, 1.786938, 0, -21.353558)">
+      <stop offset="0" style="stop-color: rgba(218, 207, 149, 1)"/>
+      <stop offset="1" style="stop-color: rgba(192, 172, 73, 1)"/>
+    </linearGradient>
+  </defs>
+  <rect x="10.574" y="27.135" width="374.9" height="271.677" style="fill: url(#gradient-0);">
+    <title>bg</title>
+  </rect>
+  <g>
+    <rect x="23.237" y="59.353" width="217.549" height="87.244" style="fill: none; stroke: rgb(88, 107, 164);"/>
+    <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="23.281" y="53.052">node-parent</text>
+    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="34.373" y="84.023">Parent: none</text>
+    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="34.373" y="114.023">Children: [Rc&lt;node-child&gt;]</text>
+  </g>
+  <g transform="matrix(1, 0, 0, 1, 113.682007, 138.536224)">
+    <rect x="23.237" y="59.353" width="224.26" height="87.244" style="fill: none; stroke: rgb(88, 107, 164);"/>
+    <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 15px;" x="23.281" y="53.052">node-child</text>
+    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="34.373" y="84.023">Parent: Weak&lt;node-parent&gt;</text>
+    <text style="fill: rgb(175, 58, 157); font-family: Arial, sans-serif; paint-order: fill; white-space: pre; font-size: 15px;" x="34.373" y="114.023">Children: []</text>
+  </g>
+  <path d="M 466.99 188.463 H 525.333 L 525.333 182.015 L 555.99 190.613 L 525.333 199.211 L 525.333 192.762 H 466.99 V 188.463 Z" style="fill: rgb(178, 136, 220);" transform="matrix(-0.625867, -0.77993, 0.792363, -0.610373, 421.853912, 692.818237)" bx:shape="arrow 466.99 182.015 89 17.196 4.299 30.657 0 1@d78ae92e"/>
+  <text style="fill: rgb(62, 162, 12); font-family: Arial, sans-serif; white-space: pre;" x="248.331" y="186.023">DOES NOT OWN</text>
+  <path d="M 466.991 188.463 H 525.334 L 525.334 182.015 L 555.991 190.613 L 525.334 199.211 L 525.334 192.762 H 466.991 V 188.463 Z" style="fill: rgb(178, 136, 220);" transform="matrix(0.586774, 0.809751, -0.821407, 0.570688, 3.708369, -374.007385)" bx:shape="arrow 466.991 182.015 89 17.196 4.299 30.657 0 1@7d0001ce"/>
+  <text style="fill: rgb(228, 22, 22); font-family: Arial, sans-serif; white-space: pre;" x="103.194" y="142.726">OWNS</text>
+</svg>

@@ -18,4 +18,8 @@ pub mod hashmap;
 pub mod memo;
 pub mod strings;
 pub mod tree;
+pub mod tree_fail;
 pub mod vector;
+pub mod tree_next;
+pub mod tree_simple;
+pub mod tree_memory_arena;

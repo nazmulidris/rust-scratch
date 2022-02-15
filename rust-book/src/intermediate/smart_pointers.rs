@@ -31,8 +31,8 @@ use std::{
   cell::RefCell,
   fmt::Display,
   ops::Deref,
-  rc::{Rc, Weak},
-  sync::{Arc, Mutex, RwLock},
+  rc::Rc,
+  sync::{Arc, Mutex, RwLock, Weak},
 };
 
 pub fn run() {}
@@ -197,45 +197,78 @@ fn test_use_rc_with_refcell_for_multiple_owners_of_mutable_data_no_concurrency_o
 /// references!
 #[test]
 fn test_weak_refs() {
+  // TODO: move this into tree.rs *delete tree-fail.rs*
+  // TODO: impl tree walking, find w/ comparator lambda, and print out the tree.
+  // TODO: impl delete, easy insert.
+  // TODO: impl nodelist (find multiple nodes) & return iterator.
+  // TODO: impl add siblings to node.
+
+  // TODO: convert RefCell -> RwLock
+  type NodeRef<T> = Arc<Node<T>>;
+  type Parent<T> = RefCell<Weak<Node<T>>>; // not `RefCell<<Rc<Node>>>` which would cause memory leak.
+  type Children<T> = RefCell<Vec<NodeRef<T>>>;
+
   #[derive(Debug)]
-  struct Node {
-    value: i32,
-    parent: RefCell<Weak<Node>>, // not `RefCell<<Rc<Node>>>` which would cause memory leak.
-    children: RefCell<Vec<Rc<Node>>>,
+  struct Node<T> {
+    value: T,
+    parent: Parent<T>,
+    children: Children<T>,
   }
 
-  let leaf = Rc::new(Node {
-    value: 3,
-    parent: RefCell::new(Weak::new()),
-    children: RefCell::new(vec![]),
-  });
+  // TODO: start add Tree w/ root & methods.
+  struct Tree<T> {
+    root: NodeRef<T>,
+  }
+
+  impl<T> Tree<T> {
+    fn new(root: NodeRef<T>) -> Tree<T> {
+      Tree { root }
+    }
+  }
+  // TODO: end add Tree w/ root & methods.
+
+  /// `child_node.parent` is set to weak reference to `parent_node`.
+  fn set_parent<T>(child: &NodeRef<T>, parent: &NodeRef<T>) {
+    *child.parent.borrow_mut() = Arc::downgrade(&parent);
+  }
+
+  fn add_child<T>(child: &NodeRef<T>, parent: &NodeRef<T>) {
+    parent.children.borrow_mut().push(child.clone());
+  }
+
+  fn create_node<T>(value: T) -> NodeRef<T> {
+    let node = Node {
+      value,
+      parent: RefCell::new(Weak::new()),  // Basically None.
+      children: RefCell::new(Vec::new()), // Basically [].
+    };
+    let node_ref = Arc::new(node);
+    node_ref
+  }
+
+  let child_node: NodeRef<i32> = create_node(3);
 
   {
-    let branch = Rc::new(Node {
-      value: 5,
-      parent: RefCell::new(Weak::new()),
-      children: RefCell::new(vec![leaf.clone()]),
-    });
+    let parent_node: NodeRef<i32> = create_node(5);
+    add_child(&child_node, &parent_node);
+    set_parent(&child_node, &parent_node);
 
-    // `leaf.parent` is set to weak reference to `branch`.
-    *leaf.parent.borrow_mut() = Rc::downgrade(&branch);
+    assert_eq!(Arc::strong_count(&child_node), 2); // `child_node` has 2 strong references.
+    assert_eq!(Arc::weak_count(&child_node), 0);
 
-    assert_eq!(Rc::strong_count(&leaf), 2); // `leaf` has 2 strong references.
-    assert_eq!(Rc::weak_count(&leaf), 0);
+    assert_eq!(Arc::strong_count(&parent_node), 1); // `parent_node` has 1 strong reference.
+    assert_eq!(Arc::weak_count(&parent_node), 1); // `parent_node` also has 1 weak reference.
 
-    assert_eq!(Rc::strong_count(&branch), 1); // `branch` has 1 strong reference.
-    assert_eq!(Rc::weak_count(&branch), 1); // `branch` also has 1 weak reference.
+    assert!(child_node.parent.borrow().upgrade().is_some());
+    assert_eq!(child_node.parent.borrow().upgrade().unwrap().value, 5);
+  } // `parent_node` is dropped here.
 
-    assert!(leaf.parent.borrow().upgrade().is_some());
-    assert_eq!(leaf.parent.borrow().upgrade().unwrap().value, 5);
-  } // `branch` is dropped here.
+  // `child_node`'s parent is now `None`.
+  assert!(child_node.parent.borrow().upgrade().is_none());
+  assert_eq!(child_node.value, 3);
 
-  // `leaf`'s parent is now `None`.
-  assert!(leaf.parent.borrow().upgrade().is_none());
-  assert_eq!(leaf.value, 3);
-
-  assert_eq!(Rc::strong_count(&leaf), 1); // `leaf` has 1 strong references.
-  assert_eq!(Rc::weak_count(&leaf), 0); // `leaf` still has no weak references.
+  assert_eq!(Arc::strong_count(&child_node), 1); // `child_node` has 1 strong references.
+  assert_eq!(Arc::weak_count(&child_node), 0); // `child_node` still has no weak references.
 }
 
 /// `Arc` with `Mutex` is the parallel and concurrent version of the `Rc` and `RefCell` test (above
