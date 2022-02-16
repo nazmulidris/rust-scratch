@@ -7,13 +7,10 @@
     {
       "type": "lldb",
       "request": "launch",
+      "sourceLanguages": ["rust"],
       "name": "Debug executable 'rust-example'",
       "cargo": {
-        "args": [
-          "build",
-          "--bin=rust-example",
-          "--package=rust-example"
-        ],
+        "args": ["build", "--bin=rust-example", "--package=rust-example"],
         "filter": {
           "name": "rust-example",
           "kind": "bin"
@@ -25,14 +22,10 @@
     {
       "type": "lldb",
       "request": "launch",
+      "sourceLanguages": ["rust"],
       "name": "Debug unit tests in executable 'rust-example'",
       "cargo": {
-        "args": [
-          "test",
-          "--no-run",
-          "--bin=rust-example",
-          "--package=rust-example"
-        ],
+        "args": ["test", "--no-run", "--bin=rust-example", "--package=rust-example"],
         "filter": {
           "name": "rust-example",
           "kind": "bin"
