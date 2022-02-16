@@ -14,191 +14,118 @@
  limitations under the License.
 */
 
-//! # File and Folder data structure
-//! - Rust book use of enums that are struct-like: <https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html#:~:text=this%20one%20has%20a%20wide%20variety%20of%20types%20embedded%20in%20its%20variants>
+//! # Tree data structure
+//!
+//! - Rust book use of enums that are struct-like:
+//!   <https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html#:~:text=this%20one%20has%20a%20wide%20variety%20of%20types%20embedded%20in%20its%20variants>
 //! - Examples of enums that are struct-like: <https://stackoverflow.com/q/29088633/2085356>
 //!   - Approach 1: <https://stackoverflow.com/q/29088633/2085356>
 //!   - Approach 2: <https://stackoverflow.com/a/29101091/2085356>
 //! - Easy Rust book: <https://fongyoong.github.io/easy_rust/Chapter_25.html>
 //! - `From` trait: <https://stackoverflow.com/a/42278050/2085356>
-//! - Don't try to write Java in Rust: <https://users.rust-lang.org/t/passing-self-as-a-parameter/18069>
+//! - Don't try to write Java in Rust:
+//!   <https://users.rust-lang.org/t/passing-self-as-a-parameter/18069>
 //!
-//! # Visualization
-//! ![](../../docs/weak-ref.svg)
+//! # Weak refs for child's parent (ownership edge vs non-ownership edge)
+//!
+//! - Diagram
+//!   - <https://github.com/nazmulidris/rust_scratch/blob/main/rust-book/docs/weak-ref.svg>
+//!   - [SVG file](../../docs/weak-ref.svg)
+//! - <https://doc.rust-lang.org/book/ch15-06-reference-cycles.html#adding-a-reference-from-a-child-to-its-parent>
+//! - Thinking about the relationships another way, a parent node should own its children: if a
+//!   parent node is dropped, its child nodes should be dropped as well. However, a child should not
+//!   own its parent: if we drop a child node, the parent should still exist. This is a case for weak
+//!   references!
+//!
+//! # Other implementations
+//!
+//! 1. RBTree
+//!   - Code:
+//!     <https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=9444cbeadcfdbef32c664ae2946e636a>
+//!   - SO answer: <https://stackoverflow.com/a/65179837/2085356>
+//! 2. Simple: <https://gist.github.com/aidanhs/5ac9088ca0f6bdd4a370>
+//!
+
 use core::fmt::Debug;
 use std::{
   borrow::{Borrow, BorrowMut},
   cell::RefCell,
-  rc::{Rc, Weak},
+  sync::{Arc, Weak},
 };
 
 pub fn run() {}
 
-// Use type aliases to enhance readability.
-type Parent = RefCell<WeakNodeRef>;
-type Children = RefCell<Vec<NodeRef>>;
-type WeakNodeRef = Weak<dyn NodeIF>;
-type NodeRef = Rc<dyn NodeIF>;
+// TODO: impl tree walking, find w/ comparator lambda, and print out the tree.
+// TODO: impl delete, easy insert.
+// TODO: impl nodelist (find multiple nodes) & return iterator.
+// TODO: impl add siblings to node.
 
-struct FileNode {
-  name: String,
+// TODO: convert RefCell -> RwLock
+type NodeRef<T> = Arc<Node<T>>;
+type Parent<T> = RefCell<Weak<Node<T>>>; // not `RefCell<<Rc<Node>>>` which would cause memory leak.
+type Children<T> = RefCell<Vec<NodeRef<T>>>;
+
+#[derive(Debug)]
+struct Node<T> {
+  value: T,
+  parent: Parent<T>,
+  children: Children<T>,
 }
 
-struct FolderNode {
-  name: String,
-  parent: Parent,
-  children: Children,
+// TODO: start add Tree w/ root & methods.
+struct Tree<T> {
+  root: NodeRef<T>,
 }
 
-trait NodeIF {
-  fn get_name(self: &Self) -> &str;
-  fn get_parent(self: &Self) -> Parent;
-  fn get_children(self: &Self) -> Children;
-}
-
-impl NodeIF for FileNode {
-  fn get_name(self: &Self) -> &str {
-    &self.name
-  }
-
-  fn get_parent(self: &Self) -> Parent {
-    RefCell::new(Weak::<FileNode>::new())
-  }
-
-  fn get_children(self: &Self) -> Children {
-    RefCell::new(Vec::<NodeRef>::new())
+impl<T> Tree<T> {
+  fn new(root: NodeRef<T>) -> Tree<T> {
+    Tree { root }
   }
 }
+// TODO: end add Tree w/ root & methods.
 
-impl FileNode {
-  fn new(name: &str) -> NodeRef {
-    Rc::new(Self {
-      name: name.to_string(),
-    })
-  }
+/// `child_node.parent` is set to weak reference to `parent_node`.
+fn set_parent<T>(child: &NodeRef<T>, parent: &NodeRef<T>) {
+  *child.parent.borrow_mut() = Arc::downgrade(&parent);
 }
 
-impl NodeIF for FolderNode {
-  fn get_name(self: &Self) -> &str {
-    &self.name
-  }
-
-  fn get_parent(self: &Self) -> Parent {
-    self.parent.clone()
-  }
-
-  fn get_children(self: &Self) -> Children {
-    self.children.clone()
-  }
+fn add_child<T>(child: &NodeRef<T>, parent: &NodeRef<T>) {
+  parent.children.borrow_mut().push(child.clone());
 }
 
-impl FolderNode {
-  fn new(name: &str) -> NodeRef {
-    let parent = RefCell::new(Weak::<FolderNode>::new());
-    let children = RefCell::new(vec![]);
-    Rc::new(Self {
-      name: name.to_string(),
-      parent,
-      children,
-    })
-  }
-
-  fn add_child(self: &Self, child: &NodeRef) {
-    self.children.borrow_mut().push(child.clone());
-  }
-}
-
-impl Debug for dyn NodeIF {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    write!(
-      f,
-      "\n  NodeIF -> {{ name: {}, parent: {:?}, children: {:?} }}",
-      self.get_name(),
-      self.get_parent().borrow().weak_count(),
-      self.get_children().borrow().len()
-    )
-  }
+fn create_node<T>(value: T) -> NodeRef<T> {
+  let node = Node {
+    value,
+    parent: RefCell::new(Weak::new()),  // Basically None.
+    children: RefCell::new(Vec::new()), // Basically [].
+  };
+  let node_ref = Arc::new(node);
+  node_ref
 }
 
 #[test]
-fn test_can_create_file() {
-  let f_1: NodeRef = FileNode::new("file");
-  assert_eq!(f_1.get_name(), "file");
-  assert!(f_1.get_parent().borrow().upgrade().is_none());
-  assert!(f_1.get_children().borrow().is_empty());
-}
-
-#[test]
-fn test_can_create_folder() {
-  let f_2: NodeRef = FolderNode::new("folder");
-  assert_eq!(f_2.get_name(), "folder");
-  assert!(f_2.get_parent().borrow().upgrade().is_none());
-  assert!(f_2.get_children().borrow().is_empty());
-}
-
-#[test]
-fn test_can_manipulate_tree() {
-  let root_dir_rc: NodeRef = FolderNode::new("root");
-  let user_dir_rc: NodeRef = FolderNode::new("user");
+fn test_tree() {
+  let child_node: NodeRef<i32> = create_node(3);
 
   {
-    let file1_rc: NodeRef = FileNode::new("root_dir_file_1");
-    let file2_rc: NodeRef = FileNode::new("root_dir_file_2");
+    let parent_node: NodeRef<i32> = create_node(5);
+    add_child(&child_node, &parent_node);
+    set_parent(&child_node, &parent_node);
 
-    let file3_rc: NodeRef = FileNode::new("user_dir_file3");
-    let file4_rc: NodeRef = FileNode::new("user_dir_file4");
+    assert_eq!(Arc::strong_count(&child_node), 2); // `child_node` has 2 strong references.
+    assert_eq!(Arc::weak_count(&child_node), 0);
 
-    // Put 2 files in root dir.
-    {
-      Tree::add_child(&file1_rc, &root_dir_rc);
-      Tree::add_child(&file2_rc, &root_dir_rc);
-    }
+    assert_eq!(Arc::strong_count(&parent_node), 1); // `parent_node` has 1 strong reference.
+    assert_eq!(Arc::weak_count(&parent_node), 1); // `parent_node` also has 1 weak reference.
 
-    // Put 2 files in user dir.
-    {
-      Tree::add_child(&file3_rc, &user_dir_rc);
-      Tree::add_child(&file4_rc, &user_dir_rc);
-    }
-    // Put user dir in root dir.
-    {
-      Tree::add_child(&user_dir_rc, &root_dir_rc);
-    }
+    assert!(child_node.parent.borrow().upgrade().is_some());
+    assert_eq!(child_node.parent.borrow().upgrade().unwrap().value, 5);
+  } // `parent_node` is dropped here.
 
-    // Assertions.
-    assert!(file1_rc.get_parent().borrow().upgrade().is_none());
-    assert!(file2_rc.get_parent().borrow().upgrade().is_none());
-    assert!(file3_rc.get_parent().borrow().upgrade().is_none());
-    assert!(file4_rc.get_parent().borrow().upgrade().is_none());
-  }
+  // `child_node`'s parent is now `None`.
+  assert!(child_node.parent.borrow().upgrade().is_none());
+  assert_eq!(child_node.value, 3);
 
-  // Assertions.
-  assert_eq!(root_dir_rc.get_children().borrow().len(), 3);
-  assert_eq!(user_dir_rc.get_children().borrow().len(), 2);
-
-  assert!(root_dir_rc.get_parent().borrow().upgrade().is_none());
-
-  assert!(user_dir_rc.get_parent().borrow().upgrade().is_some());
-  assert!(
-    user_dir_rc
-      .get_parent()
-      .borrow()
-      .upgrade()
-      .as_ref()
-      .unwrap()
-      .get_name()
-      == "root"
-  );
-}
-
-// TODO: The following struct might be used to make a cleaner API.
-pub struct Tree {
-  root: FolderNode,
-}
-
-impl Tree {
-  fn add_child(child_rc: &NodeRef, parent_rc: &NodeRef) {
-    parent_rc.get_children().borrow_mut().push(child_rc.clone());
-    // child.set_parent(parent)
-    *child_rc.get_parent().borrow_mut() = Rc::downgrade(parent_rc);
-  }
+  assert_eq!(Arc::strong_count(&child_node), 1); // `child_node` has 1 strong references.
+  assert_eq!(Arc::weak_count(&child_node), 0); // `child_node` still has no weak references.
 }
