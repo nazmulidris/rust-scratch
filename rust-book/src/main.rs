@@ -54,6 +54,7 @@ fn main() {
   intermediate::closures::run();
   intermediate::iterators::run();
   intermediate::smart_pointers::run();
+  intermediate::builders::run();
 
   concurrency::threads::run(); // TODO: Chapter 16.
   concurrency::message_passing::run(); // TODO: Chapter 16.
