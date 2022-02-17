@@ -50,11 +50,6 @@
 //! 2. Simple: <https://gist.github.com/aidanhs/5ac9088ca0f6bdd4a370>
 //!
 
-// TODO: impl tree walking, find w/ comparator lambda, and print out the tree.
-// TODO: impl delete, easy insert.
-// TODO: impl nodelist (find multiple nodes) & return iterator.
-// TODO: impl add siblings to node.
-
 use core::fmt::Debug;
 use rust_book_lib::utils::{print_header, style_dimmed, style_error, style_primary, style_prompt};
 use std::{
@@ -66,9 +61,10 @@ use std::{
 
 pub fn run() {}
 
-type NodeArcRef<T> = Arc<Node<T>>;
-type Children<T> = RwLock<Vec<NodeArcRef<T>>>;
-type Parent<T> = RwLock<Weak<Node<T>>>; // not `RwLock<<Rc<Node<T>>>>` which would cause memory leak.
+type NodeRef<T> = Arc<Node<T>>;
+type WeakNodeRef<T> = Weak<Node<T>>;
+type Children<T> = RwLock<Vec<NodeRef<T>>>;
+type Parent<T> = RwLock<WeakNodeRef<T>>; // not `RwLock<<Rc<Node<T>>>>` which would cause memory leak.
 
 /// This struct is wrapped in an [`Arc`] to allow for multiple owners of the same data. It is never
 /// used by itself.
@@ -80,6 +76,139 @@ where
   value: T,
   parent: Parent<T>,
   children: Children<T>,
+}
+
+impl<T> Node<T>
+where
+  T: Display,
+{
+  fn new(value: T) -> Self {
+    Node {
+      value,
+      parent: RwLock::new(Weak::new()),
+      children: RwLock::new(Vec::new()),
+    }
+  }
+
+  /// 🔏 Note - this acquires a write lock.
+  fn set_parent(self: &Self, parent: &NodeRef<T>) {
+    let mut my_parent = self.parent.write().unwrap();
+    *my_parent = Arc::downgrade(parent);
+  } // `my_parent` guard dropped.
+
+  /// 🔏 Note - this acquires a write lock.
+  fn add_child(self: &Self, child: &NodeRef<T>) {
+    let mut my_children = self.children.write().unwrap();
+    my_children.push(Arc::clone(child));
+  } // `my_children` guard dropped.
+
+  /// The parent is backed by a `Weak` ref.
+  /// 🔒 Note - this acquires a read lock.
+  fn get_parent(self: &Self) -> Option<NodeRef<T>> {
+    let my_parent_weak = self.parent.read().unwrap();
+    my_parent_weak.upgrade()
+  } // `my_parent_weak` guard dropped.
+
+  fn has_parent(self: &Self) -> bool {
+    self.get_parent().is_some()
+  }
+}
+
+#[derive(Debug)]
+struct NodeRefWrapper<T: Display> {
+  my_ref: NodeRef<T>,
+}
+impl<T> NodeRefWrapper<T>
+where
+  T: Display,
+{
+  fn new(value: T) -> NodeRefWrapper<T> {
+    let new_node = Node::new(value);
+    let node_arc_ref = Arc::new(new_node);
+    NodeRefWrapper {
+      my_ref: node_arc_ref,
+    }
+  }
+
+  /// This can't be moved into a (non-static) method of `Node` because it needs a `&NodeRef<T>`
+  /// which isn't available in `Node`.
+  fn add_child_and_update_its_parent(self: &Self, child: &NodeRefWrapper<T>) {
+    self.my_ref.add_child(child.my_ref.borrow());
+    child.my_ref.set_parent(self.my_ref.borrow());
+  }
+}
+
+#[test]
+fn test_tree_low_level_node_manipulation() {
+  let child_node = NodeRefWrapper::new(3);
+
+  {
+    let parent_node = NodeRefWrapper::new(5);
+    parent_node.add_child_and_update_its_parent(&child_node);
+    // NodeRefWrapper::add_child_and_update_its_parent(&parent_node.my_ref, &child_node.my_ref);
+
+    println!("{}: {:#?}", style_primary("parent_node"), parent_node); // Pretty print.
+    println!("{}: {:#?}", style_primary("child_node"), child_node); // Pretty print.
+
+    assert_eq!(Arc::strong_count(&child_node.my_ref), 2); // `child_node` has 2 strong references.
+    assert_eq!(Arc::weak_count(&child_node.my_ref), 0);
+
+    assert_eq!(Arc::strong_count(&parent_node.my_ref), 1); // `parent_node` has 1 strong reference.
+    assert_eq!(Arc::weak_count(&parent_node.my_ref), 1); // `parent_node` also has 1 weak reference.
+
+    assert!(child_node.my_ref.has_parent());
+    assert_eq!(child_node.my_ref.get_parent().unwrap().value, 5);
+  } // `parent_node` is dropped here.
+
+  // `child_node`'s parent is now `None`, its an orphan.
+  assert!(!child_node.my_ref.has_parent());
+  assert_eq!(child_node.my_ref.value, 3);
+
+  assert_eq!(Arc::strong_count(&child_node.my_ref), 1); // `child_node` has 1 strong references.
+  assert_eq!(Arc::weak_count(&child_node.my_ref), 0); // `child_node` still has no weak references.
+}
+
+// TODO: impl tree walking, find w/ comparator lambda, and print out the tree.
+// TODO: impl delete, easy insert.
+// TODO: impl nodelist (find multiple nodes) & return iterator.
+// TODO: impl add siblings to node.
+
+#[derive(Debug)]
+struct Tree<T>
+where
+  T: Display,
+{
+  root: NodeRefWrapper<T>,
+}
+
+impl<T> Tree<T>
+where
+  T: Display,
+{
+  fn new(value: T) -> Tree<T> {
+    Tree {
+      root: NodeRefWrapper::new(value),
+    }
+  }
+  fn add_child(&self, value: T) -> NodeRef<T> {
+    let child_node = NodeRefWrapper::new(value);
+    self.root.add_child_and_update_its_parent(&child_node);
+    child_node.my_ref.clone()
+  }
+}
+
+#[test]
+fn test_tree_simple_api() {
+  let tree = Tree::new(5);
+  let child_node = tree.add_child(3);
+  assert_eq!(child_node.value, 3);
+  assert_eq!(tree.root.my_ref.value, 5);
+  assert_eq!(tree.root.my_ref.children.read().unwrap().len(), 1);
+  assert_eq!(
+    child_node.value,
+    tree.root.my_ref.children.read().unwrap()[0].value
+  );
+  println!("{}: {:#?}", style_primary("tree"), tree); // Pretty print.
 }
 
 impl<T> fmt::Debug for Node<T>
@@ -99,98 +228,5 @@ where
       .field("parent", &parent_msg)
       .field("children", &self.children)
       .finish()
-  }
-}
-
-/// `child.parent` = weak reference to `parent`.
-/// 🔏 Note - this acquires a write lock.
-fn set_parent<T: Display>(this: &NodeArcRef<T>, parent: &NodeArcRef<T>) {
-  {
-    let mut childs_parent = this.parent.write().unwrap();
-    *childs_parent = Arc::downgrade(&parent);
-  } // `childs_parent` guard dropped.
-}
-
-/// `parent.children`.push(strong reference to `child`).
-/// 🔏 Note - this acquires a write lock.
-fn add_child<T: Display>(this: &NodeArcRef<T>, child: &NodeArcRef<T>) {
-  {
-    let parents_children = &mut this.children.write().unwrap();
-    parents_children.push(child.clone());
-  } // `parents_children` guard dropped.
-  set_parent(&child, &this);
-}
-
-fn create_node<T: Display>(value: T) -> NodeArcRef<T> {
-  let new_node = Node {
-    value,
-    parent: RwLock::new(Weak::new()),  // Basically None.
-    children: RwLock::new(Vec::new()), // Basically [].
-  };
-  let node_arc_ref = Arc::new(new_node);
-  node_arc_ref
-}
-
-/// The parent is backed by a `Weak` ref.
-fn has_parent<T: Display>(node: &NodeArcRef<T>) -> bool {
-  get_parent(node).is_some()
-}
-
-/// The parent is backed by a `Weak` ref.
-/// 🔒 Note - this acquires a read lock.
-fn get_parent<T: Display>(node: &NodeArcRef<T>) -> Option<NodeArcRef<T>> {
-  {
-    let parent_weak = node.parent.read().unwrap();
-    if let Some(parent) = parent_weak.upgrade() {
-      Some(parent)
-    } else {
-      None
-    }
-  } // `parent_weak` guard dropped.
-}
-
-#[test]
-fn test_tree() {
-  let child_node = create_node(3);
-
-  {
-    let parent_node = create_node(5);
-    add_child(&parent_node, &child_node);
-
-    println!("{}: {:#?}", style_primary("parent_node"), parent_node); // Pretty print.
-    println!("{}: {:#?}", style_primary("child_node"), child_node); // Pretty print.
-
-    assert_eq!(Arc::strong_count(&child_node), 2); // `child_node` has 2 strong references.
-    assert_eq!(Arc::weak_count(&child_node), 0);
-
-    assert_eq!(Arc::strong_count(&parent_node), 1); // `parent_node` has 1 strong reference.
-    assert_eq!(Arc::weak_count(&parent_node), 1); // `parent_node` also has 1 weak reference.
-
-    assert!(has_parent(&child_node));
-    assert_eq!(get_parent(&child_node).unwrap().value, 5);
-  } // `parent_node` is dropped here.
-
-  // `child_node`'s parent is now `None`, its an orphan.
-  assert!(!has_parent(&child_node));
-  assert_eq!(child_node.value, 3);
-
-  assert_eq!(Arc::strong_count(&child_node), 1); // `child_node` has 1 strong references.
-  assert_eq!(Arc::weak_count(&child_node), 0); // `child_node` still has no weak references.
-}
-
-// TODO: Create add Tree w/ root & methods.
-struct Tree<T>
-where
-  T: Display,
-{
-  root: NodeArcRef<T>,
-}
-
-impl<T> Tree<T>
-where
-  T: Display,
-{
-  fn new(root: NodeArcRef<T>) -> Tree<T> {
-    Tree { root }
   }
 }
