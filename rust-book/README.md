@@ -108,7 +108,8 @@ mod tests {
 
 ## Publishing crates, documentation, module re-exports
 
-- [Documentation syntax for links etc](https://doc.rust-lang.org/rustdoc/linking-to-items-by-name.html)
+- [Documentation syntax for links #1](https://doc.rust-langq.org/rustdoc/linking-to-items-by-name.html)
+- [Documentation syntax for links #2](https://stackoverflow.com/questions/31582064/how-to-link-to-other-fns-structs-enums-traits-in-rustdoc)
 - [Documentation generation](https://doc.rust-lang.org/book/ch14-02-publishing-to-crates-io.html#making-useful-documentation-comments)
 - [Module re-exports](https://doc.rust-lang.org/book/ch14-02-publishing-to-crates-io.html#documentation-comments-as-tests)
 - [Publish a crate](https://doc.rust-lang.org/book/ch14-02-publishing-to-crates-io.html#setting-up-a-cratesio-account)

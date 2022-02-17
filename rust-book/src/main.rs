@@ -45,7 +45,7 @@ fn main() {
   data_structures::hashmap::run();
   data_structures::memo::run(); // TODO: Move closures.rs#test_memoize_closure#LazyMemoValues here.
   data_structures::tree::run();
-  data_structures::tree_memory_arena::run();
+  data_structures::tree_memory_arena::run(); // TODO: work on this
 
   intermediate::error_handling::run();
   intermediate::generic_types::run();
