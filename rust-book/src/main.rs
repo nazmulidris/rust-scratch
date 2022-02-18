@@ -58,7 +58,7 @@ fn main() {
   intermediate::builders::run();
 
   concurrency::threads::run();
-  concurrency::message_passing::run(); // TODO: Chapter 16.
+  concurrency::message_passing::run();
   concurrency::shared_state::run(); // TODO: Chapter 16.
   concurrency::sync_send_traits::run(); // TODO: Chapter 16.
 }

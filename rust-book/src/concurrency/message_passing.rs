@@ -14,9 +14,121 @@
  limitations under the License.
 */
 
+//! Rust book: <https://doc.rust-lang.org/book/ch16-02-message-passing.html>
+//!
+//! In a way, channels in any programming language are similar to single ownership, because once you
+//! transfer a value down a channel, you can no longer use that value.
+//!
+//! You can move messages between threads. The messages are sent using channels. Messages are values
+//! that are in memory.
+//! 1. Each message is moved when sent.
+//! 2. Then it is moved again when received.
+//! 3. There can be many senders, but only one receiver.
+//!
+//! In contrast, shared memory concurrency is like multiple ownership: multiple threads can access
+//! the same memory location at the same time.
+
+use std::{
+  sync::mpsc::{self, Sender},
+  thread::{self, JoinHandle},
+  time::Duration,
+};
+
+use rust_book_lib::utils::{style_error, style_primary, style_prompt};
+
 pub fn run() {}
 
 #[test]
-fn test_name() {
+fn test_one_sender_one_receiver() {
+  let (send, recv) = mpsc::channel();
 
+  type Handles = Vec<JoinHandle<()>>;
+  let mut handles: Handles = vec![];
+
+  let payload_to_tx = "hi!".to_string();
+  handles.push(parallel_send_task(send.clone(), payload_to_tx));
+  // Can no longer access `payload` as it has been moved.
+
+  let payload_to_rx = blocking_single_receive_task(recv);
+  println!("Got: {}", style_prompt(&payload_to_rx));
+
+  wait_for_all(handles); // No need for this, just a safety.
+
+  fn parallel_send_task(tx: Sender<String>, payload: String) -> JoinHandle<()> {
+    thread::spawn(move || {
+      tx.send(payload).unwrap();
+      // Can no longer access `payload` as it has moved to the other thread.
+      println!("{}", style_primary("Sent message!"));
+    })
+  }
+
+  fn blocking_single_receive_task(rx: mpsc::Receiver<String>) -> String {
+    let received = rx.recv().unwrap();
+    received
+  }
+
+  fn wait_for_all(handles: Handles) {
+    for handle in handles {
+      handle.join().unwrap();
+    }
+  }
+}
+
+#[test]
+fn test_multiple_sender_one_receiver() {
+  let (send, recv) = mpsc::channel();
+
+  type Handles = Vec<JoinHandle<()>>;
+  let mut sender_handles: Handles = vec![];
+
+  // Parallel 1.
+  sender_handles.push(parallel_send_task(
+    send.clone(),
+    vec!["+ hi", "++ there", "+++ from", "++++ the", "+++++ thread"]
+      .into_iter()
+      .map(|s| format!("🎱{}", s))
+      .collect(),
+  ));
+
+  // Parallel 2.
+  sender_handles.push(parallel_send_task(
+    send.clone(),
+    vec!["+ hi", "++ there", "+++ from", "++++ the", "+++++ thread"]
+      .into_iter()
+      .rev()
+      .map(|s| format!("{}🎈", s))
+      .collect(),
+  ));
+
+  // Parallel 3.
+  let receiver_handle = parallel_recv_task(recv);
+
+  wait_for_all(sender_handles);
+
+  drop(send); // Break the channel. If this isn't dropped the receiver will wait forever.
+
+  receiver_handle.join().unwrap();
+
+  fn parallel_recv_task(rx: mpsc::Receiver<String>) -> JoinHandle<()> {
+    thread::spawn(move || {
+      for recieved in rx.iter() {
+        println!("{}", style_primary(recieved.as_str()));
+      }
+    })
+  }
+
+  fn parallel_send_task(tx: Sender<String>, vals: Vec<String>) -> JoinHandle<()> {
+    thread::spawn(move || {
+      for val in vals {
+        tx.send(val).unwrap();
+        thread::sleep(Duration::from_millis(5_00));
+      }
+    })
+  }
+
+  fn wait_for_all(handles: Handles) {
+    for handle in handles {
+      handle.join().unwrap();
+    }
+  }
 }
