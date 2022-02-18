@@ -57,7 +57,7 @@ fn main() {
   intermediate::smart_pointers::run();
   intermediate::builders::run();
 
-  concurrency::threads::run(); // TODO: Chapter 16.
+  concurrency::threads::run();
   concurrency::message_passing::run(); // TODO: Chapter 16.
   concurrency::shared_state::run(); // TODO: Chapter 16.
   concurrency::sync_send_traits::run(); // TODO: Chapter 16.

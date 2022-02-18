@@ -39,6 +39,16 @@
 					"label": ""
 				}
 			]
+		},
+		{
+			"path": "src/utils/color_text.rs",
+			"bookmarks": [
+				{
+					"line": 16,
+					"column": 0,
+					"label": ""
+				}
+			]
 		}
 	]
 }
