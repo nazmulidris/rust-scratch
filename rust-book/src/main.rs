@@ -37,6 +37,7 @@ fn main() {
   basics::variables::run();
   basics::control_flow::run();
   basics::ownership::run();
+
   basics::structs::run();
   basics::enum_variants::run();
 

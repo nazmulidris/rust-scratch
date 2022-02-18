@@ -1,0 +1,44 @@
+{
+	"files": [
+		{
+			"path": "src/main.rs",
+			"bookmarks": [
+				{
+					"line": 29,
+					"column": 0,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/intermediate/iterators.rs",
+			"bookmarks": [
+				{
+					"line": 133,
+					"column": 3,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/intermediate/closures.rs",
+			"bookmarks": [
+				{
+					"line": 108,
+					"column": 4,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/intermediate/builders.rs",
+			"bookmarks": [
+				{
+					"line": 6,
+					"column": 7,
+					"label": ""
+				}
+			]
+		}
+	]
+}
