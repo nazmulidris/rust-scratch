@@ -71,6 +71,24 @@ type Child<T> = NodeRef<T>;
 
 /// This struct holds underlying data. It shouldn't be created directly, instead use:
 /// [`NodeRefHolder`](struct@NodeRefHolder).
+///
+/// ```text
+/// NodeData
+///  | | |
+///  | | +- value: T ---------------------------------------+
+///  | |                                                    |
+///  | |                                        Simple onwership of value
+///  | |
+///  | +-- parent: RwLock<WeakNodeRef<T>> --------+
+///  |                                            |
+///  |                 This describes a non-ownership relationship.
+///  |                 When a node is dropped, its parent will not be dropped.
+///  |
+///  +---- children: RwLock<Vec<Child<T>>> ---+
+///                                           |
+///                 This describes an ownership relationship.
+///                 When a node is dropped its children will be dropped as well.
+/// ```
 pub struct NodeData<T>
 where
   T: Display,
@@ -90,15 +108,21 @@ where
 ///
 /// ```text
 /// NodeRefHolder { strong_ref: Arc<NodeData> }
-///      ▲                ▲
-///      │                │
-///      │     This atomic ref owns the
-///      │     `NodeData` & is shared
-///      │
-///  1. Has methods to manipulate parent and children.
-///  2. When it is dropped, if there are other `Arc`s
-///     pointing to the same `NodeData`, then the
-///    `NodeData` will not be dropped.
+///    ▲                 ▲
+///    │                 │
+///    │      This atomic ref owns the
+///    │      `NodeData` & is shared
+///    │
+///    1. Has methods to manipulate nodes and their children.
+///
+///    2. When it is dropped, if there are other `Arc`s (shared via
+///       `get_internal_ref_copy()`) pointing to the same underlying
+///       `NodeData`, then the `NodeData` will not be dropped.
+///
+///    3. This struct is necessary in order for `add_child_and_update_its_parent`
+///       to work. Some pointers need to be swapped between 2 nodes for this work
+///       (and one of these pointers is a weak one). It is not possible to do this
+///       using two `NodeData` objects, without wrapping them in `Arc`s.
 /// ```
 
 #[derive(Debug)]
