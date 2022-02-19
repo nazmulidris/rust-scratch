@@ -121,7 +121,7 @@ fn test_multiple_sender_one_receiver() {
     thread::spawn(move || {
       for val in vals {
         tx.send(val).unwrap();
-        thread::sleep(Duration::from_millis(5_00));
+        thread::sleep(Duration::from_millis(50));
       }
     })
   }

@@ -61,16 +61,16 @@ use std::{
 
 pub fn run() {}
 
-type NodeRef<T> = Arc<NodeData<T>>;
-type WeakNodeRef<T> = Weak<NodeData<T>>;
+type NodeDataRef<T> = Arc<NodeData<T>>;
+type WeakNodeNodeRef<T> = Weak<NodeData<T>>;
 /// Parent relationship is one of non-ownership.
-type Parent<T> = RwLock<WeakNodeRef<T>>; // not `RwLock<NodeRef<T>>` which would cause memory leak.
+type Parent<T> = RwLock<WeakNodeNodeRef<T>>; // not `RwLock<NodeDataRef<T>>` which would cause memory leak.
 /// Children relationship is one of ownership.
 type Children<T> = RwLock<Vec<Child<T>>>;
-type Child<T> = NodeRef<T>;
+type Child<T> = NodeDataRef<T>;
 
 /// This struct holds underlying data. It shouldn't be created directly, instead use:
-/// [`NodeRefHolder`](struct@NodeRefHolder).
+/// [`Node`](struct@Node).
 ///
 /// ```text
 /// NodeData
@@ -79,7 +79,7 @@ type Child<T> = NodeRef<T>;
 ///  | |                                                    |
 ///  | |                                        Simple onwership of value
 ///  | |
-///  | +-- parent: RwLock<WeakNodeRef<T>> --------+
+///  | +-- parent: RwLock<WeakNodeNodeRef<T>> --------+
 ///  |                                            |
 ///  |                 This describes a non-ownership relationship.
 ///  |                 When a node is dropped, its parent will not be dropped.
@@ -107,7 +107,7 @@ where
 /// another) dropping this instance will not drop the cloned internal reference.
 ///
 /// ```text
-/// NodeRefHolder { strong_ref: Arc<NodeData> }
+/// Node { arc_ref: Arc<NodeData> }
 ///    ▲                 ▲
 ///    │                 │
 ///    │      This atomic ref owns the
@@ -116,7 +116,7 @@ where
 ///    1. Has methods to manipulate nodes and their children.
 ///
 ///    2. When it is dropped, if there are other `Arc`s (shared via
-///       `get_internal_ref_copy()`) pointing to the same underlying
+///       `get_copy_of_internal_arc()`) pointing to the same underlying
 ///       `NodeData`, then the `NodeData` will not be dropped.
 ///
 ///    3. This struct is necessary in order for `add_child_and_update_its_parent`
@@ -126,45 +126,43 @@ where
 /// ```
 
 #[derive(Debug)]
-pub struct NodeRefHolder<T: Display> {
-  strong_ref: NodeRef<T>,
+pub struct Node<T: Display> {
+  arc_ref: NodeDataRef<T>,
 }
-impl<T> NodeRefHolder<T>
+impl<T> Node<T>
 where
   T: Display,
 {
-  pub fn new(value: T) -> NodeRefHolder<T> {
+  pub fn new(value: T) -> Node<T> {
     let new_node = NodeData {
       value,
       parent: RwLock::new(Weak::new()),
       children: RwLock::new(Vec::new()),
     };
-    let node_arc_ref = Arc::new(new_node);
-    NodeRefHolder {
-      strong_ref: node_arc_ref,
-    }
+    let arc_ref = Arc::new(new_node);
+    Node { arc_ref }
   }
 
-  pub fn get_internal_ref_copy(self: &Self) -> NodeRef<T> {
-    self.strong_ref.clone()
+  pub fn get_copy_of_internal_arc(self: &Self) -> NodeDataRef<T> {
+    Arc::clone(&self.arc_ref)
   }
 
-  pub fn add_child(self: &Self, value: T) -> NodeRef<T> {
-    let new_child = NodeRefHolder::new(value);
+  pub fn create_and_add_child(self: &Self, value: T) -> NodeDataRef<T> {
+    let new_child = Node::new(value);
     self.add_child_and_update_its_parent(&new_child);
-    new_child.get_internal_ref_copy()
+    new_child.get_copy_of_internal_arc()
   }
 
   /// 🔏 Write locks used.
-  pub fn add_child_and_update_its_parent(self: &Self, child: &NodeRefHolder<T>) {
+  pub fn add_child_and_update_its_parent(self: &Self, child: &Node<T>) {
     {
-      let mut my_children = self.strong_ref.children.write().unwrap();
-      my_children.push(child.get_internal_ref_copy());
+      let mut my_children = self.arc_ref.children.write().unwrap();
+      my_children.push(child.get_copy_of_internal_arc());
     } // `my_children` guard dropped.
 
     {
-      let mut childs_parent = child.strong_ref.parent.write().unwrap();
-      *childs_parent = Arc::downgrade(&self.get_internal_ref_copy());
+      let mut childs_parent = child.arc_ref.parent.write().unwrap();
+      *childs_parent = Arc::downgrade(&self.get_copy_of_internal_arc());
     } // `my_parent` guard dropped.
   }
 
@@ -173,8 +171,8 @@ where
   }
 
   /// 🔒 Read lock used.
-  pub fn get_parent(self: &Self) -> Option<NodeRef<T>> {
-    let my_parent_weak = self.strong_ref.parent.read().unwrap();
+  pub fn get_parent(self: &Self) -> Option<NodeDataRef<T>> {
+    let my_parent_weak = self.arc_ref.parent.read().unwrap();
     if let Some(my_parent_arc_ref) = my_parent_weak.upgrade() {
       Some(my_parent_arc_ref)
     } else {
@@ -185,19 +183,23 @@ where
 
 #[test]
 fn test_tree_low_level_node_manipulation() {
-  let child_node = NodeRefHolder::new(3);
+  let child_node = Node::new(3);
+
   {
-    let parent_node = NodeRefHolder::new(5);
+    let parent_node = Node::new(5);
     parent_node.add_child_and_update_its_parent(&child_node);
 
     println!("{}: {:#?}", style_primary("[parent_node]"), parent_node); // Pretty print.
     println!("{}: {:#?}", style_primary("[child_node]"), child_node); // Pretty print.
 
-    assert_eq!(Arc::strong_count(&child_node.get_internal_ref_copy()), 3); // `child_node` has 2 strong references.
-    assert_eq!(Arc::weak_count(&child_node.get_internal_ref_copy()), 0);
+    assert_eq!(Arc::strong_count(&child_node.get_copy_of_internal_arc()), 3); // `child_node` has 2 strong references.
+    assert_eq!(Arc::weak_count(&child_node.get_copy_of_internal_arc()), 0);
 
-    assert_eq!(Arc::strong_count(&parent_node.get_internal_ref_copy()), 2); // `parent_node` has 1 strong reference.
-    assert_eq!(Arc::weak_count(&parent_node.get_internal_ref_copy()), 1); // `parent_node` also has 1 weak reference.
+    assert_eq!(
+      Arc::strong_count(&parent_node.get_copy_of_internal_arc()),
+      2
+    ); // `parent_node` has 1 strong reference.
+    assert_eq!(Arc::weak_count(&parent_node.get_copy_of_internal_arc()), 1); // `parent_node` also has 1 weak reference.
 
     assert!(child_node.has_parent());
     assert_eq!(child_node.get_parent().unwrap().value, 5);
@@ -205,10 +207,10 @@ fn test_tree_low_level_node_manipulation() {
 
   // `child_node`'s parent is now `None`, its an orphan.
   assert!(!child_node.has_parent());
-  assert_eq!(child_node.get_internal_ref_copy().value, 3);
+  assert_eq!(child_node.get_copy_of_internal_arc().value, 3);
 
-  assert_eq!(Arc::strong_count(&child_node.get_internal_ref_copy()), 2); // `child_node` has 1 strong references.
-  assert_eq!(Arc::weak_count(&child_node.get_internal_ref_copy()), 0); // `child_node` still has no weak references.
+  assert_eq!(Arc::strong_count(&child_node.get_copy_of_internal_arc()), 2); // `child_node` has 1 strong references.
+  assert_eq!(Arc::weak_count(&child_node.get_copy_of_internal_arc()), 0); // `child_node` still has no weak references.
 }
 
 // TODO: impl tree walking, find w/ comparator lambda, and print out the tree.
@@ -218,15 +220,17 @@ fn test_tree_low_level_node_manipulation() {
 
 #[test]
 fn test_tree_simple_api() {
-  let root_ref_holder = NodeRefHolder::new(5);
-  {
-    let child_ref = root_ref_holder.add_child(3);
+  let root_node = Node::new(5);
+  assert_eq!(root_node.get_copy_of_internal_arc().value, 5);
 
-    assert_eq!(child_ref.value, 3);
-    assert_eq!(root_ref_holder.get_internal_ref_copy().value, 5);
+  {
+    // ⚠️ In the following line, `Node` is not returned by `create_and_add_child()`. Instead a ref
+    // (`Arc`) to the underlying `NodeData` is returned.
+    let child_node_data_ref = root_node.create_and_add_child(3);
+    assert_eq!(child_node_data_ref.value, 3);
     assert_eq!(
-      root_ref_holder
-        .get_internal_ref_copy()
+      root_node
+        .get_copy_of_internal_arc()
         .children
         .read()
         .unwrap()
@@ -234,16 +238,16 @@ fn test_tree_simple_api() {
       1
     );
     assert_eq!(
-      child_ref.value,
-      root_ref_holder
-        .get_internal_ref_copy()
+      child_node_data_ref.value,
+      root_node
+        .get_copy_of_internal_arc()
         .children
         .read()
         .unwrap()[0]
         .value
     );
   }
-  println!("{}: {:#?}", style_primary("[tree]"), root_ref_holder); // Pretty print.
+  println!("{}: {:#?}", style_primary("[tree]"), root_node); // Pretty print.
 }
 
 impl<T> fmt::Debug for NodeData<T>
