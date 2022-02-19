@@ -14,9 +14,41 @@
  limitations under the License.
 */
 
+//! Rust book: <https://doc.rust-lang.org/book/ch16-03-shared-state.html>
+
+use std::{
+  sync::{Arc, Mutex, RwLock},
+  thread::{self, JoinHandle},
+};
+
 pub fn run() {}
 
 #[test]
-fn test_name() {
+fn test_threads_arc_rwlock() {
+  type JoinHandleVec = Vec<JoinHandle<u32>>;
+  type CounterType = Arc<RwLock<u32>>;
 
+  let shared_counter: CounterType = Arc::new(RwLock::new(0));
+  let mut handles: JoinHandleVec = vec![];
+
+  for _ in 0..10 {
+    let counter = Arc::clone(&shared_counter);
+    let handle = thread::spawn(move || {
+      let mut num = counter.write().unwrap();
+      *num += 1;
+      return *num;
+    });
+    handles.push(handle);
+  }
+
+  let mut future_results = 0;
+  for handle in handles {
+    future_results += handle.join().unwrap();
+  }
+
+  let counter_value = *shared_counter.read().unwrap();
+
+  println!("result: {}, result_2: {}", counter_value, future_results);
+  assert_eq!(counter_value, 10);
+  assert_eq!(future_results, 55);
 }

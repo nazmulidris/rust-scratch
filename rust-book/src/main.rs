@@ -45,7 +45,7 @@ fn main() {
   data_structures::strings::run();
   data_structures::hashmap::run();
   data_structures::memo::run(); // TODO: Move closures.rs#test_memoize_closure#LazyMemoValues here.
-  data_structures::tree::run();
+  data_structures::tree::run(); // TODO: Audit for incorrect use of .clone() vs Arc::clone()
   data_structures::tree_memory_arena::run(); // TODO: work on this
 
   intermediate::error_handling::run();
@@ -59,6 +59,5 @@ fn main() {
 
   concurrency::threads::run();
   concurrency::message_passing::run();
-  concurrency::shared_state::run(); // TODO: Chapter 16.
-  concurrency::sync_send_traits::run(); // TODO: Chapter 16.
+  concurrency::shared_state::run();
 }
