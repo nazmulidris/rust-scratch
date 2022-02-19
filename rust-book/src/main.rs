@@ -56,6 +56,7 @@ fn main() {
   intermediate::iterators::run();
   intermediate::smart_pointers::run();
   intermediate::builders::run();
+  intermediate::oop::run();
 
   concurrency::threads::run();
   concurrency::message_passing::run();

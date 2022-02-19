@@ -22,3 +22,4 @@ pub mod closures;
 pub mod iterators;
 pub mod smart_pointers;
 pub mod builders;
+pub mod oop;
