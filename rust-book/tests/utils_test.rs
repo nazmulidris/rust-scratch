@@ -1,7 +1,8 @@
+//! Integration tests for the `utils`
+/// Rust book: https://doc.rust-lang.org/book/ch11-03-test-organization.html#the-tests-directory
 use ansi_term::Colour::Green;
 use rust_book_lib::utils::{style_primary, type_of};
 
-/// Rust book: https://doc.rust-lang.org/book/ch11-03-test-organization.html#the-tests-directory
 #[test]
 fn test_color_styles_work() {
   let text = "foo";

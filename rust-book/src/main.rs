@@ -44,9 +44,9 @@ fn main() {
   data_structures::vector::run();
   data_structures::strings::run();
   data_structures::hashmap::run();
-  data_structures::memo::run(); // TODO: Move closures.rs#test_memoize_closure#LazyMemoValues here.
-  data_structures::tree::run(); // TODO: Audit for incorrect use of .clone() vs Arc::clone()
-  data_structures::tree_memory_arena::run(); // TODO: work on this
+  data_structures::tree::run();
+
+  // TODO: Move closures.rs#test_memoize_closure#LazyMemoValues to lib.rs & integration tests.
 
   intermediate::error_handling::run();
   intermediate::generic_types::run();

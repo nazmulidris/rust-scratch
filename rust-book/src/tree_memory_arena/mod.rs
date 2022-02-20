@@ -14,9 +14,14 @@
  limitations under the License.
 */
 
-pub fn run() {}
+//! Rust Book, module re-exports:
+//! - <https://doc.rust-lang.org/book/ch14-02-publishing-to-crates-io.html#documentation-comments-as-tests>
 
-#[test]
-fn test_name() {
+pub mod arena;
+pub mod id;
 
-}
+// Re-export the following modules:
+pub use arena::Arena;
+pub use arena::Node;
+pub use id::HasId;
+pub use id::Uid;

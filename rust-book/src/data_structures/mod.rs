@@ -15,8 +15,6 @@
  */
 
 pub mod hashmap;
-pub mod memo;
 pub mod strings;
 pub mod tree;
-pub mod tree_memory_arena;
 pub mod vector;

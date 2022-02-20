@@ -14,10 +14,27 @@
  limitations under the License.
 */
 
-//! Disable warnings for dead code, unused imports, etc. since they're needed by tests. This applies
-//! to all the files that is touched by `lib.rs`.
-#![allow(dead_code)]
+//! UID for Node.
 
-// Attach the following files to the library module.
-pub mod tree_memory_arena;
-pub mod utils;
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
+pub struct Uid(usize);
+
+impl Uid {
+  pub fn new(index: usize) -> Uid {
+    Uid(index)
+  }
+}
+
+pub trait HasId {
+  fn get_id(&self) -> usize;
+  fn get_copy_of_id(&self) -> Uid;
+}
+
+impl HasId for Uid {
+  fn get_id(&self) -> usize {
+    self.0
+  }
+  fn get_copy_of_id(&self) -> Uid {
+    Uid(self.0)
+  }
+}
