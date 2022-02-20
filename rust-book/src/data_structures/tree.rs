@@ -49,6 +49,9 @@
 //!   - SO answer: <https://stackoverflow.com/a/65179837/2085356>
 //! 2. Simple: <https://gist.github.com/aidanhs/5ac9088ca0f6bdd4a370>
 //!
+//! # Deref trait
+//! <https://doc.rust-lang.org/book/ch19-03-advanced-traits.html#using-the-newtype-pattern-to-implement-external-traits-on-external-types>
+//! <https://doc.rust-lang.org/std/ops/trait.Deref.html>
 
 use core::fmt::Debug;
 use rust_book_lib::utils::{print_header, style_dimmed, style_error, style_primary, style_prompt};
@@ -56,6 +59,7 @@ use std::{
   borrow::{Borrow, BorrowMut},
   cell::RefCell,
   fmt::{self, Display},
+  ops::Deref,
   sync::{Arc, RwLock, Weak},
 };
 
@@ -181,6 +185,18 @@ where
   }
 }
 
+/// <https://doc.rust-lang.org/book/ch19-03-advanced-traits.html#using-the-newtype-pattern-to-implement-external-traits-on-external-types>
+impl<T> Deref for Node<T>
+where
+  T: Display,
+{
+  type Target = NodeData<T>;
+
+  fn deref(&self) -> &Self::Target {
+    &self.arc_ref
+  }
+}
+
 #[test]
 fn test_tree_low_level_node_manipulation() {
   let child_node = Node::new(3);
@@ -188,6 +204,13 @@ fn test_tree_low_level_node_manipulation() {
   {
     let parent_node = Node::new(5);
     parent_node.add_child_and_update_its_parent(&child_node);
+
+    // The following is enabled by the `Deref` impl. `Node` has access to all the fields and methods
+    // of `NodeData`.
+    assert_eq!(parent_node.children.read().unwrap().len(), 1);
+    assert!(parent_node.parent.read().unwrap().upgrade().is_none());
+    assert_eq!(parent_node.value, 5);
+    assert_eq!(Arc::weak_count(&parent_node.arc_ref), 1);
 
     println!("{}: {:#?}", style_primary("[parent_node]"), parent_node); // Pretty print.
     println!("{}: {:#?}", style_primary("[child_node]"), child_node); // Pretty print.
