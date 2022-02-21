@@ -27,14 +27,14 @@ impl Uid {
 
 pub trait HasId {
   fn get_id(&self) -> usize;
-  fn get_copy_of_id(&self) -> Uid;
+  fn get_uid(&self) -> Uid;
 }
 
 impl HasId for Uid {
   fn get_id(&self) -> usize {
     self.0
   }
-  fn get_copy_of_id(&self) -> Uid {
+  fn get_uid(&self) -> Uid {
     Uid(self.0)
   }
 }

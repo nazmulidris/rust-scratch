@@ -53,6 +53,6 @@ fn test_tree_memory_arena() {
     let node_list = dbg!(arena.tree_walk_dfs(&node_1_id).unwrap());
 
     assert_eq!(node_list.len(), 2);
-    assert_eq!(node_list, vec![node_1_id.get_copy_of_id(), node_2_id.get_copy_of_id()]);
+    assert_eq!(node_list, vec![node_1_id.get_uid(), node_2_id.get_uid()]);
   }
 }

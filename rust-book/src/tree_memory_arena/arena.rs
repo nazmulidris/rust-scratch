@@ -23,7 +23,7 @@
 
 use std::{
   collections::HashMap,
-  sync::{atomic::AtomicUsize, Arc, RwLock, Weak},
+  sync::{atomic::AtomicUsize, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard, Weak},
 };
 
 use super::id::{HasId, Uid};
@@ -33,7 +33,7 @@ use super::id::{HasId, Uid};
 pub struct Node<T> {
   id: usize,
   parent: Option<Uid>,
-  children: Option<Vec<Uid>>,
+  children: Vec<Uid>,
   pub data: T,
 }
 
@@ -42,7 +42,7 @@ impl<T> HasId for Node<T> {
     self.id
   }
 
-  fn get_copy_of_id(&self) -> Uid {
+  fn get_uid(&self) -> Uid {
     Uid::new(self.id)
   }
 }
@@ -51,83 +51,82 @@ impl<T> HasId for Node<T> {
 type Id = dyn HasId;
 type NodeRef<T> = Arc<RwLock<Node<T>>>;
 type WeakNodeRef<T> = Weak<RwLock<Node<T>>>;
+type ReadGuarded<'a, T> = RwLockReadGuard<'a, T>;
+type WriteGuarded<'a, T> = RwLockWriteGuard<'a, T>;
+type ArenaMap<T> = HashMap<usize, NodeRef<T>>;
 
 // Arena.
 #[derive(Debug)]
 pub struct Arena<T> {
-  map: RwLock<HashMap<usize, NodeRef<T>>>,
+  map: RwLock<ArenaMap<T>>,
   atomic_counter: AtomicUsize,
 }
 
+// TODO: create parallel tree_walk_dfs that returns a handle.
 // TODO: implement search / filter given lambda.
 // TODO: delete node (and its children) given id.
 impl<T> Arena<T> {
   /// DFS graph walking: <https://developerlife.com/2018/08/16/algorithms-in-kotlin-5/>
   /// DFS tree walking: <https://stephenweiss.dev/algorithms-depth-first-search-dfs#handling-non-binary-trees>
   pub fn tree_walk_dfs(&self, node_id: &Id) -> Option<Vec<Uid>> {
-    let mut result: Vec<Uid> = vec![];
-    let mut stack: Vec<Uid> = vec![];
-    stack.push(node_id.get_copy_of_id());
+    let mut collected_nodes: Vec<Uid> = vec![];
+    let mut stack: Vec<Uid> = vec![node_id.get_uid()];
 
     while let Some(node_id) = stack.pop() {
+      // Question mark operator works below, since it returns a `Option<T>` to `while let ...`.
+      // Basically early return if `node_id` can't be found.
       let node_ref = self.get_node_ref_strong(&node_id)?;
-      let node = node_ref.read().unwrap();
+      node_ref.read().ok().map(|node: ReadGuarded<Node<T>>| {
+        collected_nodes.push(node.get_uid());
+        stack.extend(node.children.iter().cloned());
+      });
+    }
 
-      result.push(node.get_copy_of_id());
-
-      if let Some(children) = node.children.as_ref() {
-        children
-          .into_iter()
-          .for_each(|child_id| stack.push(child_id.get_copy_of_id()));
-      }
-    } // End while stack not empty.
-
-    match result.len() {
+    match collected_nodes.len() {
       0 => None,
-      _ => Some(result),
+      _ => Some(collected_nodes),
     }
   }
 
+  /// If `node_id` can't be found, returns `None`.
   pub fn get_node_ref_weak(&self, node_id: &Id) -> Option<WeakNodeRef<T>> {
     let id = node_id.get_id();
-    let map = self.map.read().unwrap();
+    let map: ReadGuarded<ArenaMap<T>> = self.map.read().ok()?;
     let node_ref = map.get(&id)?;
     Some(Arc::downgrade(&node_ref))
   }
 
+  /// If `node_id` can't be found, returns `None`.
   pub fn get_node_ref_strong(&self, node_id: &Id) -> Option<NodeRef<T>> {
     let id = node_id.get_id();
-    let map = self.map.read().unwrap();
+    let map: ReadGuarded<ArenaMap<T>> = self.map.read().ok()?;
     let node_ref = map.get(&id)?;
     Some(Arc::clone(&node_ref))
   }
 
-  pub fn new_node(&mut self, data: T, parent: Option<&Id>) -> impl HasId {
+  pub fn new_node(&mut self, data: T, parent_id: Option<&Id>) -> impl HasId {
     let new_node_id = self.generate_uid();
 
-    // Push a new node into arena.
     let push_new_node_into_arena = || {
-      // Push the node into the arena.
       let id = new_node_id.get_id();
-      self.map.write().unwrap().insert(
+      let mut map: WriteGuarded<ArenaMap<T>> = self.map.write().unwrap(); // Safe to unwrap.
+      map.insert(
         id,
         Arc::new(RwLock::new(Node {
           id,
           parent: None,
-          children: None,
+          children: vec![],
           data,
         })),
       );
     };
     push_new_node_into_arena();
 
-    // Has parent?
-    if let Some(parent_id) = parent {
-      let parent_node_ref = self.get_node_ref_strong(parent_id).unwrap();
-      let mut parent_node = parent_node_ref.write().unwrap();
-      let mut children = parent_node.children.take().unwrap_or_default();
-      children.push(new_node_id.get_copy_of_id());
-      parent_node.children = Some(children);
+    if let Some(parent_id) = parent_id {
+      if let Some(parent_node_ref) = self.get_node_ref_strong(parent_id) {
+        let mut parent_node: WriteGuarded<Node<T>> = parent_node_ref.write().unwrap(); // Safe to unwrap.
+        parent_node.children.push(new_node_id.get_uid());
+      }
     }
 
     // Return the node identifier.
