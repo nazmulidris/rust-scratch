@@ -18,8 +18,10 @@
 //! - <https://doc.rust-lang.org/book/ch14-02-publishing-to-crates-io.html#documentation-comments-as-tests>
 
 pub mod arena;
-pub mod id;
+pub mod arena_types;
+pub mod mt_arena;
 
 // Re-export the following modules:
-pub use arena::*; // Arena, Node, NodeRef, WeakNodeRef, ReadGuarded, WriteGuarded, ArenaMap.
-pub use id::*; // Uid, HasId.
+pub use arena::*; // Arena.
+pub use arena_types::*; // HasId, Node, NodeRef, WeakNodeRef, ReadGuarded, WriteGuarded, ArenaMap, FilterFn, ResultUidList
+pub use mt_arena::*; // MTArena.

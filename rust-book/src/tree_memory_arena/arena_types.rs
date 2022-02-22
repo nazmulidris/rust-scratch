@@ -14,38 +14,25 @@
  limitations under the License.
 */
 
-//! UID for Node.
+//! HasId for Node.
 
-use std::fmt::Debug;
+use std::{
+  collections::HashMap,
+  sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard, Weak},
+};
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
-pub struct Uid(usize);
-
-impl Uid {
-  pub fn new(index: usize) -> Uid {
-    Uid(index)
-  }
-}
+use super::{Arena, Node};
 
 pub trait HasId {
   fn get_id(&self) -> usize;
-  fn get_uid(&self) -> Uid;
 }
 
-impl HasId for Uid {
-  fn get_id(&self) -> usize {
-    self.0
-  }
-  fn get_uid(&self) -> Uid {
-    Uid(self.0)
-  }
-}
-
-impl Debug for dyn HasId {
-  fn fmt(
-    &self,
-    fmt: &mut std::fmt::Formatter<'_>,
-  ) -> Result<(), std::fmt::Error> {
-    write!(fmt, "id: {}", self.get_id())
-  }
-}
+// Type aliases for readability.
+pub type NodeRef<T> = Arc<RwLock<Node<T>>>;
+pub type WeakNodeRef<T> = Weak<RwLock<Node<T>>>;
+pub type ReadGuarded<'a, T> = RwLockReadGuard<'a, T>;
+pub type WriteGuarded<'a, T> = RwLockWriteGuard<'a, T>;
+pub type ArenaMap<T> = HashMap<usize, NodeRef<T>>;
+pub type FilterFn<T> = dyn Fn(usize, ReadGuarded<Node<T>>) -> bool;
+pub type ResultUidList = Option<Vec<usize>>;
+pub type ShreableArena<T> = Arc<RwLock<Arena<T>>>;

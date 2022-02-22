@@ -24,10 +24,13 @@
 use std::{
   collections::HashMap,
   fmt::Debug,
-  sync::{atomic::AtomicUsize, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard, Weak},
+  sync::{atomic::AtomicUsize, Arc, RwLock},
 };
 
-use super::id::{HasId, Uid};
+use super::{
+  arena_types::HasId, ArenaMap, FilterFn, NodeRef, ReadGuarded, ResultUidList, WeakNodeRef,
+  WriteGuarded,
+};
 
 // Node.
 #[derive(Debug)]
@@ -36,8 +39,8 @@ where
   T: Debug,
 {
   pub id: usize,
-  pub parent: Option<Uid>,
-  pub children: Vec<Uid>,
+  pub parent: Option<usize>,
+  pub children: Vec<usize>,
   pub payload: T,
 }
 
@@ -48,21 +51,7 @@ where
   fn get_id(&self) -> usize {
     self.id
   }
-
-  fn get_uid(&self) -> Uid {
-    Uid::new(self.id)
-  }
 }
-
-// Type aliases for readability.
-pub type Id = dyn HasId;
-pub type NodeRef<T> = Arc<RwLock<Node<T>>>;
-pub type WeakNodeRef<T> = Weak<RwLock<Node<T>>>;
-pub type ReadGuarded<'a, T> = RwLockReadGuard<'a, T>;
-pub type WriteGuarded<'a, T> = RwLockWriteGuard<'a, T>;
-pub type ArenaMap<T> = HashMap<usize, NodeRef<T>>;
-pub type FilterFn<T> = dyn Fn(usize, ReadGuarded<Node<T>>) -> bool;
-pub type ResultUidList = Option<Vec<Uid>>;
 
 // Arena.
 #[derive(Debug)]
@@ -87,8 +76,8 @@ where
     let filtered_map = map
       .iter()
       .filter(|(id, node_ref)| filter_fn(**id, node_ref.read().unwrap()))
-      .map(|(id, _node_ref)| Uid::new(*id))
-      .collect::<Vec<Uid>>();
+      .map(|(id, _node_ref)| *id)
+      .collect::<Vec<usize>>();
     match filtered_map.len() {
       0 => None,
       _ => Some(filtered_map),
@@ -98,7 +87,7 @@ where
   /// If `node_id` can't be found, returns `None`.
   pub fn get_children_of(
     &self,
-    node_id: &Id,
+    node_id: usize,
   ) -> ResultUidList {
     // Early return if `node_id` can't be found.
     let node_to_lookup = self.get_arc_to_node(node_id)?;
@@ -110,8 +99,8 @@ where
   /// If `node_id` can't be found, returns `None`.
   pub fn get_parent_of(
     &self,
-    node_id: &Id,
-  ) -> Option<Uid> {
+    node_id: usize,
+  ) -> Option<usize> {
     // Early return if `node_id` can't be found.
     let node_to_lookup = self.get_arc_to_node(node_id)?;
     let node_to_lookup: ReadGuarded<Node<T>> = node_to_lookup.read().unwrap(); // Safe to call unwrap.
@@ -121,25 +110,25 @@ where
   /// If `node_id` can't be found, returns `None`.
   pub fn delete_node(
     &self,
-    node_id: &Id,
+    node_id: usize,
   ) -> ResultUidList {
     // Early return if `node_id` can't be found.
     let deletion_list = self.tree_walk_dfs(node_id)?;
 
     // If `node_id` has a parent, remove `node_id` its children, otherwise skip this step.
     if let Some(parent_uid) = self.get_parent_of(node_id) {
-      let parent_node = self.get_arc_to_node(&parent_uid);
+      let parent_node = self.get_arc_to_node(parent_uid);
       if let Some(parent_node) = parent_node {
         let mut writeable_parent_node: WriteGuarded<Node<T>> = parent_node.write().unwrap(); // Safe to call unwrap.
         writeable_parent_node
           .children
-          .retain(|child_id| child_id.get_id() != node_id.get_id());
+          .retain(|child_id| *child_id != node_id);
       }
     }
 
     let mut map: WriteGuarded<ArenaMap<T>> = self.map.write().unwrap(); // Safe to unwrap.
     deletion_list.iter().for_each(|id| {
-      map.remove(&id.get_id());
+      map.remove(id);
     });
 
     Some(deletion_list.clone())
@@ -149,17 +138,17 @@ where
   /// DFS tree walking: <https://stephenweiss.dev/algorithms-depth-first-search-dfs#handling-non-binary-trees>
   pub fn tree_walk_dfs(
     &self,
-    node_id: &Id,
+    node_id: usize,
   ) -> ResultUidList {
-    let mut collected_nodes: Vec<Uid> = vec![];
-    let mut stack: Vec<Uid> = vec![node_id.get_uid()];
+    let mut collected_nodes: Vec<usize> = vec![];
+    let mut stack: Vec<usize> = vec![node_id];
 
     while let Some(node_id) = stack.pop() {
       // Question mark operator works below, since it returns a `Option<T>` to `while let ...`.
       // Basically skip to the next item in the `stack` if `node_id` can't be found.
-      let node_ref = self.get_arc_to_node(&node_id)?;
+      let node_ref = self.get_arc_to_node(node_id)?;
       node_ref.read().ok().map(|node: ReadGuarded<Node<T>>| {
-        collected_nodes.push(node.get_uid());
+        collected_nodes.push(node.get_id());
         stack.extend(node.children.iter().cloned());
       });
     }
@@ -173,9 +162,9 @@ where
   /// If `node_id` can't be found, returns `None`.
   pub fn get_weak_ref_to_node(
     &self,
-    node_id: &Id,
+    node_id: usize,
   ) -> Option<WeakNodeRef<T>> {
-    let id = node_id.get_id();
+    let id = node_id;
     let map: ReadGuarded<ArenaMap<T>> = self.map.read().ok()?;
     let node_ref = map.get(&id)?;
     Some(Arc::downgrade(&node_ref))
@@ -184,9 +173,9 @@ where
   /// If `node_id` can't be found, returns `None`.
   pub fn get_arc_to_node(
     &self,
-    node_id: &Id,
+    node_id: usize,
   ) -> Option<NodeRef<T>> {
-    let id = node_id.get_id();
+    let id = node_id;
     let map: ReadGuarded<ArenaMap<T>> = self.map.read().ok()?;
     let node_ref = map.get(&id)?;
     Some(Arc::clone(&node_ref))
@@ -195,19 +184,19 @@ where
   pub fn add_new_node(
     &mut self,
     data: T,
-    parent_id: Option<&Id>,
-  ) -> Uid {
+    parent_id: Option<usize>,
+  ) -> usize {
     let new_node_id = self.generate_uid();
 
     let push_new_node_into_arena = || {
-      let id = new_node_id.get_id();
+      let id = new_node_id;
       let mut map: WriteGuarded<ArenaMap<T>> = self.map.write().unwrap(); // Safe to unwrap.
       map.insert(
         id,
         Arc::new(RwLock::new(Node {
           id,
           parent: match parent_id {
-            Some(parent_id) => Some(parent_id.get_uid()),
+            Some(parent_id) => Some(parent_id),
             None => None,
           },
           children: vec![],
@@ -220,7 +209,7 @@ where
     if let Some(parent_id) = parent_id {
       if let Some(parent_node_ref) = self.get_arc_to_node(parent_id) {
         let mut parent_node: WriteGuarded<Node<T>> = parent_node_ref.write().unwrap(); // Safe to unwrap.
-        parent_node.children.push(new_node_id.get_uid());
+        parent_node.children.push(new_node_id);
       }
     }
 
@@ -228,12 +217,10 @@ where
     return new_node_id;
   }
 
-  fn generate_uid(&self) -> Uid {
-    Uid::new(
-      self
-        .atomic_counter
-        .fetch_add(1, std::sync::atomic::Ordering::SeqCst),
-    )
+  fn generate_uid(&self) -> usize {
+    self
+      .atomic_counter
+      .fetch_add(1, std::sync::atomic::Ordering::SeqCst)
   }
 
   pub fn new() -> Self {
