@@ -21,7 +21,5 @@ pub mod arena;
 pub mod id;
 
 // Re-export the following modules:
-pub use arena::Arena;
-pub use arena::Node;
-pub use id::HasId;
-pub use id::Uid;
+pub use arena::*; // Arena, Node, NodeRef, WeakNodeRef, ReadGuarded, WriteGuarded, ArenaMap.
+pub use id::*; // Uid, HasId.

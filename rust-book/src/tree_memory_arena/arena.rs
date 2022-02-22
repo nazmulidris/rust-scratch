@@ -23,6 +23,7 @@
 
 use std::{
   collections::HashMap,
+  fmt::Debug,
   sync::{atomic::AtomicUsize, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard, Weak},
 };
 
@@ -30,14 +31,20 @@ use super::id::{HasId, Uid};
 
 // Node.
 #[derive(Debug)]
-pub struct Node<T> {
-  id: usize,
-  parent: Option<Uid>,
-  children: Vec<Uid>,
-  pub data: T,
+pub struct Node<T>
+where
+  T: Debug,
+{
+  pub id: usize,
+  pub parent: Option<Uid>,
+  pub children: Vec<Uid>,
+  pub payload: T,
 }
 
-impl<T> HasId for Node<T> {
+impl<T> HasId for Node<T>
+where
+  T: Debug,
+{
   fn get_id(&self) -> usize {
     self.id
   }
@@ -48,24 +55,70 @@ impl<T> HasId for Node<T> {
 }
 
 // Type aliases for readability.
-type Id = dyn HasId;
-type NodeRef<T> = Arc<RwLock<Node<T>>>;
-type WeakNodeRef<T> = Weak<RwLock<Node<T>>>;
-type ReadGuarded<'a, T> = RwLockReadGuard<'a, T>;
-type WriteGuarded<'a, T> = RwLockWriteGuard<'a, T>;
-type ArenaMap<T> = HashMap<usize, NodeRef<T>>;
+pub type Id = dyn HasId;
+pub type NodeRef<T> = Arc<RwLock<Node<T>>>;
+pub type WeakNodeRef<T> = Weak<RwLock<Node<T>>>;
+pub type ReadGuarded<'a, T> = RwLockReadGuard<'a, T>;
+pub type WriteGuarded<'a, T> = RwLockWriteGuard<'a, T>;
+pub type ArenaMap<T> = HashMap<usize, NodeRef<T>>;
 
 // Arena.
 #[derive(Debug)]
-pub struct Arena<T> {
+pub struct Arena<T>
+where
+  T: Debug,
+{
   map: RwLock<ArenaMap<T>>,
   atomic_counter: AtomicUsize,
 }
 
 // TODO: create parallel tree_walk_dfs that returns a handle.
 // TODO: implement search / filter given lambda.
-// TODO: delete node (and its children) given id.
-impl<T> Arena<T> {
+impl<T> Arena<T>
+where
+  T: Debug,
+{
+  pub fn get_children_of(&self, node_id: &Id) -> Vec<Uid> {
+    if let Some(node_to_lookup) = self.get_arc_to_node(node_id) {
+      let node_to_lookup: ReadGuarded<Node<T>> = node_to_lookup.read().unwrap(); // Safe to call unwrap.
+      let children_uids = &node_to_lookup.children;
+      return children_uids.clone();
+    }
+    Vec::new()
+  }
+
+  pub fn get_parent_of(&self, node_id: &Id) -> Option<Uid> {
+    if let Some(node_to_lookup) = self.get_arc_to_node(node_id) {
+      let node_to_lookup: ReadGuarded<Node<T>> = node_to_lookup.read().unwrap(); // Safe to call unwrap.
+      let parent_uid_opt = &node_to_lookup.parent;
+      if parent_uid_opt.is_some() {
+        return parent_uid_opt.clone();
+      }
+    }
+    None
+  }
+
+  pub fn delete_node(&self, node_id: &Id) -> Vec<Uid> {
+    let deletion_list = self.tree_walk_dfs(node_id).unwrap_or(vec![]);
+
+    if let Some(parent_uid) = self.get_parent_of(node_id) {
+      let parent_node = self.get_arc_to_node(&parent_uid);
+      if let Some(parent_node) = parent_node {
+        let mut writeable_parent_node: WriteGuarded<Node<T>> = parent_node.write().unwrap(); // Safe to call unwrap.
+        writeable_parent_node
+          .children
+          .retain(|child_id| child_id.get_id() != node_id.get_id());
+      }
+    }
+
+    let mut map: WriteGuarded<ArenaMap<T>> = self.map.write().unwrap(); // Safe to unwrap.
+    deletion_list.iter().for_each(|id| {
+      map.remove(&id.get_id());
+    });
+
+    deletion_list.clone()
+  }
+
   /// DFS graph walking: <https://developerlife.com/2018/08/16/algorithms-in-kotlin-5/>
   /// DFS tree walking: <https://stephenweiss.dev/algorithms-depth-first-search-dfs#handling-non-binary-trees>
   pub fn tree_walk_dfs(&self, node_id: &Id) -> Option<Vec<Uid>> {
@@ -75,7 +128,7 @@ impl<T> Arena<T> {
     while let Some(node_id) = stack.pop() {
       // Question mark operator works below, since it returns a `Option<T>` to `while let ...`.
       // Basically early return if `node_id` can't be found.
-      let node_ref = self.get_node_ref_strong(&node_id)?;
+      let node_ref = self.get_arc_to_node(&node_id)?;
       node_ref.read().ok().map(|node: ReadGuarded<Node<T>>| {
         collected_nodes.push(node.get_uid());
         stack.extend(node.children.iter().cloned());
@@ -89,7 +142,7 @@ impl<T> Arena<T> {
   }
 
   /// If `node_id` can't be found, returns `None`.
-  pub fn get_node_ref_weak(&self, node_id: &Id) -> Option<WeakNodeRef<T>> {
+  pub fn get_weak_ref_to_node(&self, node_id: &Id) -> Option<WeakNodeRef<T>> {
     let id = node_id.get_id();
     let map: ReadGuarded<ArenaMap<T>> = self.map.read().ok()?;
     let node_ref = map.get(&id)?;
@@ -97,14 +150,14 @@ impl<T> Arena<T> {
   }
 
   /// If `node_id` can't be found, returns `None`.
-  pub fn get_node_ref_strong(&self, node_id: &Id) -> Option<NodeRef<T>> {
+  pub fn get_arc_to_node(&self, node_id: &Id) -> Option<NodeRef<T>> {
     let id = node_id.get_id();
     let map: ReadGuarded<ArenaMap<T>> = self.map.read().ok()?;
     let node_ref = map.get(&id)?;
     Some(Arc::clone(&node_ref))
   }
 
-  pub fn new_node(&mut self, data: T, parent_id: Option<&Id>) -> impl HasId {
+  pub fn add_new_node(&mut self, data: T, parent_id: Option<&Id>) -> impl HasId {
     let new_node_id = self.generate_uid();
 
     let push_new_node_into_arena = || {
@@ -114,16 +167,19 @@ impl<T> Arena<T> {
         id,
         Arc::new(RwLock::new(Node {
           id,
-          parent: None,
+          parent: match parent_id {
+            Some(parent_id) => Some(parent_id.get_uid()),
+            None => None,
+          },
           children: vec![],
-          data,
+          payload: data,
         })),
       );
     };
     push_new_node_into_arena();
 
     if let Some(parent_id) = parent_id {
-      if let Some(parent_node_ref) = self.get_node_ref_strong(parent_id) {
+      if let Some(parent_node_ref) = self.get_arc_to_node(parent_id) {
         let mut parent_node: WriteGuarded<Node<T>> = parent_node_ref.write().unwrap(); // Safe to unwrap.
         parent_node.children.push(new_node_id.get_uid());
       }
