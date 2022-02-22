@@ -64,7 +64,7 @@ fn test_can_add_nodes_to_tree() {
 }
 
 #[test]
-fn test_walk_tree_and_delete_nodes_from_tree() {
+fn test_can_walk_tree_and_delete_nodes_from_tree() {
   let mut arena = Arena::<String>::new();
 
   // root
@@ -132,8 +132,60 @@ fn test_walk_tree_and_delete_nodes_from_tree() {
   }
 
   // Helper functions.
-  fn assert_node_data_is_eq(arena: &Arena<String>, node_id: &Id, expected_name: &str) {
+  fn assert_node_data_is_eq(
+    arena: &Arena<String>,
+    node_id: &Id,
+    expected_name: &str,
+  ) {
     let child_ref = arena.get_arc_to_node(node_id).unwrap();
     assert_eq!(child_ref.read().unwrap().payload, expected_name.to_string());
+  }
+}
+
+#[test]
+fn test_can_search_nodes_in_tree_with_filter_lambda() {
+  let mut arena = Arena::<String>::new();
+
+  // root
+  //   +- child1
+  //   |    +- gc1
+  //   |    +- gc2
+  //   +- child2
+
+  let root = arena.add_new_node("root".to_string(), None);
+  let child1 = arena.add_new_node("child1".to_string(), Some(&root));
+  let _gc_1_id = arena.add_new_node("gc1".to_string(), Some(&child1));
+  let _gc_2_id = arena.add_new_node("gc2".to_string(), Some(&child1));
+  let _child_2_id = arena.add_new_node("child2".to_string(), Some(&root));
+  println!("{}, {:#?}", style_primary("arena"), &arena);
+  println!(
+    "{}, {:#?}",
+    style_primary("root"),
+    arena.get_arc_to_node(&root)
+  );
+
+  // Search entire arena for root.get_id().
+  {
+    let filter_id = root.get_id();
+    let result = &arena.filter_all_nodes_by(&move |id, _node_ref| {
+      if id == filter_id {
+        true
+      } else {
+        false
+      }
+    });
+    assert_eq!(result.as_ref().unwrap().len(), 1);
+  }
+
+  // Search entire arena for node that contains payload "gc1".
+  {
+    let result = &arena.filter_all_nodes_by(&move |_id, node_ref| {
+      if node_ref.payload == "gc1" {
+        true
+      } else {
+        false
+      }
+    });
+    assert_eq!(result.as_ref().unwrap().len(), 1);
   }
 }
