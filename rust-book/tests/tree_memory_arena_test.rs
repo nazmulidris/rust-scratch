@@ -87,10 +87,10 @@ fn test_walk_tree_and_delete_nodes_from_tree() {
   assert_node_data_is_eq(&arena, &gc_2_id.get_uid(), "gc2");
   assert_node_data_is_eq(&arena, &child_2_id.get_uid(), "child2");
 
-  assert_eq!(arena.get_children_of(&root).len(), 2);
+  assert_eq!(arena.get_children_of(&root).unwrap().len(), 2);
   assert_eq!(arena.get_parent_of(&root).is_none(), true);
 
-  assert_eq!(arena.get_children_of(&child1).len(), 2);
+  assert_eq!(arena.get_children_of(&child1).unwrap().len(), 2);
   assert_eq!(
     arena.get_parent_of(&child1).unwrap().get_id(),
     root.get_id()
@@ -119,10 +119,10 @@ fn test_walk_tree_and_delete_nodes_from_tree() {
       arena.tree_walk_dfs(&root).unwrap()
     );
     let deletion_list = arena.delete_node(&child1.get_uid());
-    assert_eq!(deletion_list.len(), 3);
-    assert!(deletion_list.contains(&gc_1_id.get_uid()));
-    assert!(deletion_list.contains(&gc_2_id.get_uid()));
-    assert!(deletion_list.contains(&child1.get_uid()));
+    assert_eq!(deletion_list.as_ref().unwrap().len(), 3);
+    assert!(deletion_list.as_ref().unwrap().contains(&gc_1_id.get_uid()));
+    assert!(deletion_list.as_ref().unwrap().contains(&gc_2_id.get_uid()));
+    assert!(deletion_list.as_ref().unwrap().contains(&child1.get_uid()));
     println!(
       "{} {:?}",
       style_prompt("root -after- <=="),

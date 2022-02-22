@@ -78,29 +78,29 @@ impl<T> Arena<T>
 where
   T: Debug,
 {
-  pub fn get_children_of(&self, node_id: &Id) -> Vec<Uid> {
-    if let Some(node_to_lookup) = self.get_arc_to_node(node_id) {
-      let node_to_lookup: ReadGuarded<Node<T>> = node_to_lookup.read().unwrap(); // Safe to call unwrap.
-      let children_uids = &node_to_lookup.children;
-      return children_uids.clone();
-    }
-    Vec::new()
+  /// If `node_id` can't be found, returns `None`.
+  pub fn get_children_of(&self, node_id: &Id) -> Option<Vec<Uid>> {
+    // Early return if `node_id` can't be found.
+    let node_to_lookup = self.get_arc_to_node(node_id)?;
+    let node_to_lookup: ReadGuarded<Node<T>> = node_to_lookup.read().unwrap(); // Safe to call unwrap.
+    let children_uids = &node_to_lookup.children;
+    Some(children_uids.clone())
   }
 
+  /// If `node_id` can't be found, returns `None`.
   pub fn get_parent_of(&self, node_id: &Id) -> Option<Uid> {
-    if let Some(node_to_lookup) = self.get_arc_to_node(node_id) {
-      let node_to_lookup: ReadGuarded<Node<T>> = node_to_lookup.read().unwrap(); // Safe to call unwrap.
-      let parent_uid_opt = &node_to_lookup.parent;
-      if parent_uid_opt.is_some() {
-        return parent_uid_opt.clone();
-      }
-    }
-    None
+    // Early return if `node_id` can't be found.
+    let node_to_lookup = self.get_arc_to_node(node_id)?;
+    let node_to_lookup: ReadGuarded<Node<T>> = node_to_lookup.read().unwrap(); // Safe to call unwrap.
+    return node_to_lookup.parent.clone();
   }
 
-  pub fn delete_node(&self, node_id: &Id) -> Vec<Uid> {
-    let deletion_list = self.tree_walk_dfs(node_id).unwrap_or(vec![]);
+  /// If `node_id` can't be found, returns `None`.
+  pub fn delete_node(&self, node_id: &Id) -> Option<Vec<Uid>> {
+    // Early return if `node_id` can't be found.
+    let deletion_list = self.tree_walk_dfs(node_id)?;
 
+    // If `node_id` has a parent, remove `node_id` its children, otherwise skip this step.
     if let Some(parent_uid) = self.get_parent_of(node_id) {
       let parent_node = self.get_arc_to_node(&parent_uid);
       if let Some(parent_node) = parent_node {
@@ -116,7 +116,7 @@ where
       map.remove(&id.get_id());
     });
 
-    deletion_list.clone()
+    Some(deletion_list.clone())
   }
 
   /// DFS graph walking: <https://developerlife.com/2018/08/16/algorithms-in-kotlin-5/>
@@ -127,7 +127,7 @@ where
 
     while let Some(node_id) = stack.pop() {
       // Question mark operator works below, since it returns a `Option<T>` to `while let ...`.
-      // Basically early return if `node_id` can't be found.
+      // Basically skip to the next item in the `stack` if `node_id` can't be found.
       let node_ref = self.get_arc_to_node(&node_id)?;
       node_ref.read().ok().map(|node: ReadGuarded<Node<T>>| {
         collected_nodes.push(node.get_uid());
