@@ -28,15 +28,15 @@ use std::{
 };
 
 use super::{
-  arena_types::HasId, ArenaMap, FilterFn, NodeRef, ReadGuarded, ResultUidList, WeakNodeRef,
-  WriteGuarded,
+  arena_types::HasId, ArenaMap, FilterFn, NodeRef, ReadGuarded, ResultUidList,
+  WeakNodeRef, WriteGuarded,
 };
 
 // Node.
 #[derive(Debug)]
 pub struct Node<T>
 where
-  T: Debug,
+  T: Debug + Clone,
 {
   pub id: usize,
   pub parent: Option<usize>,
@@ -46,7 +46,7 @@ where
 
 impl<T> HasId for Node<T>
 where
-  T: Debug,
+  T: Debug + Clone,
 {
   fn get_id(&self) -> usize {
     self.id
@@ -57,7 +57,7 @@ where
 #[derive(Debug)]
 pub struct Arena<T>
 where
-  T: Debug,
+  T: Debug + Clone,
 {
   map: RwLock<ArenaMap<T>>,
   atomic_counter: AtomicUsize,
@@ -65,17 +65,17 @@ where
 
 impl<T> Arena<T>
 where
-  T: Debug,
+  T: Debug + Clone,
 {
   /// If no matching nodes can be found returns `None`.
   pub fn filter_all_nodes_by(
     &self,
-    filter_fn: FilterFn<T>,
+    filter_fn: &FilterFn<T>,
   ) -> ResultUidList {
     let map: ReadGuarded<ArenaMap<T>> = self.map.read().unwrap();
     let filtered_map = map
       .iter()
-      .filter(|(id, node_ref)| filter_fn(**id, node_ref.read().unwrap()))
+      .filter(|(id, node_ref)| filter_fn(**id, node_ref.read().unwrap().payload.clone()))
       .map(|(id, _node_ref)| *id)
       .collect::<Vec<usize>>();
     match filtered_map.len() {
@@ -119,7 +119,8 @@ where
     if let Some(parent_uid) = self.get_parent_of(node_id) {
       let parent_node = self.get_arc_to_node(parent_uid);
       if let Some(parent_node) = parent_node {
-        let mut writeable_parent_node: WriteGuarded<Node<T>> = parent_node.write().unwrap(); // Safe to call unwrap.
+        let mut writeable_parent_node: WriteGuarded<Node<T>> =
+          parent_node.write().unwrap(); // Safe to call unwrap.
         writeable_parent_node
           .children
           .retain(|child_id| *child_id != node_id);

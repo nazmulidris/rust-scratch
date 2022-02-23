@@ -1,9 +1,12 @@
 //! Integration tests for the `tree_memory_arena` module.
-use std::thread::{self, JoinHandle};
+use std::{
+  sync::Arc,
+  thread::{self, JoinHandle},
+};
 
 /// Rust book: https://doc.rust-lang.org/book/ch11-03-test-organization.html#the-tests-directory
 use rust_book_lib::{
-  tree_memory_arena::{Arena, MTArena, Node, ReadGuarded, ResultUidList},
+  tree_memory_arena::{Arena, MTArena, ResultUidList},
   utils::{style_primary, style_prompt},
 };
 
@@ -178,8 +181,8 @@ fn test_can_search_nodes_in_tree_with_filter_lambda() {
 
   // Search entire arena for node that contains payload "gc1".
   {
-    let result = arena.filter_all_nodes_by(&mut move |_id, node_ref| {
-      if node_ref.payload == "gc1" {
+    let result = arena.filter_all_nodes_by(&mut move |_id, payload| {
+      if payload == "gc1" {
         true
       } else {
         false
@@ -214,8 +217,8 @@ fn test_mt_arena_insert_and_walk_in_parallel() {
     let thread = thread::spawn(move || {
       let mut arena_write = arena_arc.write().unwrap();
       let parent: Option<Vec<usize>> =
-        arena_write.filter_all_nodes_by(&mut move |_id, node_ref| {
-          if node_ref.payload == "foo" {
+        arena_write.filter_all_nodes_by(&mut move |_id, payload| {
+          if payload == "foo" {
             true
           } else {
             false
@@ -235,8 +238,8 @@ fn test_mt_arena_insert_and_walk_in_parallel() {
     let thread = thread::spawn(move || {
       let mut arena_write = arena_arc.write().unwrap();
       let parent: Option<Vec<usize>> =
-        arena_write.filter_all_nodes_by(&mut move |_id, node_ref| {
-          if node_ref.payload == "foo" {
+        arena_write.filter_all_nodes_by(&mut move |_id, payload| {
+          if payload == "foo" {
             true
           } else {
             false
@@ -256,35 +259,36 @@ fn test_mt_arena_insert_and_walk_in_parallel() {
   });
   println!("{:#?}", &arena);
 
-  // Perform tree walking in parallel. Note the function pointer or lamda cannot capture any
-  // enclosing variable context.
+  // Perform tree walking in parallel. Note the lamda does capture many enclosing variable context.
   {
-    fn walker_fn_ptr(
-      uid: usize,
-      node_ref: ReadGuarded<Node<String>>,
-    ) {
+    let arena_arc = arena.get_arena_arc();
+    let fn_arc = Arc::new(move |uid, payload| {
       println!(
-        "{} {} {}",
-        style_prompt("walker_fn - fn ptr"),
+        "{} {} {} Arena weak_count:{} strong_count:{}",
+        style_primary("walker_fn - closure"),
         uid,
-        node_ref.payload
+        payload,
+        Arc::weak_count(&arena_arc),
+        Arc::weak_count(&arena_arc)
       );
+    });
+
+    // Walk tree w/ a new thread using arc to lambda.
+    {
+      let thread_handle: JoinHandle<ResultUidList> =
+        arena.tree_walk_parallel(0, fn_arc.clone());
+
+      let result_node_list = thread_handle.join().unwrap();
+      println!("{:#?}", result_node_list);
     }
-    let thread_handle_1: JoinHandle<ResultUidList> = arena.tree_walk_parallel(0, walker_fn_ptr);
-    let thread_handle_2: JoinHandle<ResultUidList> =
-      arena.tree_walk_parallel(0, |uid, node_ref| {
-        println!(
-          "{} {} {}",
-          style_primary("walker_fn - closure"),
-          uid,
-          node_ref.payload
-        );
-      });
 
-    let result_node_list = thread_handle_1.join().unwrap();
-    println!("{:#?}", result_node_list);
+    // Walk tree w/ a new thread using arc to lambda.
+    {
+      let thread_handle: JoinHandle<ResultUidList> =
+        arena.tree_walk_parallel(1, fn_arc.clone());
 
-    let result_node_list = thread_handle_2.join().unwrap();
-    println!("{:#?}", result_node_list);
+      let result_node_list = thread_handle.join().unwrap();
+      println!("{:#?}", result_node_list);
+    }
   }
 }

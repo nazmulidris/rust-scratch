@@ -19,14 +19,20 @@ use super::{Node, ReadGuarded, ResultUidList, ShreableArena, WalkerFn};
 use std::fmt::Debug;
 use std::marker::{Send, Sync};
 use std::sync::{Arc, RwLock};
-use std::thread::{self, spawn};
+use std::thread::{spawn, JoinHandle};
 
 #[derive(Debug)]
-pub struct MTArena<T: Debug> {
+pub struct MTArena<T>
+where
+  T: 'static + Debug + Send + Sync + Clone,
+{
   arena_arc: ShreableArena<T>,
 }
 
-impl<T: 'static + Debug + Send + Sync> MTArena<T> {
+impl<T> MTArena<T>
+where
+  T: 'static + Debug + Send + Sync + Clone,
+{
   pub fn new() -> Self {
     MTArena {
       arena_arc: Arc::new(RwLock::new(Arena::new())),
@@ -37,16 +43,21 @@ impl<T: 'static + Debug + Send + Sync> MTArena<T> {
     self.arena_arc.clone()
   }
 
-  /// Note that the `walker_fn` does not capture any variables. It is a function pointer and not a
-  /// lambda. Also note that this function executes in a new thread in parallel.
+  /// `walker_fn` is a closure that captures variables. It is wrapped in an `Arc` to be able to
+  /// clone that and share it across threads.
+  /// More info:
+  /// 1. SO thread: <https://stackoverflow.com/a/36213377/2085356>
+  /// 2. Scoped threads: <https://docs.rs/crossbeam/0.3.0/crossbeam/struct.Scope.html>
   pub fn tree_walk_parallel(
     &self,
     node_id: usize,
-    walker_fn: WalkerFn<T>,
-  ) -> thread::JoinHandle<ResultUidList> {
-    let arc = self.get_arena_arc();
+    walker_fn: Arc<WalkerFn<T>>,
+  ) -> JoinHandle<ResultUidList> {
+    let arena_arc = self.get_arena_arc();
+    let walker_fn_arc = walker_fn.clone();
+
     spawn(move || {
-      let read_guard: ReadGuarded<Arena<T>> = arc.read().unwrap();
+      let read_guard: ReadGuarded<Arena<T>> = arena_arc.read().unwrap();
       let return_value = read_guard.tree_walk_dfs(node_id);
 
       // While walking the tree, in a separate thread, call the `walker_fn` for each node.
@@ -55,7 +66,7 @@ impl<T: 'static + Debug + Send + Sync> MTArena<T> {
           let node_arc_opt = read_guard.get_arc_to_node(uid);
           if let Some(node_arc) = node_arc_opt {
             let node_ref: ReadGuarded<Node<T>> = node_arc.read().unwrap();
-            walker_fn(uid, node_ref);
+            walker_fn_arc(uid, node_ref.payload.clone());
           }
         });
       }

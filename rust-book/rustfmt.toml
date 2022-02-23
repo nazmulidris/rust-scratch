@@ -6,7 +6,7 @@ color = "Always"
 empty_item_single_line = true
 normalize_doc_attributes = true
 trailing_semicolon = true
-comment_width = 100
+comment_width = 90
 wrap_comments = true
 format_code_in_doc_comments = true
 
@@ -14,7 +14,7 @@ force_explicit_abi = true
 format_strings = true
 
 # width
-max_width = 100
+max_width = 90
 # https://rust-lang.github.io/rustfmt/?version=v1.4.38&search=#use_small_heuristics
 # chain_width = 60
 # fn_call_width = 60
