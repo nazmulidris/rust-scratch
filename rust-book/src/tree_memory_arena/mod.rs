@@ -20,8 +20,10 @@
 pub mod arena;
 pub mod arena_types;
 pub mod mt_arena;
+pub mod safe_unwrap;
 
 // Re-export the following modules:
 pub use arena::*; // Arena.
 pub use arena_types::*; // HasId, Node, NodeRef, WeakNodeRef, ReadGuarded, WriteGuarded, ArenaMap, FilterFn, ResultUidList
 pub use mt_arena::*; // MTArena.
+pub use safe_unwrap::*; // Helper functions to unwrap safely & execute lambda.

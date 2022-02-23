@@ -26,10 +26,10 @@ fn test_can_add_nodes_to_tree() {
   // Can find node_1 by id.
   {
     let node_1_id = 0;
-    assert!(arena.get_arc_to_node(node_1_id).is_some());
+    assert!(arena.get_node_arc(node_1_id).is_some());
 
-    let node_1_ref = dbg!(arena.get_arc_to_node(node_1_id).unwrap());
-    let node_1_ref_weak = arena.get_weak_ref_to_node(node_1_id).unwrap();
+    let node_1_ref = dbg!(arena.get_node_arc(node_1_id).unwrap());
+    let node_1_ref_weak = arena.get_node_arc_weak(node_1_id).unwrap();
     assert_eq!(node_1_ref.read().unwrap().payload, node_1_value);
     assert_eq!(
       node_1_ref_weak.upgrade().unwrap().read().unwrap().payload,
@@ -40,15 +40,15 @@ fn test_can_add_nodes_to_tree() {
   // Can't find node by id that doesn't exist.
   {
     let node_id_dne = 200 as usize;
-    assert!(arena.get_arc_to_node(node_id_dne).is_none());
+    assert!(arena.get_node_arc(node_id_dne).is_none());
   }
 
   // Can add child to node_1.
   {
     let node_1_id = 0 as usize;
     let node_2_id = arena.add_new_node(node_2_value, Some(node_1_id));
-    let node_2_ref = dbg!(arena.get_arc_to_node(node_2_id).unwrap());
-    let node_2_ref_weak = arena.get_weak_ref_to_node(node_2_id).unwrap();
+    let node_2_ref = dbg!(arena.get_node_arc(node_2_id).unwrap());
+    let node_2_ref_weak = arena.get_node_arc_weak(node_2_id).unwrap();
     assert_eq!(node_2_ref.read().unwrap().payload, node_2_value);
     assert_eq!(
       node_2_ref_weak.upgrade().unwrap().read().unwrap().payload,
@@ -139,7 +139,7 @@ fn test_can_walk_tree_and_delete_nodes_from_tree() {
     node_id: usize,
     expected_name: &str,
   ) {
-    let child_ref = arena.get_arc_to_node(node_id).unwrap();
+    let child_ref = arena.get_node_arc(node_id).unwrap();
     assert_eq!(child_ref.read().unwrap().payload, expected_name.to_string());
   }
 }
@@ -163,7 +163,7 @@ fn test_can_search_nodes_in_tree_with_filter_lambda() {
   println!(
     "{}, {:#?}",
     style_primary("root"),
-    arena.get_arc_to_node(root)
+    arena.get_node_arc(root)
   );
 
   // Search entire arena for root.get_id().

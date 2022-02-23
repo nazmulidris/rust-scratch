@@ -28,15 +28,16 @@ use std::{
 };
 
 use super::{
-  arena_types::HasId, ArenaMap, FilterFn, NodeRef, ReadGuarded, ResultUidList,
-  WeakNodeRef, WriteGuarded,
+  arena_types::HasId, call_if_some, unwrap_arc_read_lock_and_call,
+  unwrap_arc_write_lock_and_call, with_mut, ArenaMap, FilterFn, NodeRef, ReadGuarded,
+  ResultUidList, WeakNodeRef, WriteGuarded,
 };
 
 // Node.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node<T>
 where
-  T: Debug + Clone,
+  T: Debug + Clone + Send + Sync + 'static,
 {
   pub id: usize,
   pub parent: Option<usize>,
@@ -46,7 +47,7 @@ where
 
 impl<T> HasId for Node<T>
 where
-  T: Debug + Clone,
+  T: Debug + Clone + Send + Sync + 'static,
 {
   fn get_id(&self) -> usize {
     self.id
@@ -57,7 +58,7 @@ where
 #[derive(Debug)]
 pub struct Arena<T>
 where
-  T: Debug + Clone,
+  T: Debug + Clone + Send + Sync + 'static,
 {
   map: RwLock<ArenaMap<T>>,
   atomic_counter: AtomicUsize,
@@ -65,7 +66,7 @@ where
 
 impl<T> Arena<T>
 where
-  T: Debug + Clone,
+  T: Debug + Clone + Send + Sync + 'static,
 {
   /// If no matching nodes can be found returns `None`.
   pub fn filter_all_nodes_by(
@@ -89,8 +90,10 @@ where
     &self,
     node_id: usize,
   ) -> ResultUidList {
-    // Early return if `node_id` can't be found.
-    let node_to_lookup = self.get_arc_to_node(node_id)?;
+    if !self.node_exists(node_id) {
+      return None;
+    }
+    let node_to_lookup = self.get_node_arc(node_id)?;
     let node_to_lookup: ReadGuarded<Node<T>> = node_to_lookup.read().unwrap(); // Safe to call unwrap.
     let children_uids = &node_to_lookup.children;
     Some(children_uids.clone())
@@ -101,10 +104,32 @@ where
     &self,
     node_id: usize,
   ) -> Option<usize> {
-    // Early return if `node_id` can't be found.
-    let node_to_lookup = self.get_arc_to_node(node_id)?;
+    if !self.node_exists(node_id) {
+      return None;
+    }
+    let node_to_lookup = self.get_node_arc(node_id)?;
     let node_to_lookup: ReadGuarded<Node<T>> = node_to_lookup.read().unwrap(); // Safe to call unwrap.
     return node_to_lookup.parent.clone();
+  }
+
+  pub fn node_exists(
+    &self,
+    node_id: usize,
+  ) -> bool {
+    self.map.read().unwrap().contains_key(&node_id)
+  }
+
+  pub fn has_parent(
+    &self,
+    node_id: usize,
+  ) -> bool {
+    if self.node_exists(node_id) {
+      let parent_id_opt = self.get_parent_of(node_id);
+      if parent_id_opt.is_some() {
+        return self.node_exists(parent_id_opt.unwrap());
+      }
+    }
+    return false;
   }
 
   /// If `node_id` can't be found, returns `None`.
@@ -112,26 +137,31 @@ where
     &self,
     node_id: usize,
   ) -> ResultUidList {
-    // Early return if `node_id` can't be found.
+    if !self.node_exists(node_id) {
+      return None;
+    }
     let deletion_list = self.tree_walk_dfs(node_id)?;
 
+    // Note - this lambda expects that `parent_id` exists.
+    let remove_node_id_from_parent = |parent_id: usize| {
+      let parent_node_arc_opt = self.get_node_arc(parent_id);
+      unwrap_arc_write_lock_and_call(&parent_node_arc_opt.unwrap(), &mut |parent_node| {
+        parent_node.children.retain(|child_id| *child_id != node_id);
+      });
+    };
+
     // If `node_id` has a parent, remove `node_id` its children, otherwise skip this step.
-    if let Some(parent_uid) = self.get_parent_of(node_id) {
-      let parent_node = self.get_arc_to_node(parent_uid);
-      if let Some(parent_node) = parent_node {
-        let mut writeable_parent_node: WriteGuarded<Node<T>> =
-          parent_node.write().unwrap(); // Safe to call unwrap.
-        writeable_parent_node
-          .children
-          .retain(|child_id| *child_id != node_id);
-      }
+    if self.has_parent(node_id) {
+      remove_node_id_from_parent(self.get_parent_of(node_id).unwrap()); // Safe to unwrap.
     }
 
+    // Actually delete the nodes in the deletion list.
     let mut map: WriteGuarded<ArenaMap<T>> = self.map.write().unwrap(); // Safe to unwrap.
     deletion_list.iter().for_each(|id| {
       map.remove(id);
     });
 
+    // Pass the deletion list back.
     Some(deletion_list.clone())
   }
 
@@ -141,14 +171,17 @@ where
     &self,
     node_id: usize,
   ) -> ResultUidList {
+    if !self.node_exists(node_id) {
+      return None;
+    }
     let mut collected_nodes: Vec<usize> = vec![];
     let mut stack: Vec<usize> = vec![node_id];
 
     while let Some(node_id) = stack.pop() {
-      // Question mark operator works below, since it returns a `Option<T>` to `while let ...`.
+      // Question mark operator works below, since it returns a `Option` to `while let ...`.
       // Basically skip to the next item in the `stack` if `node_id` can't be found.
-      let node_ref = self.get_arc_to_node(node_id)?;
-      node_ref.read().ok().map(|node: ReadGuarded<Node<T>>| {
+      let node_ref = self.get_node_arc(node_id)?;
+      unwrap_arc_read_lock_and_call(&node_ref, &mut |node| {
         collected_nodes.push(node.get_id());
         stack.extend(node.children.iter().cloned());
       });
@@ -161,57 +194,76 @@ where
   }
 
   /// If `node_id` can't be found, returns `None`.
-  pub fn get_weak_ref_to_node(
+  /// More info on `Option.map()`: <https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=d5a54a042fea085ef8c9122b7ea47c6a>
+  pub fn get_node_arc_weak(
     &self,
     node_id: usize,
   ) -> Option<WeakNodeRef<T>> {
-    let id = node_id;
-    let map: ReadGuarded<ArenaMap<T>> = self.map.read().ok()?;
-    let node_ref = map.get(&id)?;
-    Some(Arc::downgrade(&node_ref))
+    if !self.node_exists(node_id) {
+      return None;
+    }
+    self
+      .map
+      .read()
+      .unwrap()
+      .get(&node_id) // Returns `None` if `node_id` doesn't exist.
+      .map(|node_ref| Arc::downgrade(&node_ref)) // Runs if `node_ref` is some, else returns `None`.
   }
 
   /// If `node_id` can't be found, returns `None`.
-  pub fn get_arc_to_node(
+  /// More info on `Option.map()`: <https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=d5a54a042fea085ef8c9122b7ea47c6a>
+  pub fn get_node_arc(
     &self,
     node_id: usize,
   ) -> Option<NodeRef<T>> {
-    let id = node_id;
-    let map: ReadGuarded<ArenaMap<T>> = self.map.read().ok()?;
-    let node_ref = map.get(&id)?;
-    Some(Arc::clone(&node_ref))
+    if !self.node_exists(node_id) {
+      return None;
+    }
+    self
+      .map
+      .read()
+      .unwrap()
+      .get(&node_id) // Returns `None` if `node_id` doesn't exist.
+      .map(|node_ref| Arc::clone(&node_ref)) // Runs if `node_ref` is some, else returns `None`.
   }
 
+  /// Note `data` is cloned to avoid `data` being moved.
+  /// If `parent_id` can't be found, it panics.
   pub fn add_new_node(
     &mut self,
     data: T,
-    parent_id: Option<usize>,
+    parent_id_opt: Option<usize>,
   ) -> usize {
+    let parent_id_arg_provided = parent_id_opt.is_some();
+
+    // Check to see if `parent_id` exists.
+    if parent_id_arg_provided && !self.node_exists(parent_id_opt.unwrap()) {
+      panic!("Parent node doesn't exist.");
+    }
+
     let new_node_id = self.generate_uid();
 
-    let push_new_node_into_arena = || {
-      let id = new_node_id;
-      let mut map: WriteGuarded<ArenaMap<T>> = self.map.write().unwrap(); // Safe to unwrap.
-      map.insert(
-        id,
-        Arc::new(RwLock::new(Node {
-          id,
-          parent: match parent_id {
-            Some(parent_id) => Some(parent_id),
-            None => None,
-          },
-          children: vec![],
-          payload: data,
-        })),
-      );
-    };
-    push_new_node_into_arena();
+    with_mut(&mut self.map.write().unwrap(), &mut |map| {
+      let value = Arc::new(RwLock::new(Node {
+        id: new_node_id,
+        parent: if parent_id_arg_provided {
+          Some(parent_id_opt.unwrap())
+        } else {
+          None
+        },
+        children: vec![],
+        payload: data.clone(),
+      }));
+      map.insert(new_node_id, value);
+    });
 
-    if let Some(parent_id) = parent_id {
-      if let Some(parent_node_ref) = self.get_arc_to_node(parent_id) {
-        let mut parent_node: WriteGuarded<Node<T>> = parent_node_ref.write().unwrap(); // Safe to unwrap.
-        parent_node.children.push(new_node_id);
-      }
+    if let Some(parent_id) = parent_id_opt {
+      let parent_node_arc_opt = self.get_node_arc(parent_id);
+      call_if_some(&parent_node_arc_opt, &|parent_node_arc| {
+        unwrap_arc_write_lock_and_call(&parent_node_arc, &mut |parent_node| {
+          parent_node.children.push(new_node_id);
+        });
+      });
     }
 
     // Return the node identifier.
