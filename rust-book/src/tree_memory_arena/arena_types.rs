@@ -33,6 +33,13 @@ pub type WeakNodeRef<T> = Weak<RwLock<Node<T>>>;
 pub type ReadGuarded<'a, T> = RwLockReadGuard<'a, T>;
 pub type WriteGuarded<'a, T> = RwLockWriteGuard<'a, T>;
 pub type ArenaMap<T> = HashMap<usize, NodeRef<T>>;
-pub type FilterFn<T> = dyn Fn(usize, ReadGuarded<Node<T>>) -> bool;
+
 pub type ResultUidList = Option<Vec<usize>>;
+
+// Filter lambda signature.
+pub type FilterFn<'a, T> = &'a mut dyn for<'r> Fn(usize, RwLockReadGuard<'r, Node<T>>) -> bool;
+// pub type FilterFn<'a, T> = &'a mut dyn for<'r> FnMut(usize, RwLockReadGuard<'r, Node<T>>) -> bool;
+
+// Parallel support.
 pub type ShreableArena<T> = Arc<RwLock<Arena<T>>>;
+pub type WalkerFn<T> = fn(usize, ReadGuarded<Node<T>>); // Does not capture any variables.

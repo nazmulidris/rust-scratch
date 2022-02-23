@@ -70,7 +70,7 @@ where
   /// If no matching nodes can be found returns `None`.
   pub fn filter_all_nodes_by(
     &self,
-    filter_fn: &FilterFn<T>,
+    filter_fn: FilterFn<T>,
   ) -> ResultUidList {
     let map: ReadGuarded<ArenaMap<T>> = self.map.read().unwrap();
     let filtered_map = map

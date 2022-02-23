@@ -3,7 +3,7 @@ use std::thread::{self, JoinHandle};
 
 /// Rust book: https://doc.rust-lang.org/book/ch11-03-test-organization.html#the-tests-directory
 use rust_book_lib::{
-  tree_memory_arena::{Arena, MTArena},
+  tree_memory_arena::{Arena, MTArena, Node, ReadGuarded, ResultUidList},
   utils::{style_primary, style_prompt},
 };
 
@@ -166,7 +166,7 @@ fn test_can_search_nodes_in_tree_with_filter_lambda() {
   // Search entire arena for root.get_id().
   {
     let filter_id = root;
-    let result = &arena.filter_all_nodes_by(&move |id, _node_ref| {
+    let result = arena.filter_all_nodes_by(&mut move |id, _node_ref| {
       if id == filter_id {
         true
       } else {
@@ -178,7 +178,7 @@ fn test_can_search_nodes_in_tree_with_filter_lambda() {
 
   // Search entire arena for node that contains payload "gc1".
   {
-    let result = &arena.filter_all_nodes_by(&move |_id, node_ref| {
+    let result = arena.filter_all_nodes_by(&mut move |_id, node_ref| {
       if node_ref.payload == "gc1" {
         true
       } else {
@@ -213,13 +213,14 @@ fn test_mt_arena_insert_and_walk_in_parallel() {
     let arena_arc = arena.get_arena_arc();
     let thread = thread::spawn(move || {
       let mut arena_write = arena_arc.write().unwrap();
-      let parent: Option<Vec<usize>> = arena_write.filter_all_nodes_by(&move |_id, node_ref| {
-        if node_ref.payload == "foo" {
-          true
-        } else {
-          false
-        }
-      });
+      let parent: Option<Vec<usize>> =
+        arena_write.filter_all_nodes_by(&mut move |_id, node_ref| {
+          if node_ref.payload == "foo" {
+            true
+          } else {
+            false
+          }
+        });
       let parent_id = parent.unwrap().first().unwrap().clone();
       let child = arena_write.add_new_node("bar".to_string(), Some(parent_id));
       vec![parent_id, child]
@@ -233,13 +234,14 @@ fn test_mt_arena_insert_and_walk_in_parallel() {
     let arena_arc = arena.get_arena_arc();
     let thread = thread::spawn(move || {
       let mut arena_write = arena_arc.write().unwrap();
-      let parent: Option<Vec<usize>> = arena_write.filter_all_nodes_by(&move |_id, node_ref| {
-        if node_ref.payload == "foo" {
-          true
-        } else {
-          false
-        }
-      });
+      let parent: Option<Vec<usize>> =
+        arena_write.filter_all_nodes_by(&mut move |_id, node_ref| {
+          if node_ref.payload == "foo" {
+            true
+          } else {
+            false
+          }
+        });
       let parent_id = parent.unwrap().first().unwrap().clone();
       let child = arena_write.add_new_node("baz".to_string(), Some(parent_id));
       vec![parent_id, child]
@@ -254,10 +256,35 @@ fn test_mt_arena_insert_and_walk_in_parallel() {
   });
   println!("{:#?}", &arena);
 
-  // Perform tree walking in parallel.
+  // Perform tree walking in parallel. Note the function pointer or lamda cannot capture any
+  // enclosing variable context.
   {
-    let thread_handle = arena.tree_walk_parallel(0);
-    let result_node_list = thread_handle.join().unwrap();
+    fn walker_fn_ptr(
+      uid: usize,
+      node_ref: ReadGuarded<Node<String>>,
+    ) {
+      println!(
+        "{} {} {}",
+        style_prompt("walker_fn - fn ptr"),
+        uid,
+        node_ref.payload
+      );
+    }
+    let thread_handle_1: JoinHandle<ResultUidList> = arena.tree_walk_parallel(0, walker_fn_ptr);
+    let thread_handle_2: JoinHandle<ResultUidList> =
+      arena.tree_walk_parallel(0, |uid, node_ref| {
+        println!(
+          "{} {} {}",
+          style_primary("walker_fn - closure"),
+          uid,
+          node_ref.payload
+        );
+      });
+
+    let result_node_list = thread_handle_1.join().unwrap();
+    println!("{:#?}", result_node_list);
+
+    let result_node_list = thread_handle_2.join().unwrap();
     println!("{:#?}", result_node_list);
   }
 }

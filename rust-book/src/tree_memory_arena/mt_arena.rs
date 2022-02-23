@@ -15,11 +15,11 @@
 */
 
 use super::arena::Arena;
-use super::{ReadGuarded, ResultUidList, ShreableArena};
+use super::{Node, ReadGuarded, ResultUidList, ShreableArena, WalkerFn};
 use std::fmt::Debug;
 use std::marker::{Send, Sync};
 use std::sync::{Arc, RwLock};
-use std::thread;
+use std::thread::{self, spawn};
 
 #[derive(Debug)]
 pub struct MTArena<T: Debug> {
@@ -37,14 +37,30 @@ impl<T: 'static + Debug + Send + Sync> MTArena<T> {
     self.arena_arc.clone()
   }
 
+  /// Note that the `walker_fn` does not capture any variables. It is a function pointer and not a
+  /// lambda. Also note that this function executes in a new thread in parallel.
   pub fn tree_walk_parallel(
     &self,
     node_id: usize,
+    walker_fn: WalkerFn<T>,
   ) -> thread::JoinHandle<ResultUidList> {
     let arc = self.get_arena_arc();
-    thread::spawn(move || {
+    spawn(move || {
       let read_guard: ReadGuarded<Arena<T>> = arc.read().unwrap();
-      read_guard.tree_walk_dfs(node_id)
+      let return_value = read_guard.tree_walk_dfs(node_id);
+
+      // While walking the tree, in a separate thread, call the `walker_fn` for each node.
+      if let Some(result_list) = return_value.clone() {
+        result_list.clone().into_iter().for_each(|uid| {
+          let node_arc_opt = read_guard.get_arc_to_node(uid);
+          if let Some(node_arc) = node_arc_opt {
+            let node_ref: ReadGuarded<Node<T>> = node_arc.read().unwrap();
+            walker_fn(uid, node_ref);
+          }
+        });
+      }
+
+      return_value
     })
   }
 }
