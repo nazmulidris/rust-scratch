@@ -19,6 +19,7 @@
 //! 2. <https://doc.rust-lang.org/book/ch19-03-advanced-traits.html>
 
 use chrono::{DateTime, Utc};
+use rust_book_lib::utils::style_primary;
 use std::{
   fmt::{Display, Formatter, Result},
   ops::Add,
@@ -33,7 +34,10 @@ fn test_traits_comprehensively() {
     fn to_string(self: &Self) -> String;
     fn length(self: &Self) -> usize;
 
-    fn get_shortened_string(item: &String, max_length: usize) -> String
+    fn get_shortened_string(
+      item: &String,
+      max_length: usize,
+    ) -> String
     where
       Self: Sized,
     {
@@ -123,13 +127,19 @@ fn test_traits_comprehensively() {
 
   // Implement Display trait for structs.
   impl Display for Tweet {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+    fn fmt(
+      &self,
+      f: &mut Formatter<'_>,
+    ) -> Result {
       write!(f, "Tweet: {}", Stringable::to_string(self))
     }
   }
 
   impl Display for NewsArticle {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+    fn fmt(
+      &self,
+      f: &mut Formatter<'_>,
+    ) -> Result {
       write!(f, "NewsArticle: {}", Stringable::to_string(self))
     }
   }
@@ -228,7 +238,10 @@ fn test_trait_bounds_for_conditional_method_impl() {
 
   // Attach method to Pair struct.
   impl<T> Pair<T> {
-    fn new(first: T, second: T) -> Self {
+    fn new(
+      first: T,
+      second: T,
+    ) -> Self {
       Self { first, second }
     }
   }
@@ -323,7 +336,10 @@ fn test_associated_types_in_traits_instead_of_generics() {
   impl Add for MyString {
     type Output = MyString; // Associated type of Add trait determines the type returned by `add()`.
 
-    fn add(self, other: Self::Output) -> Self::Output {
+    fn add(
+      self,
+      other: Self::Output,
+    ) -> Self::Output {
       Self::Output {
         contents: self.contents + &other.contents,
       }
@@ -344,7 +360,10 @@ fn test_more_associated_types_in_traits() {
     type First;
     type Second;
 
-    fn new(first: Self::First, second: Self::Second) -> Self;
+    fn new(
+      first: Self::First,
+      second: Self::Second,
+    ) -> Self;
     fn first(&self) -> &Self::First;
     fn second(&self) -> &Self::Second;
   }
@@ -365,7 +384,10 @@ fn test_more_associated_types_in_traits() {
     T: Clone + PartialEq + Display,
     U: Clone + PartialEq + Display,
   {
-    fn fmt(self: &Self, f: &mut Formatter<'_>) -> Result {
+    fn fmt(
+      self: &Self,
+      f: &mut Formatter<'_>,
+    ) -> Result {
       write!(f, "({}, {})", self.first, self.second)
     }
   }
@@ -378,7 +400,10 @@ fn test_more_associated_types_in_traits() {
     type First = T;
     type Second = U;
 
-    fn new(first: Self::First, second: Self::Second) -> Self {
+    fn new(
+      first: Self::First,
+      second: Self::Second,
+    ) -> Self {
       Self { first, second }
     }
 
@@ -394,4 +419,88 @@ fn test_more_associated_types_in_traits() {
   let pair_1 = PairImpl::<i32, i32>::new(1, 2);
   assert_eq!(pair_1.first(), &1);
   assert_eq!(pair_1.second(), &2);
+}
+
+#[test]
+fn test_different_styles_of_passing_args_via_trait_impl() {
+  trait HasId {
+    type Id;
+    fn id(&self) -> &Self::Id;
+  }
+
+  struct Node {
+    id: i32,
+    payload: String,
+    children: Vec<i32>,
+  }
+
+  impl HasId for Node {
+    type Id = i32;
+
+    fn id(&self) -> &Self::Id {
+      &self.id
+    }
+  }
+
+  impl HasId for i32 {
+    type Id = i32;
+
+    fn id(&self) -> &Self::Id {
+      self
+    }
+  }
+
+  /// This accepts a borrowed `Node` object.
+  fn fun_0(node: &Node) {
+    println!("{}: {}", style_primary("fun_0:"), node.id());
+  }
+
+  /// This accepts a borrowed object that implements `HasId`.
+  fn fun_1(node: &dyn HasId<Id = i32>) {
+    println!("{}: {}", style_primary("fun_1:"), node.id());
+  }
+
+  /// This takes an object that implements `HasId`.
+  fn fun_2_own(node: impl HasId<Id = i32>) {
+    println!("{}: {}", style_primary("fun_2:"), node.id());
+  }
+
+  fn fun_2(node: &impl HasId<Id = i32>) {
+    println!("{}: {}", style_primary("fun_2:"), node.id());
+  }
+
+  /// This takes an `i32` which also implements `HasId`.
+  fn fun_3_own(node: i32) {
+    println!("{}: {}", style_primary("fun_3:"), &node.id());
+  }
+
+  fn fun_3(node: &i32) {
+    println!("{}: {}", style_primary("fun_3:"), &node.id());
+  }
+
+  /// This takes a `Node` object that's in a `Box` reference.
+  fn fun_4(node: Box<dyn HasId<Id = i32>>) {
+    println!("{}: {}", style_primary("fun_4:"), node.id());
+  }
+
+  // Here is what it looks like to use these various forms.
+  let my_node = Node {
+    id: 1,
+    payload: "payload".to_string(),
+    children: vec![2, 3, 4],
+  };
+  let my_i32_id = 1;
+
+  fun_0(&my_node);
+
+  fun_1(&my_node);
+  fun_1(&my_i32_id);
+
+  fun_2(&my_node);
+  fun_2(&my_i32_id);
+
+  fun_3(&my_i32_id);
+
+  fun_4(Box::new(my_node)); // `my_node` is moved into `fun_4`.
+  fun_4(Box::new(my_i32_id)); // `my_i32_id` is moved into `fun_4`.
 }
