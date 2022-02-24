@@ -20,7 +20,7 @@
 //! 2. Rust book: <https://doc.rust-lang.org/book/ch06-02-match.html>
 //! 3. Rust book: <https://doc.rust-lang.org/book/ch06-03-if-let.html>
 
-use rust_book_lib::utils::type_of;
+use r3bl_rs_utils::utils::type_of;
 
 pub fn run() {}
 

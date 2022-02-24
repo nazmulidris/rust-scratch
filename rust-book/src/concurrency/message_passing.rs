@@ -34,7 +34,7 @@ use std::{
   time::Duration,
 };
 
-use rust_book_lib::utils::{style_error, style_primary, style_prompt};
+use r3bl_rs_utils::utils::{style_error, style_primary, style_prompt};
 
 pub fn run() {}
 

@@ -18,7 +18,7 @@
 //! 1-1 Threading, which is 1 OS thread corresponding to 1 Rust thread. There are crates that do
 //! green threading, but that is not part of this example.
 
-use rust_book_lib::utils::{style_dimmed, style_primary, style_prompt};
+use r3bl_rs_utils::utils::{style_dimmed, style_primary, style_prompt};
 use std::{
   sync::Arc,
   thread::{self, JoinHandle},

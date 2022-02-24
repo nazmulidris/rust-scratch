@@ -52,7 +52,7 @@
 //! <https://doc.rust-lang.org/std/ops/trait.Deref.html>
 
 use core::fmt::Debug;
-use rust_book_lib::utils::{
+use r3bl_rs_utils::utils::{
   print_header, style_dimmed, style_error, style_primary, style_prompt,
 };
 use std::{

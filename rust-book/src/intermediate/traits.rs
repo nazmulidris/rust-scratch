@@ -19,7 +19,7 @@
 //! 2. <https://doc.rust-lang.org/book/ch19-03-advanced-traits.html>
 
 use chrono::{DateTime, Utc};
-use rust_book_lib::utils::style_primary;
+use r3bl_rs_utils::utils::style_primary;
 use std::{
   fmt::{Display, Formatter, Result},
   ops::Add,

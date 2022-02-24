@@ -22,7 +22,7 @@
 //! 4. `&str`     -> borrowed `str`; usually the "go to" type for strings in Rust.
 
 use ansi_term::Colour::Green;
-use rust_book_lib::utils::print_header;
+use r3bl_rs_utils::utils::print_header;
 
 pub fn run() {
   print_header("strings");

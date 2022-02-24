@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use rust_book_lib::utils::print_header2;
+use r3bl_rs_utils::utils::print_header2;
 
 pub fn run() {
   print_hello("John Doe")

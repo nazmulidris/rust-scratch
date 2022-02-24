@@ -20,7 +20,7 @@ use std::cmp::Ordering;
 
 use ansi_term::Colour::Blue;
 use rand::{thread_rng, Rng};
-use rust_book_lib::utils::{
+use r3bl_rs_utils::utils::{
   print_header, readline, style_dimmed, style_error, style_primary, style_prompt,
 };
 
