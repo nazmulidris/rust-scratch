@@ -23,8 +23,6 @@
 //!   - Approach 2: <https://stackoverflow.com/a/29101091/2085356>
 //! - Easy Rust book: <https://fongyoong.github.io/easy_rust/Chapter_25.html>
 //! - `From` trait: <https://stackoverflow.com/a/42278050/2085356>
-//! - Don't try to write Java in Rust:
-//!   <https://users.rust-lang.org/t/passing-self-as-a-parameter/18069>
 //!
 //! # Weak refs for child's parent (ownership edge vs non-ownership edge)
 //! ----------------------------------------------------------------------------
@@ -54,7 +52,9 @@
 //! <https://doc.rust-lang.org/std/ops/trait.Deref.html>
 
 use core::fmt::Debug;
-use rust_book_lib::utils::{print_header, style_dimmed, style_error, style_primary, style_prompt};
+use rust_book_lib::utils::{
+  print_header, style_dimmed, style_error, style_primary, style_prompt,
+};
 use std::{
   borrow::{Borrow, BorrowMut},
   cell::RefCell,
@@ -151,14 +151,20 @@ where
     Arc::clone(&self.arc_ref)
   }
 
-  pub fn create_and_add_child(self: &Self, value: T) -> NodeDataRef<T> {
+  pub fn create_and_add_child(
+    self: &Self,
+    value: T,
+  ) -> NodeDataRef<T> {
     let new_child = Node::new(value);
     self.add_child_and_update_its_parent(&new_child);
     new_child.get_copy_of_internal_arc()
   }
 
   /// 🔏 Write locks used.
-  pub fn add_child_and_update_its_parent(self: &Self, child: &Node<T>) {
+  pub fn add_child_and_update_its_parent(
+    self: &Self,
+    child: &Node<T>,
+  ) {
     {
       let mut my_children = self.arc_ref.children.write().unwrap();
       my_children.push(child.get_copy_of_internal_arc());
@@ -277,7 +283,10 @@ impl<T> fmt::Debug for NodeData<T>
 where
   T: Debug + Display,
 {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+  fn fmt(
+    &self,
+    f: &mut fmt::Formatter<'_>,
+  ) -> fmt::Result {
     let mut parent_msg = String::new();
     if let Some(parent) = self.parent.read().unwrap().upgrade() {
       parent_msg.push_str(format!("📦 {}", parent.value).as_str());
