@@ -103,7 +103,8 @@ where
 }
 
 /// This struct is used to own a [`NodeData`] inside an [`Arc`], which can be shared, so that it can
-/// have multiple owners. It also has getter methods for all of [`NodeData`]'s properties.
+/// have multiple owners. It does not have getter methods for [`NodeData`]'s properties, instead it
+/// implements the `Deref` trait to allow it to be used as a [`NodeData`].
 ///
 /// # Shared ownership
 ///
@@ -133,6 +134,7 @@ where
 pub struct Node<T: Display> {
   arc_ref: NodeDataRef<T>,
 }
+
 impl<T> Node<T>
 where
   T: Display,
