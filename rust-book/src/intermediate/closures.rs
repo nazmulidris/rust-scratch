@@ -57,7 +57,10 @@ fn test_closure_with_shape() {
   // 1. Fn that accepts a closure (that receives the `arg`) and calls it.
   // Can't specify the type of the variable holding the closure! But can restrict its shape via
   // `Fn` trait: https://stackoverflow.com/a/29191208/2085356
-  fn call_closure<F, T>(receiver_fn: F, arg: T) -> T
+  fn call_closure<F, T>(
+    receiver_fn: F,
+    arg: T,
+  ) -> T
   where
     F: Fn(T) -> T,
   {
@@ -89,7 +92,10 @@ fn test_closure_with_shape() {
   impl Add for Number {
     type Output = Number;
 
-    fn add(self, other: Self::Output) -> Self::Output {
+    fn add(
+      self,
+      other: Self::Output,
+    ) -> Self::Output {
       Number::from(self.unwrap() + other.unwrap())
     }
   }
@@ -113,10 +119,10 @@ fn test_memoize_closure() {
   where
     F: FnMut(&T) -> V,
     T: Clone + Eq + Hash,
-    V: Copy,
+    V: Clone,
   {
     create_value_fn: F,
-    value_map: HashMap<T, Option<V>>,
+    value_map: HashMap<T, V>,
   }
 
   // Methods for UseMemo.
@@ -124,7 +130,7 @@ fn test_memoize_closure() {
   where
     F: FnMut(&T) -> V,
     T: Clone + Eq + Hash,
-    V: Copy,
+    V: Clone,
   {
     fn new(create_value_fn: F) -> Self {
       LazyMemoValues {
@@ -132,14 +138,23 @@ fn test_memoize_closure() {
         value_map: HashMap::new(),
       }
     }
-    fn get_as_ref(&mut self, arg: &T) -> &V {
+
+    fn get_as_ref(
+      &mut self,
+      arg: &T,
+    ) -> &V {
       if !self.value_map.contains_key(arg) {
-        let value = (self.create_value_fn)(arg);
-        self.value_map.insert(arg.clone(), Some(value));
+        let arg = arg.clone();
+        let value = (self.create_value_fn)(&arg);
+        self.value_map.insert(arg, value);
       }
-      self.value_map.get(arg).unwrap().as_ref().unwrap()
+      self.value_map.get(arg).as_ref().unwrap()
     }
-    fn get_copy(&mut self, arg: &T) -> V {
+
+    fn get_copy(
+      &mut self,
+      arg: &T,
+    ) -> V {
       self.get_as_ref(arg).clone()
     }
   }
