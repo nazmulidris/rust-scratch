@@ -2,7 +2,19 @@
 name = "rust-grep-cli"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
+description = "Hands on learning examples for Rust Book (https://rust-lang.github.io/rust-book/)"
+authors = ["Nazmul Idris <idris@developerlife.com>"]
+repository = "https://github.com/nazmulidris/rust_scratch/tree/main/rust-book"
+readme = "README.md"
+homepage = "https://developerlife.com"
+keywords = ["rust-book canonical examples"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "rust_book"
+path = "src/main.rs"
 
 [dependencies]
+r3bl_rs_utils = "*"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
