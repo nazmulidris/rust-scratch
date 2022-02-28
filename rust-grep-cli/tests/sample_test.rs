@@ -1,5 +1,5 @@
-//! Integration tests for the `utils`
-/// Rust book: https://doc.rust-lang.org/book/ch11-03-test-organization.html#the-tests-directory
+//! Sample integration test
+//! Rust book: https://doc.rust-lang.org/book/ch11-03-test-organization.html#the-tests-directory
 use r3bl_rs_utils::utils::type_of;
 
 #[test]
