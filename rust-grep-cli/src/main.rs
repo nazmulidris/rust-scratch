@@ -1,8 +1,8 @@
 //! The CLI app will take the following arguments:
 //!
-//! <search-string> <path-to-file>
-//! ↑               ↑     
-//! arg 0           arg 0   
+//! <search-string> <path-to-file> <case-sensitive>
+//! ↑               ↑              ↑          
+//! arg 0           arg 0          arg 0   
 
 // Connect to Rust source files.
 mod command_builder;
