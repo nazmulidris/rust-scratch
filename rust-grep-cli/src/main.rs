@@ -8,33 +8,26 @@
 //!    ↑    
 //!  arg 0  
 
-use std::env::args;
+// Connect to Rust source files.
+mod command_builder;
+mod graphemes;
 
+// Imports.
+use graphemes::{print_cluster_breaks, print_graphemes};
 use r3bl_rs_utils::utils::{style_primary, with};
-use seshat::unicode::Segmentation;
-use seshat::unicode::Ucd;
+use std::env::args;
+use std::error::Error;
 
-fn main() {
+// More info on `Box<dyn Error>` or `&'static dyn Error`:
+// - `'static` is the lifetime of `Box<dyn Error>`.
+// - https://users.rust-lang.org/t/what-does-it-mean-to-return-dyn-error-static/37619/7
+// - https://doc.rust-lang.org/reference/lifetime-elision.html#default-trait-object-lifetimes
+fn main() -> Result<(), Box<dyn Error>> {
   let args = args().collect::<Vec<String>>();
   with(format!("{:?}", args), |it| {
     println!("{}", style_primary(&it));
   });
   print_graphemes();
   print_cluster_breaks();
-}
-
-fn print_graphemes() {
-  println!("🦀 is {}!", '🦀'.na());
-  println!("📦 is {}!", '📦'.na());
-  println!("🦜 is {}!", '🦜'.na());
-  println!("Multiple code points: 🙏🏽");
-  println!("Multiple code points: 💇🏽‍♂️");
-}
-
-fn print_cluster_breaks() {
-  let s = "Hi + 📦 + 🙏🏽 + 👨🏾‍🤝‍👨🏿";
-  let breaks = s.break_graphemes();
-  for (size, str) in breaks.enumerate() {
-    println!("{}: '{}'", size, str);
-  }
+  Ok(())
 }
