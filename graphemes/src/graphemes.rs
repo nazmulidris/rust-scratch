@@ -12,7 +12,7 @@ pub fn print_graphemes() {
 pub fn print_cluster_breaks() {
   let s = "Hi + 📦 + 🙏🏽 + 👨🏾‍🤝‍👨🏿";
   let breaks = s.break_graphemes();
-  for (size, str) in breaks.enumerate() {
-    println!("{}: '{}'", size, str);
+  for (idx, str) in breaks.enumerate() {
+    println!("{}: '{}'", idx, str);
   }
 }
