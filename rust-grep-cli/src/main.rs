@@ -1,19 +1,13 @@
 //! The CLI app will take the following arguments:
 //!
-//! search <search-string> <path-to-file>
-//!    ↑          ↑              ↑
-//!  arg 0      arg 1           arg 1
-//!
-//! grapheme
-//!    ↑    
-//!  arg 0  
+//! <search-string> <path-to-file>
+//! ↑               ↑     
+//! arg 0           arg 0   
 
 // Connect to Rust source files.
 mod command_builder;
-mod graphemes;
 
 // Imports.
-use graphemes::{print_cluster_breaks, print_graphemes};
 use r3bl_rs_utils::utils::{style_primary, with};
 use std::env::args;
 use std::error::Error;
@@ -27,7 +21,5 @@ fn main() -> Result<(), Box<dyn Error>> {
   with(format!("{:?}", args), |it| {
     println!("{}", style_primary(&it));
   });
-  print_graphemes();
-  print_cluster_breaks();
   Ok(())
 }
