@@ -100,11 +100,12 @@ checksum = "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872"
 
 [[package]]
 name = "r3bl_rs_utils"
-version = "0.5.3"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89171670fa34932582b76046806b59a26e4f644166452c4a788c9ddf00f93524"
+checksum = "bf9e2bd4e0437aff1fe22ca6a7540a250fc51b6ec6582a71ff7035c5a5ad9518"
 dependencies = [
  "ansi_term",
+ "atty",
  "chrono",
  "rand",
 ]
