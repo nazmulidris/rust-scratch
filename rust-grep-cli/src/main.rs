@@ -12,6 +12,7 @@ use piped_grep_command_builder::PipedGrepOptionsBuilder;
 use r3bl_rs_utils::utils::{is_stdin_piped, style_error};
 use std::env::args;
 use std::error::Error;
+use std::process::exit;
 
 /// This program has 2 modes of operation.
 ///
@@ -32,7 +33,7 @@ use std::error::Error;
 /// - <https://doc.rust-lang.org/reference/lifetime-elision.html#default-trait-object-lifetimes>
 fn main() {
   let args = args().collect::<Vec<String>>();
-  std::process::exit(match run(args) {
+  exit(match run(args) {
     Ok(_) => 0,
     Err(err) => {
       eprintln!("{}: {}", style_error("Problem encountered"), err);
