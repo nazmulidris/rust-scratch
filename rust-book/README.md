@@ -101,6 +101,10 @@ mod tests {
 - [`?` operator](https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-question-mark-operator)
 - [Error handling](https://stevedonovan.github.io/rust-gentle-intro/6-error-handling.html)
 
+## Git
+
+- [Ignore Cargo.lock for lib, commit for bin](https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries)
+
 ## Mutability, concurrency, parallelism
 
 - [Box, RC, Arc, Cell, RefCell, Mutex](https://tekshinobi.com/rust-tips-box-rc-arc-cell-refcell-mutex)
