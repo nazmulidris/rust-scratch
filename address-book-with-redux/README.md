@@ -6,12 +6,17 @@ Along w/ a reducer function.
 
 # Todo
 
-- [ ] Create a simple CLI event loop that allows the user to interact with the address book
+- [x] Create simple CLI event loop that allows the user to interact with the address book
   - Use `readline` to get user input (from `r3bl_rs_utils`)
-- [ ] Create a Redux store
-- [ ] Create a Redux reducer
-- [ ] Create an action framework
-- [ ] Create an AddressBook strut and impl
-- [ ] Create a CLI app that takes input to mutate this store and display the state to stdout
+- [*] Create Action enum
+- [*] Create Redux reducer function
+- [*] Create Redux store & state
+- [*] Create AddressBook data model
+- [ ] Create a simple TUI that takes input to mutate this store and display the state to stdout
+- [ ] Sync this address book data w/ Google sheet (use the one tutorial for Rust)
 - [ ] Replace the use of `readline` with `rustyline`
 - [ ] Create a better `readline` with my own implementation using `crossterm` (like `reedline`)
+
+# References
+
+- [Tutorial on implementing Redux in Rust](https://betterprogramming.pub/redux-in-rust-d622822085fe)
