@@ -85,30 +85,26 @@ mod tests {
 - [Easy Rust book](https://fongyoong.github.io/easy_rust/)
 - [Rust style guide](https://doc.rust-lang.org/1.0.0/style/ownership/builders.html)
 
-## General
+## Trait objects
 
-- [String, &String, &str](https://www.ameyalokare.com/rust/2017/10/12/rust-str-vs-String.html)
-- [std::fmt](https://doc.rust-lang.org/std/fmt/)
-- [Primitive data types](https://learning-rust.github.io/docs/a8.primitive_data_types.html)
-- [String <-> &str conversions](https://blog.mgattozzi.dev/how-do-i-str-string/)
-- [String <-> &str conversions](https://stackoverflow.com/a/29026565/2085356)
-- [Unwrap & expect, Result -> Ok, Err](https://learning-rust.github.io/docs/e4.unwrap_and_expect.html)
-- [Rust turbofish](https://techblog.tonsser.com/posts/what-is-rusts-turbofish)
-- [Error handling - array index out of bounds](https://users.rust-lang.org/t/array-out-of-bound-error-handling/26939)
-- [Range and borrowing limitations, clone instead](https://stackoverflow.com/a/62480671/2085356)
-- [Deref and Ref as different type](https://stackoverflow.com/a/41273331/2085356)
-- [Roll your own typeof function](https://stackoverflow.com/a/58119924/2085356)
-- [`?` operator](https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-question-mark-operator)
-- [Error handling](https://stevedonovan.github.io/rust-gentle-intro/6-error-handling.html)
-
-## Git
-
-- [Ignore Cargo.lock for lib, commit for bin](https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries)
+- [`&dyn T` aka `Box<dyn T>` or `Arc`](https://stackoverflow.com/a/27570064/2085356)
+  - The un-sized value `dyn T` itself is a trait object and must be used behind a pointer of some
+    kind (`&dyn T`, `Box<dyn T>` etc.)
+- [`Box` around traits](https://dhghomon.github.io/easy_rust/Chapter_54.html)
 
 ## Mutability, concurrency, parallelism
 
 - [Box, RC, Arc, Cell, RefCell, Mutex](https://tekshinobi.com/rust-tips-box-rc-arc-cell-refcell-mutex)
 - [Arc & Mutex](https://aeshirey.github.io/code/2020/12/23/arc-mutex-in-rust.html)
+
+## Builders and `Default` trait
+
+- [Builder vs `Default`](https://dhghomon.github.io/easy_rust/Chapter_55.html)
+- [`Default` trait](https://doc.rust-lang.org/std/default/trait.Default.html)
+
+## Git
+
+- [Ignore Cargo.lock for lib, commit for bin](https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries)
 
 ## Publishing crates, documentation, module re-exports
 
@@ -146,3 +142,19 @@ mod tests {
 - [Memory layout in Rust](https://youtu.be/rDoqT-a6UFg)
 - [Rust Book](https://www.youtube.com/playlist?list=PLai5B987bZ9CoVR-QEIN9foz4QCJ0H2Y8)
 - [JT's introduction to Rust 4 parts](https://www.youtube.com/playlist?list=PLP2yfE2-FXdQmXLvrQ5QN64enbF_KCYQW)
+
+## General
+
+- [String, &String, &str](https://www.ameyalokare.com/rust/2017/10/12/rust-str-vs-String.html)
+- [std::fmt](https://doc.rust-lang.org/std/fmt/)
+- [Primitive data types](https://learning-rust.github.io/docs/a8.primitive_data_types.html)
+- [String <-> &str conversions](https://blog.mgattozzi.dev/how-do-i-str-string/)
+- [String <-> &str conversions](https://stackoverflow.com/a/29026565/2085356)
+- [Unwrap & expect, Result -> Ok, Err](https://learning-rust.github.io/docs/e4.unwrap_and_expect.html)
+- [Rust turbofish](https://techblog.tonsser.com/posts/what-is-rusts-turbofish)
+- [Error handling - array index out of bounds](https://users.rust-lang.org/t/array-out-of-bound-error-handling/26939)
+- [Range and borrowing limitations, clone instead](https://stackoverflow.com/a/62480671/2085356)
+- [Deref and Ref as different type](https://stackoverflow.com/a/41273331/2085356)
+- [Roll your own typeof function](https://stackoverflow.com/a/58119924/2085356)
+- [`?` operator](https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-question-mark-operator)
+- [Error handling](https://stevedonovan.github.io/rust-gentle-intro/6-error-handling.html)
