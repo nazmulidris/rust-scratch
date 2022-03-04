@@ -15,6 +15,7 @@ Along w/ a reducer function.
   - Move to `lib.rs`
 - [ ] Create a simple TUI that takes input to mutate this store and display the state to stdout
 - [ ] Sync this address book data w/ Google sheet (use the one tutorial for Rust)
+- [ ] Publish Redux store to `r3bl_rs_utils`
 - [ ] Replace the use of `readline` with `rustyline`
 - [ ] Create a better `readline` with my own implementation using `crossterm` (like `reedline`)
 

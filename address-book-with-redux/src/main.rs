@@ -25,11 +25,11 @@ fn run_repl(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
   let mut count = 0 as usize;
   let mut store = Store::new(&address_book_reducer);
 
-  let subscriber: &SubscriberFn<State> = &|state| {
+  let subscriber_fn: &SubscriberFn<State> = &|state| {
     println!("{:?}", state);
   };
-  store.add_subscriber(&subscriber);
-  store.add_subscriber(&subscriber);
+  store.add_subscriber_fn(&subscriber_fn);
+  store.add_subscriber_fn(&subscriber_fn);
 
   print_header("Starting repl");
 
