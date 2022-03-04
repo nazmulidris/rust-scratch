@@ -1,9 +1,17 @@
 [package]
-name = "address-book-with-redux"
+name = "address_book_with_redux"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "address_book_with_redux"
+path = "src/main.rs"
+
+[lib]
+name = "address_book_with_redux_lib"
+path = "src/lib.rs"
 
 [dependencies]
 r3bl_rs_utils = "*"

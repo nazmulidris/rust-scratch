@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "address-book-with-redux"
+name = "address_book_with_redux"
 version = "0.1.0"
 dependencies = [
  "r3bl_rs_utils",

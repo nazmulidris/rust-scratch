@@ -1,13 +1,12 @@
 // Connect to source files.
 mod address_book;
-mod redux;
 
 // Imports.
 use std::{env::args, error::Error, process::exit};
 use r3bl_rs_utils::utils::{
   call_if_err, print_header, print_prompt, readline, style_error, style_primary, with,
 };
-use redux::Store;
+use address_book_with_redux_lib::redux::Store;
 use address_book::{address_book_reducer, Action};
 
 fn main() {

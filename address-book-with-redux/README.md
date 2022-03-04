@@ -10,8 +10,9 @@ Along w/ a reducer function.
   - Use `readline` to get user input (from `r3bl_rs_utils`)
 - [*] Create Action enum
 - [*] Create Redux reducer function
-- [*] Create Redux store & state
 - [*] Create AddressBook data model
+- [*] Create Redux store & state
+  - Move to `lib.rs`
 - [ ] Create a simple TUI that takes input to mutate this store and display the state to stdout
 - [ ] Sync this address book data w/ Google sheet (use the one tutorial for Rust)
 - [ ] Replace the use of `readline` with `rustyline`
