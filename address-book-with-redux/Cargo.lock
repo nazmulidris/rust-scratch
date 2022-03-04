@@ -7,6 +7,7 @@ name = "address_book_with_redux"
 version = "0.1.0"
 dependencies = [
  "r3bl_rs_utils",
+ "rand",
 ]
 
 [[package]]

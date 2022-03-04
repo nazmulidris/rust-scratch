@@ -14,4 +14,5 @@ name = "address_book_with_redux_lib"
 path = "src/lib.rs"
 
 [dependencies]
+rand = "*"
 r3bl_rs_utils = "*"

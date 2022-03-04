@@ -3,10 +3,10 @@ use r3bl_rs_utils::tree_memory_arena::HasId;
 // Contact.
 #[derive(Clone, Default, PartialEq, Debug, Hash)]
 pub struct Contact {
-  id: usize,
-  name: String,
-  email: String,
-  phone: String,
+  pub id: usize,
+  pub name: String,
+  pub email: String,
+  pub phone: String,
 }
 
 impl HasId for Contact {

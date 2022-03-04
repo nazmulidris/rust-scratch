@@ -5,9 +5,11 @@ mod address_book;
 use std::{env::args, error::Error, process::exit};
 use r3bl_rs_utils::utils::{
   call_if_err, print_header, print_prompt, readline, style_error, style_primary, with,
+  style_dimmed, with_mut,
 };
-use address_book_with_redux_lib::redux::{Store, SubscriberFn};
+use address_book_with_redux_lib::redux::{Store};
 use address_book::{address_book_reducer, Action, State};
+use rand::random;
 
 fn main() {
   let args = args().collect::<Vec<String>>();
@@ -21,42 +23,43 @@ fn main() {
   });
 }
 
-fn run_repl(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
-  let mut count = 0 as usize;
-  let mut store = Store::new(&address_book_reducer);
+fn render_state(state: &State) {
+  println!("{:#?}", state);
+}
 
-  let subscriber_fn: &SubscriberFn<State> = &|state| {
-    println!("{:?}", state);
-  };
-  store.add_subscriber_fn(&subscriber_fn);
-  store.add_subscriber_fn(&subscriber_fn);
+fn run_repl(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
+  let mut store = Store::new(&address_book_reducer);
+  store.add_subscriber_fn(&render_state);
 
   print_header("Starting repl");
 
   loop {
     print_prompt("r3bl> ")?;
     let (_, user_input) = readline();
+
     match user_input.as_ref() {
       "quit" => break,
       "exit" => break,
-      "add" => {
-        count = count + 1;
+      "add" => with_mut(&mut random::<u8>(), &mut |id| {
         store.dispatch_action(&Action::AddContact(
-          format!("John Doe #{}", count),
-          format!("jd@gmail.com #{}", count),
-          format!("123-456-7890 #{}", count),
+          format!("John Doe #{}", id),
+          format!("jd@gmail.com #{}", id),
+          format!("123-456-7890 #{}", id),
         ));
-      }
-      // TODO: add more strings for actions here
+      }),
+      "clear" => store.dispatch_action(&Action::RemoveAllContacts),
       _ => {
         println!("{}", style_error("Unknown command"));
       }
     }
+    // TODO: RemoveContactById
+    // TODO: ResetState
 
-    if (user_input == "exit") || (user_input == "quit") {
-      break;
-    }
-    println!("{}", style_primary(&user_input));
+    println!(
+      "{} {}",
+      style_primary(&user_input),
+      style_dimmed("was executed.")
+    );
   }
 
   Ok(())
