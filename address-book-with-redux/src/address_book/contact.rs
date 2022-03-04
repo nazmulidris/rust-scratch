@@ -18,7 +18,7 @@ impl HasId for Contact {
   }
 
   /// Delegate this to `self.id`, which is type `usize`.
-  fn into_some(&self) -> Option<&(dyn HasId<IdType = usize>)> {
+  fn into_some(&self) -> Option<usize> {
     self.id.into_some()
   }
 }
