@@ -6,8 +6,8 @@ use std::{env::args, error::Error, process::exit};
 use r3bl_rs_utils::utils::{
   call_if_err, print_header, print_prompt, readline, style_error, style_primary, with,
 };
-use address_book_with_redux_lib::redux::Store;
-use address_book::{address_book_reducer, Action};
+use address_book_with_redux_lib::redux::{Store, SubscriberFn};
+use address_book::{address_book_reducer, Action, State};
 
 fn main() {
   let args = args().collect::<Vec<String>>();
@@ -22,8 +22,14 @@ fn main() {
 }
 
 fn run_repl(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
-  let mut store = Store::new(Box::new(address_book_reducer));
   let mut count = 0 as usize;
+  let mut store = Store::new(&address_book_reducer);
+
+  let subscriber: &SubscriberFn<State> = &|state| {
+    println!("{:?}", state);
+  };
+  store.add_subscriber(&subscriber);
+  store.add_subscriber(&subscriber);
 
   print_header("Starting repl");
 
