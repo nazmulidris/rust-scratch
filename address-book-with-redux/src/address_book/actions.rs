@@ -8,3 +8,4 @@ pub enum Action {
   RemoveContactById(usize),
   ResetState(State),
 }
+

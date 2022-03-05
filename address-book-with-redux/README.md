@@ -13,7 +13,7 @@ Basic
 - [x] Create action enum
 - [x] Create state & address book data model
   - [ ] Add search term support?
-- [x] Create reducer function
+;- [x] Create reducer function
 - [x] Create Redux store
   - [x] Move to `lib.rs`
   - [ ] Add support for middleware

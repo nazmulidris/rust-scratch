@@ -4,8 +4,8 @@ mod address_book;
 // Imports.
 use std::{env::args, error::Error, process::exit};
 use r3bl_rs_utils::utils::{
-  call_if_err, print_header, style_error, style_primary, with,
-  style_dimmed, with_mut, readline_with_prompt,
+  call_if_err, print_header, style_error, style_primary, with, style_dimmed, with_mut,
+  readline_with_prompt,
 };
 use address_book_with_redux_lib::redux::{Store};
 use address_book::{address_book_reducer, Action, State};
@@ -23,15 +23,30 @@ fn main() {
   });
 }
 
-fn render_state(state: &State) {
-  println!("{:#?}", state);
+fn render_fn(state: &State) {
+  println!(
+    "{}: {}",
+    style_primary("render\n"),
+    style_dimmed(&format!("{:#?}", state))
+  );
+}
+
+fn logger_middleware_fn(action: &Action) -> Option<Action> {
+  println!(
+    "{}: {}",
+    style_error("logger_mw"),
+    style_dimmed(&format!("{:#?}", action))
+  );
+  None
 }
 
 fn run_repl(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
-  let mut store = with(Store::new(&address_book_reducer), |mut store| {
+  let mut store = with(Store::default(), |mut store| {
     store
-      .add_subscriber_fn(&render_state)
-      .add_subscriber_fn(&render_state);
+      .add_reducer_fn(&address_book_reducer)
+      .add_subscriber_fn(&render_fn)
+      .add_subscriber_fn(&render_fn)
+      .add_middleware_fn(&logger_middleware_fn);
     store
   });
 
