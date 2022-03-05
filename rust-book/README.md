@@ -92,6 +92,10 @@ mod tests {
     kind (`&dyn T`, `Box<dyn T>` etc.)
 - [`Box` around traits](https://dhghomon.github.io/easy_rust/Chapter_54.html)
 
+## Method chaining approaches
+
+- [Tutorial on different approaches for chaining](https://randompoison.github.io/posts/returning-self/)
+
 ## Mutability, concurrency, parallelism
 
 - [Box, RC, Arc, Cell, RefCell, Mutex](https://tekshinobi.com/rust-tips-box-rc-arc-cell-refcell-mutex)

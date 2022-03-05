@@ -1,7 +1,5 @@
 use std::{fmt::Debug};
 use std::hash::Hash;
-
-
 use r3bl_rs_utils::utils::{style_dimmed};
 
 pub type ReducerFn<S, A> = dyn Fn(&S, &A) -> S;
@@ -16,10 +14,13 @@ pub struct Store<'a, S, A> {
   pub subscriber_fns: Vec<&'a SubscriberFn<S>>,
 }
 
+/// More info on method chaining approaches in Rust:
+/// <https://randompoison.github.io/posts/returning-self/>
 impl<'a, S, A> Store<'a, S, A>
 where
   S: Clone + Default + PartialEq + Debug + Hash,
 {
+  // Constructor.
   pub fn new(reducer: &'a ReducerFn<S, A>) -> Self {
     Store {
       state: S::default(),
@@ -28,40 +29,34 @@ where
     }
   }
 
-  pub fn dispatch_action(
-    &mut self,
-    action: &A,
-  ) {
-    self.state = (self.reducer_fn)(&self.state, &action);
-    self.subscriber_fns.iter_mut().for_each(|subscriber| {
-      (subscriber)(&self.state);
-    });
-  }
-
+  // Manage subscribers.
   pub fn add_subscriber_fn(
     &mut self,
     new_subscriber: &'a SubscriberFn<S>,
-  ) {
+  ) -> &mut Self {
     match self.subscriber_exists(new_subscriber) {
       (true, _) => println!("{}", style_dimmed("Subscriber already exists")),
       (false, _) => self.subscriber_fns.push(new_subscriber),
     }
+    self
   }
 
   pub fn remove_subscriber_fn(
     &mut self,
     subscriber_to_remove: &'a SubscriberFn<S>,
-  ) {
+  ) -> &mut Self {
     match self.subscriber_exists(subscriber_to_remove) {
       (true, index) => {
         self.subscriber_fns.remove(index.unwrap());
       }
       _ => {}
     }
+    self
   }
 
-  pub fn remove_all_subscribers(&mut self) {
+  pub fn remove_all_subscribers(&mut self) -> &mut Self {
     self.subscriber_fns.clear();
+    self
   }
 
   /// https://doc.rust-lang.org/std/primitive.pointer.html
@@ -88,5 +83,16 @@ where
       return (true, Some(return_index));
     }
     return (false, None);
+  }
+
+  // Dispatch.
+  pub fn dispatch_action(
+    &mut self,
+    action: &A,
+  ) {
+    self.state = (self.reducer_fn)(&self.state, &action);
+    self.subscriber_fns.iter_mut().for_each(|subscriber| {
+      (subscriber)(&self.state);
+    });
   }
 }

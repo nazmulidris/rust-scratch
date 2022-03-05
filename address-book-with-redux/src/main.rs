@@ -4,7 +4,7 @@ mod address_book;
 // Imports.
 use std::{env::args, error::Error, process::exit};
 use r3bl_rs_utils::utils::{
-  call_if_err, print_header, print_prompt, readline, style_error, style_primary, with,
+  call_if_err, print_header, style_error, style_primary, with,
   style_dimmed, with_mut, readline_with_prompt,
 };
 use address_book_with_redux_lib::redux::{Store};
@@ -29,7 +29,9 @@ fn render_state(state: &State) {
 
 fn run_repl(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
   let mut store = with(Store::new(&address_book_reducer), |mut store| {
-    store.add_subscriber_fn(&render_state);
+    store
+      .add_subscriber_fn(&render_state)
+      .add_subscriber_fn(&render_state);
     store
   });
 
