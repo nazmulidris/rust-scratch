@@ -1,16 +1,16 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 use r3bl_rs_utils::utils::style_dimmed;
-use super::{Store, SubscriberFn};
+use super::{Store, SubscriberFn, SubscriberManager};
 
 /// More info on method chaining approaches in Rust:
 /// <https://randompoison.github.io/posts/returning-self/>
-impl<'a, S, A> Store<'a, S, A>
+impl<'a, S, A> SubscriberManager<'a, S, A> for Store<'a, S, A>
 where
   S: Clone + Default + PartialEq + Debug + Hash,
 {
   // Manage subscribers.
-  pub fn add_subscriber_fn(
+  fn add_subscriber_fn(
     &mut self,
     new_subscriber_fn: &'a SubscriberFn<S>,
   ) -> &mut Self {
@@ -21,7 +21,7 @@ where
     self
   }
 
-  pub fn remove_subscriber_fn(
+  fn remove_subscriber_fn(
     &mut self,
     subscriber_fn_to_remove: &'a SubscriberFn<S>,
   ) -> &mut Self {
@@ -34,7 +34,7 @@ where
     self
   }
 
-  pub fn remove_all_subscribers(&mut self) -> &mut Self {
+  fn remove_all_subscribers(&mut self) -> &mut Self {
     self.subscriber_fns.clear();
     self
   }
@@ -62,3 +62,4 @@ where
     return (false, None);
   }
 }
+

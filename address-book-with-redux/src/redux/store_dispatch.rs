@@ -1,15 +1,15 @@
 use core::hash::Hash;
 use core::fmt::Debug;
-use super::Store;
+use super::{Store, MiddlewareManager, DispatchManager};
 
 /// More info on method chaining approaches in Rust:
 /// <https://randompoison.github.io/posts/returning-self/>
-impl<'a, S, A> Store<'a, S, A>
+impl<'a, S, A> DispatchManager<A> for Store<'a, S, A>
 where
-  S: Clone + Default + PartialEq + Debug + Hash,
+  S: Clone + Default + PartialEq + Debug + Hash
 {
   // Dispatch.
-  pub fn dispatch_action(
+  fn dispatch_action(
     &mut self,
     action: &A,
   ) where

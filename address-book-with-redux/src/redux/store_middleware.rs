@@ -1,15 +1,19 @@
 use std::fmt::Debug;
 use std::hash::Hash;
-use super::{Store, MiddlewareFn};
+use super::{Store, MiddlewareFn, MiddlewareManager};
 
 /// More info on method chaining approaches in Rust:
 /// <https://randompoison.github.io/posts/returning-self/>
-impl<'a, S, A> Store<'a, S, A>
+impl<'a, S, A> MiddlewareManager<'a, A> for Store<'a, S, A>
 where
-  S: Clone + Default + PartialEq + Debug + Hash,
+  S: Clone
+    + Default
+    + PartialEq
+    + Debug
+    + Hash
 {
   // Manage middleware.
-  pub fn add_middleware_fn(
+  fn add_middleware_fn(
     &mut self,
     middleware_fn: &'a MiddlewareFn<A>,
   ) -> &mut Self {
@@ -17,7 +21,7 @@ where
     self
   }
 
-  pub fn middleware_runner(
+  fn middleware_runner(
     &mut self,
     action: &A,
   ) -> Vec<Option<A>> {

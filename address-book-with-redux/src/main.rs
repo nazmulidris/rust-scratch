@@ -3,6 +3,7 @@ mod address_book;
 
 // Imports.
 use std::{env::args, error::Error, process::exit};
+use rand::random;
 use r3bl_rs_utils::{
   utils::{
     call_if_err, print_header, style_error, style_primary, with, style_dimmed, with_mut,
@@ -10,11 +11,11 @@ use r3bl_rs_utils::{
   },
   tree_memory_arena::HasId,
 };
-use address_book_with_redux_lib::redux::{Store};
-use address_book::{address_book_reducer, Action, State};
-use rand::random;
-
-use crate::address_book::Contact;
+use address_book::{address_book_reducer, Action, State, Contact};
+use address_book_with_redux_lib::redux::{
+  Store, StoreInterface, ReducerManager, SubscriberManager, MiddlewareManager,
+  DispatchManager,
+};
 
 fn main() {
   let args = args().collect::<Vec<String>>();
@@ -77,7 +78,7 @@ fn logger_middleware_fn(action: &Action) -> Option<Action> {
 }
 
 fn run_repl(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
-  let mut store = with(Store::default(), |mut store| {
+  let mut store = with(Store::new(), |mut store| {
     store
       .add_reducer_fn(&address_book_reducer)
       .add_subscriber_fn(&render_fn)
