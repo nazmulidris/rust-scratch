@@ -7,15 +7,12 @@ use r3bl_rs_utils::{
     readline_with_prompt,
   },
 };
-use address_book_with_redux_lib::redux::{
-  Store, StoreInterface, ReducerManager, SubscriberManager, MiddlewareManager,
-  DispatchManager,
-};
+use address_book_with_redux_lib::redux::{Store};
 use crate::address_book::{address_book_reducer, Action, State};
 use super::{render_fn, logger_middleware_fn};
 
 pub fn start_repl_loop(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
-  let mut store = with(Store::new(), |mut store| {
+  let mut store = with(Store::default(), |mut store| {
     store
       .add_reducer_fn(&address_book_reducer)
       .add_subscriber_fn(&render_fn)
