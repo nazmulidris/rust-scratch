@@ -1,8 +1,5 @@
 use r3bl_rs_utils::utils::with;
-
-use super::Action;
-use super::Contact;
-use super::State;
+use super::{State, Action, Contact};
 
 pub fn address_book_reducer(
   state: &State,

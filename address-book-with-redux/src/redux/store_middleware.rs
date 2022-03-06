@@ -1,5 +1,4 @@
-use std::fmt::Debug;
-use std::hash::Hash;
+use std::{fmt::Debug, hash::Hash};
 use super::{Store, MiddlewareFn, MiddlewareManager};
 
 /// More info on method chaining approaches in Rust:

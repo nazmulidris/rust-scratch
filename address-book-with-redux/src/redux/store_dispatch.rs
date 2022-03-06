@@ -1,5 +1,4 @@
-use core::hash::Hash;
-use core::fmt::Debug;
+use core::{hash::Hash, fmt::Debug};
 use super::{Store, MiddlewareManager, DispatchManager};
 
 /// More info on method chaining approaches in Rust:

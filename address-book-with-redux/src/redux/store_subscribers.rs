@@ -1,5 +1,4 @@
-use std::fmt::Debug;
-use std::hash::Hash;
+use std::{fmt::Debug, hash::Hash};
 use r3bl_rs_utils::utils::style_dimmed;
 use super::{Store, SubscriberFn, SubscriberManager};
 
