@@ -24,11 +24,14 @@ fn main() {
 }
 
 fn render_fn(state: &State) {
-  println!(
-    "{}: {}",
-    style_primary("render\n"),
-    style_dimmed(&format!("{:#?}", state))
-  );
+  match state.search_term {
+    Some(ref search_term) => println!("TODO! Searching for: {}", search_term),
+    None => println!(
+      "{}: {}",
+      style_primary("render\n"),
+      style_dimmed(&format!("{:#?}", state))
+    ),
+  }
 }
 
 fn logger_middleware_fn(action: &Action) -> Option<Action> {
@@ -70,11 +73,15 @@ fn run_repl(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
         Ok(id) => store.dispatch_action(&Action::RemoveContactById(id.parse().unwrap())),
         Err(_) => println!("{}", style_error("Invalid id")),
       },
+      "search" => match readline_with_prompt("search_term> ") {
+        Ok(search_term) => store.dispatch_action(&Action::Search(search_term)),
+        Err(_) => println!("{}", style_error("Invalid id")),
+      },
       "reset" => store.dispatch_action(&Action::ResetState(State::default())),
       "help" => println!(
         "{}: {}",
         style_primary("Available commands"),
-        style_dimmed("quit, exit, add, clear, remove, reset, help")
+        style_dimmed("quit, exit, add, clear, remove, reset, search, help")
       ),
       _ => {
         println!("{}", style_error("Unknown command"));

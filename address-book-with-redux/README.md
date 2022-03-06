@@ -12,17 +12,32 @@ Basic
   - [x] Use `readline` to get user input (from `r3bl_rs_utils`)
 - [x] Create action enum
 - [x] Create state & address book data model
-  - [ ] Add search term support?
-;- [x] Create reducer function
+  - [ ] FIXME: Add search term support
+- [x] Create reducer function
 - [x] Create Redux store
   - [x] Move to `lib.rs`
-  - [ ] Add support for middleware
+  - [x] Add support for middleware
 - [x] Create a simple TUI that takes input to mutate this store and display the state to stdout
+- [x] Refactor the `store.rs` into multiple files (prepare for publishing it in the future).
+
+Intermediate
+
+- [ ] FIXME: Add Redux history support
+
+Concurrency
+
+- [ ] FIXME: Make middleware async / parallel
+  - Use `tokio` or some other crate?
+  - Wrap the store itself in an `Arc<Mutex>` / `Arc<RwLock>`?
+- [ ] Sync this address book data w/ Google sheet (use the one tutorial for Rust)
+
+Publish
+
+- [ ] Publish Redux store to `r3bl_rs_utils`
+- [ ] Write developerlife.com article on Redux & Rust
 
 Advanced
 
-- [ ] Sync this address book data w/ Google sheet (use the one tutorial for Rust)
-- [ ] Publish Redux store to `r3bl_rs_utils`
 - [ ] Replace the use of `readline` with `rustyline`
 - [ ] Create a better `readline` with my own implementation using `crossterm` (like `reedline`)
 

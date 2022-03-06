@@ -7,5 +7,5 @@ pub enum Action {
   RemoveAllContacts,
   RemoveContactById(usize),
   ResetState(State),
+  Search(String),
 }
-
