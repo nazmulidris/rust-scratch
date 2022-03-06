@@ -12,7 +12,7 @@ Basic
   - [x] Use `readline` to get user input (from `r3bl_rs_utils`)
 - [x] Create action enum
 - [x] Create state & address book data model
-  - [ ] FIXME: Add search term support
+  - [x] Add search term support
 - [x] Create reducer function
 - [x] Create Redux store
   - [x] Move to `lib.rs`

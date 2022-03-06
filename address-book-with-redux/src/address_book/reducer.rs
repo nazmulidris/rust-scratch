@@ -30,7 +30,10 @@ pub fn address_book_reducer(
       new_state
     }),
     Action::Search(search_term) => with(state.clone(), &|mut new_state: State| {
-      new_state.search_term = Some(search_term.to_string());
+      match search_term.as_str() {
+        "" => new_state.search_term = None,
+        _ => new_state.search_term = Some(search_term.to_string()),
+      };
       new_state
     }),
   }

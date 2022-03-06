@@ -3,13 +3,18 @@ mod address_book;
 
 // Imports.
 use std::{env::args, error::Error, process::exit};
-use r3bl_rs_utils::utils::{
-  call_if_err, print_header, style_error, style_primary, with, style_dimmed, with_mut,
-  readline_with_prompt,
+use r3bl_rs_utils::{
+  utils::{
+    call_if_err, print_header, style_error, style_primary, with, style_dimmed, with_mut,
+    readline_with_prompt,
+  },
+  tree_memory_arena::HasId,
 };
 use address_book_with_redux_lib::redux::{Store};
 use address_book::{address_book_reducer, Action, State};
 use rand::random;
+
+use crate::address_book::Contact;
 
 fn main() {
   let args = args().collect::<Vec<String>>();
@@ -24,22 +29,50 @@ fn main() {
 }
 
 fn render_fn(state: &State) {
-  match state.search_term {
-    Some(ref search_term) => println!("TODO! Searching for: {}", search_term),
-    None => println!(
-      "{}: {}",
-      style_primary("render\n"),
-      style_dimmed(&format!("{:#?}", state))
-    ),
+  // https://rust-lang.github.io/rfcs/2909-destructuring-assignment.html
+  let State {
+    search_term,
+    address_book,
+  } = state;
+
+  for contact in address_book.iter() {
+    if search_term.is_none() || contact_matches_search_term(contact, search_term) {
+      println!(
+        "{} {} {} {}",
+        style_dimmed(&contact.get_id().to_string()),
+        contact.name,
+        contact.email,
+        contact.phone
+      );
+    }
+  }
+
+  fn contact_matches_search_term(
+    contact: &Contact,
+    search_term: &Option<String>,
+  ) -> bool {
+    match search_term {
+      Some(search_term) => {
+        contact
+          .name
+          .to_lowercase()
+          .contains(&search_term.to_lowercase())
+          || contact
+            .email
+            .to_lowercase()
+            .contains(&search_term.to_lowercase())
+          || contact
+            .phone
+            .to_lowercase()
+            .contains(&search_term.to_lowercase())
+      }
+      None => true,
+    }
   }
 }
 
 fn logger_middleware_fn(action: &Action) -> Option<Action> {
-  println!(
-    "{}: {}",
-    style_error("logger_mw"),
-    style_dimmed(&format!("{:#?}", action))
-  );
+  println!("{}: {:?}", style_error("logger_mw"), action);
   None
 }
 
