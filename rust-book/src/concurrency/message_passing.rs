@@ -45,25 +45,29 @@ fn test_one_sender_one_receiver() {
   type Handles = Vec<JoinHandle<()>>;
   let mut handles: Handles = vec![];
 
-  let payload_to_tx = "hi!".to_string();
-  handles.push(parallel_send_task(send.clone(), payload_to_tx));
-  // Can no longer access `payload` as it has been moved.
+  let payload_to_send = "hi!".to_string();
+  handles.push(parallel_send_task(send.clone(), payload_to_send));
+  // Can no longer access `payload_to_send` as it has been moved.
 
-  let payload_to_rx = blocking_single_receive_task(recv);
-  println!("Got: {}", style_prompt(&payload_to_rx));
+  let payload_to_recv = blocking_single_receive_task(recv);
+  println!("Got: {}", style_prompt(&payload_to_recv));
 
   wait_for_all(handles); // No need for this, just a safety.
 
-  fn parallel_send_task(tx: Sender<String>, payload: String) -> JoinHandle<()> {
+  // Helper functions.
+  fn parallel_send_task(
+    send: Sender<String>,
+    payload: String,
+  ) -> JoinHandle<()> {
     thread::spawn(move || {
-      tx.send(payload).unwrap();
+      send.send(payload).unwrap();
       // Can no longer access `payload` as it has moved to the other thread.
       println!("{}", style_primary("Sent message!"));
     })
   }
 
-  fn blocking_single_receive_task(rx: mpsc::Receiver<String>) -> String {
-    let received = rx.recv().unwrap();
+  fn blocking_single_receive_task(recv: mpsc::Receiver<String>) -> String {
+    let received = recv.recv().unwrap();
     received
   }
 
@@ -109,18 +113,21 @@ fn test_multiple_sender_one_receiver() {
 
   receiver_handle.join().unwrap();
 
-  fn parallel_recv_task(rx: mpsc::Receiver<String>) -> JoinHandle<()> {
+  fn parallel_recv_task(recv: mpsc::Receiver<String>) -> JoinHandle<()> {
     thread::spawn(move || {
-      for recieved in rx.iter() {
-        println!("{}", style_primary(recieved.as_str()));
+      for received in recv.iter() {
+        println!("{}", style_primary(received.as_str()));
       }
     })
   }
 
-  fn parallel_send_task(tx: Sender<String>, vals: Vec<String>) -> JoinHandle<()> {
+  fn parallel_send_task(
+    send: Sender<String>,
+    values: Vec<String>,
+  ) -> JoinHandle<()> {
     thread::spawn(move || {
-      for val in vals {
-        tx.send(val).unwrap();
+      for val in values {
+        send.send(val).unwrap();
         thread::sleep(Duration::from_millis(50));
       }
     })
