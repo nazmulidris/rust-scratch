@@ -6,6 +6,7 @@ pub type MiddlewareFn<A> = dyn Fn(&A) -> Option<A>;
 // pub type SubscriberFn<S> = fn(&S);
 // pub type MiddlewareFn<A> = fn(&A) -> A;
 
+#[derive(Clone)]
 pub struct Store<'a, S, A> {
   pub state: S,
   pub history: Vec<S>,
