@@ -3,7 +3,7 @@ use r3bl_rs_utils::utils::style_dimmed;
 use super::{Store, MiddlewareFn, ReducerFn, SubscriberFn};
 
 // Handle dispatch & history.
-impl<'a, S, A> Store<'a, S, A>
+impl<S, A> Store<S, A>
 where
   S: Clone + Default + PartialEq + Debug + Hash,
 {
@@ -70,14 +70,14 @@ where
 }
 
 // Manage middleware.
-impl<'a, S, A> Store<'a, S, A>
+impl<S, A> Store<S, A>
 where
   S: Clone + Default + PartialEq + Debug + Hash,
 {
   pub fn add_middleware_fn(
     &mut self,
-    middleware_fn: &'a MiddlewareFn<A>,
-  ) -> &mut Store<'a, S, A> {
+    middleware_fn: Box<MiddlewareFn<A>>,
+  ) -> &mut Store<S, A> {
     self.middleware_fns.push(middleware_fn);
     self
   }
@@ -96,29 +96,29 @@ where
 }
 
 // Manage reducers.
-impl<'a, S, A> Store<'a, S, A>
+impl<S, A> Store<S, A>
 where
   S: Clone + Default + PartialEq + Debug + Hash,
 {
   pub fn add_reducer_fn(
     &mut self,
-    reducer_fn: &'a ReducerFn<S, A>,
-  ) -> &mut Store<'a, S, A> {
+    reducer_fn: Box<ReducerFn<S, A>>,
+  ) -> &mut Store<S, A> {
     self.reducer_fns.push(reducer_fn);
     self
   }
 }
 
 // Manage subscribers.
-impl<'a, S, A> Store<'a, S, A>
+impl<S, A> Store<S, A>
 where
   S: Clone + Default + PartialEq + Debug + Hash,
 {
   pub fn add_subscriber_fn(
     &mut self,
-    new_subscriber_fn: &'a SubscriberFn<S>,
-  ) -> &mut Store<'a, S, A> {
-    match self.subscriber_exists(new_subscriber_fn) {
+    new_subscriber_fn: Box<SubscriberFn<S>>,
+  ) -> &mut Store<S, A> {
+    match self.subscriber_exists(new_subscriber_fn.as_ref()) {
       (true, _) => println!("{}", style_dimmed("Subscriber already exists")),
       (false, _) => self.subscriber_fns.push(new_subscriber_fn),
     }
@@ -127,18 +127,15 @@ where
 
   pub fn remove_subscriber_fn(
     &mut self,
-    subscriber_fn_to_remove: &'a SubscriberFn<S>,
-  ) -> &mut Store<'a, S, A> {
-    match self.subscriber_exists(subscriber_fn_to_remove) {
-      (true, index) => {
-        self.subscriber_fns.remove(index.unwrap());
-      }
-      _ => {}
+    subscriber_fn_to_remove: Box<SubscriberFn<S>>,
+  ) -> &mut Store<S, A> {
+    if let (true, index) = self.subscriber_exists(subscriber_fn_to_remove.as_ref()) {
+      let _ = self.subscriber_fns.remove(index.unwrap());
     }
     self
   }
 
-  pub fn remove_all_subscribers(&mut self) -> &mut Store<'a, S, A> {
+  pub fn remove_all_subscribers(&mut self) -> &mut Store<S, A> {
     self.subscriber_fns.clear();
     self
   }
@@ -148,9 +145,8 @@ where
   /// https://www.reddit.com/r/rust/comments/98xlh3/how_can_i_compare_two_function_pointers_to_see_if/
   fn subscriber_exists(
     &self,
-    new_subscriber: &'a SubscriberFn<S>,
+    new_subscriber: &SubscriberFn<S>,
   ) -> (bool, Option<usize>) {
-    let this = new_subscriber as *const SubscriberFn<S>;
     let mut index_if_found = 0 as usize;
     if self
       .subscriber_fns
@@ -158,7 +154,8 @@ where
       .enumerate()
       .any(|(index, other)| {
         index_if_found = index;
-        this == *other as *const SubscriberFn<S>
+        new_subscriber as *const SubscriberFn<S>
+          == other.as_ref() as *const SubscriberFn<S>
       })
     {
       return (true, Some(index_if_found));

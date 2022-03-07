@@ -1,47 +1,58 @@
 // Imports.
 use std::error::Error;
 use rand::random;
-use r3bl_rs_utils::{
-  utils::{
-    print_header, style_error, style_primary, with, style_dimmed, with_mut,
-    readline_with_prompt, unwrap_arc_write_lock_and_call, unwrap_arc_read_lock_and_call,
-  },
+use r3bl_rs_utils::utils::{
+  print_header, style_error, style_primary, with, style_dimmed, with_mut,
+  readline_with_prompt, unwrap_arc_write_lock_and_call, unwrap_arc_read_lock_and_call,
 };
-use address_book_with_redux_lib::redux::MTStore;
+use address_book_with_redux_lib::redux::StoreGuard;
 use crate::address_book::{address_book_reducer, Action, State};
 use super::{render_fn, logger_middleware_fn};
 
-pub fn start_repl_loop<'a>(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
-  let store_manager = MTStore::default();
-  with(store_manager.get_store_arc(), |store_arc| {
+pub fn run_tui_app(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
+  let store_guard: StoreGuard<State, Action> =
+    with(StoreGuard::default(), |store_guard| {
+      setup_store_guard(&store_guard);
+      store_guard
+    });
+  repl_loop(store_guard)?;
+  Ok(())
+}
+
+fn setup_store_guard(store_guard: &StoreGuard<State, Action>) {
+  with(store_guard.get_store_arc(), |store_arc| {
     unwrap_arc_write_lock_and_call(&store_arc, &mut |store| {
       store
-        .add_reducer_fn(&address_book_reducer)
-        .add_subscriber_fn(&render_fn)
-        .add_subscriber_fn(&render_fn)
-        .add_middleware_fn(&logger_middleware_fn);
+        .add_reducer_fn(Box::new(address_book_reducer))
+        .add_subscriber_fn(Box::new(render_fn))
+        .add_subscriber_fn(Box::new(render_fn))
+        .add_middleware_fn(Box::new(logger_middleware_fn));
     });
   });
+}
 
+pub fn repl_loop(store_guard: StoreGuard<State, Action>) -> Result<(), Box<dyn Error>> {
+  // Helper lambda.
   let dispatch = |action: Action| {
-    with(store_manager.get_store_arc(), |store_arc| {
+    with(store_guard.get_store_arc(), |store_arc| {
       unwrap_arc_write_lock_and_call(&store_arc, &mut |store| {
         store.dispatch_action(&action);
       });
     });
   };
 
+  // Helper lambda.
   let get_history = || {
-    with(store_manager.get_store_arc(), |store_arc| {
+    with(store_guard.get_store_arc(), |store_arc| {
       unwrap_arc_read_lock_and_call(&store_arc, &mut |store| store.history.clone())
     })
   };
 
   print_header("Starting repl");
 
+  // Repl loop.
   loop {
     let user_input = readline_with_prompt("r3bl> ")?;
-
     match user_input.as_str() {
       "help" => println!(
         "{}: {}",
@@ -78,7 +89,7 @@ pub fn start_repl_loop<'a>(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
       style_primary(&user_input),
       style_dimmed("was executed.")
     );
-  } // end loop.
+  }
 
   Ok(())
 }
