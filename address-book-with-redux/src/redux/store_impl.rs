@@ -2,7 +2,7 @@ use core::{hash::Hash, fmt::Debug};
 use r3bl_rs_utils::utils::style_dimmed;
 use super::{Store, MiddlewareFn, ReducerFn, SubscriberFn};
 
-// Handle dispatch.
+// Handle dispatch & history.
 impl<'a, S, A> Store<'a, S, A>
 where
   S: Clone + Default + PartialEq + Debug + Hash,
@@ -36,13 +36,36 @@ where
   ) {
     // Run reducers.
     self.reducer_fns.iter().for_each(|reducer_fn| {
-      self.state = reducer_fn(&self.state, &action);
+      let new_state = reducer_fn(&self.state, &action);
+      update_history(&mut self.history, &new_state);
+      self.state = new_state;
     });
 
     // Run subscribers.
     self.subscriber_fns.iter_mut().for_each(|subscriber_fn| {
       (subscriber_fn)(&self.state);
     });
+
+    // Update history.
+    fn update_history<S>(
+      history: &mut Vec<S>,
+      new_state: &S,
+    ) where
+      S: PartialEq + Clone,
+    {
+      // Update history.
+      let mut update_history = false;
+      if history.is_empty() {
+        update_history = true;
+      } else if let Some(last_known_state) = history.last() {
+        if *last_known_state != *new_state {
+          update_history = true;
+        }
+      }
+      if update_history {
+        history.push(new_state.clone())
+      };
+    }
   }
 }
 

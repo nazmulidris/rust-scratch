@@ -8,6 +8,7 @@ pub type MiddlewareFn<A> = dyn Fn(&A) -> Option<A>;
 
 pub struct Store<'a, S, A> {
   pub state: S,
+  pub history: Vec<S>,
   pub reducer_fns: Vec<&'a ReducerFn<S, A>>,
   pub subscriber_fns: Vec<&'a SubscriberFn<S>>,
   pub middleware_fns: Vec<&'a MiddlewareFn<A>>,
@@ -21,6 +22,7 @@ where
   fn default() -> Self {
     Self {
       state: Default::default(),
+      history: vec![],
       reducer_fns: vec![],
       subscriber_fns: vec![],
       middleware_fns: vec![],

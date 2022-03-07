@@ -27,6 +27,11 @@ pub fn start_repl_loop(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
     let user_input = readline_with_prompt("r3bl> ")?;
 
     match user_input.as_str() {
+      "help" => println!(
+        "{}: {}",
+        style_primary("Available commands"),
+        style_dimmed("quit, exit, add, clear, remove, reset, search, help")
+      ),
       "quit" => break,
       "exit" => break,
       "add" => with_mut(&mut random::<u8>(), &mut |id| {
@@ -46,14 +51,9 @@ pub fn start_repl_loop(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
         Err(_) => println!("{}", style_error("Invalid id")),
       },
       "reset" => store.dispatch_action(&Action::ResetState(State::default())),
-      "help" => println!(
-        "{}: {}",
-        style_primary("Available commands"),
-        style_dimmed("quit, exit, add, clear, remove, reset, search, help")
-      ),
-      _ => {
-        println!("{}", style_error("Unknown command"));
-      }
+      "history" => println!("{:#?}", store.history),
+      // Catchall.
+      _ => println!("{}", style_error("Unknown command")),
     } // end match user_input.
 
     // Print confirmation at the end of 1 repl loop.

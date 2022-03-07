@@ -22,7 +22,7 @@ Basic
 
 Intermediate
 
-- [ ] FIXME: Add Redux history support
+- [x] Add Redux history support
 
 Concurrency
 
