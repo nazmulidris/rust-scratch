@@ -44,3 +44,4 @@ Advanced
 # References
 
 - [Tutorial on implementing Redux in Rust](https://betterprogramming.pub/redux-in-rust-d622822085fe)
+- [tokio video](https://youtu.be/MZyleK8elPk)

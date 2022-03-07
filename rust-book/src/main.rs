@@ -25,7 +25,7 @@ mod basics; // This is a module that contains many other files.
 mod concurrency;
 mod data_structures; // This is a module that contains many other files.
 mod intermediate; // This is a module that contains many other files.
-mod runnable; // This is a module that contains many other files. // This is a module that contains many other files.
+mod runnable; // This is a module that contains many other files.
 
 fn main() {
   // The following have runnable code.

@@ -19,8 +19,8 @@ impl<'a, S, A> Default for Store<'a, S, A>
 where
   S: Default,
 {
-  fn default() -> Self {
-    Self {
+  fn default() -> Store<'a, S, A> {
+    Store {
       state: Default::default(),
       history: vec![],
       reducer_fns: vec![],

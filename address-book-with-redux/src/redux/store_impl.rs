@@ -103,7 +103,7 @@ where
   pub fn add_reducer_fn(
     &mut self,
     reducer_fn: &'a ReducerFn<S, A>,
-  ) -> &mut Self {
+  ) -> &mut Store<'a, S, A> {
     self.reducer_fns.push(reducer_fn);
     self
   }
@@ -117,7 +117,7 @@ where
   pub fn add_subscriber_fn(
     &mut self,
     new_subscriber_fn: &'a SubscriberFn<S>,
-  ) -> &mut Self {
+  ) -> &mut Store<'a, S, A> {
     match self.subscriber_exists(new_subscriber_fn) {
       (true, _) => println!("{}", style_dimmed("Subscriber already exists")),
       (false, _) => self.subscriber_fns.push(new_subscriber_fn),
@@ -128,7 +128,7 @@ where
   pub fn remove_subscriber_fn(
     &mut self,
     subscriber_fn_to_remove: &'a SubscriberFn<S>,
-  ) -> &mut Self {
+  ) -> &mut Store<'a, S, A> {
     match self.subscriber_exists(subscriber_fn_to_remove) {
       (true, index) => {
         self.subscriber_fns.remove(index.unwrap());
@@ -138,7 +138,7 @@ where
     self
   }
 
-  pub fn remove_all_subscribers(&mut self) -> &mut Self {
+  pub fn remove_all_subscribers(&mut self) -> &mut Store<'a, S, A> {
     self.subscriber_fns.clear();
     self
   }
