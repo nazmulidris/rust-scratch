@@ -3,25 +3,20 @@
 
 // Connect to source files.
 mod async_middleware;
-use async_middleware::SafeFn;
 
 // Imports.
-use crate::async_middleware::{SafeFnWrapper, Future};
-use std::sync::{Arc, RwLock};
+use crate::async_middleware::SafeFnWrapper;
 
 #[tokio::main]
 async fn main() {
   let logger_mw = logger_mw();
   let adder_mw = adder_mw();
 
-  spawn(logger_mw.unwrap(), Action::Add(1, 2))
-    .await
-    .unwrap();
+  logger_mw.spawn(Action::Add(1, 2)).await.unwrap();
+  logger_mw.spawn(Action::Add(1, 2)).await.unwrap();
 
-  let result_action = spawn(adder_mw.unwrap(), Action::Add(1, 2))
-    .await
-    .unwrap();
-  println!("result_action: {:?}", result_action);
+  println!("{:?}", adder_mw.spawn(Action::Add(1, 2)).await.unwrap());
+  println!("{:?}", adder_mw.spawn(Action::Add(1, 2)).await.unwrap());
 }
 
 /// Does not capture context or return anything.
@@ -30,9 +25,7 @@ fn logger_mw() -> SafeFnWrapper<Action> {
     println!("logging: {:?}", action);
     None
   };
-  let logger_ts_lambda: SafeFn<Action> = Arc::new(RwLock::new(logger_lambda));
-  let logger_wrapper = SafeFnWrapper::wrap(logger_ts_lambda);
-  logger_wrapper
+  SafeFnWrapper::new(logger_lambda)
 }
 
 /// Captures context and returns a `Future<Action>`.
@@ -46,19 +39,7 @@ fn adder_mw() -> SafeFnWrapper<Action> {
     }
     _ => None,
   };
-  let adder_ts_lambda: SafeFn<Action> = Arc::new(RwLock::new(adder_lambda));
-  let adder_wrapper = SafeFnWrapper::wrap(adder_ts_lambda);
-  adder_wrapper
-}
-
-fn spawn(
-  lambda: SafeFn<Action>,
-  action: Action,
-) -> Future<Option<Action>> {
-  tokio::spawn(async move {
-    let mut fn_mut = lambda.write().unwrap();
-    fn_mut(action)
-  })
+  SafeFnWrapper::new(adder_lambda)
 }
 
 /// Action enum.
