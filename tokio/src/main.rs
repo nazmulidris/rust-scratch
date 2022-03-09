@@ -10,8 +10,7 @@ use tokio::task::JoinHandle;
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 enum Action {
   Add(i32, i32),
-  Multiply(i32, i32),
-  Interpret(String),
+  Result(i32),
   Clear,
 }
 
@@ -36,15 +35,24 @@ impl FnWrapper {
   }
 }
 
+type Future<T> = JoinHandle<T>;
+
 #[tokio::main]
 async fn main() {
-  // `logger` fn wrapper.
-  let logger_lambda = |action: Action| {
-    println!("logging: {:?}", action);
-  };
-  let logger_ts_lambda: ThreadSafeLambda = Arc::new(RwLock::new(logger_lambda));
-  let logger_wrapper = FnWrapper::new(logger_ts_lambda);
+  let logger_mw = logger_mw();
+  let adder_mw = adder_mw();
 
+  // Run them both in using `tokio::spawn`.
+  run_async(logger_mw.get_fn_mut(), Action::Add(1, 2))
+    .await
+    .unwrap();
+
+  run_async(adder_mw.get_fn_mut(), Action::Add(1, 2))
+    .await
+    .unwrap();
+}
+
+fn adder_mw() -> FnWrapper {
   // `adder` fn wrapper that captures context.
   let mut stack: Vec<i32> = Vec::new();
   let adder_lambda = move |action: Action| {
@@ -54,14 +62,18 @@ async fn main() {
   };
   let adder_ts_lambda: ThreadSafeLambda = Arc::new(RwLock::new(adder_lambda));
   let adder_wrapper = FnWrapper::new(adder_ts_lambda);
-
-  // Run them both in using `tokio::spawn`.
-  run_async(logger_wrapper.get_fn_mut(), Action::Add(1, 2))
-    .await
-    .unwrap();
+  adder_wrapper
 }
 
-type Future<T> = JoinHandle<T>;
+fn logger_mw() -> FnWrapper {
+  // `logger` fn wrapper.
+  let logger_lambda = |action: Action| {
+    println!("logging: {:?}", action);
+  };
+  let logger_ts_lambda: ThreadSafeLambda = Arc::new(RwLock::new(logger_lambda));
+  let logger_wrapper = FnWrapper::new(logger_ts_lambda);
+  logger_wrapper
+}
 
 fn run_async(
   lambda: ThreadSafeLambda,
