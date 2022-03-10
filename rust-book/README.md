@@ -106,6 +106,15 @@ mod tests {
 - [Builder vs `Default`](https://dhghomon.github.io/easy_rust/Chapter_55.html)
 - [`Default` trait](https://doc.rust-lang.org/std/default/trait.Default.html)
 
+## Async/await
+
+Excellent resources on lifetimes, closures, and returning references:
+
+- https://stackoverflow.com/questions/59442080/rust-pass-a-function-reference-to-threads
+- https://stackoverflow.com/questions/68547268/cannot-borrow-data-in-an-arc-as-mutable
+- https://willmurphyscode.net/2018/04/25/fixing-a-simple-lifetime-error-in-rust/
+- https://medium.com/@alistairisrael/demystifying-closures-futures-and-async-await-in-rust-part-3-async-await-9ed20eede7a4
+
 ## Git
 
 - [Ignore Cargo.lock for lib, commit for bin](https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries)

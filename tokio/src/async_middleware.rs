@@ -5,10 +5,11 @@ use std::{
 };
 use tokio::task::JoinHandle;
 
-/// Excellent resources on lifetimes and returning references:
+/// Excellent resources on lifetimes, closures, and returning references:
 /// 1. https://stackoverflow.com/questions/59442080/rust-pass-a-function-reference-to-threads
 /// 2. https://stackoverflow.com/questions/68547268/cannot-borrow-data-in-an-arc-as-mutable
 /// 3. https://willmurphyscode.net/2018/04/25/fixing-a-simple-lifetime-error-in-rust/
+/// 4. https://medium.com/@alistairisrael/demystifying-closures-futures-and-async-await-in-rust-part-3-async-await-9ed20eede7a4
 pub type SafeFn<A> = Arc<RwLock<dyn FnMut(A) -> Option<A> + Sync + Send>>;
 //                   ^^^^^^^^^^                             ^^^^^^^^^^^
 //                   Safe to pass      Declare`FnMut` has thread safety
