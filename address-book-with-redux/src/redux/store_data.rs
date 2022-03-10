@@ -1,15 +1,12 @@
-use super::{
-  async_middleware::SafeMiddlewareFnWrapper, async_subscribers::SafeSubscriberFnWrapper,
-  sync_reducers::ReducerFnWrapper,
-};
+use super::{SafeMiddlewareFnWrapper, ListManager, ReducerFnWrapper, SafeSubscriberFnWrapper};
 
-/// Redux store. Do not use this directly, please use [`StoreWrapper`] instead.
+/// Redux store. Do not use this directly, please use [`Store`] instead.
 pub struct StoreData<S, A> {
   pub state: S,
   pub history: Vec<S>,
-  pub reducer_fns: Vec<ReducerFnWrapper<S, A>>,
-  pub subscriber_fns: Vec<SafeSubscriberFnWrapper<S>>,
-  pub middleware_fns: Vec<SafeMiddlewareFnWrapper<A>>,
+  pub reducer_manager: ListManager<ReducerFnWrapper<S, A>>,
+  pub subscriber_manager: ListManager<SafeSubscriberFnWrapper<S>>,
+  pub middleware_manager: ListManager<SafeMiddlewareFnWrapper<A>>,
 }
 
 /// Default impl of Redux store.
@@ -21,9 +18,9 @@ where
     StoreData {
       state: Default::default(),
       history: vec![],
-      reducer_fns: vec![],
-      subscriber_fns: vec![],
-      middleware_fns: vec![],
+      reducer_manager: ListManager::new(),
+      subscriber_manager: ListManager::new(),
+      middleware_manager: ListManager::new(),
     }
   }
 }

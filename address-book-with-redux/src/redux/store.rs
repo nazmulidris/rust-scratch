@@ -3,10 +3,13 @@ use std::{
   hash::Hash,
   sync::{Arc, RwLock},
 };
-use super::{StoreData, async_subscribers::SafeSubscriberFnWrapper, async_middleware::SafeMiddlewareFnWrapper, sync_reducers::ReducerFnWrapper};
+use super::{
+  StoreData, async_subscribers::SafeSubscriberFnWrapper,
+  async_middleware::SafeMiddlewareFnWrapper, sync_reducers::ReducerFnWrapper,
+};
 
-/// Thread safe and async Redux store (using [`tokio`]). This is built atop [`Store`] (which should
-/// not be used directly).
+/// Thread safe and async Redux store (using [`tokio`]). This is built atop [`StoreData`] (which
+/// should not be used directly).
 pub struct Store<S, A> {
   store_arc: ShareableStoreData<S, A>,
 }
@@ -43,7 +46,7 @@ where
       .get()
       .write()
       .unwrap()
-      .subscriber_fns
+      .subscriber_manager
       .push(subscriber_fn);
     self
   }
@@ -56,7 +59,7 @@ where
       .get()
       .write()
       .unwrap()
-      .middleware_fns
+      .middleware_manager
       .push(middleware_fn);
     self
   }
@@ -65,12 +68,7 @@ where
     &self,
     reducer_fn: ReducerFnWrapper<S, A>,
   ) -> &Store<S, A> {
-    self
-      .get()
-      .write()
-      .unwrap()
-      .reducer_fns
-      .push(reducer_fn);
+    self.get().write().unwrap().reducer_manager.push(reducer_fn);
     self
   }
 }

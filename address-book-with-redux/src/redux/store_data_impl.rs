@@ -1,6 +1,5 @@
 use crate::redux::{async_subscribers::SafeSubscriberFnWrapper};
 use core::{hash::Hash, fmt::Debug};
-use std::sync::Arc;
 use super::{
   async_middleware::SafeMiddlewareFnWrapper, StoreData, sync_reducers::ReducerFnWrapper,
 };
@@ -34,7 +33,7 @@ where
     action: &A,
   ) {
     // Run reducers.
-    self.reducer_fns.iter().for_each(|reducer_fn| {
+    self.reducer_manager.iter().for_each(|reducer_fn| {
       let reducer_fn = reducer_fn.get();
       let new_state = reducer_fn(&self.state, &action);
       update_history(&mut self.history, &new_state);
@@ -42,7 +41,7 @@ where
     });
 
     // Run subscribers.
-    for subscriber_fn in self.subscriber_fns.iter() {
+    for subscriber_fn in self.subscriber_manager.iter() {
       subscriber_fn.spawn(self.state.clone()).await.unwrap();
     }
 
@@ -73,7 +72,7 @@ where
     &mut self,
     middleware_fn: SafeMiddlewareFnWrapper<A>,
   ) -> &mut StoreData<S, A> {
-    self.middleware_fns.push(middleware_fn);
+    self.middleware_manager.push(middleware_fn);
     self
   }
 
@@ -84,7 +83,7 @@ where
     action: &A,
   ) -> Vec<A> {
     let mut results: Vec<A> = vec![];
-    for middleware_fn in self.middleware_fns.iter() {
+    for middleware_fn in self.middleware_manager.iter() {
       let result = middleware_fn.spawn(action.clone()).await;
       if let Ok(option) = result {
         if let Some(action) = option {
@@ -100,12 +99,12 @@ where
     &mut self,
     new_reducer: ReducerFnWrapper<S, A>,
   ) -> &mut StoreData<S, A> {
-    self.reducer_fns.push(new_reducer);
+    self.reducer_manager.push(new_reducer);
     self
   }
 
   pub fn remove_all_reducers(&mut self) -> &mut StoreData<S, A> {
-    self.reducer_fns.clear();
+    self.reducer_manager.clear();
     self
   }
 
@@ -114,18 +113,12 @@ where
     &mut self,
     new_subscriber: SafeSubscriberFnWrapper<S>,
   ) -> &mut StoreData<S, A> {
-    for subscriber_fn in self.subscriber_fns.iter() {
-      let is_same = Arc::ptr_eq(&subscriber_fn.get(), &new_subscriber.get());
-      if is_same {
-        return self;
-      }
-    }
-    self.subscriber_fns.push(new_subscriber);
+    self.subscriber_manager.push(new_subscriber);
     self
   }
 
   pub fn remove_all_subscribers(&mut self) -> &mut StoreData<S, A> {
-    self.subscriber_fns.clear();
+    self.subscriber_manager.clear();
     self
   }
 }

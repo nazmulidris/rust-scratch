@@ -38,14 +38,14 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
 
   print_header("Starting repl");
 
-  // Repl loop.
+  // Repl.
   loop {
     let user_input = readline_with_prompt("r3bl> ")?;
     match user_input.as_str() {
       "help" => println!(
         "{}: {}",
         style_primary("Available commands"),
-        style_dimmed("quit, exit, add, clear, remove, reset, search, help")
+        style_dimmed("quit, exit, add, clear, remove, reset, search, history, help")
       ),
       "quit" => break,
       "exit" => break,

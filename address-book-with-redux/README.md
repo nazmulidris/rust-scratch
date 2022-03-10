@@ -26,14 +26,18 @@ Intermediate
 
 Concurrency
 
-- [ ] FIXME: Make middleware async / parallel
-  - Use `tokio` or some other crate?
-  - Wrap the store itself in an `Arc<Mutex>` / `Arc<RwLock>`?
+- [x] Make middleware async / parallel
+  - [x] Wrap the store itself in an `Arc<Mutex>` / `Arc<RwLock>`
+  - [x] Use `tokio`
+
+External web service / API integration
+
 - [ ] Sync this address book data w/ Google sheet (use the one tutorial for Rust)
 
 Publish
 
 - [ ] Publish Redux store to `r3bl_rs_utils`
+- [ ] Write developerlife.com article on `tokio`
 - [ ] Write developerlife.com article on Redux & Rust
 
 Advanced
