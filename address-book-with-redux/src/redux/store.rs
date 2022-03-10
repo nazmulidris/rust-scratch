@@ -1,31 +1,76 @@
-use super::async_middleware::SafeFnWrapper;
+use std::{
+  fmt::Debug,
+  hash::Hash,
+  sync::{Arc, RwLock},
+};
+use super::{StoreData, async_subscribers::SafeSubscriberFnWrapper, async_middleware::SafeMiddlewareFnWrapper, sync_reducers::ReducerFnWrapper};
 
-pub type ReducerFn<S, A> = dyn Fn(&S, &A) -> S;
-pub type SubscriberFn<S> = dyn Fn(&S);
-// Equivalent to:
-// pub type ReducerFn<S, A> = fn(&S, &A) -> S;
-// pub type SubscriberFn<S> = fn(&S);
-
+/// Thread safe and async Redux store (using [`tokio`]). This is built atop [`Store`] (which should
+/// not be used directly).
 pub struct Store<S, A> {
-  pub state: S,
-  pub history: Vec<S>,
-  pub reducer_fns: Vec<Box<ReducerFn<S, A>>>,
-  pub subscriber_fns: Vec<Box<SubscriberFn<S>>>,
-  pub middleware_fns: Vec<SafeFnWrapper<A>>,
+  store_arc: ShareableStoreData<S, A>,
 }
 
-// Default impl.
-impl<S, A> Default for Store<S, A>
+pub type ShareableStoreData<S, A> = Arc<RwLock<StoreData<S, A>>>;
+
+impl<S, A> Store<S, A>
 where
-  S: Default,
+  S: Default + Clone + PartialEq + Debug + Hash + Sync + Send + 'static,
+  A: Clone + Sync + Send + 'static,
 {
-  fn default() -> Store<S, A> {
+  pub fn new() -> Store<S, A> {
     Store {
-      state: Default::default(),
-      history: vec![],
-      reducer_fns: vec![],
-      subscriber_fns: vec![],
-      middleware_fns: vec![],
+      store_arc: Arc::new(RwLock::new(Default::default())),
     }
+  }
+
+  pub fn get(&self) -> ShareableStoreData<S, A> {
+    self.store_arc.clone()
+  }
+
+  pub async fn dispatch(
+    &self,
+    action: &A,
+  ) {
+    self.get().write().unwrap().dispatch_action(&action).await;
+  }
+
+  pub fn add_subscriber(
+    &self,
+    subscriber_fn: SafeSubscriberFnWrapper<S>,
+  ) -> &Store<S, A> {
+    self
+      .get()
+      .write()
+      .unwrap()
+      .subscriber_fns
+      .push(subscriber_fn);
+    self
+  }
+
+  pub fn add_middleware(
+    &self,
+    middleware_fn: SafeMiddlewareFnWrapper<A>,
+  ) -> &Store<S, A> {
+    self
+      .get()
+      .write()
+      .unwrap()
+      .middleware_fns
+      .push(middleware_fn);
+    self
+  }
+
+  pub fn add_reducer(
+    &self,
+    reducer_fn: ReducerFnWrapper<S, A>,
+  ) -> &Store<S, A> {
+    self
+      .get()
+      .write()
+      .unwrap()
+      .reducer_fns
+      .push(reducer_fn);
+    self
   }
 }

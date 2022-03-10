@@ -1,7 +1,7 @@
 use r3bl_rs_utils::{utils::style_dimmed, tree_memory_arena::HasId};
 use crate::address_book::{State, Contact};
 
-pub fn render_fn(state: &State) {
+pub fn render_fn(state: State) {
   // https://rust-lang.github.io/rfcs/2909-destructuring-assignment.html
   let State {
     search_term,
@@ -9,7 +9,7 @@ pub fn render_fn(state: &State) {
   } = state;
 
   for contact in address_book.iter() {
-    if search_term.is_none() || contact_matches_search_term(contact, search_term) {
+    if search_term.is_none() || contact_matches_search_term(contact, &search_term) {
       println!(
         "{} {} {} {}",
         style_dimmed(&contact.get_id().to_string()),

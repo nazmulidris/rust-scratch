@@ -1,43 +1,37 @@
 // Imports.
 use std::error::Error;
+use address_book_with_redux_lib::redux::async_middleware::SafeMiddlewareFnWrapper;
+use address_book_with_redux_lib::redux::sync_reducers::ReducerFnWrapper;
 use rand::random;
 use r3bl_rs_utils::utils::{
   print_header, style_error, style_primary, with, style_dimmed, readline_with_prompt,
-  unwrap_arc_write_lock_and_call, unwrap_arc_read_lock_and_call,
+  unwrap_arc_read_lock_and_call,
 };
-use address_book_with_redux_lib::redux::StoreGuard;
+use address_book_with_redux_lib::redux::{Store};
+use address_book_with_redux_lib::redux::async_subscribers::SafeSubscriberFnWrapper;
 use crate::address_book::{address_book_reducer, Action, State};
 use super::{render_fn, logger_mw};
 
 #[tokio::main]
 pub async fn run_tui_app(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
-  let store_guard: StoreGuard<State, Action> =
-    with(StoreGuard::default(), |store_guard| {
-      setup_store_guard(&store_guard);
-      store_guard
-    });
-  repl_loop(store_guard).await?;
+  repl_loop(create_store()).await?;
   Ok(())
 }
 
-fn setup_store_guard(store_guard: &StoreGuard<State, Action>) {
-  with(store_guard.get_store_arc(), |store_arc| {
-    unwrap_arc_write_lock_and_call(&store_arc, &mut |store| {
-      store
-        .add_reducer_fn(Box::new(address_book_reducer))
-        .add_subscriber_fn(Box::new(render_fn))
-        .add_subscriber_fn(Box::new(render_fn))
-        .add_middleware_fn(logger_mw());
-    });
-  });
+fn create_store() -> Store<State, Action> {
+  with(Store::<State, Action>::new(), |store| {
+    store
+      .add_subscriber(SafeSubscriberFnWrapper::new(render_fn))
+      .add_middleware(SafeMiddlewareFnWrapper::new(logger_mw))
+      .add_reducer(ReducerFnWrapper::new(address_book_reducer));
+    store
+  })
 }
 
-pub async fn repl_loop(
-  store_guard: StoreGuard<State, Action>
-) -> Result<(), Box<dyn Error>> {
+pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>> {
   // Helper lambda.
   let get_history = || {
-    with(store_guard.get_store_arc(), |store_arc| {
+    with(store.get(), |store_arc| {
       unwrap_arc_read_lock_and_call(&store_arc, &mut |store| store.history.clone())
     })
   };
@@ -57,7 +51,7 @@ pub async fn repl_loop(
       "exit" => break,
       "add" => {
         let id = random::<u8>();
-        store_guard
+        store
           .dispatch(&Action::AddContact(
             format!("John Doe #{}", id),
             format!("jd@gmail.com #{}", id),
@@ -65,24 +59,20 @@ pub async fn repl_loop(
           ))
           .await
       }
-      "clear" => store_guard.dispatch(&Action::RemoveAllContacts).await,
+      "clear" => store.dispatch(&Action::RemoveAllContacts).await,
       "remove" => match readline_with_prompt("id> ") {
         Ok(id) => {
-          store_guard
+          store
             .dispatch(&Action::RemoveContactById(id.parse().unwrap()))
             .await
         }
         Err(_) => println!("{}", style_error("Invalid id")),
       },
       "search" => match readline_with_prompt("search_term> ") {
-        Ok(search_term) => store_guard.dispatch(&Action::Search(search_term)).await,
+        Ok(search_term) => store.dispatch(&Action::Search(search_term)).await,
         Err(_) => println!("{}", style_error("Invalid id")),
       },
-      "reset" => {
-        store_guard
-          .dispatch(&Action::ResetState(State::default()))
-          .await
-      }
+      "reset" => store.dispatch(&Action::ResetState(State::default())).await,
       "history" => println!("{:#?}", get_history()),
       // Catchall.
       _ => println!("{}", style_error("Unknown command")),
