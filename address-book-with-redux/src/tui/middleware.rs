@@ -1,7 +1,10 @@
-use r3bl_rs_utils::utils::style_error;
+use address_book_with_redux_lib::redux::async_middleware::SafeFnWrapper;
 use crate::address_book::Action;
 
-pub fn logger_middleware_fn(action: &Action) -> Option<Action> {
-  println!("{}: {:?}", style_error("logger_mw"), action);
-  None
+pub fn logger_mw() -> SafeFnWrapper<Action> {
+  let logger_lambda = |action: Action| {
+    println!("logging: {:?}", action);
+    None
+  };
+  SafeFnWrapper::new(logger_lambda)
 }

@@ -16,3 +16,4 @@ path = "src/lib.rs"
 [dependencies]
 rand = "*"
 r3bl_rs_utils = "*"
+tokio = { version = "1", features = ["full"] }

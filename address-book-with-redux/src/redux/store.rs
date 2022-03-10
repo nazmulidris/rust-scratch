@@ -1,17 +1,17 @@
+use super::async_middleware::SafeFnWrapper;
+
 pub type ReducerFn<S, A> = dyn Fn(&S, &A) -> S;
 pub type SubscriberFn<S> = dyn Fn(&S);
-pub type MiddlewareFn<A> = dyn Fn(&A) -> Option<A>;
 // Equivalent to:
 // pub type ReducerFn<S, A> = fn(&S, &A) -> S;
 // pub type SubscriberFn<S> = fn(&S);
-// pub type MiddlewareFn<A> = fn(&A) -> Option<A>;
 
 pub struct Store<S, A> {
   pub state: S,
   pub history: Vec<S>,
   pub reducer_fns: Vec<Box<ReducerFn<S, A>>>,
   pub subscriber_fns: Vec<Box<SubscriberFn<S>>>,
-  pub middleware_fns: Vec<Box<MiddlewareFn<A>>>,
+  pub middleware_fns: Vec<SafeFnWrapper<A>>,
 }
 
 // Default impl.

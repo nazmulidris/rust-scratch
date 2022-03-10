@@ -1,25 +1,20 @@
 use core::{hash::Hash, fmt::Debug};
 use r3bl_rs_utils::utils::style_dimmed;
-use super::{Store, MiddlewareFn, ReducerFn, SubscriberFn};
+use super::{Store, ReducerFn, SubscriberFn, async_middleware::SafeFnWrapper};
 
 // Handle dispatch & history.
 impl<S, A> Store<S, A>
 where
   S: Clone + Default + PartialEq + Debug + Hash,
 {
-  pub fn dispatch_action(
+   pub async  fn dispatch_action(
     &mut self,
     action: &A,
   ) where
-    A: Clone,
+    A: Clone + Send + Sync + 'static,
   {
     // Run middleware & collect resulting actions.
-    let mut resulting_actions = self
-      .middleware_runner(action)
-      .iter()
-      .filter(|action| action.is_some())
-      .map(|action| action.clone().unwrap())
-      .collect::<Vec<A>>();
+    let mut resulting_actions = self.middleware_runner(action).await;
 
     // Add the original action to the resulting actions.
     resulting_actions.push(action.clone());
@@ -73,25 +68,32 @@ where
 impl<S, A> Store<S, A>
 where
   S: Clone + Default + PartialEq + Debug + Hash,
+  A: Sync + Send + Clone + 'static,
 {
   pub fn add_middleware_fn(
     &mut self,
-    middleware_fn: Box<MiddlewareFn<A>>,
+    middleware_fn: SafeFnWrapper<A>,
   ) -> &mut Store<S, A> {
     self.middleware_fns.push(middleware_fn);
     self
   }
 
-  fn middleware_runner(
+  /// Run middleware and return a list of resulting actions. If a middleware produces `None` that
+  /// isn't added to the list that's returned.
+  async fn middleware_runner(
     &mut self,
     action: &A,
-  ) -> Vec<Option<A>> {
-    let resulting_actions = self
-      .middleware_fns
-      .iter()
-      .map(|middleware_fn| middleware_fn(action))
-      .collect::<Vec<Option<A>>>();
-    resulting_actions
+  ) -> Vec<A> {
+    let mut results: Vec<A> = vec![];
+    for middleware_fn in self.middleware_fns.iter() {
+      let result = middleware_fn.spawn(action.clone()).await;
+      if let Ok(option) = result {
+        if let Some(action) = option {
+          results.push(action);
+        }
+      }
+    }
+    results
   }
 }
 
