@@ -19,7 +19,7 @@ pub async fn run_tui_app(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
 }
 
 fn create_store() -> Store<State, Action> {
-  with(Store::<State, Action>::new(), |store| {
+  with(Store::<State, Action>::new(), |mut store| {
     store
       .add_subscriber(SafeSubscriberFnWrapper::new(render_fn))
       .add_middleware(SafeMiddlewareFnWrapper::new(logger_mw))

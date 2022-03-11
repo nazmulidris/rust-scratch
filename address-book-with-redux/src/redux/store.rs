@@ -4,17 +4,21 @@ use std::{
   sync::{Arc, RwLock},
 };
 use super::{
-  StoreData, async_subscribers::SafeSubscriberFnWrapper,
+  StateManager, async_subscribers::SafeSubscriberFnWrapper,
   async_middleware::SafeMiddlewareFnWrapper, sync_reducers::ReducerFnWrapper,
+  ListManager,
 };
 
 /// Thread safe and async Redux store (using [`tokio`]). This is built atop [`StoreData`] (which
 /// should not be used directly).
 pub struct Store<S, A> {
-  store_arc: ShareableStoreData<S, A>,
+  store_arc: SafeStateManager<S>,
+  subscriber_manager: ListManager<SafeSubscriberFnWrapper<S>>,
+  middleware_manager: ListManager<SafeMiddlewareFnWrapper<A>>,
+  reducer_manager: ListManager<ReducerFnWrapper<S, A>>,
 }
 
-pub type ShareableStoreData<S, A> = Arc<RwLock<StoreData<S, A>>>;
+pub type SafeStateManager<S> = Arc<RwLock<StateManager<S>>>;
 
 impl<S, A> Store<S, A>
 where
@@ -24,10 +28,13 @@ where
   pub fn new() -> Store<S, A> {
     Store {
       store_arc: Arc::new(RwLock::new(Default::default())),
+      reducer_manager: ListManager::new(),
+      subscriber_manager: ListManager::new(),
+      middleware_manager: ListManager::new(),
     }
   }
 
-  pub fn get(&self) -> ShareableStoreData<S, A> {
+  pub fn get(&self) -> SafeStateManager<S> {
     self.store_arc.clone()
   }
 
@@ -35,40 +42,40 @@ where
     &self,
     action: &A,
   ) {
-    self.get().write().unwrap().dispatch_action(&action).await;
-  }
-
-  pub fn add_subscriber(
-    &self,
-    subscriber_fn: SafeSubscriberFnWrapper<S>,
-  ) -> &Store<S, A> {
     self
       .get()
       .write()
       .unwrap()
-      .subscriber_manager
-      .push(subscriber_fn);
+      .dispatch_action(
+        &action.clone(),
+        &self.reducer_manager,
+        &self.subscriber_manager,
+        &self.middleware_manager,
+      )
+      .await;
+  }
+
+  pub fn add_subscriber(
+    &mut self,
+    subscriber_fn: SafeSubscriberFnWrapper<S>,
+  ) -> &mut Store<S, A> {
+    self.subscriber_manager.push(subscriber_fn);
     self
   }
 
   pub fn add_middleware(
-    &self,
+    &mut self,
     middleware_fn: SafeMiddlewareFnWrapper<A>,
-  ) -> &Store<S, A> {
-    self
-      .get()
-      .write()
-      .unwrap()
-      .middleware_manager
-      .push(middleware_fn);
+  ) -> &mut Store<S, A> {
+    self.middleware_manager.push(middleware_fn);
     self
   }
 
   pub fn add_reducer(
-    &self,
+    &mut self,
     reducer_fn: ReducerFnWrapper<S, A>,
-  ) -> &Store<S, A> {
-    self.get().write().unwrap().reducer_manager.push(reducer_fn);
+  ) -> &mut Store<S, A> {
+    self.reducer_manager.push(reducer_fn);
     self
   }
 }
