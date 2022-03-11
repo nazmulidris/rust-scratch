@@ -1,8 +1,5 @@
-use crate::redux::{async_subscribers::SafeSubscriberFnWrapper};
 use core::{hash::Hash, fmt::Debug};
-use super::{
-  async_middleware::SafeMiddlewareFnWrapper, StoreData, sync_reducers::ReducerFnWrapper,
-};
+use super::StoreData;
 
 // Handle dispatch & history.
 impl<S, A> StoreData<S, A>
@@ -67,15 +64,6 @@ where
     }
   }
 
-  // Manage middleware.
-  pub fn add_middleware_fn(
-    &mut self,
-    middleware_fn: SafeMiddlewareFnWrapper<A>,
-  ) -> &mut StoreData<S, A> {
-    self.middleware_manager.push(middleware_fn);
-    self
-  }
-
   /// Run middleware and return a list of resulting actions. If a middleware produces `None` that
   /// isn't added to the list that's returned.
   async fn middleware_runner(
@@ -92,33 +80,5 @@ where
       }
     }
     results
-  }
-
-  // Manage reducers.
-  pub fn add_reducer_fn(
-    &mut self,
-    new_reducer: ReducerFnWrapper<S, A>,
-  ) -> &mut StoreData<S, A> {
-    self.reducer_manager.push(new_reducer);
-    self
-  }
-
-  pub fn remove_all_reducers(&mut self) -> &mut StoreData<S, A> {
-    self.reducer_manager.clear();
-    self
-  }
-
-  // Manage subscribers.
-  pub fn add_subscriber_fn(
-    &mut self,
-    new_subscriber: SafeSubscriberFnWrapper<S>,
-  ) -> &mut StoreData<S, A> {
-    self.subscriber_manager.push(new_subscriber);
-    self
-  }
-
-  pub fn remove_all_subscribers(&mut self) -> &mut StoreData<S, A> {
-    self.subscriber_manager.clear();
-    self
   }
 }
