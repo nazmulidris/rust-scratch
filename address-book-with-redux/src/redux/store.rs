@@ -38,6 +38,10 @@ where
     self.store_arc.clone()
   }
 
+  pub fn get_state(&self) -> S {
+    self.get().read().unwrap().state.clone()
+  }
+
   pub async fn dispatch(
     &self,
     action: &A,
@@ -63,11 +67,21 @@ where
     self
   }
 
+  pub fn clear_subscribers(&mut self) -> &mut Store<S, A> {
+    self.subscriber_manager.clear();
+    self
+  }
+
   pub fn add_middleware(
     &mut self,
     middleware_fn: SafeMiddlewareFnWrapper<A>,
   ) -> &mut Store<S, A> {
     self.middleware_manager.push(middleware_fn);
+    self
+  }
+
+  pub fn clear_middleware(&mut self) -> &mut Store<S, A> {
+    self.middleware_manager.clear();
     self
   }
 

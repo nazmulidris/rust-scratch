@@ -20,6 +20,8 @@ where
   }
 }
 
+// TODO: make history implementation more comprehensive (eg: max history size) & add tests.
+
 // Handle dispatch & history.
 impl<S> StateManager<S>
 where

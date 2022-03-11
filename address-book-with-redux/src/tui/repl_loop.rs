@@ -19,13 +19,12 @@ pub async fn run_tui_app(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
 }
 
 fn create_store() -> Store<State, Action> {
-  with(Store::<State, Action>::new(), |mut store| {
-    store
-      .add_subscriber(SafeSubscriberFnWrapper::new(render_fn))
-      .add_middleware(SafeMiddlewareFnWrapper::new(logger_mw))
-      .add_reducer(ReducerFnWrapper::new(address_book_reducer));
-    store
-  })
+  let mut store = Store::<State, Action>::new();
+  store
+    .add_subscriber(SafeSubscriberFnWrapper::new(render_fn))
+    .add_middleware(SafeMiddlewareFnWrapper::new(logger_mw))
+    .add_reducer(ReducerFnWrapper::new(address_book_reducer));
+  store
 }
 
 pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>> {
