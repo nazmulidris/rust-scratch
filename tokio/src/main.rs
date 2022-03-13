@@ -21,8 +21,8 @@ use tokio_example_lib::{my_middleware::{adder_mw, logger_mw, Action}, middleware
 async fn main() {
   {
     let mw_fun: SafeFnWrapper<Action> = logger_mw();
-    mw_fun.spawn(Action::Add(1, 2)).await.unwrap();
-    mw_fun.spawn(Action::Add(1, 2)).await.unwrap();
+    mw_fun.spawn(Action::Add(1, 2));
+    mw_fun.spawn(Action::Add(1, 2));
   }
 
   {
