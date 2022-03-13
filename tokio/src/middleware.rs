@@ -15,6 +15,7 @@
 */
 
 // Imports.
+use rand::Rng;
 use std::{
   marker::{Send, Sync},
   sync::{Arc, RwLock},
@@ -60,6 +61,9 @@ impl<A: Sync + Send + 'static> SafeFnWrapper<A> {
   ) -> Future<Option<A>> {
     let arc_lock_fn_mut = self.get();
     tokio::spawn(async move {
+      // Delay before calling the function.
+      let delay_ms = rand::thread_rng().gen_range(1_000..5_000) as u64;
+      tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
       let mut fn_mut = arc_lock_fn_mut.write().unwrap();
       fn_mut(action)
     })
