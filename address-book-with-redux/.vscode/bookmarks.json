@@ -1,0 +1,119 @@
+{
+	"files": [
+		{
+			"path": "src/tui/repl_loop.rs",
+			"bookmarks": [
+				{
+					"line": 49,
+					"column": 18,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "../../../.cargo/registry/src/github.com-1ecc6299db9ec823/r3bl_rs_utils-0.6.4/src/redux/store.rs",
+			"bookmarks": [
+				{
+					"line": 44,
+					"column": 15,
+					"label": ""
+				},
+				{
+					"line": 58,
+					"column": 13,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "../../../.cargo/registry/src/github.com-1ecc6299db9ec823/r3bl_rs_utils-0.6.4/src/redux/state_manager.rs",
+			"bookmarks": [
+				{
+					"line": 29,
+					"column": 25,
+					"label": ""
+				},
+				{
+					"line": 39,
+					"column": 25,
+					"label": ""
+				},
+				{
+					"line": 48,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 52,
+					"column": 25,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "../../../.cargo/registry/src/github.com-1ecc6299db9ec823/r3bl_rs_utils-0.6.4/src/redux/async_middleware.rs",
+			"bookmarks": [
+				{
+					"line": 42,
+					"column": 17,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "../../../.cargo/registry/src/github.com-1ecc6299db9ec823/r3bl_rs_utils-0.6.4/src/redux/async_subscribers.rs",
+			"bookmarks": [
+				{
+					"line": 25,
+					"column": 9,
+					"label": ""
+				},
+				{
+					"line": 30,
+					"column": 15,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/redux/store.rs",
+			"bookmarks": [
+				{
+					"line": 65,
+					"column": 15,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/redux/state_manager.rs",
+			"bookmarks": [
+				{
+					"line": 43,
+					"column": 15,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/redux/async_middleware.rs",
+			"bookmarks": [
+				{
+					"line": 42,
+					"column": 17,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/redux/async_subscribers.rs",
+			"bookmarks": [
+				{
+					"line": 31,
+					"column": 0,
+					"label": ""
+				}
+			]
+		}
+	]
+}

@@ -1,56 +1,51 @@
 // Imports.
 use std::error::Error;
 use rand::random;
+use address_book_with_redux_lib::redux::{
+  Store, async_subscriber::SafeSubscriberFnWrapper, sync_reducers::ReducerFnWrapper,
+  async_middleware::SafeMiddlewareFnWrapper,
+};
 use r3bl_rs_utils::{
-  redux::{
-    Store, async_subscribers::SafeSubscriberFnWrapper, sync_reducers::ReducerFnWrapper,
-    async_middleware::SafeMiddlewareFnWrapper,
-  },
-  utils::{
-    print_header, style_error, style_primary, with, style_dimmed, readline_with_prompt,
-    unwrap_arc_read_lock_and_call,
-  },
+  utils::{print_header, style_error, style_primary, style_dimmed, readline_with_prompt},
 };
 use crate::address_book::{address_book_reducer, Action, State};
 use super::{render_fn, logger_mw};
 
 #[tokio::main]
 pub async fn run_tui_app(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
-  repl_loop(create_store()).await?;
+  repl_loop(create_store().await).await?;
   Ok(())
 }
 
-fn create_store() -> Store<State, Action> {
+async fn create_store() -> Store<State, Action> {
   let mut store = Store::<State, Action>::new();
   store
-    .add_subscriber(SafeSubscriberFnWrapper::new(render_fn))
-    .add_middleware(SafeMiddlewareFnWrapper::new(logger_mw))
-    .add_reducer(ReducerFnWrapper::new(address_book_reducer));
+    .add_subscriber(SafeSubscriberFnWrapper::from(render_fn))
+    .await
+    .add_middleware(SafeMiddlewareFnWrapper::from(logger_mw))
+    .await
+    .add_reducer(ReducerFnWrapper::from(address_book_reducer))
+    .await;
   store
 }
 
 pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>> {
-  // Helper lambda.
-  let get_history = || {
-    with(store.get(), |store_arc| {
-      unwrap_arc_read_lock_and_call(&store_arc, &mut |store| store.history.clone())
-    })
-  };
-
   print_header("Starting repl");
 
   // Repl.
   loop {
     let user_input = readline_with_prompt("r3bl> ")?;
     match user_input.as_str() {
-      "help" => println!(
-        "{}: {}",
-        style_primary("Available commands"),
-        style_dimmed("quit, exit, add, clear, remove, reset, search, history, help")
-      ),
+      "help" => {
+        println!(
+          "{}: {}",
+          style_primary("Available commands"),
+          style_dimmed("quit, exit, add-async, add-sync, clear, remove, reset, search, history, help")
+        );
+      }
       "quit" => break,
       "exit" => break,
-      "add" => {
+      "add-sync" => {
         let id = random::<u8>();
         store
           .dispatch(&Action::AddContact(
@@ -58,25 +53,47 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
             format!("jd@gmail.com #{}", id),
             format!("123-456-7890 #{}", id),
           ))
-          .await
+          .await;
       }
-      "clear" => store.dispatch(&Action::RemoveAllContacts).await,
-      "remove" => match readline_with_prompt("id> ") {
-        Ok(id) => {
-          store
-            .dispatch(&Action::RemoveContactById(id.parse().unwrap()))
-            .await
-        }
-        Err(_) => println!("{}", style_error("Invalid id")),
-      },
-      "search" => match readline_with_prompt("search_term> ") {
-        Ok(search_term) => store.dispatch(&Action::Search(search_term)).await,
-        Err(_) => println!("{}", style_error("Invalid id")),
-      },
-      "reset" => store.dispatch(&Action::ResetState(State::default())).await,
-      "history" => println!("{:#?}", get_history()),
+      "add-async" => {
+        let id = random::<u8>();
+        store
+          .dispatch_spawn(Action::AddContact(
+            format!("John Doe #{}", id),
+            format!("jd@gmail.com #{}", id),
+            format!("123-456-7890 #{}", id),
+          ))
+          .await;
+      }
+      "clear" => {
+        store.dispatch(&Action::RemoveAllContacts).await;
+      }
+      "remove" => {
+        match readline_with_prompt("id> ") {
+          Ok(id) => {
+            store
+              .dispatch(&Action::RemoveContactById(id.parse().unwrap()))
+              .await
+          }
+          Err(_) => println!("{}", style_error("Invalid id")),
+        };
+      }
+      "search" => {
+        match readline_with_prompt("search_term> ") {
+          Ok(search_term) => store.dispatch(&Action::Search(search_term)).await,
+          Err(_) => println!("{}", style_error("Invalid id")),
+        };
+      }
+      "reset" => {
+        store.dispatch(&Action::ResetState(State::default())).await;
+      }
+      "history" => {
+        println!("{:#?}", store.get_history().await);
+      }
       // Catchall.
-      _ => println!("{}", style_error("Unknown command")),
+      _ => {
+        println!("{}", style_error("Unknown command"));
+      }
     } // end match user_input.
 
     // Print confirmation at the end of 1 repl loop.
