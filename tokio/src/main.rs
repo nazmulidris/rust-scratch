@@ -15,19 +15,33 @@
 */
 
 // Imports.
-use tokio_example_lib::{my_middleware::{adder_mw, logger_mw, Action}, middleware::SafeFnWrapper};
+use tokio_example_lib::{
+  middleware::{Future, SafeFnWrapper},
+  my_middleware::{adder_mw, logger_mw, Action},
+};
 
 #[tokio::main]
 async fn main() {
+  let mut handles = Vec::<Future<Option<Action>>>::new();
+
+  // Spawn tasks and don't await their completion - fire and forget so to speak.
   {
     let mw_fun: SafeFnWrapper<Action> = logger_mw();
-    mw_fun.spawn(Action::Add(1, 2));
-    mw_fun.spawn(Action::Add(1, 2));
+    handles.push(mw_fun.spawn(Action::Add(1, 2)));
+    handles.push(mw_fun.spawn(Action::Add(1, 2)));
   }
 
+  // Spawn tasks and await their completion.
   {
     let mw_fun: SafeFnWrapper<Action> = adder_mw();
     println!("{:?}", mw_fun.spawn(Action::Add(1, 2)).await.unwrap());
     println!("{:?}", mw_fun.spawn(Action::Add(1, 2)).await.unwrap());
+  }
+
+  // Needed to wait for all the spawned futures to complete, otherwise the tokio runtime spawned in
+  // `main()` before the spawned futures complete.
+  // More info: https://tokio.rs/tokio/topics/bridging
+  for handle in handles {
+    handle.await.unwrap();
   }
 }

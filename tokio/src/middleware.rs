@@ -18,9 +18,9 @@
 use rand::Rng;
 use std::{
   marker::{Send, Sync},
-  sync::{Arc, RwLock},
+  sync::Arc,
 };
-use tokio::task::JoinHandle;
+use tokio::{sync::RwLock, task::JoinHandle};
 
 /// Excellent resources on lifetimes, closures, and returning references:
 /// 1. https://stackoverflow.com/questions/59442080/rust-pass-a-function-reference-to-threads
@@ -62,9 +62,9 @@ impl<A: Sync + Send + 'static> SafeFnWrapper<A> {
     let arc_lock_fn_mut = self.get();
     tokio::spawn(async move {
       // Delay before calling the function.
-      let delay_ms = rand::thread_rng().gen_range(1_000..5_000) as u64;
+      let delay_ms = rand::thread_rng().gen_range(100..1_000) as u64;
       tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
-      let mut fn_mut = arc_lock_fn_mut.write().unwrap();
+      let mut fn_mut = arc_lock_fn_mut.write().await;
       fn_mut(action)
     })
   }
