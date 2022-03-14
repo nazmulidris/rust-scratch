@@ -1,4 +1,7 @@
-use r3bl_rs_utils::{utils::style_dimmed, tree_memory_arena::HasId};
+use r3bl_rs_utils::{
+  utils::{style_dimmed, print_prompt, print_header},
+  tree_memory_arena::HasId,
+};
 use rand::Rng;
 use crate::{
   address_book::{State, Contact},
@@ -17,6 +20,8 @@ pub fn render_fn(state: State) {
   std::thread::sleep(tokio::time::Duration::from_millis(delay_ms));
 
   // Actually perform render.
+  println!("");
+  print_header("render");
   for contact in address_book.iter() {
     if search_term.is_none() || contact_matches_search_term(contact, &search_term) {
       println!(
@@ -28,6 +33,7 @@ pub fn render_fn(state: State) {
       );
     }
   }
+  print_prompt("r3bl> ").unwrap();
 
   // Helper functions.
   fn contact_matches_search_term(

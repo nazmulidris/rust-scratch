@@ -1,3 +1,4 @@
+use r3bl_rs_utils::utils::print_header;
 use rand::Rng;
 
 use crate::{
@@ -11,6 +12,8 @@ pub fn logger_mw(action: Action) -> Option<Action> {
   std::thread::sleep(tokio::time::Duration::from_millis(delay_ms));
 
   // Log the action.
-  println!("logging: {:?}", action);
+  println!("");
+  print_header("middleware");
+  println!("action: {:?}", action);
   None
 }

@@ -41,8 +41,9 @@ Publish
 
 External web service / API integration
 
-- [ ] Use a JSON RPC API to generate fake address book data (eg <https://en.namefake.com/api>,
-      <https://api.namefake.com/english-united-states/female/>)
+- [ ] Use a JSON RPC API to generate fake address book data
+  - <https://en.namefake.com/api>
+  - <https://api.namefake.com/english-united-states/female/>
 - [ ] Sync this address book data w/ Google sheet (use the one tutorial for Rust)
 
 Advanced

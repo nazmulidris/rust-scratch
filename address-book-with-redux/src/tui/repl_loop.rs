@@ -1,7 +1,7 @@
 // Imports.
 use std::error::Error;
 use rand::random;
-use address_book_with_redux_lib::redux::{
+use r3bl_rs_utils::redux::{
   Store, async_subscriber::SafeSubscriberFnWrapper, sync_reducers::ReducerFnWrapper,
   async_middleware::SafeMiddlewareFnWrapper,
 };
