@@ -30,6 +30,11 @@ lib or bin or both project).
 3. You can now use the code in this `macro_lib` crate by importing them in the code of
    your main like so: `use macro_lib::*`.
 
+# Resources to learn from
+
+1. [Little book of Rust macros](https://danielkeep.github.io/tlborm/book/pim-README.html)
+2. [Great YT video on declarative macros](https://youtu.be/q6paRBbLgNw)
+
 # References
 
 1. https://blog.logrocket.com/procedural-macros-in-rust/
