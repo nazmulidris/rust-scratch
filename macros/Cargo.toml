@@ -13,3 +13,5 @@ path = "src/lib.rs"
 # Add a new library crate for macros.
 # https://www.reddit.com/r/rust/comments/4lgb2o/newbie_question_multiple_library_crates_in_a/
 my_proc_macros_lib = { path = "my_proc_macros_lib"}
+
+tokio = { version = "1", features = ["full"] }
