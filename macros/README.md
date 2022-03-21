@@ -32,8 +32,33 @@ lib or bin or both project).
 
 # Resources to learn from
 
+Declarative macros
+
 1. [Little book of Rust macros](https://danielkeep.github.io/tlborm/book/pim-README.html)
 2. [Great YT video on declarative macros](https://youtu.be/q6paRBbLgNw)
+
+Procedural macros
+
+1. Proc macro workshop:
+   <https://github.com/dtolnay/proc-macro-workshop/blob/master/README.md>
+2. Excellent overview video: <https://youtu.be/g4SYTOc8fL0>
+3. Macro how to:
+   <https://doc.rust-lang.org/reference/procedural-macros.html#function-like-procedural-macros>
+4. Macro how to:
+   <https://doc.rust-lang.org/book/ch19-06-macros.html#procedural-macros-for-generating-code-from-attributes>
+5. Add lib crate for macros:
+   <https://dev.to/dandyvica/rust-procedural-macros-step-by-step-tutorial-36n8>
+6. `lib.rs` restriction:
+   <https://users.rust-lang.org/t/how-to-import-procedural-macros-that-is-not-in-lib-rs/58323/9>
+7. Quote: <https://docs.rs/quote>
+8. Syn: <https://docs.rs/syn>
+
+Procedural macros workshop (🔥 add to open tabs)
+
+- Workshop derive builder problem:
+  <https://github.com/dtolnay/proc-macro-workshop/blob/master/README.md#derive-macro-derivebuilder>
+- Solution hints for builder problem:
+  <https://github.com/dtolnay/proc-macro-workshop/blob/master/builder/tests/01-parse.rs>
 
 # References
 
