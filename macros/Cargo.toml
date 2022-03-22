@@ -15,5 +15,4 @@ path = "src/lib.rs"
 my_proc_macros_lib = { path = "my_proc_macros_lib"}
 
 tokio = { version = "1", features = ["full"] }
-syn = "*"
-quote = "*"
+r3bl_rs_utils = "*"

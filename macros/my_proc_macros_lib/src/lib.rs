@@ -4,10 +4,14 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 
-mod misc;
-use misc::make_answer_macro;
+mod debug_token_stream_fn_like_macro;
+use debug_token_stream_fn_like_macro::simple_function_macro_make_a_fn_impl;
+
+// TODO: add derive builder macro
+// mod derive_builder;
+// use derive_builder::Builder;
 
 #[proc_macro]
-pub fn make_answer(_: TokenStream) -> TokenStream {
-  make_answer_macro()
+pub fn simple_function_macro_make_a_fn(input: TokenStream) -> TokenStream {
+  simple_function_macro_make_a_fn_impl(input)
 }

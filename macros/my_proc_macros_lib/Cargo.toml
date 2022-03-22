@@ -11,3 +11,8 @@ path = "src/lib.rs"
 proc-macro = true
 
 [dependencies]
+# https://github.com/dtolnay/proc-macro-workshop#debugging-tips
+syn = { version = "*", features = ["extra-traits"] }
+quote = "*"
+proc-macro2 = "*"
+r3bl_rs_utils = "*"

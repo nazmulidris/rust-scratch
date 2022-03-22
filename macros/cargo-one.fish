@@ -2,9 +2,9 @@
 
 # https://stackoverflow.com/a/47743269/2085356
 if test -z "$argv"
-    echo "Usage: "(set_color -o -u)"cargo-one.fish "(set_color normal)\
-    (set_color yellow)"<test-name-fragment>"\
-    (set_color normal)
+    echo "Usage: "(set_color -o -u)"cargo-one.fish "(set_color normal) \
+        (set_color yellow)"<test-name-fragment>" \
+        (set_color normal)
     exit 1
 end
 
@@ -19,4 +19,5 @@ end
 # 1. cargo test --help      => these go to the cargo test command
 # 2. cargo test -- --help   => these go to the binary that is being tested
 
-cargo watch -x check -x "ltest $argv --color always -q --message-format short  -- --nocapture" -c -q
+# cargo watch -x check -x "ltest $argv --color always -q --message-format short  -- --nocapture" -c -q
+cargo watch -x check -x "test --test $argv" -c -q
