@@ -1,4 +1,28 @@
-## Procedural macros
+---
+title: "Guide to Rust procedural macros"
+author: Nazmul Idris
+date: 2022-03-23 15:00:00+00:00
+excerpt: |
+  Procedural macros are a way for you to extend the Rust complier and provide plugins
+  that you can use to extend the language. They allow you to reduce the need to write
+  manual boilerplate code, and even allow you to create your own DSL (domain specific
+  language). This article goes into the details of create the 3 kinds of procedural macros
+  in Rust.
+layout: post
+categories:
+  - Rust
+  - CLI
+  - CC
+---
+
+<img class="post-hero-image" src="{{ 'assets/rust-proc-macro.svg' | relative_url }}"/>
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## What are procedural macros
 
 **Procedural macros** are a way for you to extend the Rust complier and provide plugins
 that you can use to extend the language. They are really powerful and require some more
@@ -17,6 +41,12 @@ procedural macros:
 
 **Declarative macros** have many limitations but are easier to use. If you have simple use
 cases they work great, since they are so easy to write.
+
+> 💡 Here are some resources to help you w/ learning declarative macros. This article is
+> dedicated to procedural macros.
+>
+> 1. [Little book of Rust macros](https://danielkeep.github.io/tlborm/book/pim-README.html)
+> 2. [Great YT video on declarative macros](https://youtu.be/q6paRBbLgNw)
 
 Here's a summary:
 
@@ -254,19 +284,3 @@ pub fn log_entry_and_exit(args: TokenStream, input: TokenStream) -> TokenStream 
 - Procedural macros workshop
   - [Workshop derive builder problem](https://github.com/dtolnay/proc-macro-workshop/blob/master/README.md#derive-macro-derivebuilder)
   - [Solution hints for builder problem](https://github.com/dtolnay/proc-macro-workshop/blob/master/builder/tests/01-parse.rs)
-
-## Learning resources for declarative macros
-
-Declarative macros
-
-1. [Little book of Rust macros](https://danielkeep.github.io/tlborm/book/pim-README.html)
-2. [Great YT video on declarative macros](https://youtu.be/q6paRBbLgNw)
-
-References
-
-1. https://blog.logrocket.com/procedural-macros-in-rust/
-2. https://dev.to/dandyvica/rust-procedural-macros-step-by-step-tutorial-36n8
-3. https://www.reddit.com/r/rust/comments/4lgb2o/newbie_question_multiple_library_crates_in_a/
-4. https://doc.rust-lang.org/reference/procedural-macros.html#function-like-procedural-macros
-5. https://doc.rust-lang.org/book/ch19-06-macros.html#procedural-macros-for-generating-code-from-attributes
-6. https://doc.rust-lang.org/reference/procedural-macros.html#function-like-procedural-macros
