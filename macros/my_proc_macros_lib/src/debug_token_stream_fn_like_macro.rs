@@ -3,8 +3,6 @@ use quote::ToTokens;
 use r3bl_rs_utils::utils::{eprint_header, style_primary, style_prompt};
 use syn::{ItemFn, parse_str};
 
-// TODO: visualize the TokenStream
-
 /// https://docs.rs/syn/1.0.52/syn/macro.parse_macro_input.html
 pub fn simple_function_macro_make_a_fn_impl(input: TokenStream) -> TokenStream {
   let output_token_stream_str = "fn foo() -> u32 { 42 }";
@@ -12,12 +10,12 @@ pub fn simple_function_macro_make_a_fn_impl(input: TokenStream) -> TokenStream {
 
   let ast_item_fn: ItemFn = parse_str::<ItemFn>(output_token_stream_str).unwrap();
 
-  viz_token_stream("input", &input);
+  // viz_token_stream("input", &input);
 
-  viz_token_stream(
-    &format!("{} {}", "output of ", output_token_stream_str),
-    &output,
-  );
+  // viz_token_stream(
+  //   &format!("{} {}", "output of ", output_token_stream_str),
+  //   &output,
+  // );
 
   viz_ast(ast_item_fn);
 
@@ -33,8 +31,11 @@ pub fn simple_function_macro_make_a_fn_impl(input: TokenStream) -> TokenStream {
 /// https://docs.rs/syn/1.0.52/syn/enum.Stmt.html
 /// https://github.com/dtolnay/proc-macro-workshop#debugging-tips
 fn viz_ast(ast: ItemFn) {
+  // Simply dump the AST to the console.
   let ast_clone = ast.clone();
+  eprintln!("{} => {:#?}", style_primary("Debug::ast"), ast_clone);
 
+  // Parse AST to dump some items to the console.
   let ItemFn {
     attrs,
     vis,
@@ -61,8 +62,6 @@ fn viz_ast(ast: ItemFn) {
       None => "empty".to_string(),
     }),
   );
-
-  eprintln!("{} => {:#?}", style_primary("Debug::ast"), ast_clone);
 }
 
 fn viz_token_stream(
