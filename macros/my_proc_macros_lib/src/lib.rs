@@ -13,6 +13,6 @@ pub fn fn_macro_ast_viz_debug(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_derive(Describe)]
-pub fn describe(input: TokenStream) -> TokenStream {
+pub fn derive_macro_describe(input: TokenStream) -> TokenStream {
   derive_macro_describe::macro_impl(input)
 }

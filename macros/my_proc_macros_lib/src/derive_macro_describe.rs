@@ -38,9 +38,9 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
 
   let output = quote! {
   impl #ident {
-      fn describe() {
-      println!("{} is {}.", stringify!(#ident), #description);
-      }
+    fn describe(&self) -> String {
+      format!("{} is {}.", stringify!(#ident), #description)
+    }
   }
   };
 

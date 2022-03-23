@@ -1,10 +1,10 @@
 use proc_macro::TokenStream;
 use quote::ToTokens;
-use r3bl_rs_utils::utils::{eprint_header, style_primary, style_prompt};
+use r3bl_rs_utils::utils::{style_primary, style_prompt};
 use syn::{ItemFn, parse_str};
 
 /// https://docs.rs/syn/1.0.52/syn/macro.parse_macro_input.html
-pub fn macro_impl(input: TokenStream) -> TokenStream {
+pub fn macro_impl(_input: TokenStream) -> TokenStream {
   let output_token_stream_str = "fn foo() -> u32 { 42 }";
   let output = output_token_stream_str.parse().unwrap();
 
@@ -64,10 +64,10 @@ fn viz_ast(ast: ItemFn) {
   );
 }
 
-fn viz_token_stream(
-  msg: &str,
-  token_stream: &TokenStream,
-) {
-  eprint_header(msg);
-  eprintln!("{:#?}", token_stream);
-}
+// fn viz_token_stream(
+//   msg: &str,
+//   token_stream: &TokenStream,
+// ) {
+//   eprint_header(msg);
+//   eprintln!("{:#?}", token_stream);
+// }
