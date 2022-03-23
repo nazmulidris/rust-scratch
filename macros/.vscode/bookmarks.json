@@ -1,16 +1,6 @@
 {
 	"files": [
 		{
-			"path": "my_proc_macros_lib/src/lib.rs",
-			"bookmarks": [
-				{
-					"line": 9,
-					"column": 0,
-					"label": ""
-				}
-			]
-		},
-		{
 			"path": "my_proc_macros_lib/src/view_token_stream.rs",
 			"bookmarks": [
 				{

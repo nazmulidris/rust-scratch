@@ -4,7 +4,7 @@ use r3bl_rs_utils::utils::{eprint_header, style_primary, style_prompt};
 use syn::{ItemFn, parse_str};
 
 /// https://docs.rs/syn/1.0.52/syn/macro.parse_macro_input.html
-pub fn simple_function_macro_make_a_fn_impl(input: TokenStream) -> TokenStream {
+pub fn macro_impl(input: TokenStream) -> TokenStream {
   let output_token_stream_str = "fn foo() -> u32 { 42 }";
   let output = output_token_stream_str.parse().unwrap();
 
