@@ -139,10 +139,10 @@ r3bl_rs_utils = "*"
 > `cargo install cargo-watch` and then run:
 > `cargo watch -x 'expand --test test_derive_macro_describe'`.
 >
-> 1. A script is provided called `cargo-macro.fish` which does this for the test that you
->    give that script as an argument.
-> 2. Another script is provided called `cargo-one.fish` which watches for changes in your
->    and then runs the test you give that script as an argument.
+> 1. A script is provided called `cargo-watch-macro-expand-one-test.fish` which does this
+>    for the test that you give that script as an argument.
+> 2. Another script is provided called `cargo-watch-one-test.fish` which watches for
+>    changes in your and then runs the test you give that script as an argument.
 
 ## What does a syn AST look like?
 
