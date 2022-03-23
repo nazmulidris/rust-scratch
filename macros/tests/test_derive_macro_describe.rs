@@ -27,6 +27,6 @@ fn test_proc_macro() {
   let foo = foo.describe();
   assert_eq!(
     foo,
-    "MyStruct is a struct with these named fields: my_string, my_enum, my_number."
+    "MyStruct is a struct with these named fields: my_string, my_enum, my_number"
   );
 }

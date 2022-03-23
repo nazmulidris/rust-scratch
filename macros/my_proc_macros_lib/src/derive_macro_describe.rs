@@ -1,30 +1,34 @@
 use proc_macro::{self, TokenStream};
 use quote::quote;
-use syn::{parse_macro_input, DataEnum, DataUnion, DeriveInput, FieldsNamed, FieldsUnnamed};
+use syn::{
+  parse_macro_input, DataEnum, DataUnion, DeriveInput, FieldsNamed, FieldsUnnamed,
+  Data::{Struct, Enum, Union},
+  Fields::{Named, Unnamed, Unit},
+};
 
 pub fn macro_impl(input: TokenStream) -> TokenStream {
   let DeriveInput { ident, data, .. } = parse_macro_input!(input);
 
   let description = match data {
-    syn::Data::Struct(my_struct) => match my_struct.fields {
-      syn::Fields::Named(FieldsNamed { named, .. }) => {
+    Struct(this_struct) => match this_struct.fields {
+      Named(FieldsNamed { named, .. }) => {
         let ident_array = named.iter().map(|field| &field.ident);
         format!(
           "a struct with these named fields: {}",
           quote! {#(#ident_array), *}
         )
       }
-      syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
+      Unnamed(FieldsUnnamed { unnamed, .. }) => {
         let num_fields = unnamed.iter().count();
         format!("a struct with {} unnamed fields", num_fields)
       }
-      syn::Fields::Unit => format!("a unit struct"),
+      Unit => format!("a unit struct"),
     },
-    syn::Data::Enum(DataEnum { variants, .. }) => {
+    Enum(DataEnum { variants, .. }) => {
       let vs = variants.iter().map(|v| &v.ident);
       format!("an enum with these variants: {}", quote! {#(#vs),*})
     }
-    syn::Data::Union(DataUnion {
+    Union(DataUnion {
       fields: FieldsNamed { named, .. },
       ..
     }) => {
@@ -39,7 +43,10 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
   let output = quote! {
   impl #ident {
     fn describe(&self) -> String {
-      format!("{} is {}.", stringify!(#ident), #description)
+      let mut string = String::from(stringify!(#ident));
+      string.push_str(" is ");
+      string.push_str(#description);
+      string
     }
   }
   };
