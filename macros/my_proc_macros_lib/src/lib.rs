@@ -4,15 +4,15 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 
-mod fn_macro_ast_viz_debug;
-mod derive_macro_describe;
+mod ast_viz_debug;
+mod describe;
 
 #[proc_macro]
 pub fn fn_macro_ast_viz_debug(input: TokenStream) -> TokenStream {
-  fn_macro_ast_viz_debug::macro_impl(input)
+  ast_viz_debug::fn_proc_macro_impl(input)
 }
 
 #[proc_macro_derive(Describe)]
 pub fn derive_macro_describe(input: TokenStream) -> TokenStream {
-  derive_macro_describe::macro_impl(input)
+  describe::derive_proc_macro_impl(input)
 }

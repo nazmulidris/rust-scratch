@@ -7,7 +7,7 @@ use syn::{
   DataStruct, FieldsNamed, FieldsUnnamed, Generics,
 };
 
-pub fn macro_impl(input: TokenStream) -> TokenStream {
+pub fn derive_proc_macro_impl(input: TokenStream) -> TokenStream {
   let DeriveInput {
     ident,
     data,
