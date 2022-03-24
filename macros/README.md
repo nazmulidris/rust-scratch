@@ -269,15 +269,50 @@ pub fn log_entry_and_exit(args: TokenStream, input: TokenStream) -> TokenStream 
 }
 ```
 
-## Example of a simple procedural macro that dumps the AST
+## Example of a simple macro that dumps the AST
 
 - TODO: `fn_macro_ast_viz_debug.rs` goes here
 - TODO: test using `./cargo-one.fish test_fn_macro_ast_viz_debug`
 
-## Example of a simple declarative macros that adds a method to a struct
+## Example of a simple derive macros that adds a method to a struct
 
 - TODO: `derive_macro_describe.rs` goes here
 - TODO: testing using `./cargo-one.fish test_derive_macro_describe`
+
+### Handling generics
+
+Here's an example of what a simple `Generics` object looks like when generated from
+`struct Point<T> { ... }`.
+
+1. The `Generics.params[0]` is a `TypeParam`, which is our `T`.
+2. It contains a an `ident` which is the `T` identifier in our `struct Point<T> { ... }`.
+
+```rust
+Generics {
+    lt_token: Some(
+        Lt,
+    ),
+    params: [
+        Type(
+            TypeParam {
+                attrs: [],
+                ident: Ident {
+                    ident: "T",
+                    span: #0 bytes(706..707),
+                },
+                colon_token: None,
+                bounds: [],
+                eq_token: None,
+                default: None,
+            },
+        ),
+    ],
+    gt_token: Some(
+        Gt,
+    ),
+    where_clause: None,
+}
+```
 
 ## Learning resources
 

@@ -30,3 +30,25 @@ fn test_proc_macro() {
     "MyStruct is a struct with these named fields: my_string, my_enum, my_number"
   );
 }
+
+#[test]
+fn test_proc_macro_2() {
+  #[derive(Describe)]
+  struct Point<T> {
+    x: T,
+    y: T,
+  }
+
+  // Code that should be generated:
+  // impl<T: std::fmt::Display> Point<T> {
+  //   fn describe(&self) -> String {
+  //     format!("Point<i32> with x: {} and y: {}", self.x, self.y)
+  //   }
+  // }
+
+  let my_pt: Point<i32> = Point { x: 1, y: 2 };
+  assert_eq!(
+    my_pt.describe(),
+    "Point is a struct with these named fields: x, y"
+  );
+}

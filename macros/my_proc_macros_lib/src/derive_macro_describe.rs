@@ -1,14 +1,19 @@
 use proc_macro::{self, TokenStream};
 use quote::quote;
 use syn::{
-  parse_macro_input, DataEnum, DataUnion, DeriveInput,
+  Ident, parse_macro_input, DataEnum, DataUnion, DeriveInput,
   Data::{Struct, Enum, Union},
   Fields::{Named, Unnamed, Unit},
-  DataStruct, FieldsNamed, FieldsUnnamed,
+  DataStruct, FieldsNamed, FieldsUnnamed, Generics,
 };
 
 pub fn macro_impl(input: TokenStream) -> TokenStream {
-  let DeriveInput { ident, data, .. } = parse_macro_input!(input);
+  let DeriveInput {
+    ident,
+    data,
+    generics,
+    ..
+  } = parse_macro_input!(input);
 
   let description = match data {
     Struct(my_struct) => gen_description_str_for_struct(my_struct),
@@ -16,17 +21,79 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     Union(my_union) => gen_description_str_for_union(my_union),
   };
 
-  quote! {
-    impl #ident {
-      fn describe(&self) -> String {
-        let mut string = String::from(stringify!(#ident));
-        string.push_str(" is ");
-        string.push_str(#description);
-        string
+  let parsed_generics = parse_generics(&generics);
+  match parsed_generics {
+    Some(ref _generic_ident) => {
+      quote! {
+        impl <#parsed_generics> #ident <#parsed_generics> {
+          fn describe(&self) -> String {
+            let mut string = String::from(stringify!(#ident));
+            string.push_str(" is ");
+            string.push_str(#description);
+            string
+          }
+        }
       }
+      .into() // Convert from proc_macro2::TokenStream to TokenStream.
+    }
+    None => {
+      quote! {
+        impl #ident  {
+          fn describe(&self) -> String {
+            let mut string = String::from(stringify!(#ident));
+            string.push_str(" is ");
+            string.push_str(#description);
+            string
+          }
+        }
+      }
+      .into() // Convert from proc_macro2::TokenStream to TokenStream.
     }
   }
-  .into() // Convert from proc_macro2::TokenStream to TokenStream.
+}
+
+/*
+  Generics {
+      lt_token: Some(
+          Lt,
+      ),
+      params: [
+          Type(
+              TypeParam {
+                  attrs: [],
+                  ident: Ident {
+                      ident: "T",
+                      span: #0 bytes(706..707),
+                  },
+                  colon_token: None,
+                  bounds: [],
+                  eq_token: None,
+                  default: None,
+              },
+          ),
+      ],
+      gt_token: Some(
+          Gt,
+      ),
+      where_clause: None,
+  }
+*/
+fn parse_generics(generics: &Generics) -> Option<Ident> {
+  // eprintln!(
+  //   "{}, {:#?}",
+  //   style_primary("Debug::parse_generics"),
+  //   generics
+  // );
+  if let Some(generic_param) = generics.params.first() {
+    // https://docs.rs/syn/1.0.52/syn/enum.GenericParam.html
+    match generic_param {
+      syn::GenericParam::Type(ref param) => Some(param.ident.clone()),
+      syn::GenericParam::Lifetime(_) => unimplemented!(),
+      syn::GenericParam::Const(_) => unimplemented!(),
+    }
+  } else {
+    None
+  }
 }
 
 fn gen_description_str_for_union(my_union: DataUnion) -> String {
