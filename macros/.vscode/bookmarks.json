@@ -9,6 +9,21 @@
 					"label": ""
 				}
 			]
+		},
+		{
+			"path": "README.md",
+			"bookmarks": [
+				{
+					"line": 430,
+					"column": 0,
+					"label": ""
+				},
+				{
+					"line": 440,
+					"column": 0,
+					"label": ""
+				}
+			]
 		}
 	]
 }

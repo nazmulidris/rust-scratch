@@ -1,5 +1,12 @@
-//! Here's the command to see cargo expand's out out of this test:
-//! `cargo expand --test test_derive_macro_describe`
+//! # Watch macro expansion
+//!
+//! To watch for changes run this script:
+//! `./cargo-watch-macro-expand-one-test.fish test_derive_macro_describe`
+//!
+//! # Watch test output
+//!
+//! To watch for test output run this script:
+//! `./cargo-watch-one-test.fish test_derive_macro_describe`
 
 #![allow(dead_code)]
 
@@ -34,19 +41,19 @@ fn test_proc_macro() {
 #[test]
 fn test_proc_macro_2() {
   #[derive(Describe)]
-  struct Point<T> {
-    x: T,
-    y: T,
+  struct Point<X, Y>
+  where
+    X: std::fmt::Display,
+    Y: std::fmt::Display,
+  {
+    x: X,
+    y: Y,
   }
 
-  // Code that should be generated:
-  // impl<T: std::fmt::Display> Point<T> {
-  //   fn describe(&self) -> String {
-  //     format!("Point<i32> with x: {} and y: {}", self.x, self.y)
-  //   }
-  // }
-
-  let my_pt: Point<i32> = Point { x: 1, y: 2 };
+  let my_pt: Point<i32, i32> = Point {
+    x: 1 as i32,
+    y: 2 as i32,
+  };
   assert_eq!(
     my_pt.describe(),
     "Point is a struct with these named fields: x, y"
