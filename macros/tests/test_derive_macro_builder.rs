@@ -13,23 +13,23 @@
 use my_proc_macros_lib::Builder;
 
 #[test]
-fn test_proc_macro() {
-  #[derive(Builder,)]
+fn test_proc_macro_struct_and_enum() {
+  #[derive(Builder)]
   struct MyStruct {
     my_string: String,
     my_enum: MyEnum,
     my_number: i32,
   }
 
-  #[derive(Builder,)]
+  #[derive(Builder)]
   enum MyEnum {
     MyVariant1,
   }
 }
 
 fn test_proc_macro_generics() {
-  #[derive(Builder,)]
-  struct Point<X, Y,>
+  #[derive(Builder)]
+  struct Point<X, Y>
   where
     X: std::fmt::Display,
     Y: std::fmt::Display,

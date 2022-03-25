@@ -1,19 +1,22 @@
 use proc_macro::{self, TokenStream};
 use quote::quote;
-use syn::{
-  parse_macro_input, DataEnum, DataUnion, DeriveInput,
-  Data::{Struct, Enum, Union},
-  Fields::{Named, Unnamed, Unit},
-  DataStruct, FieldsNamed, FieldsUnnamed,
-};
+use syn::{parse_macro_input,
+          Data::{Enum, Struct, Union},
+          DataEnum,
+          DataStruct,
+          DataUnion,
+          DeriveInput,
+          Fields::{Named, Unit, Unnamed},
+          FieldsNamed,
+          FieldsUnnamed};
 
 pub fn derive_proc_macro_impl(input: TokenStream) -> TokenStream {
   let DeriveInput {
-    ident,
+    ident: struct_name_ident,
     data,
     generics,
     ..
-  } = parse_macro_input!(input);
+  } = parse_macro_input!(input); // Same as: syn::parse(input).unwrap();
 
   let where_clause = &generics.where_clause;
 
@@ -24,9 +27,9 @@ pub fn derive_proc_macro_impl(input: TokenStream) -> TokenStream {
   };
 
   quote! {
-    impl #generics #ident #generics #where_clause {
+    impl #generics #struct_name_ident #generics #where_clause {
       fn describe(&self) -> String {
-        let mut string = String::from(stringify!(#ident));
+        let mut string = String::from(stringify!(#struct_name_ident));
         string.push_str(" is ");
         string.push_str(#description_str);
         string
@@ -49,7 +52,10 @@ fn gen_description_str_for_struct(my_struct: DataStruct) -> String {
 }
 
 fn handle_named_fields(fields: FieldsNamed) -> String {
-  let my_named_field_idents = fields.named.iter().map(|it| &it.ident);
+  let my_named_field_idents = fields
+    .named
+    .iter()
+    .map(|it| &it.ident);
   format!(
     "a struct with these named fields: {}",
     quote! {#(#my_named_field_idents), *}
@@ -61,12 +67,13 @@ fn handle_unnamed_fields(fields: FieldsUnnamed) -> String {
   format!("a struct with {} unnamed fields", my_unnamed_fields_count)
 }
 
-fn handle_unit() -> String {
-  format!("a unit struct")
-}
+fn handle_unit() -> String { format!("a unit struct") }
 
 fn gen_description_str_for_enum(my_enum: DataEnum) -> String {
-  let my_variant_idents = my_enum.variants.iter().map(|it| &it.ident);
+  let my_variant_idents = my_enum
+    .variants
+    .iter()
+    .map(|it| &it.ident);
   format!(
     "an enum with these variants: {}",
     quote! {#(#my_variant_idents),*}

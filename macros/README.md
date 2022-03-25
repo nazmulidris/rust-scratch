@@ -685,7 +685,9 @@ pub fn derive_proc_macro_impl(input: TokenStream) -> TokenStream {
 > 📜 Here's the source code for `describe.rs` from its
 > [repo](https://github.com/nazmulidris/rust_scratch/blob/main/macros/my_proc_macros_lib/src/describe.rs).
 
-## TODO: Example of a simple attribute procedural macro
+## TODO: Example of a complex derive macro that generates a builder
+
+## TODO: Example of a simple attribute procedural macro that ???
 
 - TODO: https://stackoverflow.com/a/52593373/2085356
 
@@ -703,6 +705,7 @@ pub fn derive_proc_macro_impl(input: TokenStream) -> TokenStream {
 - Workshop
 
   - [Proc macro workshop](https://github.com/dtolnay/proc-macro-workshop/blob/master/README.md)
+  - [Proc macro workshop solutions](https://github.com/jonhoo/proc-macro-workshop)
 
 - Technical guides to getting things working
 
