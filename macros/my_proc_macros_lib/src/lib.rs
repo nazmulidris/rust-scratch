@@ -6,6 +6,7 @@ use proc_macro::TokenStream;
 
 mod ast_viz_debug;
 mod describe;
+mod builder;
 
 #[proc_macro]
 pub fn fn_macro_ast_viz_debug(input: TokenStream) -> TokenStream {
@@ -15,4 +16,9 @@ pub fn fn_macro_ast_viz_debug(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(Describe)]
 pub fn derive_macro_describe(input: TokenStream) -> TokenStream {
   describe::derive_proc_macro_impl(input)
+}
+
+#[proc_macro_derive(Builder)]
+pub fn derive_macro_builder(input: TokenStream) -> TokenStream {
+  builder::derive_proc_macro_impl(input)
 }

@@ -39,7 +39,7 @@ fn test_proc_macro() {
 }
 
 #[test]
-fn test_proc_macro_2() {
+fn test_proc_macro_generics() {
   #[derive(Describe)]
   struct Point<X, Y>
   where
