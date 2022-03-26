@@ -7,6 +7,7 @@ use proc_macro::TokenStream;
 mod ast_viz_debug;
 mod describe;
 mod builder;
+mod utils;
 
 #[proc_macro]
 pub fn fn_macro_ast_viz_debug(input: TokenStream) -> TokenStream {
