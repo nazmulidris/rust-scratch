@@ -21,6 +21,7 @@ pub fn run() {}
 /// [std::thread::Builder](https://doc.rust-lang.org/src/std/thread/mod.rs.html#263-268)
 #[test]
 fn test_consuming_builder() {
+
   struct Builder {
     proc_exec: Option<String>,
     cwd: Option<String>,
