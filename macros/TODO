@@ -1,0 +1,10 @@
+builder.rs:
+  ✔ Refactor helper functions into `utils.rs` @started(22-03-26 11:00) @done(22-03-26 11:00) @lasted(31s)
+  ☐ Create a `<STRUCT>Builder` struct w/ all the fields
+  ☐ Create a `<STRUCT>Builder` impl block w/ following methods
+    ☐ new()
+    ☐ fn corresponding to each field
+    ☐ build()
+
+learn how to use extension:
+☐ [Todo+](https://marketplace.visualstudio.com/items?itemName=fabiospampinato.vscode-todo-plus)

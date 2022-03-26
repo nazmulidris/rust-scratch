@@ -3,16 +3,6 @@ use syn::{parse_macro_input, Data::Struct, DataStruct, DeriveInput, Fields::Name
 
 use super::utils::IdentFromString;
 
-/*
-TODO:
-- [x] Refactor helper functions into `utils.rs`
-- [ ] Create a `<STRUCT>Builder` struct w/ all the fields
-- [ ] Create a `<STRUCT>Builder` impl block w/ following methods
-  - [ ] new()
-  - [ ] fn corresponding to each field
-  - [ ] build()
- */
-
 /// Example #1: <https://github.com/dtolnay/syn/blob/master/examples/heapsize/heapsize_derive/src/lib.rs>
 /// Example #2: <https://github.com/jonhoo/proc-macro-workshop/blob/master/builder/src/lib.rs>
 pub fn derive_proc_macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
