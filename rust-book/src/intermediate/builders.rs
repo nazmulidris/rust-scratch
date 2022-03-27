@@ -21,7 +21,6 @@ pub fn run() {}
 /// [std::thread::Builder](https://doc.rust-lang.org/src/std/thread/mod.rs.html#263-268)
 #[test]
 fn test_consuming_builder() {
-
   struct Builder {
     proc_exec: Option<String>,
     cwd: Option<String>,
@@ -37,17 +36,26 @@ fn test_consuming_builder() {
       }
     }
 
-    fn name(mut self, name: &str) -> Builder {
+    fn name(
+      mut self,
+      name: &str,
+    ) -> Builder {
       self.proc_exec = Some(name.to_string());
       self
     }
 
-    fn size(mut self, size: &str) -> Builder {
+    fn size(
+      mut self,
+      size: &str,
+    ) -> Builder {
       self.cwd = Some(size.to_string());
       self
     }
 
-    fn arg(mut self, arg: &str) -> Builder {
+    fn arg(
+      mut self,
+      arg: &str,
+    ) -> Builder {
       if let Some(ref mut args) = self.args {
         args.push(arg.to_string());
       } else {
@@ -97,13 +105,19 @@ fn test_non_consuming_builder_without_clone() {
     }
 
     /// Add an argument to pass to the program.
-    pub fn arg<'a>(&'a mut self, arg: String) -> &'a mut Command {
+    pub fn arg<'a>(
+      &'a mut self,
+      arg: String,
+    ) -> &'a mut Command {
       self.args.push(arg);
       self
     }
 
     /// Set the working directory for the child process.
-    pub fn cwd<'a>(&'a mut self, dir: String) -> &'a mut Command {
+    pub fn cwd<'a>(
+      &'a mut self,
+      dir: String,
+    ) -> &'a mut Command {
       self.cwd = Some(dir);
       self
     }
@@ -158,7 +172,10 @@ fn test_non_consuming_builder_with_clone() {
     }
 
     /// Add an argument to pass to the program.
-    pub fn arg<'a>(&'a mut self, arg: &str) -> &'a mut CommandBuilder {
+    pub fn arg<'a>(
+      &'a mut self,
+      arg: &str,
+    ) -> &'a mut CommandBuilder {
       if self.opt_args.is_none() {
         self.opt_args = Some(Vec::new());
       }
@@ -167,7 +184,10 @@ fn test_non_consuming_builder_with_clone() {
     }
 
     /// Set the working directory for the child process.
-    pub fn cwd<'a>(&'a mut self, dir: &str) -> &'a mut CommandBuilder {
+    pub fn cwd<'a>(
+      &'a mut self,
+      dir: &str,
+    ) -> &'a mut CommandBuilder {
       self.opt_cwd = Some(dir.to_string());
       self
     }
@@ -207,13 +227,19 @@ fn test_non_consuming_builder_with_clone_2() {
     }
 
     /// Add an argument to pass to the program.
-    pub fn arg<'a>(&'a mut self, arg: String) -> &'a mut Command {
+    pub fn arg<'a>(
+      &'a mut self,
+      arg: String,
+    ) -> &'a mut Command {
       self.opt_args.push(arg);
       self
     }
 
     /// Set the working directory for the child process.
-    pub fn cwd<'a>(&'a mut self, dir: String) -> &'a mut Command {
+    pub fn cwd<'a>(
+      &'a mut self,
+      dir: String,
+    ) -> &'a mut Command {
       self.opt_cwd = Some(dir);
       self
     }

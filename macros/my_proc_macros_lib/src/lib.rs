@@ -20,6 +20,7 @@ pub fn derive_macro_describe(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_derive(Builder)]
-pub fn derive_macro_builder(input: TokenStream) -> TokenStream {
+pub fn
+derive_macro_builder(input: TokenStream) -> TokenStream {
   builder::derive_proc_macro_impl(input)
 }

@@ -2,10 +2,8 @@ builder.rs:
   ✔ Refactor helper functions into `utils.rs` @started(22-03-26 11:00) @done(22-03-26 11:00) @lasted(31s)
   ✔ Create a `<STRUCT>Builder` struct block w/ all the fields @started(22-03-26 11:04) @done(22-03-26 11:30) @lasted(26m45s)
   ✔ Extract traits and fns into `utils` @done(22-03-26 18:19)
-  ☐ Create a `<STRUCT>Builder` impl block w/ following methods
-    ☐ new()
-    ☐ fn corresponding to each field
-    ☐ build()
+  ✔ Create a `<STRUCT>Builder` impl block w/ new() & fn for each named field @started(22-03-27 11:11) @done(22-03-27 13:20) @lasted(2h9m47s)
+    ✔ build() @done(22-03-27 15:53)
 
 learn how to use extension:
-☐ [Todo+](https://marketplace.visualstudio.com/items?itemName=fabiospampinato.vscode-todo-plus)
+✔ [Todo+](https://marketplace.visualstudio.com/items?itemName=fabiospampinato.vscode-todo-plus) @done(22-03-27 15:53)

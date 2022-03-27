@@ -642,6 +642,8 @@ match parsed_generics {
 This might provide some insight into how the `Generics` object itself is structured, but
 there is no need to do any of this, since `quote!()` is awesome 🤯.
 
+### Using quote!
+
 Here's a mental model for using `quote!()`:
 
 1. If you don't include the "thing" that you want to see in generated code, then it will
@@ -684,6 +686,22 @@ pub fn derive_proc_macro_impl(input: TokenStream) -> TokenStream {
 
 > 📜 Here's the source code for `describe.rs` from its
 > [repo](https://github.com/nazmulidris/rust_scratch/blob/main/macros/my_proc_macros_lib/src/describe.rs).
+
+Here are some tips and tricks for using `quote!()`:
+
+1. Sometimes it is easier to start w/ a `String` or `Vec<String>` (which you can `join()`
+   into a `String`), then parse that into a `TokenStream` using `syn::parse_str()`. Then
+   pass that to `quote!()`. And example is if you wanted to add an arbitrary number of
+   trait bounds to an existing `where` clause. It is just easier to manipulate the new
+   trait bounds as a `String`, parse it into a `TokenStream`, and then use `quote!()` to
+   add that to the existing `where` clause.
+2. You can also use `syn::parse_quote!()` to get a `TokenStream` from a `quote!()`
+   expression, if it is just easier to generate a `quote!()` expression instead of using
+   `String`, etc.
+3. Repeating patterns in `quote!()` can be tricky to reason about. The best way to get a
+   feel for how it works is to try various things and as soon as you run into some road
+   blocks, think about generating `TokenStream`s manually, and then passing them to
+   `quote!()`.
 
 ## TODO: Example of a complex derive macro that generates a builder
 
