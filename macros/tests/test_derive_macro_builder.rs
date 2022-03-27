@@ -47,6 +47,7 @@ fn test_proc_macro_no_where_clause() {
   assert_eq!(my_pt.y, 2);
 }
 
+#[test]
 fn test_proc_macro_generics() {
   #[derive(Builder)]
   struct Point<X, Y>
