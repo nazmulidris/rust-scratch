@@ -1,11 +1,11 @@
-pub trait IdentFromString {
+pub trait IdentExt {
   fn from_string(
     &self,
     string: &str,
   ) -> Self;
 }
 
-impl IdentFromString for proc_macro2::Ident {
+impl IdentExt for proc_macro2::Ident {
   /// Generates a new identifier using the given string template as the name and the span
   /// from the `self` [Ident]. The template string can contain `{}` placeholders for the
   /// `self` [Ident] name.
