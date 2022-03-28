@@ -4,6 +4,23 @@ builder.rs:
   ✔ Extract traits and fns into `utils` @done(22-03-26 18:19)
   ✔ Create a `<STRUCT>Builder` impl block w/ new() & fn for each named field @started(22-03-27 11:11) @done(22-03-27 13:20) @lasted(2h9m47s)
     ✔ build() @done(22-03-27 15:53)
+  ✔ Update README.md @done(22-03-27 21:01)
 
 learn how to use extension:
-✔ [Todo+](https://marketplace.visualstudio.com/items?itemName=fabiospampinato.vscode-todo-plus) @done(22-03-27 15:53)
+  ✔ [Todo+](https://marketplace.visualstudio.com/items?itemName=fabiospampinato.vscode-todo-plus) @done(22-03-27 15:53)
+
+attrib macro:
+  ☐ Use syn `trace_var` eg to make my attrib proc macro
+  ☐ Update README.md
+
+fn like macros:
+  ☐ Use syn `lazy-static` eg to make my fn like macro & practice custom syntax creation
+  ☐ Update README.md
+
+manager of things:
+  ☐ Build the manager of things macro (might be fn like or attrib proc macro)
+  ☐ Update README.md
+  ☐ Move this into `r3bl_rs_utils` and refactor existing Redux code to use it
+
+publish DL article:
+  ☐ Convert README.md into a new article
