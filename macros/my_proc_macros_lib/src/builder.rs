@@ -16,7 +16,7 @@ pub fn derive_proc_macro_impl(input: proc_macro::TokenStream) -> proc_macro::Tok
     data,
     generics,
     ..
-  }: DeriveInput = parse_macro_input!(input);
+  }: DeriveInput = parse_macro_input!(input as DeriveInput);
 
   let required_trait_bounds: Vec<&str> = vec!["std::default::Default", "std::fmt::Debug"];
 

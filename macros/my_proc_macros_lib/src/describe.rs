@@ -16,7 +16,7 @@ pub fn derive_proc_macro_impl(input: TokenStream) -> TokenStream {
     data,
     generics,
     ..
-  } = parse_macro_input!(input); // Same as: syn::parse(input).unwrap();
+  } = parse_macro_input!(input as DeriveInput); // Same as: syn::parse(input).unwrap();
 
   let where_clause = &generics.where_clause;
 

@@ -10,11 +10,13 @@ learn how to use extension:
   ✔ [Todo+](https://marketplace.visualstudio.com/items?itemName=fabiospampinato.vscode-todo-plus) @done(22-03-27 15:53)
 
 attrib macro:
-  ☐ Use syn `trace_var` eg to make my attrib proc macro
+  ☐ Use syn `trace_var` eg to make my attrib proc macro @started(22-03-28 10:00)
+  ☐ How to handle input to this macro?
   ☐ Update README.md
 
 fn like macros:
   ☐ Use syn `lazy-static` eg to make my fn like macro & practice custom syntax creation
+  ☐ How to handle input to this macro?
   ☐ Update README.md
 
 manager of things:
