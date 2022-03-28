@@ -1,12 +1,14 @@
 use proc_macro::TokenStream;
 use quote::ToTokens;
 use r3bl_rs_utils::utils::{style_primary, style_prompt};
-use syn::{ItemFn, parse_str};
+use syn::{parse_str, ItemFn};
 
-/// https://docs.rs/syn/1.0.52/syn/macro.parse_macro_input.html
+/// https://docs.rs/syn/latest/syn/macro.parse_macro_input.html
 pub fn fn_proc_macro_impl(_input: TokenStream) -> TokenStream {
   let output_token_stream_str = "fn foo() -> u32 { 42 }";
-  let output = output_token_stream_str.parse().unwrap();
+  let output = output_token_stream_str
+    .parse()
+    .unwrap();
 
   let ast_item_fn: ItemFn = parse_str::<ItemFn>(output_token_stream_str).unwrap();
 
@@ -22,18 +24,22 @@ pub fn fn_proc_macro_impl(_input: TokenStream) -> TokenStream {
   output
 }
 
-/// https://docs.rs/syn/1.0.52/syn/fn.parse_str.html
-/// https://docs.rs/syn/1.0.52/syn/struct.ItemFn.html
-/// https://docs.rs/syn/1.0.52/syn/struct.Attribute.html
-/// https://docs.rs/syn/1.0.52/syn/enum.Visibility.html
-/// https://docs.rs/syn/1.0.52/syn/struct.Signature.html
-/// https://docs.rs/syn/1.0.52/syn/struct.Block.html
-/// https://docs.rs/syn/1.0.52/syn/enum.Stmt.html
+/// https://docs.rs/syn/latest/syn/fn.parse_str.html
+/// https://docs.rs/syn/latest/syn/struct.ItemFn.html
+/// https://docs.rs/syn/latest/syn/struct.Attribute.html
+/// https://docs.rs/syn/latest/syn/enum.Visibility.html
+/// https://docs.rs/syn/latest/syn/struct.Signature.html
+/// https://docs.rs/syn/latest/syn/struct.Block.html
+/// https://docs.rs/syn/latest/syn/enum.Stmt.html
 /// https://github.com/dtolnay/proc-macro-workshop#debugging-tips
 fn viz_ast(ast: ItemFn) {
   // Simply dump the AST to the console.
   let ast_clone = ast.clone();
-  eprintln!("{} => {:#?}", style_primary("Debug::ast"), ast_clone);
+  eprintln!(
+    "{} => {:#?}",
+    style_primary("Debug::ast"),
+    ast_clone
+  );
 
   // Parse AST to dump some items to the console.
   let ItemFn {
@@ -56,7 +62,10 @@ fn viz_ast(ast: ItemFn) {
     style_prompt(&sig.ident.to_string()),
     style_prompt(&match block.stmts.first() {
       Some(stmt) => {
-        let expr_str = stmt.to_token_stream().to_string().clone();
+        let expr_str = stmt
+          .to_token_stream()
+          .to_string()
+          .clone();
         expr_str
       }
       None => "empty".to_string(),

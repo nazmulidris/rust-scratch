@@ -1,4 +1,4 @@
-builder.rs:
+derive macro `builder.rs`:
   ✔ Refactor helper functions into `utils.rs` @started(22-03-26 11:00) @done(22-03-26 11:00) @lasted(31s)
   ✔ Create a `<STRUCT>Builder` struct block w/ all the fields @started(22-03-26 11:04) @done(22-03-26 11:30) @lasted(26m45s)
   ✔ Extract traits and fns into `utils` @done(22-03-26 18:19)
@@ -9,9 +9,9 @@ builder.rs:
 learn how to use extension:
   ✔ [Todo+](https://marketplace.visualstudio.com/items?itemName=fabiospampinato.vscode-todo-plus) @done(22-03-27 15:53)
 
-attrib macro:
-  ☐ Use syn `trace_var` eg to make my attrib proc macro @started(22-03-28 10:00)
-  ☐ How to handle input to this macro?
+attrib macro `logger.rs`:
+  ✔ Make attrib macro that takes `AttributeArgs` @started(22-03-28 10:00) @done(22-03-28 16:36) @lasted(6h36m59s)
+  ☐ Make attrib macro that takes set of idents (Use syn `trace_var` as eg)
   ☐ Update README.md
 
 fn like macros:

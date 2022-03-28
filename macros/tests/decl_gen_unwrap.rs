@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 /// Experiment - unwrap an Arc.
 /// https://users.rust-lang.org/t/lock-an-arc-mutex-in-one-call/65337
-/// https://docs.rs/sugars/2.0.0/sugars/macro.arc.html
+/// https://docs.rs/sugars/latest/sugars/macro.arc.html
 macro_rules! lock_unwrap_arc {
   ( $mutex_arc:expr ) => {
     *$mutex_arc.lock().unwrap()

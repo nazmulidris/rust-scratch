@@ -8,6 +8,7 @@ mod ast_viz_debug;
 mod describe;
 mod builder;
 mod utils;
+mod logger;
 
 #[proc_macro]
 pub fn fn_macro_ast_viz_debug(input: TokenStream) -> TokenStream {
@@ -20,7 +21,22 @@ pub fn derive_macro_describe(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_derive(Builder)]
-pub fn
-derive_macro_builder(input: TokenStream) -> TokenStream {
+pub fn derive_macro_builder(input: TokenStream) -> TokenStream {
   builder::derive_proc_macro_impl(input)
+}
+
+#[proc_macro_attribute]
+pub fn attrib_macro_logger_1(
+  args: TokenStream,
+  input: TokenStream,
+) -> TokenStream {
+  logger::attrib_proc_macro_impl_1(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn attrib_macro_logger_2(
+  args: TokenStream,
+  input: TokenStream,
+) -> TokenStream {
+  logger::attrib_proc_macro_impl_2(args, input)
 }
