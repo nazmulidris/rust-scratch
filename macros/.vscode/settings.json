@@ -10,5 +10,7 @@
     "stmts",
     "turbofish",
     "vecmac"
-  ]
+  ],
+  "copyrighter.author": "Nazmul Idris",
+  "copyrighter.license": "Apache2"
 }
