@@ -441,6 +441,10 @@ fn test_proc_macro() {
 > called [`lazy-static`](https://github.com/dtolnay/syn/tree/master/examples/lazy-static).
 > It shows how to parse a custom syntax.
 
+## TODO: 🎗️ Example of a complex function-like macro that generates manager of things
+
+- TODO: take a look at https://github.com/dtolnay/syn/tree/master/examples/lazy-static
+
 ## Example of a simple derive macro that adds a method to a struct
 
 We are going to come up w/ a made-up derive macro called `Describe` just for our
@@ -1329,10 +1333,6 @@ pub fn foo() -> &'static str {
 
 > 📜 You can find another example of a attribute procedural macro from the syn docs called
 > [`trace-var`](https://github.com/dtolnay/syn/tree/master/examples/trace-var).
-
-## TODO: 🎗️ Example of a complex function-like macro that generates manager of things
-
-- TODO: take a look at https://github.com/dtolnay/syn/tree/master/examples/lazy-static
 
 ## Learning resources
 
