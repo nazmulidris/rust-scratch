@@ -24,7 +24,7 @@
 			"path": "my_proc_macros_lib/src/custom_syntax.rs",
 			"bookmarks": [
 				{
-					"line": 26,
+					"line": 38,
 					"column": 2,
 					"label": ""
 				}
@@ -34,7 +34,17 @@
 			"path": "tests/test_fn_macro_custom_syntax.rs",
 			"bookmarks": [
 				{
-					"line": 34,
+					"line": 30,
+					"column": 0,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "README.md",
+			"bookmarks": [
+				{
+					"line": 443,
 					"column": 0,
 					"label": ""
 				}

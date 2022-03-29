@@ -15,7 +15,7 @@ attrib macro `logger.rs`:
   ✔ Update README.md @done(22-03-29 12:15)
 
 fn like macros:
-  ☐ Use syn `lazy-static` eg to make my fn like macro & practice custom syntax creation
+  ☐ Use syn `lazy-static` eg to make my fn like macro & practice custom syntax creation @started(22-03-29 16:35)
   ☐ Build the "manager of things" macro
   ☐ Update README.md
   ☐ Move this into `r3bl_rs_utils` and refactor existing Redux code to use it

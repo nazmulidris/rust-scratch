@@ -28,7 +28,7 @@
 use my_proc_macros_lib::fn_macro_custom_syntax;
 
 #[test]
-fn test_macro() {
+fn test_fn_macro_custom_syntax() {
   fn_macro_custom_syntax!();
   assert_eq!(foo(), 42);
 }

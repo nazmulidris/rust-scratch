@@ -20,10 +20,22 @@
 #![allow(unused_variables)]
 
 use quote::quote;
+use syn::{parse::{Parse, ParseStream},
+          parse_macro_input,
+          Expr,
+          Ident,
+          Result,
+          Token,
+          Type,
+          Visibility};
 
 /// fn_macro_custom_syntax! {
-///   ThingManager<T> manages Vec<T>
+///   $MANAGER_IDENT for $THING_TYPE
 /// }
+/// Eg: `fn_macro_custom_syntax! { ThingManager for Vec<T> }`
+///
+/// For reference, here's an example from syn:
+/// - [lazy-static](https://github.com/dtolnay/syn/blob/master/examples/lazy-static/lazy-static/src/lib.rs)
 pub fn fn_proc_macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   quote! {
     pub fn foo () -> i32 {
@@ -31,4 +43,21 @@ pub fn fn_proc_macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     }
   }
   .into()
+}
+
+struct ManagerOfThingInfo {
+  manager_ident: Ident,
+  thing_type: Type,
+}
+
+impl Parse for ManagerOfThingInfo {
+  fn parse(input: ParseStream) -> Result<Self> {
+    let manager_ident: Ident = input.parse()?;
+    input.parse::<Token![for]>()?;
+    let thing_type: Type = input.parse()?;
+    Ok(ManagerOfThingInfo {
+      manager_ident,
+      thing_type,
+    })
+  }
 }
