@@ -16,11 +16,7 @@ attrib macro `logger.rs`:
 
 fn like macros:
   ☐ Use syn `lazy-static` eg to make my fn like macro & practice custom syntax creation
-  ☐ How to handle input to this macro?
-  ☐ Update README.md
-
-manager of things:
-  ☐ Build the manager of things macro (might be fn like or attrib proc macro)
+  ☐ Build the "manager of things" macro
   ☐ Update README.md
   ☐ Move this into `r3bl_rs_utils` and refactor existing Redux code to use it
 

@@ -26,10 +26,16 @@ mod describe;
 mod builder;
 mod utils;
 mod logger;
+mod custom_syntax;
 
 #[proc_macro]
 pub fn fn_macro_ast_viz_debug(input: TokenStream) -> TokenStream {
   ast_viz_debug::fn_proc_macro_impl(input)
+}
+
+#[proc_macro]
+pub fn fn_macro_custom_syntax(input: TokenStream) -> TokenStream {
+  custom_syntax::fn_proc_macro_impl(input)
 }
 
 #[proc_macro_derive(Describe)]

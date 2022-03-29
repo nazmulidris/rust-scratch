@@ -441,7 +441,7 @@ fn test_proc_macro() {
 > called [`lazy-static`](https://github.com/dtolnay/syn/tree/master/examples/lazy-static).
 > It shows how to parse a custom syntax.
 
-## TODO: 🎗️ Example of a complex function-like macro that generates manager of things
+## TODO: 🎗️ Example of a complex function-like macro that parses custom syntax
 
 - TODO: take a look at https://github.com/dtolnay/syn/tree/master/examples/lazy-static
 

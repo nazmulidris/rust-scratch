@@ -9,6 +9,36 @@
 					"label": ""
 				}
 			]
+		},
+		{
+			"path": "my_proc_macros_lib/src/lib.rs",
+			"bookmarks": [
+				{
+					"line": 36,
+					"column": 1,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "my_proc_macros_lib/src/custom_syntax.rs",
+			"bookmarks": [
+				{
+					"line": 23,
+					"column": 2,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "tests/test_fn_macro_custom_syntax.rs",
+			"bookmarks": [
+				{
+					"line": 34,
+					"column": 0,
+					"label": ""
+				}
+			]
 		}
 	]
 }
