@@ -1130,7 +1130,7 @@ pub fn attrib_proc_macro_impl_2(args: TokenStream, item: TokenStream) -> TokenSt
 }
 ```
 
-### How to parse args containing attributes?
+### How to parse args containing attributes for variant 1?
 
 How do we parse `args` parameter into something we can use? We can use
 [`syn::AttributeArgs`](https://docs.rs/syn/latest/syn/type.AttributeArgs.html) along w/
@@ -1213,7 +1213,22 @@ pub fn attrib_proc_macro_impl_1(
 }
 ```
 
-### 🎗️ How to parse args containing set of identifiers?
+When we use the macro like so:
+
+```rust
+#[attrib_macro_logger_1(key = "value")]
+fn this_fn_will_be_consumed_and_replaced() -> i32 { 42 }
+```
+
+Here's the code that is generated:
+
+```rust
+fn key() -> &'static str {
+  "value"
+}
+```
+
+### How to parse args containing set of identifiers for variant 2?
 
 We can also provide our own custom implementation of the `Parse` trait if we want to.
 Here's an example of this based on syn's
@@ -1225,46 +1240,90 @@ use std::collections::HashSet as Set;
 use syn::{parse_macro_input, Token, Ident};
 use syn::parse::{Parse, ParseStream, Result};
 
-/// Parses a list of variable names separated by commas.
+/// Parses a list of variable names separated by `+`.
 ///
-///     a, b, c
+///     a + b + c
 ///
 /// This is how the compiler passes in arguments to our attribute -- it is
 /// everything inside the delimiters after the attribute name.
 ///
-///     #[attrib_macro_logger(a, b, c)]
+///     #[attrib_macro_logger(a+ b+ c)]
 ///                           ^^^^^^^
-struct ArgsHoldingVariableNames {
-    vars: Set<Ident>,
+struct ArgsHoldingIdents {
+  idents: Set<Ident>,
 }
 
-impl Parse for ArgsHoldingVariableNames {
-    fn parse(args: ParseStream) -> Result<Self> {
-        let vars = Punctuated::<Ident, Token![,]>::parse_terminated(args)?;
-        Ok(ArgsHoldingVariableNames {
-            vars: vars.into_iter().collect(),
-        })
-    }
+impl Parse for ArgsHoldingIdents {
+  fn parse(args: ParseStream) -> Result<Self> {
+    let vars = Punctuated::<Ident, Token![+]>::parse_terminated(args)?;
+    Ok(ArgsHoldingIdents {
+      idents: vars.into_iter().collect(),
+    })
+  }
 }
 ```
+
+1. The `parse()` function receives a `ParseStream` and returns a `Result`. In this case:
+   1. `args::ParseStream` is the `TokenStream` of the optional arguments that are passed
+      into the attribute macro. In other words `(a+ b+ c)`.
+   2. `Result` holds the struct `ArgsHoldingIdents`. In other words a `Set` of `Ident`
+      containing `a`, `b`, `c`.
+2. The actual work is done by
+   [`Punctuated::parse_terminated()`](https://docs.rs/syn/latest/syn/punctuated/struct.Punctuated.html#method.parse_terminated)
+   function. There are a few of these helper functions provided by syn.
+3. `parse_terminated()` parses a bunch of `T` separated by `P` and it has to be told two
+   things:
+   1. _What type `T` it is parsing?_ In this case, `Ident`.
+   2. _What the separator `P`?_ In this case,
+      [`Token![+]`](https://docs.rs/syn/latest/syn/macro.Token.html) which is the Rust
+      representation of the `+` token (provided by the `Token!` macro).
+   3. We provide it w/ this information using the turbofish syntax:
+      `::<Ident, Token![+]>::`.
+4. Finally after the `ParseStream` is parsed, it returns an iterator, which must be used
+   to generate the result. We simply iterate over the iterator and collect the `Ident`s
+   and move them into an instance of a new struct `ArgsHoldingIdents` and return that
+   wrapped in a `Result::Ok`.
 
 And we might implement the macro like this:
 
 ```rust
-#[proc_macro_attribute]
-pub fn attrib_proc_macro_impl_2(args: TokenStream, item: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(args as ArgsHoldingVariableNames);
-    let item = parse_macro_input!(item as ItemFn);
-    quote! {}.into()
+/// The args take a set of identifiers like `#[attrib_macro_logger(a, b, c)]`.
+pub fn attrib_proc_macro_impl_2(
+  args: proc_macro::TokenStream,
+  item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+  let args = parse_macro_input!(args as ArgsHoldingIdents);
+  let item = parse_macro_input!(item as ItemFn);
+
+  let fn_name_ident = item.sig.ident;
+
+  let args_to_string = args
+    .idents
+    .iter()
+    .map(|ident| ident.to_string())
+    .collect::<Vec<_>>()
+    .join(", ");
+
+  quote! {
+    pub fn #fn_name_ident() -> &'static str { #args_to_string }
+  }
+  .into()
 }
 ```
 
 And use it like so:
 
 ```rust
-#[attrib_macro_logger_2(a, b, c)]
-pub fn some_annotated_function() {
-    /* ... */
+#[attrib_macro_logger_2(a + b + c)]
+fn foo() -> i32 { 42 }
+```
+
+This generates the following code (very minor note - the ordering of the output is
+actually not stable):
+
+```rust
+pub fn foo() -> &'static str {
+  "c, a, b"
 }
 ```
 

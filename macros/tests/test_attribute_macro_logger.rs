@@ -25,5 +25,13 @@ fn test_attribute_macro_logger_1() {
 fn test_attribute_macro_logger_2() {
   #[attrib_macro_logger_2(a + b + c)]
   fn foo() -> i32 { 42 }
-  assert_eq!(foo(), 42);
+
+  let result_str = foo();
+  // Strange way to test for these 3 strings to exist in `result_str` since the order is
+  // not guaranteed.
+  vec!["a", "b", "c"]
+    .iter()
+    .for_each(|ident| {
+      assert!(result_str.contains(ident));
+    });
 }

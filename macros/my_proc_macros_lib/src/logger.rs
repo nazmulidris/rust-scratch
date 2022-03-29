@@ -53,10 +53,20 @@ pub fn attrib_proc_macro_impl_2(
   args: proc_macro::TokenStream,
   item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-  let args = parse_macro_input!(args as ArgsHoldingVariableNames);
+  let args = parse_macro_input!(args as ArgsHoldingIdents);
   let item = parse_macro_input!(item as ItemFn);
+
+  let fn_name_ident = item.sig.ident;
+
+  let args_to_string = args
+    .idents
+    .iter()
+    .map(|ident| ident.to_string())
+    .collect::<Vec<_>>()
+    .join(", ");
+
   quote! {
-    pub fn foo() -> i32 { 42 }
+    pub fn #fn_name_ident() -> &'static str { #args_to_string }
   }
   .into()
 }
@@ -70,15 +80,15 @@ pub fn attrib_proc_macro_impl_2(
 ///
 ///     #[attrib_macro_logger(a+ b+ c)]
 ///                           ^^^^^^^
-struct ArgsHoldingVariableNames {
-  vars: Set<Ident>,
+struct ArgsHoldingIdents {
+  idents: Set<Ident>,
 }
 
-impl Parse for ArgsHoldingVariableNames {
+impl Parse for ArgsHoldingIdents {
   fn parse(args: ParseStream) -> Result<Self> {
     let vars = Punctuated::<Ident, Token![+]>::parse_terminated(args)?;
-    Ok(ArgsHoldingVariableNames {
-      vars: vars.into_iter().collect(),
+    Ok(ArgsHoldingIdents {
+      idents: vars.into_iter().collect(),
     })
   }
 }
