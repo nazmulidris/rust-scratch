@@ -13,22 +13,23 @@
  *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
-*/
+ */
 
-#![allow(dead_code)]
-#![allow(unused_imports)]
-#![allow(unused_variables)]
-
-use quote::quote;
-
-/// fn_macro_custom_syntax! {
-///   ThingManager<T> manages Vec<T>
-/// }
-pub fn fn_proc_macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-  quote! {
-    pub fn foo () -> i32 {
-      42
-    }
+/// Experiment - generate a simple struct w/ given field declarations.
+macro_rules! make_struct {
+  ($name: ident, $($field_name: ident: $ty: ty),*) => {
+    #[derive(Debug)]
+    struct $name { $($field_name: $ty),* }
   }
-  .into()
+}
+
+#[test]
+fn test_make_struct() {
+  make_struct!(Thing, field_1: i32, field_2: String);
+  let instance = Thing {
+    field_1: 12,
+    field_2: "abc".to_string(),
+  };
+  assert_eq!(instance.field_1, 12);
+  assert_eq!(instance.field_2, "abc");
 }

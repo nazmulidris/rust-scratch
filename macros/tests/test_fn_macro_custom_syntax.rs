@@ -15,10 +15,6 @@
  *   limitations under the License.
 */
 
-#![allow(dead_code)]
-#![allow(unused_imports)]
-#![allow(unused_variables)]
-
 //! # Watch macro expansion
 //!
 //! To watch for changes run this script:
