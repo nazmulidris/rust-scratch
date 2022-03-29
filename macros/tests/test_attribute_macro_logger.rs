@@ -21,9 +21,9 @@ fn test_attribute_macro_logger_1() {
   assert_eq!(key(), "value");
 }
 
-// #[test]
-// fn test_attribute_macro_logger_2() {
-//   #[attrib_macro_logger_2(a, b, c)]
-//   fn foo() -> i32 { 42 }
-//   assert_eq!(foo(), 42);
-// }
+#[test]
+fn test_attribute_macro_logger_2() {
+  #[attrib_macro_logger_2(a + b + c)]
+  fn foo() -> i32 { 42 }
+  assert_eq!(foo(), 42);
+}

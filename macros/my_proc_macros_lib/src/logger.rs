@@ -55,17 +55,20 @@ pub fn attrib_proc_macro_impl_2(
 ) -> proc_macro::TokenStream {
   let args = parse_macro_input!(args as ArgsHoldingVariableNames);
   let item = parse_macro_input!(item as ItemFn);
-  quote! {}.into()
+  quote! {
+    pub fn foo() -> i32 { 42 }
+  }
+  .into()
 }
 
-/// Parses a list of variable names separated by commas.
+/// Parses a list of variable names separated by `+`.
 ///
-///     a, b, c
+///     a + b + c
 ///
 /// This is how the compiler passes in arguments to our attribute -- it is
 /// everything inside the delimiters after the attribute name.
 ///
-///     #[attrib_macro_logger(a, b, c)]
+///     #[attrib_macro_logger(a+ b+ c)]
 ///                           ^^^^^^^
 struct ArgsHoldingVariableNames {
   vars: Set<Ident>,
@@ -73,7 +76,7 @@ struct ArgsHoldingVariableNames {
 
 impl Parse for ArgsHoldingVariableNames {
   fn parse(args: ParseStream) -> Result<Self> {
-    let vars = Punctuated::<Ident, Token![,]>::parse_terminated(args)?;
+    let vars = Punctuated::<Ident, Token![+]>::parse_terminated(args)?;
     Ok(ArgsHoldingVariableNames {
       vars: vars.into_iter().collect(),
     })
