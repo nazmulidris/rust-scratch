@@ -103,7 +103,7 @@ struct ArgsHoldingIdents {
 
 impl Parse for ArgsHoldingIdents {
   fn parse(args: ParseStream) -> Result<Self> {
-    let vars = Punctuated::<Ident, Token![+]>::parse_terminated(args)?;
+    let vars: Punctuated<Ident, Token![+]> = Punctuated::parse_terminated(args)?;
     Ok(ArgsHoldingIdents {
       idents: vars.into_iter().collect(),
     })

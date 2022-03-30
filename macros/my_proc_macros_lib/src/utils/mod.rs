@@ -21,3 +21,4 @@ pub mod data_ext;
 pub mod meta_ext;
 pub mod nested_meta_ext;
 pub mod attribute_args_ext;
+pub mod type_ext;

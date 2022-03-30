@@ -270,6 +270,8 @@ pub fn log_entry_and_exit(args: TokenStream, input: TokenStream) -> TokenStream 
 }
 ```
 
+### Strategy
+
 The rough idea is that we will have to parse "things" into this `proc_macro2::TokenStream`
 in order to manipulate them. They can be parsed into this AST from:
 
@@ -290,6 +292,8 @@ In order to do this parsing you have to use the
   example: `let fun:ItemFn = parse_macro_input!(input as ItemFn)`. This will parse the
   `input` variable into an `ItemFn` AST and then you can work w/ the fields provided by
   `ItemFn` after that.
+
+### Examples
 
 So here are some examples of what this looks like.
 
@@ -323,6 +327,89 @@ So here are some examples of what this looks like.
    There's also a
    [`Parser` trait](https://docs.rs/syn/latest/syn/parse/index.html#the-parser-trait) that
    you can implement which allows you greater control over the parsing process.
+
+### Writing your own Parse trait impl in different ways
+
+This might not be intuitive, but you can parse the **same** `TokenStream` using various
+different parsers. You can parse a `TokenStream` as a `Type` or `Ident` or whatever else
+depending on what you need.
+
+Try different traits until you get the one that gets you the AST you want. You can also
+write [your own parser](https://docs.rs/syn/latest/syn/parse/index.html#example).
+
+Let's illustrate this with an example. Let's say you want to provide a function like macro
+w/ the following syntax: `fn_macro_custom_syntax! { ThingManager<T> for Vec<T> }`. You can
+write your own `Parse` trait implementation and extract the AST from the `TokenStream` and
+you can write this parser in many many different ways.
+
+Here's one example.
+
+```rust
+struct ManagerOfThingInfo {
+  manager_ident: Ident,
+  manager_generics_ident: Ident,
+  thing_type: Type,
+}
+
+/// [Parse docs](https://docs.rs/syn/latest/syn/parse/index.html)
+impl Parse for ManagerOfThingInfo {
+  fn parse(input: ParseStream) -> Result<Self> {
+    let manager_ident: Ident = input.parse()?;
+    if input.peek(Token![<]) {
+      input.parse::<Token![<]>()?;
+    }
+    let manager_generics_ident: Ident = input.parse()?;
+    if input.peek(Token![>]) {
+      input.parse::<Token![>]>()?;
+    }
+    input.parse::<Token![for]>()?;
+    let thing_type: Type = input.parse()?;
+    Ok(ManagerOfThingInfo {
+      manager_ident,
+      manager_generics_ident,
+      thing_type,
+    })
+  }
+}
+```
+
+And here's another way of doing it.
+
+```rust
+struct ManagerOfThingInfo {
+  manager_name_ident: Ident,
+  manager_ty: Type,
+  thing_ty: Type,
+}
+
+/// [Parse docs](https://docs.rs/syn/latest/syn/parse/index.html)
+impl Parse for ManagerOfThingInfo {
+  fn parse(input: ParseStream) -> Result<Self> {
+    let manager_ty: Type = input.parse()?;
+    input.parse::<Token![for]>()?;
+    let thing_ty: Type = input.parse()?;
+
+    let manager_name_ident = match manager_ty {
+      Type::Path(ref type_path) => {
+        let path = &type_path.path;
+        let ident = &path
+          .segments
+          .first()
+          .unwrap()
+          .ident;
+        ident.clone()
+      }
+      _ => panic!("Expected Type::Path::TypePath.segments to have an Ident"),
+    };
+
+    Ok(ManagerOfThingInfo {
+      manager_name_ident,
+      manager_ty,
+      thing_ty,
+    })
+  }
+}
+```
 
 > 📜 You can find all the syn examples in this
 > [repo](https://github.com/dtolnay/syn/tree/master/examples).
@@ -761,7 +848,7 @@ Here are some tips and tricks for using `quote!()`:
    trait bounds to an existing `where` clause. It is just easier to manipulate the new
    trait bounds as a `String`, parse it into a `TokenStream`, and then use `quote!()` to
    add that to the existing `where` clause. Here's an example from
-   [`builder.rs`](https://github.com/nazmulidris/rust_scratch/blob/main/macros/my_proc_macros_lib/src/builder.rs#L152).
+   [`builder.rs`](https://github.com/nazmulidris/rust_scratch/blob/main/macros/my_proc_macros_lib/src/builder.rs#L169).
 
    ```rust
    let traits: Vec<&str> = vec!["std::default::Default", "std::fmt::Debug"];

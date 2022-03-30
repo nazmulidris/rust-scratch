@@ -28,7 +28,60 @@
 use my_proc_macros_lib::fn_macro_custom_syntax;
 
 #[test]
-fn test_fn_macro_custom_syntax() {
-  fn_macro_custom_syntax!();
-  assert_eq!(foo(), 42);
+fn test_fn_macro_custom_syntax_full() {
+  fn_macro_custom_syntax! {
+    ThingManager<K, V>
+    where K: Send + Sync + Default + 'static, V: Send + Sync + Default + 'static
+    for std::collections::HashMap<K, V>
+  }
+
+  let mut thing_manager = ThingManager::<String, String> {
+    wrapped_thing: std::collections::HashMap::new(),
+  };
+  thing_manager.wrapped_thing.insert(
+    "key".to_string(),
+    "value".to_string(),
+  );
+
+  assert_eq!(
+    thing_manager
+      .wrapped_thing
+      .get("key"),
+    Some(&"value".to_string())
+  );
+  assert_eq!(
+    thing_manager
+      .wrapped_thing
+      .get("key2"),
+    None
+  );
+}
+
+#[test]
+fn test_fn_macro_custom_syntax_no_where_clause() {
+  fn_macro_custom_syntax! {
+    ThingManager<K, V>
+    for std::collections::HashMap<K, V>
+  }
+
+  let mut thing_manager = ThingManager::<String, String> {
+    wrapped_thing: std::collections::HashMap::new(),
+  };
+  thing_manager.wrapped_thing.insert(
+    "key".to_string(),
+    "value".to_string(),
+  );
+
+  assert_eq!(
+    thing_manager
+      .wrapped_thing
+      .get("key"),
+    Some(&"value".to_string())
+  );
+  assert_eq!(
+    thing_manager
+      .wrapped_thing
+      .get("key2"),
+    None
+  );
 }
