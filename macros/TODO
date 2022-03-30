@@ -15,10 +15,14 @@ attrib macro `logger.rs`:
   ✔ Update README.md @done(22-03-29 12:15)
 
 fn like macros:
-  ☐ Use syn `lazy-static` eg to make my fn like macro & practice custom syntax creation @started(22-03-29 16:35)
-  ☐ Build the "manager of things" macro
+  ✔ Use syn `lazy-static` eg to make my fn like macro & practice custom syntax creation @started(22-03-29 10:00) @done(22-03-30 16:24) @lasted(1d6h24m50s)
+  ✔ Build the "manager of things" macro @done(22-03-30 16:24)
   ☐ Update README.md
-  ☐ Move this into `r3bl_rs_utils` and refactor existing Redux code to use it
+
+`r3bl_rs_utils` repo - create manager of things macro & debug! decl macro:
+  ☐ Based on `macros` repo create the final "manager" of "things" fn like macro
+  ☐ Move from `macros` repo "debug!" decl macro
+  ☐ Refactor existing Redux code to use them
 
 publish DL article:
   ☐ Convert README.md into a new article
