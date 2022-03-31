@@ -41,18 +41,6 @@ use syn::{parse::{Parse, ParseBuffer, ParseStream},
 
 use crate::utils::type_ext::TypeExt;
 
-// TODO: 🎗️ move this to r3bl_rs_utils crate
-macro_rules! debug {
-  ($i:ident) => {
-    println!(
-      "{} {} = {}",
-      r3bl_rs_utils::utils::style_error("▶"),
-      r3bl_rs_utils::utils::style_prompt(stringify!($i)),
-      r3bl_rs_utils::utils::style_dimmed(&format!("{:#?}", $i))
-    );
-  };
-}
-
 /// See [`ManagerOfThingInfo`] for more information on the syntax that this macro accepts.
 ///
 /// For reference, here's an example from syn called

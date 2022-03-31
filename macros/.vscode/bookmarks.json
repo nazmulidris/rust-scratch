@@ -24,12 +24,7 @@
 			"path": "my_proc_macros_lib/src/custom_syntax.rs",
 			"bookmarks": [
 				{
-					"line": 43,
-					"column": 21,
-					"label": ""
-				},
-				{
-					"line": 65,
+					"line": 53,
 					"column": 1,
 					"label": ""
 				}
