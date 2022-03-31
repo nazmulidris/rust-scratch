@@ -528,9 +528,88 @@ fn test_proc_macro() {
 > called [`lazy-static`](https://github.com/dtolnay/syn/tree/master/examples/lazy-static).
 > It shows how to parse a custom syntax.
 
-## TODO: 🎗️ Example of a complex function-like macro that parses custom syntax
+## Example of a complex function-like macro that parses custom syntax
 
-- TODO: take a look at https://github.com/dtolnay/syn/tree/master/examples/lazy-static
+There are times when you need to create your own syntax or domain specific language.
+Examples of this are JSX for React. Or DAO generators for a database. In these cases, it's
+not just about outputting a token stream, but a large chunk of the work is coming up w/ a
+syntax that then has to be parsed 🎉!
+
+The idea is that your users will declaratively define the things that you want to happen,
+and the procedural macro will do the rest.
+
+- Declarative or the folks who are using the macros.
+- For the implementors, it ends up generating imperative code.
+
+> 📜 Please take a look at the syn example called
+> [`lazy-static`](https://github.com/dtolnay/syn/tree/master/examples/lazy-static) to get
+> some more ideas on custom syntax parsing and creating custom error messages for the
+> compiler.
+
+### Desired syntax and behavior
+
+Let's say that we want to parse a custom syntax like the following, which basically is a
+declaration of how a manager for the struct `HashMap<K, V>` should be created.
+
+```rust
+fn_macro_custom_syntax! {
+  ThingManager<K, V>
+  where K: Send + Sync + Default + 'static, V: Send + Sync + Default + 'static
+  for std::collections::HashMap<K, V>
+}
+```
+
+So we want the declaration shown above to emit the following code.
+
+```rust
+/// Generated manager ThingManager.
+struct ThingManager<K, V>
+where
+    K: Send + Sync + Default + 'static,
+    V: Send + Sync + Default + 'static,
+{
+    wrapped_thing: std::collections::HashMap<K, V>,
+}
+```
+
+Let's say that we want some more flexibility in our syntax and will allow the omission of
+the `where` clause and we will generate it ourselves, based on the generic type arguments
+that are passed to `ThingManager`, in other words `<K, V>`. So the syntax will now look
+like this.
+
+```rust
+fn_macro_custom_syntax! {
+  ThingManager<K, V>
+  for std::collections::HashMap<K, V>
+}
+```
+
+And we want to generate the following code. Notice that the `where` clause is generated
+auto-magically 🪄.
+
+```rust
+/// Generated manager ThingManager.
+struct ThingManager<K, V>
+where
+    K: Send + Sync + 'static,
+    V: Send + Sync + 'static,
+{
+    wrapped_thing: std::collections::HashMap<K, V>,
+}
+```
+
+### Implementing the syntax parser
+
+> 📜 You can find the source code for this example
+> [here](https://github.com/nazmulidris/rust_scratch/blob/main/macros/my_proc_macros_lib/src/custom_syntax.rs)
+> in its repo.
+
+- We can watch macro expansion by running this script:
+  `./cargo-watch-macro-expand-one-test.fish test_fn_macro_custom_syntax`
+- We can watch test output by running this script:
+  `./cargo-watch-one-test.fish test_fn_macro_custom_syntax`
+
+### Implementing the code generator
 
 ## Example of a simple derive macro that adds a method to a struct
 
