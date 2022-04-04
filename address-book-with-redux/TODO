@@ -1,0 +1,66 @@
+╭──────────────────────────────────────────────────────╮
+│ async web api https://git.sr.ht/~gruberb/onetutorial │
+╰──────────────────────────────────────────────────────╯
+get started:
+  ☐ follow tut to get fetch data from api
+    - http://httpbin.org/ip
+    - fetch crate - https://crates.io/crates/fetch
+  ☐ install fetch
+  ☐ play w/ what is my ip
+
+intermediate:
+  ☐ play w/ json to rust serde transform
+    - https://transform.tools/json-to-rust-serde
+  ☐ play w/ these other apis (get api keys)
+    ☐ https://coinmarketcap.com/api/documentation/v1/
+    ☐ https://eodhistoricaldata.com/
+
+address book:
+  ☐ use api to generate name dummy data (for address book add cmd)
+    - https://en.namefake.com/api
+    - https://api.namefake.com/english-united-states/female/
+
+google sheets:
+  ☐ create a service account in google cloud console
+  ☐ sync this address book data w/ google sheet
+
+╭──────────────────────────────────────────────╮
+│ learn termion or crossterm                   │
+╰──────────────────────────────────────────────╯
+decide:
+  ☐ decide whether to use `termion` or `crossterm`
+impl:
+  ☐ create my own `readline` impl using `crossterm` / `termion` (like `reedline`)
+  ☐ deal with graphemes and text wrapping
+
+╭──────────────────────────────────────────────╮
+│ multi-line editor                            │
+╰──────────────────────────────────────────────╯
+impl:
+  ☐ replace the use of `readline` w/: `rustyline` / `reedline` (multi line editing)
+
+Basic:
+✔ Create simple CLI event loop that allows the user to interact with the address book
+  ✔ Use `readline` to get user input (from `r3bl_rs_utils`)
+✔ Create action enum
+✔ Create state & address book data model
+  ✔ Add search term support
+✔ Create reducer function
+✔ Create Redux store
+  ✔ Move to `lib.rs`
+  ✔ Add support for middleware
+✔ Create a simple TUI that takes input to mutate this store and display the state to stdout
+✔ Refactor the `store.rs` into multiple files (prepare for publishing it in the future).
+
+Intermediate:
+✔ Add Redux history support
+
+Concurrency:
+✔ Make middleware async / parallel
+  ✔ Wrap the store itself in an `Arc<Mutex>` / `Arc<RwLock>`
+  ✔ Use `tokio`
+
+Publish:
+✔ Publish Redux store to `r3bl_rs_utils`
+✔ Write developerlife.com article on `tokio`
+✔ Write developerlife.com article on Redux & Rust

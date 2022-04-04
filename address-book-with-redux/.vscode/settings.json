@@ -1,3 +1,16 @@
 {
-  "cSpell.words": ["reedline"]
+  "cSpell.words": [
+    "asyncness",
+    "constness",
+    "idents",
+    "itends",
+    "paren",
+    "qself",
+    "rustup",
+    "stmts",
+    "turbofish",
+    "vecmac"
+  ],
+  "copyrighter.author": "Nazmul Idris",
+  "copyrighter.license": "Apache2"
 }
