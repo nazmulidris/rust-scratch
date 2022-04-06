@@ -21,7 +21,7 @@ mod tui;
 
 // Imports.
 use r3bl_rs_utils::{
-  debug, style_error, style_dimmed, style_primary, print_header,
+  style_error, style_primary,
   utils::{call_if_err, with, ArgsToStrings},
 };
 use std::{env::args, process::exit};
@@ -32,8 +32,6 @@ fn main() {
     run_tui_app(args().filter_and_convert_to_strings()),
     |result| {
       call_if_err(&result, &|err| {
-        // FIXME: debug! does not work!
-        // debug!(result);
         eprintln!(
           "{}: {}",
           style_error("Problem encountered"),

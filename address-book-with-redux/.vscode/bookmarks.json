@@ -114,16 +114,6 @@
 					"label": ""
 				}
 			]
-		},
-		{
-			"path": "src/main.rs",
-			"bookmarks": [
-				{
-					"line": 34,
-					"column": 8,
-					"label": ""
-				}
-			]
 		}
 	]
 }

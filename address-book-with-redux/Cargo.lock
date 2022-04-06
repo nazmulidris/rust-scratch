@@ -252,9 +252,9 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils"
-version = "0.7.5"
+version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30c641a15e48c500b93615ef32a4583dd89951576db73767808658ac989ac4f2"
+checksum = "3823929a615d330e6d0031253ab1a75ba24686ce359958c488b3e12e447524db"
 dependencies = [
  "ansi_term",
  "async-trait",
@@ -268,9 +268,9 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils_core"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8a0eaf6b0c2935c3b0316abd246284b869d99cab6204784221a2fc16c49ac07"
+checksum = "088f3c0bac684e174fac175bd26710faa75765fe86c9d5dbce6ceb5d24b7d34b"
 dependencies = [
  "ansi_term",
  "async-trait",
