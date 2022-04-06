@@ -3,9 +3,10 @@
 ╰──────────────────────────────────────────────────────╯
 get started:
   ☐ follow tut to get fetch data from api
+    - https://git.sr.ht/~gruberb/onetutorial/commit/step_1#Cargo.toml
     - http://httpbin.org/ip
-    - fetch crate - https://crates.io/crates/fetch
-  ☐ install fetch
+    - request crate - https://crates.io/crates/request
+  ☐ install request
   ☐ play w/ what is my ip
 
 intermediate:

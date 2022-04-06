@@ -4,7 +4,7 @@
 			"path": "src/tui/repl_loop.rs",
 			"bookmarks": [
 				{
-					"line": 89,
+					"line": 96,
 					"column": 18,
 					"label": ""
 				}
@@ -111,6 +111,16 @@
 				{
 					"line": 31,
 					"column": 0,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/main.rs",
+			"bookmarks": [
+				{
+					"line": 34,
+					"column": 8,
 					"label": ""
 				}
 			]

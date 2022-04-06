@@ -15,7 +15,7 @@
  *   limitations under the License.
 */
 
-use r3bl_rs_utils::utils::print_header;
+use r3bl_rs_utils::print_header;
 use rand::Rng;
 
 use crate::{

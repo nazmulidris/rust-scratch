@@ -15,15 +15,14 @@
  *   limitations under the License.
 */
 
+use crate::{
+  address_book::{Contact, State},
+  tui::{MAX_DELAY, MIN_DELAY},
+};
 use r3bl_rs_utils::{
-  utils::{style_dimmed, print_prompt, print_header},
-  tree_memory_arena::HasId,
+  print_header, style_dimmed, tree_memory_arena::HasId, utils::print_prompt,
 };
 use rand::Rng;
-use crate::{
-  address_book::{State, Contact},
-  tui::{MIN_DELAY, MAX_DELAY},
-};
 
 pub fn render_fn(state: State) {
   // https://rust-lang.github.io/rfcs/2909-destructuring-assignment.html
@@ -34,7 +33,9 @@ pub fn render_fn(state: State) {
 
   // Artificial delay before rendering.
   let delay_ms = rand::thread_rng().gen_range(MIN_DELAY..MAX_DELAY) as u64;
-  std::thread::sleep(tokio::time::Duration::from_millis(delay_ms));
+  std::thread::sleep(tokio::time::Duration::from_millis(
+    delay_ms,
+  ));
 
   // Actually perform render.
   println!("");

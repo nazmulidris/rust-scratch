@@ -13,20 +13,19 @@
  *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
- */
+*/
 
 // Imports.
-use std::error::Error;
-use rand::random;
-use r3bl_rs_utils::redux::{
-  Store, async_subscriber::SafeSubscriberFnWrapper, sync_reducers::ReducerFnWrapper,
-  async_middleware::SafeMiddlewareFnWrapper,
-};
-use r3bl_rs_utils::{
-  utils::{print_header, style_error, style_primary, style_dimmed, readline_with_prompt},
-};
+use super::{logger_mw, render_fn};
 use crate::address_book::{address_book_reducer, Action, State};
-use super::{render_fn, logger_mw};
+use r3bl_rs_utils::redux::{
+  async_middleware::SafeMiddlewareFnWrapper, async_subscriber::SafeSubscriberFnWrapper,
+  sync_reducers::ShareableReducerFn, Store,
+};
+use r3bl_rs_utils::utils::readline_with_prompt;
+use r3bl_rs_utils::{print_header, style_dimmed, style_error, style_primary};
+use rand::random;
+use std::error::Error;
 
 #[tokio::main]
 pub async fn run_tui_app(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
@@ -35,13 +34,19 @@ pub async fn run_tui_app(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
 }
 
 async fn create_store() -> Store<State, Action> {
-  let mut store = Store::<State, Action>::new();
+  let mut store = Store::<State, Action>::default();
   store
-    .add_subscriber(SafeSubscriberFnWrapper::from(render_fn))
+    .add_subscriber(SafeSubscriberFnWrapper::from(
+      render_fn,
+    ))
     .await
-    .add_middleware(SafeMiddlewareFnWrapper::from(logger_mw))
+    .add_middleware(SafeMiddlewareFnWrapper::from(
+      logger_mw,
+    ))
     .await
-    .add_reducer(ReducerFnWrapper::from(address_book_reducer))
+    .add_reducer(ShareableReducerFn::from(
+      address_book_reducer,
+    ))
     .await;
   store
 }
@@ -83,13 +88,17 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
           .await;
       }
       "clear" => {
-        store.dispatch(&Action::RemoveAllContacts).await;
+        store
+          .dispatch(&Action::RemoveAllContacts)
+          .await;
       }
       "remove" => {
         match readline_with_prompt("id> ") {
           Ok(id) => {
             store
-              .dispatch(&Action::RemoveContactById(id.parse().unwrap()))
+              .dispatch(&Action::RemoveContactById(
+                id.parse().unwrap(),
+              ))
               .await
           }
           Err(_) => println!("{}", style_error("Invalid id")),
@@ -97,19 +106,30 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       }
       "search" => {
         match readline_with_prompt("search_term> ") {
-          Ok(search_term) => store.dispatch(&Action::Search(search_term)).await,
+          Ok(search_term) => {
+            store
+              .dispatch(&Action::Search(search_term))
+              .await
+          }
           Err(_) => println!("{}", style_error("Invalid id")),
         };
       }
       "reset" => {
-        store.dispatch(&Action::ResetState(State::default())).await;
+        store
+          .dispatch(&Action::ResetState(
+            State::default(),
+          ))
+          .await;
       }
       "history" => {
         println!("{:#?}", store.get_history().await);
       }
       // Catchall.
       _ => {
-        println!("{}", style_error("Unknown command"));
+        println!(
+          "{}",
+          style_error("Unknown command")
+        );
       }
     } // end match user_input.
 

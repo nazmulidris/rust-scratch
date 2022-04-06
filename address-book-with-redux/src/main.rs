@@ -13,15 +13,18 @@
  *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
- */
+*/
 
 // Connect to source files.
 mod address_book;
 mod tui;
 
 // Imports.
+use r3bl_rs_utils::{
+  debug, style_error, style_dimmed, style_primary, print_header,
+  utils::{call_if_err, with, ArgsToStrings},
+};
 use std::{env::args, process::exit};
-use r3bl_rs_utils::utils::{call_if_err, style_error, style_primary, with, ArgsToStrings};
 use tui::run_tui_app;
 
 fn main() {
@@ -29,7 +32,13 @@ fn main() {
     run_tui_app(args().filter_and_convert_to_strings()),
     |result| {
       call_if_err(&result, &|err| {
-        eprintln!("{}: {}", style_error("Problem encountered"), err);
+        // FIXME: debug! does not work!
+        // debug!(result);
+        eprintln!(
+          "{}: {}",
+          style_error("Problem encountered"),
+          err
+        );
         exit(1);
       });
       println!("{}", style_primary("Goodbye."));
