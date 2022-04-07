@@ -17,3 +17,4 @@ path = "src/lib.rs"
 rand = "*"
 r3bl_rs_utils = "*"
 tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.11.10", features = ["json"] }
