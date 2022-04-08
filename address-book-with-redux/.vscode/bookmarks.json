@@ -1,21 +1,6 @@
 {
 	"files": [
 		{
-			"path": "src/tui/repl_loop.rs",
-			"bookmarks": [
-				{
-					"line": 100,
-					"column": 18,
-					"label": ""
-				},
-				{
-					"line": 130,
-					"column": 6,
-					"label": ""
-				}
-			]
-		},
-		{
 			"path": "../../../.cargo/registry/src/github.com-1ecc6299db9ec823/r3bl_rs_utils-0.6.4/src/redux/store.rs",
 			"bookmarks": [
 				{

@@ -17,7 +17,30 @@
 
 use std::{collections::HashMap, error::Error};
 
-pub async fn get_ip() -> Result<HashMap<String, String>, Box<dyn Error>> {
-  // TODO: Implement get ip fn
-  todo!()
+use reqwest::{header::HeaderMap, StatusCode};
+
+const ENDPOINT: &str = "http://httpbin.org/ip";
+
+pub struct IpResponse {
+  pub payload: HashMap<String, String>,
+  pub endpoint: String,
+  pub status: StatusCode,
+  pub headers: HeaderMap,
+}
+
+pub async fn get_ip() -> Result<IpResponse, Box<dyn Error>> {
+  let res = reqwest::get(ENDPOINT).await?;
+
+  let status = res.status();
+  let headers = res.headers().clone();
+  let payload = res
+    .json::<HashMap<String, String>>()
+    .await?;
+
+  Ok(IpResponse {
+    payload,
+    status,
+    headers,
+    endpoint: ENDPOINT.to_string(),
+  })
 }

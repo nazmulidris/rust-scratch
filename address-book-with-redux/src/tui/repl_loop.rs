@@ -23,10 +23,11 @@ use r3bl_rs_utils::redux::{
   async_middleware::SafeMiddlewareFnWrapper, async_subscriber::SafeSubscriberFnWrapper,
   sync_reducers::ShareableReducerFn, Store,
 };
-use r3bl_rs_utils::utils::readline_with_prompt;
+use r3bl_rs_utils::utils::{print_prompt, readline_with_prompt};
 use r3bl_rs_utils::{print_header, style_dimmed, style_error, style_primary};
 use rand::random;
 use std::error::Error;
+use tokio::spawn;
 
 #[tokio::main]
 pub async fn run_tui_app(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
@@ -129,12 +130,27 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
         println!("{:#?}", store.get_history().await);
       }
       "ip" => {
-        match get_ip().await {
-          Ok(ip_map) => {
-            println!("{:#?}", ip_map);
-          }
-          Err(e) => println!("{}", style_error(&e.to_string())),
-        };
+        spawn(async move {
+          match get_ip().await {
+            Ok(IpResponse {
+              payload,
+              endpoint,
+              status,
+              headers,
+            }) => {
+              println!(
+                "payload: {:#?}\n  endpoint: {}\n  status: {}\n  headers: {}",
+                payload,
+                endpoint,
+                status.to_string(),
+                format!("{:#?}", headers)
+              );
+              print_prompt("r3bl> ").unwrap();
+            }
+            Err(e) => println!("{}", style_error(&e.to_string())),
+          };
+        });
+        println!("{}", "🧵 Spawning get_ip()...");
       }
       // Catchall.
       _ => {

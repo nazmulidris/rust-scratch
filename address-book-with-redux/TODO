@@ -9,12 +9,13 @@ upgrade:
 │ async web api https://git.sr.ht/~gruberb/onetutorial │
 ╰──────────────────────────────────────────────────────╯
 get started:
-  ☐ follow tut to get fetch data from api
-    - https://git.sr.ht/~gruberb/onetutorial/commit/step_1#Cargo.toml
-    - http://httpbin.org/ip
-    - reqwest crate - https://crates.io/crates/reqwest
-  ☐ install reqwest
-  ☐ play w/ what is my ip
+  ✔ follow tut to get fetch data from api @done(22-04-08 15:14)
+    - git commit: https://git.sr.ht/~gruberb/onetutorial/commit/step_1#Cargo.toml
+    - endpoint: http://httpbin.org/ip
+    - reqwest: https://crates.io/crates/reqwest
+    - rust cookbook: https://rust-lang-nursery.github.io/rust-cookbook/web/clients.html
+  ✔ install reqwest @done(22-04-08 15:14)
+  ✔ play w/ what is my ip @done(22-04-08 15:14)
 
 intermediate:
   ☐ play w/ json to rust serde transform
