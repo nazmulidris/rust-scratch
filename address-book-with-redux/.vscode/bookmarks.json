@@ -4,8 +4,13 @@
 			"path": "src/tui/repl_loop.rs",
 			"bookmarks": [
 				{
-					"line": 96,
+					"line": 100,
 					"column": 18,
+					"label": ""
+				},
+				{
+					"line": 130,
+					"column": 6,
 					"label": ""
 				}
 			]

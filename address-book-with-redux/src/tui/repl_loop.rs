@@ -18,6 +18,7 @@
 // Imports.
 use super::{logger_mw, render_fn};
 use crate::address_book::{address_book_reducer, Action, State};
+use crate::json_rpc::*;
 use r3bl_rs_utils::redux::{
   async_middleware::SafeMiddlewareFnWrapper, async_subscriber::SafeSubscriberFnWrapper,
   sync_reducers::ShareableReducerFn, Store,
@@ -51,6 +52,9 @@ async fn create_store() -> Store<State, Action> {
   store
 }
 
+const AVAIL_CMDS: &str =
+  "quit, exit, add-async, add-sync, clear, remove, reset, search, history, ip, help";
+
 pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>> {
   print_header("Starting repl");
 
@@ -62,7 +66,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
         println!(
           "{}: {}",
           style_primary("Available commands"),
-          style_dimmed("quit, exit, add-async, add-sync, clear, remove, reset, search, history, help")
+          style_dimmed(AVAIL_CMDS)
         );
       }
       "quit" => break,
@@ -124,6 +128,14 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       "history" => {
         println!("{:#?}", store.get_history().await);
       }
+      "ip" => {
+        match get_ip().await {
+          Ok(ip_map) => {
+            println!("{:#?}", ip_map);
+          }
+          Err(e) => println!("{}", style_error(&e.to_string())),
+        };
+      }
       // Catchall.
       _ => {
         println!(
@@ -131,7 +143,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
           style_error("Unknown command")
         );
       }
-    } // end match user_input.
+    }; // end match user_input.
 
     // Print confirmation at the end of 1 repl loop.
     println!(

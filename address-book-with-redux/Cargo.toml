@@ -14,8 +14,9 @@ name = "address_book_with_redux_lib"
 path = "src/lib.rs"
 
 [dependencies]
-rand = "*"
+rand = "0.8.5"
 tokio = { version = "1", features = ["full"] }
+
 # HTTP Client.
 reqwest = { version = "0.11.10", features = ["json"] }
 

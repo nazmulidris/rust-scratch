@@ -15,33 +15,8 @@
  *   limitations under the License.
 */
 
-// Connect to source files.
-mod address_book;
-mod tui;
-mod json_rpc;
+// Connect to source file.
+pub mod get_ip_api;
 
-// Imports.
-use r3bl_rs_utils::{
-  style_error, style_primary,
-  utils::{call_if_err, with, ArgsToStrings},
-};
-use std::{env::args, process::exit};
-use tui::run_tui_app;
-
-fn main() {
-  with(
-    run_tui_app(args().filter_and_convert_to_strings()),
-    |result| {
-      call_if_err(&result, &|err| {
-        eprintln!(
-          "{}: {}",
-          style_error("Problem encountered"),
-          err
-        );
-        exit(1);
-      });
-      println!("{}", style_primary("Goodbye."));
-      exit(0);
-    },
-  );
-}
+// Re-export.
+pub use get_ip_api::*;
