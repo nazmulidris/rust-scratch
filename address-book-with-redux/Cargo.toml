@@ -15,6 +15,9 @@ path = "src/lib.rs"
 
 [dependencies]
 rand = "*"
-r3bl_rs_utils = "*"
 tokio = { version = "1", features = ["full"] }
+# HTTP Client.
 reqwest = { version = "0.11.10", features = ["json"] }
+
+# Get the latest version of r3bl_rs_utils from local fs and not github.
+r3bl_rs_utils = { version = "*", path = "../../r3bl-rs-utils" }
