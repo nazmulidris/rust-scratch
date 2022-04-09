@@ -38,6 +38,9 @@ google sheets:
 ╰──────────────────────────────────────────────╯
 decide:
   ☐ decide whether to use `termion` or `crossterm`
+  ☐ figure out how to build layout manager using
+  - [playlist](https://youtube.com/playlist?list=PLkkNzJtrmgs1ISu3407av-QhocYZAduYv)
+  - [code](https://github.com/tsoding/todo-rs)
 impl:
   ☐ create my own `readline` impl using `crossterm` / `termion` (like `reedline`)
   ☐ deal with graphemes and text wrapping
@@ -48,7 +51,10 @@ impl:
 impl:
   ☐ replace the use of `readline` w/: `rustyline` / `reedline` (multi line editing)
 
-Basic:
+╭──────────────────────────────────────────────╮
+│ archive                                      │
+╰──────────────────────────────────────────────╯
+  Basic:
 ✔ Create simple CLI event loop that allows the user to interact with the address book
   ✔ Use `readline` to get user input (from `r3bl_rs_utils`)
 ✔ Create action enum
