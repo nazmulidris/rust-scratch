@@ -15,7 +15,7 @@
  *   limitations under the License.
 */
 
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, error::Error, fmt::Display};
 
 use reqwest::{header::HeaderMap, StatusCode};
 
@@ -26,6 +26,27 @@ pub struct IpResponse {
   pub endpoint: String,
   pub status: StatusCode,
   pub headers: HeaderMap,
+}
+
+impl IpResponse {
+  fn to_string(&self) -> String {
+    format!(
+      "payload: {:#?}\n  endpoint: {}\n  status: {}\n  headers: {}",
+      self.payload,
+      self.endpoint,
+      self.status.to_string(),
+      format!("{:#?}", self.headers)
+    )
+  }
+}
+
+impl Display for IpResponse {
+  fn fmt(
+    &self,
+    f: &mut std::fmt::Formatter<'_>,
+  ) -> std::fmt::Result {
+    write!(f, "{}", self.to_string())
+  }
 }
 
 pub async fn get_ip() -> Result<IpResponse, Box<dyn Error>> {

@@ -132,19 +132,8 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       "ip" => {
         spawn(async move {
           match get_ip().await {
-            Ok(IpResponse {
-              payload,
-              endpoint,
-              status,
-              headers,
-            }) => {
-              println!(
-                "payload: {:#?}\n  endpoint: {}\n  status: {}\n  headers: {}",
-                payload,
-                endpoint,
-                status.to_string(),
-                format!("{:#?}", headers)
-              );
+            Ok(ip_response) => {
+              println!("{}", ip_response);
               print_prompt("r3bl> ").unwrap();
             }
             Err(e) => println!("{}", style_error(&e.to_string())),
