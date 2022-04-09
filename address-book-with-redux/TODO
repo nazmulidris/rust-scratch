@@ -23,6 +23,10 @@ intermediate:
   ☐ play w/ these other apis (get api keys)
     ☐ https://coinmarketcap.com/api/documentation/v1/
     ☐ https://eodhistoricaldata.com/
+  ☐ awair local api
+    - name:     AWAIR-ELEM-1429F4
+    - ip-addr:  <http://192.168.1.8>
+    - mac-addr: 70:88:6B:14:29:F4
 
 address book:
   ☐ use api to generate name dummy data (for address book add cmd)
