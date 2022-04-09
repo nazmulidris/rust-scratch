@@ -49,17 +49,36 @@ impl Display for IpResponse {
   }
 }
 
+/// Example of the response from the [API](http://httpbin.org/ip):
+/// ```no_run
+/// {
+///   "origin": "206.55.172.90"
+/// }
+/// ```
 pub async fn get_ip() -> Result<IpResponse, Box<dyn Error>> {
   let res = reqwest::get(ENDPOINT).await?;
 
   let status = res.status();
   let headers = res.headers().clone();
-  let payload = res
-    .json::<HashMap<String, String>>()
-    .await?;
 
+  // Get response as text.
+  let response_text = res.text().await?;
+
+  // Convert the response text to a `serde_json::Value`.
+  // https://docs.serde.rs/serde_json/#operating-on-untyped-json-values
+  let response_json: serde_json::Value = serde_json::from_str(&response_text)?;
+
+  // Convert the `serde_json::Value` to a `HashMap`.
+  let key = "origin";
+  let value = response_json[key]
+    .as_str()
+    .unwrap();
+  let mut payload_map = HashMap::new();
+  payload_map.insert(key.to_string(), value.to_string());
+
+  // Return the `HashMap`, etc. as a `IpResponse`.
   Ok(IpResponse {
-    payload,
+    payload: payload_map,
     status,
     headers,
     endpoint: ENDPOINT.to_string(),
