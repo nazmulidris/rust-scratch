@@ -1,0 +1,17 @@
+{
+  "timestamp": "2022-04-09T23:04:31.407Z",
+  "score": 77,
+  "dew_point": 11.22,
+  "temp": 27.9,
+  "humid": 35.46,
+  "abs_humid": 9.57,
+  "co2": 974,
+  "co2_est": 538,
+  "co2_est_baseline": 37035,
+  "voc": 103,
+  "voc_baseline": 40453,
+  "voc_h2_raw": 26,
+  "voc_ethanol_raw": 39,
+  "pm25": 2,
+  "pm10_est": 3
+}
