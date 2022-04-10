@@ -17,6 +17,8 @@
 
 // Connect to source file.
 pub mod get_ip_api;
+pub mod awair_local_api;
 
 // Re-export.
 pub use get_ip_api::*;
+pub use awair_local_api::*;

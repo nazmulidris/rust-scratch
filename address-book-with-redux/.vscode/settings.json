@@ -1,6 +1,7 @@
 {
   "cSpell.words": [
     "asyncness",
+    "chrono",
     "CMDS",
     "constness",
     "idents",
@@ -8,6 +9,7 @@
     "paren",
     "qself",
     "reqwest",
+    "rustc",
     "rustup",
     "stmts",
     "turbofish",

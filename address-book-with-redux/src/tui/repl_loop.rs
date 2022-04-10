@@ -18,7 +18,11 @@
 // Imports.
 use super::{logger_mw, render_fn};
 use crate::address_book::{address_book_reducer, Action, State};
-use crate::json_rpc::*;
+use crate::json_rpc::{
+  awair_local_api::make_request as awair_local_api,
+  get_ip_api::make_request as get_ip_api,
+};
+
 use r3bl_rs_utils::redux::{
   async_middleware::SafeMiddlewareFnWrapper, async_subscriber::SafeSubscriberFnWrapper,
   sync_reducers::ShareableReducerFn, Store,
@@ -131,15 +135,30 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       }
       "ip" => {
         spawn(async move {
-          match get_ip().await {
-            Ok(ip_response) => {
-              println!("{}", ip_response);
+          match get_ip_api().await {
+            Ok(resp_data) => {
+              println!("{}", resp_data);
               print_prompt("r3bl> ").unwrap();
             }
             Err(e) => println!("{}", style_error(&e.to_string())),
           };
         });
         println!("{}", "🧵 Spawning get_ip()...");
+      }
+      "air" => {
+        spawn(async move {
+          match awair_local_api().await {
+            Ok(resp_data) => {
+              println!("{:#?}", resp_data);
+              print_prompt("r3bl> ").unwrap();
+            }
+            Err(e) => println!("{}", style_error(&e.to_string())),
+          };
+        });
+        println!(
+          "{}",
+          "🧵 Spawning get_local_awair_data()..."
+        );
       }
       // Catchall.
       _ => {

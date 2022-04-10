@@ -2,94 +2,75 @@
 │ latest r3bl_rs_utils w/ proc macros & 3 crates       │
 ╰──────────────────────────────────────────────────────╯
 upgrade:
-✔ update to latest r3bl_rs_utils 0.7.6 @done(22-04-06 14:18)
-✔ update to latest r3bl_rs_utils 0.7.7 @done(22-04-07 16:08)
-
+  ✔ update to latest r3bl_rs_utils 0.7.6 @done(22-04-06 14:18)
+  ✔ update to latest r3bl_rs_utils 0.7.7 @done(22-04-07 16:08)
 ╭──────────────────────────────────────────────────────╮
 │ async web api https://git.sr.ht/~gruberb/onetutorial │
 ╰──────────────────────────────────────────────────────╯
 get started:
-✔ follow tut to get fetch data from api @done(22-04-08 15:14)
-  - git commit: https://git.sr.ht/~gruberb/onetutorial/commit/step_1#Cargo.toml
-  - endpoint: http://httpbin.org/ip
-  - reqwest: https://crates.io/crates/reqwest
-  - rust cookbook: https://rust-lang-nursery.github.io/rust-cookbook/web/clients.html
-✔ install `reqwest` @done(22-04-08 15:14)
-✔ play w/ what is my ip @done(22-04-08 15:14)
-  - sample data: <https://github.com/nazmulidris/rust_scratch/blob/main/address-book-with-redux/sample_data/httpbin-org.data.json>
-
+  ✔ follow tut to get fetch data from api @done(22-04-08 15:14)
+    - git commit: https://git.sr.ht/~gruberb/onetutorial/commit/step_1#Cargo.toml
+    - endpoint: http://httpbin.org/ip
+    - reqwest: https://crates.io/crates/reqwest
+    - rust cookbook: https://rust-lang-nursery.github.io/rust-cookbook/web/clients.html
+  ✔ install `reqwest` @done(22-04-08 15:14)
+  ✔ play w/ what is my ip @done(22-04-08 15:14)
+    - sample data: <https://github.com/nazmulidris/rust_scratch/blob/main/address-book-with-redux/sample_data/httpbin-org.data.json>
 serde and vscode tools (quicktype):
-✔ install `serde` and play w/ it @done(22-04-09 16:32)
-  - https://docs.serde.rs/serde_json/
-✔ play w/ json to rust struct transform (for serde) using: @done(22-04-09 17:04)
-  - https://marketplace.visualstudio.com/items?itemName=typeguard.quicktype-vs
-  - https://app.quicktype.io/
-  - https://transform.tools/json-to-rust-serde
-
+  ✔ install `serde` and play w/ it @done(22-04-09 16:32)
+    - https://docs.serde.rs/serde_json/
+  ✔ play w/ json to rust struct transform (for serde) using: @done(22-04-09 17:04)
+    - https://marketplace.visualstudio.com/items?itemName=typeguard.quicktype-vs
+    - https://app.quicktype.io/
 novice:
-☐ get data from awair local api via `air` command & use quicktype to get struct
-  - sample data: <https://github.com/nazmulidris/rust_scratch/blob/main/address-book-with-redux/sample_data/await-local-api.data.json>
-  - name:     AWAIR-ELEM-1429F4
-  - ip-addr:  <http://192.168.1.8>
-  - mac-addr: 70:88:6B:14:29:F4
-
-intermediate:
-☐ play w/ these other apis (get api keys)
-☐ https://coinmarketcap.com/api/documentation/v1/
-☐ https://eodhistoricaldata.com/
-
+  ✔ advanced serde @done(22-04-10 15:46)
+    - `serde_as`
+      - https://docs.rs/serde_with/latest/serde_with/guide/serde_as/index.html
+      - https://docs.rs/serde_with/latest/serde_with/guide/feature_flags/index.html#macros
+      - https://docs.rs/serde_with/latest/serde_with/guide/serde_as_transformations/index.html
+    - `serde` field attributes
+      - https://serde.rs/field-attrs.html
+      - https://serde.rs/field-attrs.html#deserialize_with
+    - `serde` & `chrono`
+      - https://docs.rs/chrono/latest/chrono/index.html#reexports
+      - https://datatracker.ietf.org/doc/html/rfc3339#section-5.8
+    - `serde` & custom deserializer
+      - https://play.integer32.com/?version=stable&mode=debug&edition=2018&gist=83c99d83e5bf34c0238c0aaf900135a8
+      - https://www.tousu.in/qa/?qa=463981/
+  ✔ get data from awair local api via `air` command & use `quicktype.io` to get struct @done(22-04-11 18:08)
+    - sample data: <https://github.com/nazmulidris/rust_scratch/blob/main/address-book-with-redux/sample_data/await-local-api.data.json>
+    - name:     AWAIR-ELEM-1429F4
+    - ip-addr:  <http://192.168.1.8>
+    - mac-addr: 70:88:6B:14:29:F4
 address book:
-☐ use api to generate name dummy data (for address book add cmd)
-  - https://en.namefake.com/api
-  - https://api.namefake.com/english-united-states/female/
-
+  ☐ use api to generate name dummy data (for address book add cmd)
+    - https://en.namefake.com/api
+    - https://api.namefake.com/english-united-states/female/
 google sheets:
-☐ create a service account in google cloud console
-☐ sync this address book data w/ google sheet
-
-╭──────────────────────────────────────────────╮
-│ learn termion or crossterm                   │
-╰──────────────────────────────────────────────╯
-decide:
-☐ decide whether to use `termion` or `crossterm`
-☐ figure out how to build layout manager using
-- [playlist](https://youtube.com/playlist?list=PLkkNzJtrmgs1ISu3407av-QhocYZAduYv)
-- [code](https://github.com/tsoding/todo-rs)
-impl:
-☐ create my own `readline` impl using `crossterm` / `termion` (like `reedline`)
-☐ deal with graphemes and text wrapping
-
-╭──────────────────────────────────────────────╮
-│ multi-line editor                            │
-╰──────────────────────────────────────────────╯
-impl:
-☐ replace the use of `readline` w/: `rustyline` / `reedline` (multi line editing)
-
+  ☐ create a service account in google cloud console
+  ☐ sync this address book data w/ google sheet
 ╭──────────────────────────────────────────────╮
 │ archive                                      │
 ╰──────────────────────────────────────────────╯
 Basic:
-✔ Create simple CLI event loop that allows the user to interact with the address book
-  ✔ Use `readline` to get user input (from `r3bl_rs_utils`)
-✔ Create action enum
-✔ Create state & address book data model
-  ✔ Add search term support
-✔ Create reducer function
-✔ Create Redux store
-  ✔ Move to `lib.rs`
-  ✔ Add support for middleware
-✔ Create a simple TUI that takes input to mutate this store and display the state to stdout
-✔ Refactor the `store.rs` into multiple files (prepare for publishing it in the future).
-
+  ✔ Create simple CLI event loop that allows the user to interact with the address book
+    ✔ Use `readline` to get user input (from `r3bl_rs_utils`)
+  ✔ Create action enum
+  ✔ Create state & address book data model
+    ✔ Add search term support
+  ✔ Create reducer function
+  ✔ Create Redux store
+    ✔ Move to `lib.rs`
+    ✔ Add support for middleware
+  ✔ Create a simple TUI that takes input to mutate this store and display the state to stdout
+  ✔ Refactor the `store.rs` into multiple files (prepare for publishing it in the future).
 Intermediate:
-✔ Add Redux history support
-
+  ✔ Add Redux history support
 Concurrency:
-✔ Make middleware async / parallel
-  ✔ Wrap the store itself in an `Arc<Mutex>` / `Arc<RwLock>`
-  ✔ Use `tokio`
-
+  ✔ Make middleware async / parallel
+    ✔ Wrap the store itself in an `Arc<Mutex>` / `Arc<RwLock>`
+    ✔ Use `tokio`
 Publish:
-✔ Publish Redux store to `r3bl_rs_utils`
-✔ Write developerlife.com article on `tokio`
-✔ Write developerlife.com article on Redux & Rust
+  ✔ Publish Redux store to `r3bl_rs_utils`
+  ✔ Write developerlife.com article on `tokio`
+  ✔ Write developerlife.com article on Redux & Rust

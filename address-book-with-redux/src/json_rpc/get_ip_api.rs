@@ -55,7 +55,7 @@ impl Display for IpResponse {
 ///   "origin": "206.55.172.90"
 /// }
 /// ```
-pub async fn get_ip() -> Result<IpResponse, Box<dyn Error>> {
+pub async fn make_request() -> Result<IpResponse, Box<dyn Error>> {
   let res = reqwest::get(ENDPOINT).await?;
 
   let status = res.status();
