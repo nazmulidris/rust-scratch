@@ -42,16 +42,17 @@ novice:
     - name:     AWAIR-ELEM-1429F4
     - ip-addr:  <http://192.168.1.8>
     - mac-addr: 70:88:6B:14:29:F4
+google sheets:
+  ✔ research sync this address book data w/ google sheet @done(22-04-12 11:18)
+    - [code](https://git.sr.ht/~gruberb/onetutorial/commit/step_10#src/main.rs)
+    - [crate](https://crates.io/crates/google-sheets4)
+    - [starter-template](https://dev.to/rohanrajpal/rust-google-sheets-api-quickstart-7f1)
+    - [gsheets api](https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values)
+    - [api key](https://developers.google.com/workspace/guides/create-project)
 generate dummy names for address book data:
   ☐ use api to generate name dummy data (for address book add cmd)
     - https://en.namefake.com/api
     - https://api.namefake.com/english-united-states/female/
-google sheets:
-  ☐ create a service account in google cloud console
-  ☐ sync this address book data w/ google sheet
-    - https://crates.io/crates/google-sheets4
-    - https://dev.to/rohanrajpal/rust-google-sheets-api-quickstart-7f1
-    - https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values
 save & restore state:
   ☐ serialize and deserialize state to / from string
   ☐ read string from file
