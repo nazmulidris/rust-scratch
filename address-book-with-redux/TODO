@@ -53,6 +53,9 @@ generate dummy names for address book data:
   ☐ use api to generate name dummy data (for address book add cmd)
     - https://en.namefake.com/api
     - https://api.namefake.com/english-united-states/female/
+read & write csv file:
+  ☐ save state to csv file and load state from csv file w/ new cmd
+    - https://docs.rs/csv/latest/csv/cookbook/index.html#reading-with-serde
 save & restore state:
   ☐ serialize and deserialize state to / from string
   ☐ read string from file
