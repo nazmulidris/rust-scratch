@@ -50,6 +50,8 @@ google sheets:
   ☐ create a service account in google cloud console
   ☐ sync this address book data w/ google sheet
     - https://crates.io/crates/google-sheets4
+    - https://dev.to/rohanrajpal/rust-google-sheets-api-quickstart-7f1
+    - https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values
 save & restore state:
   ☐ serialize and deserialize state to / from string
   ☐ read string from file
