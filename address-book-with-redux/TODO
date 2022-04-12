@@ -42,13 +42,21 @@ novice:
     - name:     AWAIR-ELEM-1429F4
     - ip-addr:  <http://192.168.1.8>
     - mac-addr: 70:88:6B:14:29:F4
-address book:
+generate dummy names for address book data:
   ☐ use api to generate name dummy data (for address book add cmd)
     - https://en.namefake.com/api
     - https://api.namefake.com/english-united-states/female/
 google sheets:
   ☐ create a service account in google cloud console
   ☐ sync this address book data w/ google sheet
+    - https://crates.io/crates/google-sheets4
+save & restore state:
+  ☐ serialize and deserialize state to / from string
+  ☐ read string from file
+  ☐ write string to file
+  ☐ on exit - serialize state to json string & write to file
+    - https://doc.rust-lang.org/std/fs/struct.File.html
+  ☐ on start - read state from file & deserialize & dispatch to redux store
 ╭──────────────────────────────────────────────╮
 │ archive                                      │
 ╰──────────────────────────────────────────────╯
