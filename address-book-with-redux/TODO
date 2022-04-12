@@ -50,7 +50,7 @@ google sheets:
     - [gsheets api](https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values)
     - [api key](https://developers.google.com/workspace/guides/create-project)
 generate dummy names for address book data:
-  ☐ use api to generate name dummy data (for address book add cmd)
+  ✔ use api to generate name dummy data (for address book add cmd) @done(22-04-12 15:50)
     - https://en.namefake.com/api
     - https://api.namefake.com/english-united-states/female/
 read & write csv file:

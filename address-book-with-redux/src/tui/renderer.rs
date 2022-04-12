@@ -17,7 +17,7 @@
 
 use crate::{
   address_book::{Contact, State},
-  tui::{MAX_DELAY, MIN_DELAY},
+  tui::{MAX_DELAY, MIN_DELAY, DELAY_ENABLED},
 };
 use r3bl_rs_utils::{
   print_header, style_dimmed, tree_memory_arena::HasId, utils::print_prompt,
@@ -31,11 +31,13 @@ pub fn render_fn(state: State) {
     address_book,
   } = state;
 
+  if DELAY_ENABLED {
   // Artificial delay before rendering.
   let delay_ms = rand::thread_rng().gen_range(MIN_DELAY..MAX_DELAY) as u64;
-  std::thread::sleep(tokio::time::Duration::from_millis(
-    delay_ms,
-  ));
+    std::thread::sleep(tokio::time::Duration::from_millis(
+      delay_ms,
+    ));
+  }
 
   // Actually perform render.
   println!("");

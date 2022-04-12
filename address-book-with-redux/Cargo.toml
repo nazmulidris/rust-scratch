@@ -11,7 +11,7 @@ path = "src/main.rs"
 
 [lib]
 name = "address_book_with_redux_lib"
-path = "src/lib.rs"
+path = "src/lib.rs" 
 
 [dependencies]
 rand = "0.8.5"

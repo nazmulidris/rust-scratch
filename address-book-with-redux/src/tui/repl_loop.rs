@@ -18,20 +18,27 @@
 // Imports.
 use super::{logger_mw, render_fn};
 use crate::address_book::{address_book_reducer, Action, State};
+use crate::json_rpc::FakeContactData;
 use crate::json_rpc::{
   awair_local_api::make_request as awair_local_api,
+  fake_contact_data_api::make_request as fake_contact_data_api,
   get_ip_api::make_request as get_ip_api,
 };
 
+use r3bl_rs_utils::redux::StoreStateMachine;
 use r3bl_rs_utils::redux::{
   async_middleware::SafeMiddlewareFnWrapper, async_subscriber::SafeSubscriberFnWrapper,
   sync_reducers::ShareableReducerFn, Store,
 };
 use r3bl_rs_utils::utils::{print_prompt, readline_with_prompt};
-use r3bl_rs_utils::{print_header, style_dimmed, style_error, style_primary};
+use r3bl_rs_utils::{
+  print_header, style_dimmed, style_error, style_primary, SafeToShare,
+};
 use rand::random;
 use std::error::Error;
+use std::sync::Arc;
 use tokio::spawn;
+use tokio::sync::RwLock;
 
 #[tokio::main]
 pub async fn run_tui_app(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
@@ -87,14 +94,11 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
           .await;
       }
       "add-async" => {
-        let id = random::<u8>();
-        store
-          .dispatch_spawn(Action::AddContact(
-            format!("John Doe #{}", id),
-            format!("jd@gmail.com #{}", id),
-            format!("123-456-7890 #{}", id),
-          ))
-          .await;
+        exec_add_async_cmd(store.get_ref()).await?;
+        println!(
+          "{}",
+          "🧵 Spawning exec_add_async_cmd ..."
+        );
       }
       "clear" => {
         store
@@ -143,7 +147,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
             Err(e) => println!("{}", style_error(&e.to_string())),
           };
         });
-        println!("{}", "🧵 Spawning get_ip()...");
+        println!("{}", "🧵 Spawning get_ip_api()...");
       }
       "air" => {
         spawn(async move {
@@ -157,7 +161,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
         });
         println!(
           "{}",
-          "🧵 Spawning get_local_awair_data()..."
+          "🧵 Spawning awair_local_api()..."
         );
       }
       // Catchall.
@@ -176,6 +180,40 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       style_dimmed("was executed.")
     );
   }
+
+  Ok(())
+}
+
+/// Spawns a task. Fire and forget.
+async fn exec_add_async_cmd(
+  store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>
+) -> Result<(), Box<dyn Error>> {
+  spawn(async move {
+    let fake_data = fake_contact_data_api()
+      .await
+      .unwrap_or_else(|_| FakeContactData {
+        name: "Foo Bar".to_string(),
+        phone_h: "123-456-7890".to_string(),
+        email_u: "foo".to_string(),
+        email_d: "bar.com".to_string(),
+        ..FakeContactData::default()
+      });
+
+    let action = Action::AddContact(
+      format!("{}", fake_data.name),
+      format!(
+        "{}@{}",
+        fake_data.email_u, fake_data.email_d
+      ),
+      format!("{}", fake_data.phone_h),
+    );
+
+    let mut my_store = store_ref.write().await;
+
+    my_store
+      .dispatch_action(&action)
+      .await;
+  }); /* Don't await this. Fire and forget. */
 
   Ok(())
 }

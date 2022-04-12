@@ -1,18 +1,22 @@
 {
   "cSpell.words": [
     "asyncness",
+    "cardexpir",
     "chrono",
     "CMDS",
     "constness",
     "idents",
     "itends",
+    "macaddress",
     "paren",
+    "plasticcard",
     "qself",
     "reqwest",
     "rustc",
     "rustup",
     "stmts",
     "turbofish",
+    "useragent",
     "vecmac"
   ],
   "copyrighter.author": "Nazmul Idris",
