@@ -17,10 +17,12 @@
 
 // Connect to source file.
 pub mod get_ip_api;
+pub mod make_api_call_for;
 pub mod awair_local_api;
 pub mod fake_contact_data_api;
 
 // Re-export.
-pub use get_ip_api::*;
 pub use awair_local_api::*;
 pub use fake_contact_data_api::*;
+pub use get_ip_api::*;
+pub use make_api_call_for::*;
