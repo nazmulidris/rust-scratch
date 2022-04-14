@@ -16,26 +16,25 @@
 */
 
 // Imports.
-use super::{add_async_cmd_mw, logger_mw, render_fn};
 use crate::{
-  address_book_reducer,
+  add_async_cmd_mw, address_book_reducer,
   json_rpc::{
     awair_local_api::make_request as awair_local_api,
     get_ip_api::make_request as get_ip_api,
   },
-  Action, Mw, State, Std,
+  logger_mw, render_fn, Action, Mw, State, Std,
 };
-use r3bl_rs_utils::{print_header, style_dimmed, style_error, style_primary};
 use r3bl_rs_utils::{
+  fire_and_forget, print_header,
   redux::{
     async_middleware::SafeMiddlewareFnWrapper, async_subscriber::SafeSubscriberFnWrapper,
     sync_reducers::ShareableReducerFn, Store,
   },
+  style_dimmed, style_error, style_primary,
   utils::{print_prompt, readline_with_prompt},
 };
 use rand::random;
 use std::error::Error;
-use tokio::spawn;
 
 #[tokio::main]
 pub async fn run_tui_app(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
@@ -133,7 +132,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
         println!("{:#?}", store.get_history().await);
       }
       "ip" => {
-        spawn(async move {
+        fire_and_forget!({
           match get_ip_api().await {
             Ok(resp_data) => {
               println!("{}", resp_data);
@@ -145,7 +144,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
         println!("{}", "🧵 Spawning get_ip_api()...");
       }
       "air" => {
-        spawn(async move {
+        fire_and_forget!({
           match awair_local_api().await {
             Ok(resp_data) => {
               println!("{:#?}", resp_data);

@@ -22,27 +22,10 @@ use crate::{
   tui::{DELAY_ENABLED, MAX_DELAY, MIN_DELAY},
   Action, Mw, State, Std,
 };
-use r3bl_rs_utils::{print_header, redux::StoreStateMachine};
+use r3bl_rs_utils::{print_header, redux::StoreStateMachine, fire_and_forget};
 use rand::Rng;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-
-/// This is not async.
-///
-/// # Example:
-/// ```no_run
-/// pub fn foo() {
-///   fire_and_forget!(
-///     { println!("Hello"); }
-///   );
-/// }
-/// ```
-#[macro_export]
-macro_rules! fire_and_forget {
-  ($block:block) => {
-    tokio::spawn(async move { $block });
-  };
-}
 
 pub fn logger_mw(
   action: Action,
