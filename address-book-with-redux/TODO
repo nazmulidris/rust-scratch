@@ -56,7 +56,7 @@ generate dummy names for address book data:
 fix async middleware:
   ✔ fix r3bl_rs_utils @done(22-04-13 17:50)
   ✔ fix add-async cmd @done(22-04-13 17:50)
-  ☐ re-organize Action into Sync and Async sub-variants
+  ✔ re-organize Action into Sync and Async sub-variants @done(22-04-14 12:23)
   ☐ make macro to `fire_and_forget` (tokio spawn async block)
   ☐ try to use iterator for safe list (instead of decl macro that was deleted)
 read & write csv file:

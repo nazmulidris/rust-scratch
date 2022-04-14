@@ -16,20 +16,22 @@
 */
 
 // Imports.
-use super::{logger_mw, render_fn, add_async_cmd_mw};
-use crate::address_book::{address_book_reducer, Action, State};
-use crate::json_rpc::{
-  awair_local_api::make_request as awair_local_api,
-  get_ip_api::make_request as get_ip_api,
+use super::{add_async_cmd_mw, logger_mw, render_fn};
+use crate::{
+  address_book_reducer,
+  json_rpc::{
+    awair_local_api::make_request as awair_local_api,
+    get_ip_api::make_request as get_ip_api,
+  },
+  Action, Mw, State, Std,
 };
-
-use r3bl_rs_utils::redux::{
-  async_middleware::SafeMiddlewareFnWrapper, async_subscriber::SafeSubscriberFnWrapper,
-  sync_reducers::ShareableReducerFn, Store,
-};
-use r3bl_rs_utils::utils::{print_prompt, readline_with_prompt};
+use r3bl_rs_utils::{print_header, style_dimmed, style_error, style_primary};
 use r3bl_rs_utils::{
-  print_header, style_dimmed, style_error, style_primary,
+  redux::{
+    async_middleware::SafeMiddlewareFnWrapper, async_subscriber::SafeSubscriberFnWrapper,
+    sync_reducers::ShareableReducerFn, Store,
+  },
+  utils::{print_prompt, readline_with_prompt},
 };
 use rand::random;
 use std::error::Error;
@@ -84,36 +86,32 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       "exit" => break,
       "add-sync" => {
         let id = random::<u8>();
-        store
-          .dispatch(&Action::AddContact(
-            format!("John Doe #{}", id),
-            format!("jd@gmail.com #{}", id),
-            format!("123-456-7890 #{}", id),
-          ))
-          .await;
+        let action = Action::Std(Std::AddContact(
+          format!("John Doe #{}", id),
+          format!("jd@gmail.com #{}", id),
+          format!("123-456-7890 #{}", id),
+        ));
+        store.dispatch(&action).await;
       }
       "add-async" => {
-        store
-          .dispatch(&Action::AsyncAddContact)
-          .await;
+        let action = Action::Mw(Mw::AsyncAddContact);
+        store.dispatch(&action).await;
         println!(
           "{}",
           "🧵 Spawning exec_add_async_cmd ..."
         );
       }
       "clear" => {
-        store
-          .dispatch(&Action::RemoveAllContacts)
-          .await;
+        let action = Action::Std(Std::RemoveAllContacts);
+        store.dispatch(&action).await;
       }
       "remove" => {
         match readline_with_prompt("id> ") {
           Ok(id) => {
-            store
-              .dispatch(&Action::RemoveContactById(
-                id.parse().unwrap(),
-              ))
-              .await
+            let action = Action::Std(Std::RemoveContactById(
+              id.parse().unwrap(),
+            ));
+            store.dispatch(&action).await
           }
           Err(_) => println!("{}", style_error("Invalid id")),
         };
@@ -121,19 +119,15 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       "search" => {
         match readline_with_prompt("search_term> ") {
           Ok(search_term) => {
-            store
-              .dispatch(&Action::Search(search_term))
-              .await
+            let action = Action::Std(Std::Search(search_term));
+            store.dispatch(&action).await
           }
           Err(_) => println!("{}", style_error("Invalid id")),
         };
       }
       "reset" => {
-        store
-          .dispatch(&Action::ResetState(
-            State::default(),
-          ))
-          .await;
+        let action = Action::Std(Std::ResetState(State::default()));
+        store.dispatch(&action).await;
       }
       "history" => {
         println!("{:#?}", store.get_history().await);

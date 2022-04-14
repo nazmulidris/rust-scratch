@@ -16,9 +16,14 @@
 */
 
 // Connect to source files.
-mod address_book;
-mod tui;
-mod json_rpc;
+pub mod address_book;
+pub mod tui;
+pub mod json_rpc;
+
+// Re-exports.
+pub use address_book::*;
+pub use json_rpc::*;
+pub use tui::*;
 
 // Imports.
 use r3bl_rs_utils::{

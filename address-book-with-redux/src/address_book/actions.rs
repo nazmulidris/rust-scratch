@@ -17,13 +17,24 @@
 
 use super::State;
 
-// Action.
+/// Action.
+/// https://stackoverflow.com/questions/55032236/compare-nested-enum-variants-in-rust
 #[derive(Clone, PartialEq, Debug, Hash)]
 pub enum Action {
-  AsyncAddContact,
+  Mw(Mw),
+  Std(Std),
+}
+
+#[derive(Clone, PartialEq, Debug, Hash)]
+pub enum Std {
   AddContact(String, String, String),
   RemoveAllContacts,
   RemoveContactById(usize),
   ResetState(State),
   Search(String),
+}
+
+#[derive(Clone, PartialEq, Debug, Hash)]
+pub enum Mw {
+  AsyncAddContact,
 }

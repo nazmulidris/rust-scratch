@@ -15,12 +15,12 @@
  *   limitations under the License.
 */
 
-use crate::json_rpc::{
-  fake_contact_data_api::make_request as fake_contact_data_api, FakeContactData,
-};
 use crate::{
-  address_book::{Action, State},
+  json_rpc::{
+    fake_contact_data_api::make_request as fake_contact_data_api, FakeContactData,
+  },
   tui::{DELAY_ENABLED, MAX_DELAY, MIN_DELAY},
+  Action, Mw, State, Std,
 };
 use r3bl_rs_utils::{print_header, redux::StoreStateMachine};
 use rand::Rng;
@@ -51,7 +51,7 @@ pub fn add_async_cmd_mw(
   action: Action,
   store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
 ) -> Option<Action> {
-  if let Action::AsyncAddContact = action {
+  if let Action::Mw(Mw::AsyncAddContact) = action {
     tokio::spawn(async { add_async_cmd_impl(store_ref).await });
   }
   None
@@ -70,14 +70,14 @@ async fn add_async_cmd_impl(store_ref: Arc<RwLock<StoreStateMachine<State, Actio
         ..FakeContactData::default()
       });
 
-    let action = Action::AddContact(
+    let action = Action::Std(Std::AddContact(
       format!("{}", fake_data.name),
       format!(
         "{}@{}",
         fake_data.email_u, fake_data.email_d
       ),
       format!("{}", fake_data.phone_h),
-    );
+    ));
 
     let mut my_store = store_ref.write().await;
 

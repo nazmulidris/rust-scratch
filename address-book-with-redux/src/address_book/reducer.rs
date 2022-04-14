@@ -15,7 +15,7 @@
  *   limitations under the License.
 */
 
-use super::{Action, Contact, State};
+use crate::{Action, Contact, State, Std};
 
 pub fn address_book_reducer(
   state: &State,
@@ -24,31 +24,33 @@ pub fn address_book_reducer(
   let mut new_state = state.clone();
 
   match action {
-    Action::AddContact(name, email, phone) => {
-      new_state
-        .address_book
-        .push(Contact {
-          id: new_state.address_book.len(),
-          name: name.to_string(),
-          email: email.to_string(),
-          phone: phone.to_string(),
-        });
-    }
-    Action::RemoveAllContacts => {
-      new_state.address_book.clear();
-    }
-    Action::ResetState(it) => {
-      new_state = it.clone();
-    }
-    Action::RemoveContactById(id) => {
-      new_state.address_book.remove(*id);
-    }
-    Action::Search(search_term) => {
-      match search_term.as_str() {
-        "" => new_state.search_term = None,
-        _ => new_state.search_term = Some(search_term.to_string()),
-      };
-    }
+    Action::Std(action) => match action {
+      Std::AddContact(name, email, phone) => {
+        new_state
+          .address_book
+          .push(Contact {
+            id: new_state.address_book.len(),
+            name: name.to_string(),
+            email: email.to_string(),
+            phone: phone.to_string(),
+          });
+      }
+      Std::RemoveAllContacts => {
+        new_state.address_book.clear();
+      }
+      Std::ResetState(it) => {
+        new_state = it.clone();
+      }
+      Std::RemoveContactById(id) => {
+        new_state.address_book.remove(*id);
+      }
+      Std::Search(search_term) => {
+        match search_term.as_str() {
+          "" => new_state.search_term = None,
+          _ => new_state.search_term = Some(search_term.to_string()),
+        };
+      }
+    },
     _ => {}
   }
 
