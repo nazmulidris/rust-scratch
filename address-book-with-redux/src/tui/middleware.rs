@@ -15,15 +15,22 @@
  *   limitations under the License.
 */
 
-use r3bl_rs_utils::print_header;
-use rand::Rng;
-
+use crate::json_rpc::{
+  fake_contact_data_api::make_request as fake_contact_data_api, FakeContactData,
+};
 use crate::{
-  address_book::Action,
+  address_book::{Action, State},
   tui::{DELAY_ENABLED, MAX_DELAY, MIN_DELAY},
 };
+use r3bl_rs_utils::{print_header, redux::StoreStateMachine};
+use rand::Rng;
+use std::sync::Arc;
+use tokio::{spawn, sync::RwLock};
 
-pub fn logger_mw(action: Action) -> Option<Action> {
+pub fn logger_mw(
+  action: Action,
+  _: Arc<RwLock<StoreStateMachine<State, Action>>>,
+) -> Option<Action> {
   if DELAY_ENABLED {
     // Artificial delay before calling the function.
     let delay_ms = rand::thread_rng().gen_range(MIN_DELAY..MAX_DELAY) as u64;
@@ -31,10 +38,51 @@ pub fn logger_mw(action: Action) -> Option<Action> {
       delay_ms,
     ));
   }
-
-  // Log the action.
-  println!("");
-  print_header("middleware");
-  println!("action: {:?}", action);
+  spawn(async move {
+    // Log the action.
+    println!("");
+    print_header("middleware");
+    println!("action: {:?}", action);
+  });
   None
+}
+
+pub fn add_async_cmd_mw(
+  action: Action,
+  store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
+) -> Option<Action> {
+  if let Action::AsyncAddContact = action {
+    tokio::spawn(async { add_async_cmd_impl(store_ref).await });
+  }
+  None
+}
+
+/// Spawns a task. Fire and forget.
+async fn add_async_cmd_impl(store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>) {
+  spawn(async move {
+    let fake_data = fake_contact_data_api()
+      .await
+      .unwrap_or_else(|_| FakeContactData {
+        name: "Foo Bar".to_string(),
+        phone_h: "123-456-7890".to_string(),
+        email_u: "foo".to_string(),
+        email_d: "bar.com".to_string(),
+        ..FakeContactData::default()
+      });
+
+    let action = Action::AddContact(
+      format!("{}", fake_data.name),
+      format!(
+        "{}@{}",
+        fake_data.email_u, fake_data.email_d
+      ),
+      format!("{}", fake_data.phone_h),
+    );
+
+    let mut my_store = store_ref.write().await;
+
+    my_store
+      .dispatch_action(&action, store_ref.clone())
+      .await;
+  }); /* Don't await this. Fire and forget. */
 }
