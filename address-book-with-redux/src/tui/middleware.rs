@@ -22,7 +22,7 @@ use crate::{
   tui::{DELAY_ENABLED, MAX_DELAY, MIN_DELAY},
   Action, Mw, State, Std,
 };
-use r3bl_rs_utils::{print_header, redux::StoreStateMachine, fire_and_forget};
+use r3bl_rs_utils::{fire_and_forget, print_header, redux::StoreStateMachine};
 use rand::Rng;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -82,7 +82,7 @@ async fn add_async_cmd_impl(store_ref: Arc<RwLock<StoreStateMachine<State, Actio
     let mut my_store = store_ref.write().await;
 
     my_store
-      .dispatch_action(&action, store_ref.clone())
+      .dispatch_action(action, store_ref.clone())
       .await;
   });
 }

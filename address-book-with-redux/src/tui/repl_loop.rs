@@ -90,11 +90,11 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
           format!("jd@gmail.com #{}", id),
           format!("123-456-7890 #{}", id),
         ));
-        store.dispatch(&action).await;
+        store.dispatch(action).await;
       }
       "add-async" => {
         let action = Action::Mw(Mw::AsyncAddContact);
-        store.dispatch(&action).await;
+        store.dispatch(action).await;
         println!(
           "{}",
           "🧵 Spawning exec_add_async_cmd ..."
@@ -102,7 +102,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       }
       "clear" => {
         let action = Action::Std(Std::RemoveAllContacts);
-        store.dispatch(&action).await;
+        store.dispatch(action).await;
       }
       "remove" => {
         match readline_with_prompt("id> ") {
@@ -110,7 +110,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
             let action = Action::Std(Std::RemoveContactById(
               id.parse().unwrap(),
             ));
-            store.dispatch(&action).await
+            store.dispatch(action).await
           }
           Err(_) => println!("{}", style_error("Invalid id")),
         };
@@ -119,14 +119,14 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
         match readline_with_prompt("search_term> ") {
           Ok(search_term) => {
             let action = Action::Std(Std::Search(search_term));
-            store.dispatch(&action).await
+            store.dispatch(action).await
           }
           Err(_) => println!("{}", style_error("Invalid id")),
         };
       }
       "reset" => {
         let action = Action::Std(Std::ResetState(State::default()));
-        store.dispatch(&action).await;
+        store.dispatch(action).await;
       }
       "history" => {
         println!("{:#?}", store.get_history().await);
