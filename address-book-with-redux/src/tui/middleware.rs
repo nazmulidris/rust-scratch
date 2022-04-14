@@ -38,12 +38,12 @@ pub fn logger_mw(
       delay_ms,
     ));
   }
-  spawn(async move {
-    // Log the action.
-    println!("");
-    print_header("middleware");
-    println!("action: {:?}", action);
-  });
+  // spawn(async move {
+  // Log the action.
+  println!("");
+  print_header("logger_mw");
+  println!("action: {:?}", action);
+  // });
   None
 }
 

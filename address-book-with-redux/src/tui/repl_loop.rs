@@ -94,7 +94,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       }
       "add-async" => {
         store
-          .dispatch_spawn(Action::AsyncAddContact)
+          .dispatch(&Action::AsyncAddContact)
           .await;
         println!(
           "{}",

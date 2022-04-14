@@ -614,7 +614,7 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils"
-version = "0.7.8"
+version = "0.7.9"
 dependencies = [
  "ansi_term",
  "async-trait",
@@ -628,10 +628,11 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils_core"
-version = "0.7.3"
+version = "0.7.4"
 dependencies = [
  "ansi_term",
  "async-trait",
+ "reqwest",
  "tokio",
 ]
 

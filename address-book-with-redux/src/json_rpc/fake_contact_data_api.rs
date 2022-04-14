@@ -16,10 +16,8 @@
 */
 
 use std::{error::Error, fmt::Display};
-
+use r3bl_rs_utils::make_api_call_for;
 use serde::{Deserialize, Serialize};
-
-use crate::make_api_call_for;
 
 const ENDPOINT: &str = "https://api.namefake.com/english-united-states/female/";
 

@@ -18,9 +18,8 @@
 use std::{error::Error, fmt::Display};
 
 use chrono::{DateTime, FixedOffset};
+use r3bl_rs_utils::make_api_call_for;
 use serde::{Deserialize, Deserializer, Serialize};
-
-use crate::make_api_call_for;
 
 const ENDPOINT: &str = "http://192.168.1.8/air-data/latest";
 
