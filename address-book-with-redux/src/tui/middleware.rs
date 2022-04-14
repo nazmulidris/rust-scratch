@@ -25,7 +25,24 @@ use crate::{
 use r3bl_rs_utils::{print_header, redux::StoreStateMachine};
 use rand::Rng;
 use std::sync::Arc;
-use tokio::{spawn, sync::RwLock};
+use tokio::sync::RwLock;
+
+/// This is not async.
+///
+/// # Example:
+/// ```no_run
+/// pub fn foo() {
+///   fire_and_forget!(
+///     { println!("Hello"); }
+///   );
+/// }
+/// ```
+#[macro_export]
+macro_rules! fire_and_forget {
+  ($block:block) => {
+    tokio::spawn(async move { $block });
+  };
+}
 
 pub fn logger_mw(
   action: Action,
@@ -59,7 +76,7 @@ pub fn add_async_cmd_mw(
 
 /// Spawns a task. Fire and forget.
 async fn add_async_cmd_impl(store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>) {
-  spawn(async move {
+  fire_and_forget!({
     let fake_data = fake_contact_data_api()
       .await
       .unwrap_or_else(|_| FakeContactData {
@@ -84,5 +101,5 @@ async fn add_async_cmd_impl(store_ref: Arc<RwLock<StoreStateMachine<State, Actio
     my_store
       .dispatch_action(&action, store_ref.clone())
       .await;
-  }); /* Don't await this. Fire and forget. */
+  });
 }
