@@ -36,5 +36,7 @@ pub enum Std {
 
 #[derive(Clone, PartialEq, Debug, Hash)]
 pub enum Mw {
-  AsyncAddContact,
+  AsyncAddCmd,
+  AsyncAirCmd,
+  AsyncIpCmd,
 }

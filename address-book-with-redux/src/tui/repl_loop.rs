@@ -17,21 +17,17 @@
 
 // Imports.
 use crate::{
-  add_async_cmd_mw, address_book_reducer,
-  json_rpc::{
-    awair_local_api::make_request as awair_local_api,
-    get_ip_api::make_request as get_ip_api,
-  },
-  logger_mw, render_fn, Action, Mw, State, Std,
+  add_async_cmd_mw, address_book_reducer, air_cmd_mw, ip_cmd_mw, logger_mw, render_fn,
+  Action, Mw, State, Std,
 };
 use r3bl_rs_utils::{
-  fire_and_forget, print_header,
+  print_header,
   redux::{
     async_middleware::SafeMiddlewareFnWrapper, async_subscriber::SafeSubscriberFnWrapper,
     sync_reducers::ShareableReducerFn, Store,
   },
   style_dimmed, style_error, style_primary,
-  utils::{print_prompt, readline_with_prompt},
+  utils::readline_with_prompt,
 };
 use rand::random;
 use std::error::Error;
@@ -51,6 +47,14 @@ async fn create_store() -> Store<State, Action> {
     .await
     .add_middleware(SafeMiddlewareFnWrapper::from(
       logger_mw,
+    ))
+    .await
+    .add_middleware(SafeMiddlewareFnWrapper::from(
+      air_cmd_mw,
+    ))
+    .await
+    .add_middleware(SafeMiddlewareFnWrapper::from(
+      ip_cmd_mw,
     ))
     .await
     .add_middleware(SafeMiddlewareFnWrapper::from(
@@ -92,14 +96,6 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
         ));
         store.dispatch(action).await;
       }
-      "add-async" => {
-        let action = Action::Mw(Mw::AsyncAddContact);
-        store.dispatch(action).await;
-        println!(
-          "{}",
-          "🧵 Spawning exec_add_async_cmd ..."
-        );
-      }
       "clear" => {
         let action = Action::Std(Std::RemoveAllContacts);
         store.dispatch(action).await;
@@ -131,28 +127,22 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       "history" => {
         println!("{:#?}", store.get_history().await);
       }
+      "add-async" => {
+        let action = Action::Mw(Mw::AsyncAddCmd);
+        store.dispatch(action).await;
+        println!(
+          "{}",
+          "🧵 Spawning exec_add_async_cmd ..."
+        );
+      }
       "ip" => {
-        fire_and_forget!({
-          match get_ip_api().await {
-            Ok(resp_data) => {
-              println!("{}", resp_data);
-              print_prompt("r3bl> ").unwrap();
-            }
-            Err(e) => println!("{}", style_error(&e.to_string())),
-          };
-        });
+        let action = Action::Mw(Mw::AsyncIpCmd);
+        store.dispatch(action).await;
         println!("{}", "🧵 Spawning get_ip_api()...");
       }
       "air" => {
-        fire_and_forget!({
-          match awair_local_api().await {
-            Ok(resp_data) => {
-              println!("{:#?}", resp_data);
-              print_prompt("r3bl> ").unwrap();
-            }
-            Err(e) => println!("{}", style_error(&e.to_string())),
-          };
-        });
+        let action = Action::Mw(Mw::AsyncAirCmd);
+        store.dispatch(action).await;
         println!(
           "{}",
           "🧵 Spawning awair_local_api()..."
