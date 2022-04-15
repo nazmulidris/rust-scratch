@@ -23,6 +23,13 @@ use super::State;
 pub enum Action {
   Mw(Mw),
   Std(Std),
+  Noop,
+}
+
+impl Default for Action {
+  fn default() -> Self {
+    Action::Noop
+  }
 }
 
 #[derive(Clone, PartialEq, Debug, Hash)]
