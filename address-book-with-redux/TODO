@@ -60,11 +60,14 @@ fix async middleware:
   ✔ make macro to `fire_and_forget` (tokio spawn async block) @done(22-04-14 12:51)
   ✔ try to use iterator for safe list (instead of decl macro that was deleted) @done(22-04-14 15:43)
 async lambda & async traits:
-  ☐ async lambda experiment (put them in a vec)
-  ☐ async traits experiment (express mw as struct that impl trait, add that to vec)
-    ☐ make a mw trait containing an async method (takes args & returns option)
-    ☐ make a mw struct that impls the mw trait & provide a constructor method
-    ☐ make a vec that holds the mw structs & exec them asynchronously w/ tokio
+  ✔ async lambda experiment (put them in a vec) @done(22-04-15 14:53)
+  ✔ async traits experiment (express mw as struct that impl trait, add that to vec) @done(22-04-15 14:53)
+    ✔ make a mw trait containing an async method (takes args & returns option) @done(22-04-15 14:53)
+    ✔ make a mw struct that impls the mw trait & provide a constructor method @done(22-04-15 14:53)
+    ✔ make a vec that holds the mw structs & exec them asynchronously w/ tokio @done(22-04-15 14:53)
+rewrite redux lib to use async trait objects instead of wrapped fns:
+  ☐ make a new proc macro to handle this
+  ☐ rewrite existing code to use this
 read & write csv file:
   ☐ save state to csv file and load state from csv file w/ new cmd
     - https://docs.rs/csv/latest/csv/cookbook/index.html#reading-with-serde

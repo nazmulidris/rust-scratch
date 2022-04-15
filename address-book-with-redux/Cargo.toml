@@ -29,6 +29,7 @@ chrono = { version = "0.4.19", features = ["serde", "rustc-serialize"] }
 
 # Get the latest version of r3bl_rs_utils from local fs and not github.
 r3bl_rs_utils = { version = "*", path = "../../r3bl-rs-utils" }
+r3bl_rs_utils_core = { version = "*", path = "../../r3bl-rs-utils/core" }
 
 # https://crates.io/crates/async-trait
 async-trait = "0.1.53"

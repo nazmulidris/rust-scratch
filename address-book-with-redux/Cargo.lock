@@ -9,6 +9,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "r3bl_rs_utils",
+ "r3bl_rs_utils_core",
  "rand",
  "reqwest",
  "serde",
