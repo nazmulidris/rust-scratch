@@ -11,7 +11,7 @@ path = "src/main.rs"
 
 [lib]
 name = "address_book_with_redux_lib"
-path = "src/lib.rs" 
+path = "src/lib.rs"
 
 [dependencies]
 rand = "0.8.5"
@@ -29,3 +29,6 @@ chrono = { version = "0.4.19", features = ["serde", "rustc-serialize"] }
 
 # Get the latest version of r3bl_rs_utils from local fs and not github.
 r3bl_rs_utils = { version = "*", path = "../../r3bl-rs-utils" }
+
+# https://crates.io/crates/async-trait
+async-trait = "0.1.53"
