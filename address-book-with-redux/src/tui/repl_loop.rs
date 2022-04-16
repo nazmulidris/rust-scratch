@@ -17,14 +17,14 @@
 
 // Imports.
 use crate::{
-  add_async_cmd_mw, address_book_reducer, air_cmd_mw, ip_cmd_mw, logger_mw, render_fn,
-  Action, Mw, State, Std,
+  address_book_reducer, render_fn, Action, AddAsyncCmdMw,
+  AirCmdMw, IpCmdMw, LoggerMw, Mw, State, Std,
 };
 use r3bl_rs_utils::{
   print_header,
   redux::{
-    async_middleware::SafeMiddlewareFnWrapper, async_subscriber::SafeSubscriberFnWrapper,
-    sync_reducers::ShareableReducerFn, Store,
+    async_subscriber::SafeSubscriberFnWrapper, sync_reducers::ShareableReducerFn,
+    AsyncMiddleware, Store,
   },
   style_dimmed, style_error, style_primary,
   utils::readline_with_prompt,
@@ -45,21 +45,13 @@ async fn create_store() -> Store<State, Action> {
       render_fn,
     ))
     .await
-    .add_middleware(SafeMiddlewareFnWrapper::from(
-      logger_mw,
-    ))
+    .add_middleware(LoggerMw::new())
     .await
-    .add_middleware(SafeMiddlewareFnWrapper::from(
-      air_cmd_mw,
-    ))
+    .add_middleware(AirCmdMw::new())
     .await
-    .add_middleware(SafeMiddlewareFnWrapper::from(
-      ip_cmd_mw,
-    ))
+    .add_middleware(IpCmdMw::new())
     .await
-    .add_middleware(SafeMiddlewareFnWrapper::from(
-      add_async_cmd_mw,
-    ))
+    .add_middleware(AddAsyncCmdMw::new())
     .await
     .add_reducer(ShareableReducerFn::from(
       address_book_reducer,
