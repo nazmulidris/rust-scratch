@@ -16,10 +16,26 @@
 */
 
 use crate::{Action, Contact, State, Std};
+use async_trait::async_trait;
+use r3bl_rs_utils::redux::AsyncReducer;
 
-pub fn address_book_reducer(
-  state: &State,
+#[derive(Default)]
+pub struct MyReducer;
+
+#[async_trait]
+impl AsyncReducer<State, Action> for MyReducer {
+  async fn run(
+    &self,
+    action: &Action,
+    state: &State,
+  ) -> State {
+    address_book_reducer(&action, &state)
+  }
+}
+
+fn address_book_reducer(
   action: &Action,
+  state: &State,
 ) -> State {
   let mut new_state = state.clone();
 

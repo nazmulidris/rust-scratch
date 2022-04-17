@@ -17,14 +17,29 @@
 
 use crate::{
   address_book::{Contact, State},
-  tui::{MAX_DELAY, MIN_DELAY, DELAY_ENABLED},
+  tui::{DELAY_ENABLED, MAX_DELAY, MIN_DELAY},
 };
+use async_trait::async_trait;
 use r3bl_rs_utils::{
-  print_header, style_dimmed, tree_memory_arena::HasId, utils::print_prompt,
+  print_header, redux::AsyncSubscriber, style_dimmed, tree_memory_arena::HasId,
+  utils::print_prompt,
 };
 use rand::Rng;
 
-pub fn render_fn(state: State) {
+#[derive(Default)]
+pub struct Renderer;
+
+#[async_trait]
+impl AsyncSubscriber<State> for Renderer {
+  async fn run(
+    &self,
+    state: State,
+  ) {
+    render(state);
+  }
+}
+
+fn render(state: State) {
   // https://rust-lang.github.io/rfcs/2909-destructuring-assignment.html
   let State {
     search_term,
@@ -32,8 +47,8 @@ pub fn render_fn(state: State) {
   } = state;
 
   if DELAY_ENABLED {
-  // Artificial delay before rendering.
-  let delay_ms = rand::thread_rng().gen_range(MIN_DELAY..MAX_DELAY) as u64;
+    // Artificial delay before rendering.
+    let delay_ms = rand::thread_rng().gen_range(MIN_DELAY..MAX_DELAY) as u64;
     std::thread::sleep(tokio::time::Duration::from_millis(
       delay_ms,
     ));

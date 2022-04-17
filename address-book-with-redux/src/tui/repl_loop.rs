@@ -17,15 +17,11 @@
 
 // Imports.
 use crate::{
-  address_book_reducer, render_fn, Action, AddAsyncCmdMw,
-  AirCmdMw, IpCmdMw, LoggerMw, Mw, State, Std,
+  Action, AddAsyncCmdMw, AirCmdMw, IpCmdMw, LoggerMw, Mw, MyReducer, Renderer, State, Std,
 };
 use r3bl_rs_utils::{
   print_header,
-  redux::{
-    async_subscriber::SafeSubscriberFnWrapper, sync_reducers::ShareableReducerFn,
-    AsyncMiddleware, Store,
-  },
+  redux::{AsyncMiddleware, AsyncReducer, AsyncSubscriber, Store},
   style_dimmed, style_error, style_primary,
   utils::readline_with_prompt,
 };
@@ -41,9 +37,7 @@ pub async fn run_tui_app(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
 async fn create_store() -> Store<State, Action> {
   let mut store = Store::<State, Action>::default();
   store
-    .add_subscriber(SafeSubscriberFnWrapper::from(
-      render_fn,
-    ))
+    .add_subscriber(Renderer::new())
     .await
     .add_middleware(LoggerMw::new())
     .await
@@ -53,9 +47,7 @@ async fn create_store() -> Store<State, Action> {
     .await
     .add_middleware(AddAsyncCmdMw::new())
     .await
-    .add_reducer(ShareableReducerFn::from(
-      address_book_reducer,
-    ))
+    .add_reducer(MyReducer::new())
     .await;
   store
 }

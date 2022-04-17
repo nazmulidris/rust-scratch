@@ -23,7 +23,7 @@ use super::State;
 pub enum Action {
   Mw(Mw),
   Std(Std),
-  Noop,
+  Noop, /* For Default impl. */
 }
 
 impl Default for Action {

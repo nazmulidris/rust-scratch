@@ -1,9 +1,6 @@
 ╭──────────────────────────────────────────────────────╮
 │ address-book-with-redux                              │
 ╰──────────────────────────────────────────────────────╯
-rewrite redux lib: use async trait objs & not wrapped fns:
-  ☐ make a new proc macro to handle this
-  ☐ rewrite existing code to use this
 read & write csv file:
   ☐ save state to csv file and load state from csv file w/ new cmd
     - https://docs.rs/csv/latest/csv/cookbook/index.html#reading-with-serde
@@ -16,6 +13,8 @@ save & restore state:
   ☐ on start - read state from file & deserialize & dispatch to redux store
 
 Done:
+  rewrite redux lib: use async trait objs & not wrapped fns:
+    ✔ rewrite existing code to use this @done(22-04-17 18:21)
   async lambda & async traits:
     ✔ async lambda experiment (put them in a vec) @done(22-04-15 14:53)
     ✔ async traits experiment (express mw as struct that impl trait, add that to vec) @done(22-04-15 14:53)
