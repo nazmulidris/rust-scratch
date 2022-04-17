@@ -29,29 +29,6 @@ use tokio::sync::RwLock;
 #[derive(Default)]
 pub struct AddAsyncCmdMw;
 
-/// The following code deadlocks! A write lock to the store is already when this
-/// method is called! Be careful when dispatching actions from the `run()` method's
-/// thread.
-///
-/// ```no_run
-/// {
-///   let mut my_store = _store_ref.write().await;
-///   my_store
-///     .dispatch_action(action, _store_ref.clone())
-///     .await;
-/// }
-/// ```
-///
-/// If you want to call the block above, use the following instead:
-/// ```no_run
-/// use r3bl_rs_utils::fire_and_forget;
-///
-/// fire_and_forget! { /* block above */ });
-/// ```
-///
-/// This will drop the lock held here before spawning the task to acquire its own
-/// lock.
-///
 #[async_trait]
 impl AsyncMiddleware<State, Action> for AddAsyncCmdMw {
   async fn run(
