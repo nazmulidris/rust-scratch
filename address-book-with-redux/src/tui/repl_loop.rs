@@ -17,7 +17,8 @@
 
 // Imports.
 use crate::{
-  Action, AddAsyncCmdMw, AirCmdMw, IpCmdMw, LoggerMw, Mw, MyReducer, Renderer, State, Std,
+  Action, AddAsyncCmdMw, AirCmdMw, IpCmdMw, LoggerMw, Mw, MyReducer, Renderer, SaveCmdMw,
+  State, Std,
 };
 use r3bl_rs_utils::{
   print_header,
@@ -47,13 +48,15 @@ async fn create_store() -> Store<State, Action> {
     .await
     .add_middleware(AddAsyncCmdMw::new())
     .await
+    .add_middleware(SaveCmdMw::new())
+    .await
     .add_reducer(MyReducer::new())
     .await;
   store
 }
 
 const AVAIL_CMDS: &str =
-  "quit, exit, add-async, add-sync, clear, remove, reset, search, history, ip, help";
+  "quit, exit, add-async, add-sync, save, clear, remove, reset, search, history, ip, help";
 
 pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>> {
   print_header("Starting repl");
@@ -116,20 +119,31 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
         store.dispatch(action).await;
         println!(
           "{}",
-          "🧵 Spawning exec_add_async_cmd ..."
+          "🧵 Spawning add_async_cmd_mw.rs ..."
         );
       }
       "ip" => {
-        let action = Action::Mw(Mw::AsyncIpCmd);
-        store.dispatch(action).await;
-        println!("{}", "🧵 Spawning get_ip_api()...");
-      }
-      "air" => {
-        let action = Action::Mw(Mw::AsyncAirCmd);
+        let action = Action::Mw(Mw::IpCmd);
         store.dispatch(action).await;
         println!(
           "{}",
-          "🧵 Spawning awair_local_api()..."
+          "🧵 Spawning ip_cmd_mw.rs ..."
+        );
+      }
+      "air" => {
+        let action = Action::Mw(Mw::AirCmd);
+        store.dispatch(action).await;
+        println!(
+          "{}",
+          "🧵 Spawning air_cmd_mw.rs ..."
+        );
+      }
+      "save" => {
+        let action = Action::Mw(Mw::SaveCmd);
+        store.dispatch(action).await;
+        println!(
+          "{}",
+          "🧵 Spawning save_cmd_mw.rs ..."
         );
       }
       // Catchall.

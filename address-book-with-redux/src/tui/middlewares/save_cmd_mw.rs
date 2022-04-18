@@ -15,37 +15,48 @@
  *   limitations under the License.
 */
 
-use crate::{
-  json_rpc::awair_local_api::make_request as awair_local_api, Action, Mw, State,
-};
+use crate::{Action, Mw, State};
 use async_trait::async_trait;
 use r3bl_rs_utils::{
+  print_header,
   redux::{AsyncMiddleware, StoreStateMachine},
-  style_error,
-  utils::print_prompt,
 };
-
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 #[derive(Default)]
-pub struct AirCmdMw;
+pub struct SaveCmdMw;
 
 #[async_trait]
-impl AsyncMiddleware<State, Action> for AirCmdMw {
+impl AsyncMiddleware<State, Action> for SaveCmdMw {
   async fn run(
     &self,
     action: Action,
     _store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
   ) -> Option<Action> {
-    if let Action::Mw(Mw::AirCmd) = action {
-      match awair_local_api().await {
-        Ok(resp_data) => {
-          println!("{:#?}", resp_data);
-          print_prompt("r3bl> ").unwrap();
-        }
-        Err(e) => println!("{}", style_error(&e.to_string())),
-      };
+    if let Action::Mw(Mw::SaveCmd) = action {
+      // TODO: impl this!
+      print_header("SaveCmdMw coming soon!");
+
+      // TODO: delete comments below
+      // let fake_data = fake_contact_data_api()
+      //   .await
+      //   .unwrap_or_else(|_| FakeContactData {
+      //     name: "Foo Bar".to_string(),
+      //     phone_h: "123-456-7890".to_string(),
+      //     email_u: "foo".to_string(),
+      //     email_d: "bar.com".to_string(),
+      //     ..FakeContactData::default()
+      //   });
+      // let action = Action::Std(Std::AddContact(
+      //   format!("{}", fake_data.name),
+      //   format!(
+      //     "{}@{}",
+      //     fake_data.email_u, fake_data.email_d
+      //   ),
+      //   format!("{}", fake_data.phone_h),
+      // ));
+      // return Some(action);
     }
     None
   }

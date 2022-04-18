@@ -3,12 +3,20 @@
 ╰──────────────────────────────────────────────────────╯
 Pending:
   save/restore state to/from json file:
-    ☐ serialize and deserialize state to / from string
-    ☐ read string from file
-    ☐ write string to file
-    ☐ on exit - serialize state to json string & write to file
-      - https://doc.rust-lang.org/std/fs/struct.File.html
-    ☐ on start - read state from file & deserialize & dispatch to redux store
+    save cmd:
+      ☐ serialize `State` to json string
+        - https://docs.serde.rs/serde_json/#creating-json-by-serializing-data-structures
+      ☐ save string to file
+        - https://doc.rust-lang.org/std/fs/struct.File.html
+    load cmd:
+      ☐ read string from file
+        - https://doc.rust-lang.org/std/fs/struct.File.html
+      ☐ deserialize json string to `State`
+        - https://docs.serde.rs/serde_json/#parsing-json-as-strongly-typed-data-structures
+    on exit:
+      ☐ call save cmd
+    on start:
+      ☐ call load cmd
 
 Done:
   rewrite redux lib: use async trait objs & not wrapped fns:

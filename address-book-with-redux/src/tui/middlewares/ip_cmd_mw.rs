@@ -36,7 +36,7 @@ impl AsyncMiddleware<State, Action> for IpCmdMw {
     action: Action,
     _store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
   ) -> Option<Action> {
-    if let Action::Mw(Mw::AsyncIpCmd) = action {
+    if let Action::Mw(Mw::IpCmd) = action {
       match get_ip_api().await {
         Ok(resp_data) => {
           println!("{}", resp_data);

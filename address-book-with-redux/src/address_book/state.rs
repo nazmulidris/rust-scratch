@@ -16,16 +16,17 @@
 */
 
 use r3bl_rs_utils::tree_memory_arena::HasId;
+use serde::{Deserialize, Serialize};
 
 // State.
-#[derive(Clone, Default, PartialEq, Debug, Hash)]
+#[derive(Clone, Default, PartialEq, Debug, Hash, Serialize, Deserialize)]
 pub struct State {
   pub address_book: Vec<Contact>,
   pub search_term: Option<String>,
 }
 
 // Contact.
-#[derive(Clone, Default, PartialEq, Debug, Hash)]
+#[derive(Clone, Default, PartialEq, Debug, Hash, Serialize, Deserialize)]
 pub struct Contact {
   pub id: usize,
   pub name: String,
