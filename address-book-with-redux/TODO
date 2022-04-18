@@ -1,16 +1,17 @@
 ╭──────────────────────────────────────────────────────╮
 │ address-book-with-redux                              │
 ╰──────────────────────────────────────────────────────╯
-read & write csv file:
-  ☐ save state to csv file and load state from csv file w/ new cmd
-    - https://docs.rs/csv/latest/csv/cookbook/index.html#reading-with-serde
-save & restore state:
-  ☐ serialize and deserialize state to / from string
-  ☐ read string from file
-  ☐ write string to file
-  ☐ on exit - serialize state to json string & write to file
-    - https://doc.rust-lang.org/std/fs/struct.File.html
-  ☐ on start - read state from file & deserialize & dispatch to redux store
+Pending:
+  read & write csv file:
+    ☐ save state to csv file and load state from csv file w/ new cmd
+      - https://docs.rs/csv/latest/csv/cookbook/index.html#reading-with-serde
+  save & restore state:
+    ☐ serialize and deserialize state to / from string
+    ☐ read string from file
+    ☐ write string to file
+    ☐ on exit - serialize state to json string & write to file
+      - https://doc.rust-lang.org/std/fs/struct.File.html
+    ☐ on start - read state from file & deserialize & dispatch to redux store
 
 Done:
   rewrite redux lib: use async trait objs & not wrapped fns:
