@@ -2,10 +2,7 @@
 │ address-book-with-redux                              │
 ╰──────────────────────────────────────────────────────╯
 Pending:
-  read & write csv file:
-    ☐ save state to csv file and load state from csv file w/ new cmd
-      - https://docs.rs/csv/latest/csv/cookbook/index.html#reading-with-serde
-  save & restore state:
+  save/restore state to/from json file:
     ☐ serialize and deserialize state to / from string
     ☐ read string from file
     ☐ write string to file
