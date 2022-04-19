@@ -81,11 +81,11 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
           format!("jd@gmail.com #{}", id),
           format!("123-456-7890 #{}", id),
         ));
-        store.dispatch(action).await;
+        store.dispatch_spawn(action);
       }
       "clear" => {
         let action = Action::Std(Std::RemoveAllContacts);
-        store.dispatch(action).await;
+        store.dispatch_spawn(action);
       }
       "remove" => {
         match readline_with_prompt("id> ") {
@@ -93,7 +93,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
             let action = Action::Std(Std::RemoveContactById(
               id.parse().unwrap(),
             ));
-            store.dispatch(action).await
+            store.dispatch_spawn(action)
           }
           Err(_) => println!("{}", style_error("Invalid id")),
         };
@@ -102,21 +102,21 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
         match readline_with_prompt("search_term> ") {
           Ok(search_term) => {
             let action = Action::Std(Std::Search(search_term));
-            store.dispatch(action).await
+            store.dispatch_spawn(action)
           }
           Err(_) => println!("{}", style_error("Invalid id")),
         };
       }
       "reset" => {
         let action = Action::Std(Std::ResetState(State::default()));
-        store.dispatch(action).await;
+        store.dispatch_spawn(action);
       }
       "history" => {
         println!("{:#?}", store.get_history().await);
       }
       "add-async" => {
         let action = Action::Mw(Mw::AsyncAddCmd);
-        store.dispatch(action).await;
+        store.dispatch_spawn(action);
         println!(
           "{}",
           "🧵 Spawning add_async_cmd_mw.rs ..."
@@ -124,7 +124,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       }
       "ip" => {
         let action = Action::Mw(Mw::IpCmd);
-        store.dispatch(action).await;
+        store.dispatch_spawn(action);
         println!(
           "{}",
           "🧵 Spawning ip_cmd_mw.rs ..."
@@ -132,7 +132,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       }
       "air" => {
         let action = Action::Mw(Mw::AirCmd);
-        store.dispatch(action).await;
+        store.dispatch_spawn(action);
         println!(
           "{}",
           "🧵 Spawning air_cmd_mw.rs ..."
@@ -140,7 +140,7 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
       }
       "save" => {
         let action = Action::Mw(Mw::SaveCmd);
-        store.dispatch(action).await;
+        store.dispatch_spawn(action);
         println!(
           "{}",
           "🧵 Spawning save_cmd_mw.rs ..."
