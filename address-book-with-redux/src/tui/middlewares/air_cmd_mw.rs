@@ -37,7 +37,7 @@ impl AsyncMiddleware<State, Action> for AirCmdMw {
     &self,
     action: Action,
     _store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
-  ) -> Option<Action> {
+  ) {
     if let Action::Mw(Mw::AirCmd) = action {
       match awair_local_api().await {
         Ok(resp_data) => {
@@ -47,6 +47,5 @@ impl AsyncMiddleware<State, Action> for AirCmdMw {
         Err(e) => println!("{}", style_error(&e.to_string())),
       };
     }
-    None
   }
 }

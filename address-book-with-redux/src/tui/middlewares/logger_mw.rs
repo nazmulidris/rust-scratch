@@ -37,7 +37,7 @@ impl AsyncMiddleware<State, Action> for LoggerMw {
     &self,
     action: Action,
     _store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
-  ) -> Option<Action> {
+  ) {
     if DELAY_ENABLED {
       // Artificial delay before calling the function.
       let delay_ms = rand::thread_rng().gen_range(MIN_DELAY..MAX_DELAY) as u64;
@@ -48,6 +48,5 @@ impl AsyncMiddleware<State, Action> for LoggerMw {
     println!("");
     print_header("logger_mw");
     println!("action: {:?}", action);
-    None
   }
 }

@@ -22,7 +22,10 @@ use crate::{
   Action, Mw, State, Std,
 };
 use async_trait::async_trait;
-use r3bl_rs_utils::redux::{AsyncMiddleware, StoreStateMachine};
+use r3bl_rs_utils::{
+  fire_and_forget,
+  redux::{AsyncMiddleware, StoreStateMachine},
+};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -34,28 +37,35 @@ impl AsyncMiddleware<State, Action> for AddAsyncCmdMw {
   async fn run(
     &self,
     action: Action,
-    _store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
-  ) -> Option<Action> {
-    if let Action::Mw(Mw::AsyncAddCmd) = action {
-      let fake_data = fake_contact_data_api()
-        .await
-        .unwrap_or_else(|_| FakeContactData {
-          name: "Foo Bar".to_string(),
-          phone_h: "123-456-7890".to_string(),
-          email_u: "foo".to_string(),
-          email_d: "bar.com".to_string(),
-          ..FakeContactData::default()
-        });
-      let action = Action::Std(Std::AddContact(
-        format!("{}", fake_data.name),
-        format!(
-          "{}@{}",
-          fake_data.email_u, fake_data.email_d
-        ),
-        format!("{}", fake_data.phone_h),
-      ));
-      return Some(action);
-    }
-    None
+    store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
+  ) {
+    fire_and_forget!({
+      if let Action::Mw(Mw::AsyncAddCmd) = action {
+        let fake_data = fake_contact_data_api()
+          .await
+          .unwrap_or_else(|_| FakeContactData {
+            name: "Foo Bar".to_string(),
+            phone_h: "123-456-7890".to_string(),
+            email_u: "foo".to_string(),
+            email_d: "bar.com".to_string(),
+            ..FakeContactData::default()
+          });
+
+        let action = Action::Std(Std::AddContact(
+          format!("{}", fake_data.name),
+          format!(
+            "{}@{}",
+            fake_data.email_u, fake_data.email_d
+          ),
+          format!("{}", fake_data.phone_h),
+        ));
+
+        store_ref
+          .write()
+          .await
+          .dispatch_action(action, store_ref.clone())
+          .await;
+      }
+    });
   }
 }

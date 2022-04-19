@@ -33,10 +33,12 @@ impl AsyncMiddleware<State, Action> for SaveCmdMw {
     &self,
     action: Action,
     _store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
-  ) -> Option<Action> {
+  ) {
     if let Action::Mw(Mw::SaveCmd) = action {
       // TODO: impl this!
-      print_header("SaveCmdMw coming soon!");
+      print_header("╭──────────────────────────────────────────────────────╮");
+      print_header("│ SaveCmdMw coming soon!                               │");
+      print_header("╰──────────────────────────────────────────────────────╯");
 
       // TODO: delete comments below
       // let fake_data = fake_contact_data_api()
@@ -58,6 +60,5 @@ impl AsyncMiddleware<State, Action> for SaveCmdMw {
       // ));
       // return Some(action);
     }
-    None
   }
 }
