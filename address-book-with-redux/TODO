@@ -9,9 +9,9 @@ Pending:
       ✔ save string to file @done(22-04-20 11:45)
         - https://docs.rs/tokio/latest/tokio/fs/struct.File.html
     load cmd:
-      ☐ read string from file
+      ✔ read string from file @done(22-04-20 14:10)
         - https://docs.rs/tokio/latest/tokio/fs/struct.File.html
-      ☐ deserialize json string to `State`
+      ✔ deserialize json string to `State` @done(22-04-20 14:10)
         - https://docs.serde.rs/serde_json/#parsing-json-as-strongly-typed-data-structures
     on exit:
       ☐ call save cmd

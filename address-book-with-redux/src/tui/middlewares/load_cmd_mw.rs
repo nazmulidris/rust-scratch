@@ -15,19 +15,14 @@
  *   limitations under the License.
 */
 
-use crate::{Action, Mw, State, Std, PROMPT_STR, STATE_JSON_FNAME};
+use crate::{Action, Mw, State, Std, STATE_JSON_FNAME};
 use async_trait::async_trait;
 use r3bl_rs_utils::{
   fire_and_forget, print_header,
   redux::{AsyncMiddleware, StoreStateMachine},
-  utils::print_prompt,
 };
 use std::sync::Arc;
-use tokio::{
-  fs::File,
-  io::{AsyncReadExt, AsyncWriteExt},
-  sync::RwLock,
-};
+use tokio::{fs::File, io::AsyncReadExt, sync::RwLock};
 
 #[derive(Default)]
 pub struct LoadCmdMw;

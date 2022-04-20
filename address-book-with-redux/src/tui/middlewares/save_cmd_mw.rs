@@ -39,16 +39,20 @@ impl AsyncMiddleware<State, Action> for SaveCmdMw {
   ) {
     if let Action::Mw(Mw::SaveCmd) = action {
       fire_and_forget![{
-        println!();
-        print_header("╭──────────────────────────────────────────────────────╮");
-        print_header("│ SaveCmdMw: save to `state.json`                      │");
-        print_header("╰──────────────────────────────────────────────────────╯");
-        let state = get_state_from(&store_ref).await;
-        save_state_to_file(&state, STATE_JSON_FNAME).await;
-        print_prompt(PROMPT_STR).unwrap();
+        do_save(store_ref).await;
       }];
     }
   }
+}
+
+pub async fn do_save(store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>) {
+  println!();
+  print_header("╭──────────────────────────────────────────────────────╮");
+  print_header("│ SaveCmdMw: save to `state.json`                      │");
+  print_header("╰──────────────────────────────────────────────────────╯");
+  let state = get_state_from(&store_ref).await;
+  save_state_to_file(&state, STATE_JSON_FNAME).await;
+  print_prompt(PROMPT_STR).unwrap();
 }
 
 async fn save_state_to_file(

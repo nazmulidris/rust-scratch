@@ -29,7 +29,6 @@ use r3bl_rs_utils::{
 use rand::random;
 use std::error::Error;
 
-#[tokio::main]
 pub async fn run_tui_app(_args: Vec<String>) -> Result<(), Box<dyn Error>> {
   repl_loop(create_store().await).await?;
   Ok(())
