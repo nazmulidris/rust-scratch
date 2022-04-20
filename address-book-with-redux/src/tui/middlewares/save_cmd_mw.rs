@@ -20,9 +20,10 @@ use async_trait::async_trait;
 use r3bl_rs_utils::{
   fire_and_forget, print_header,
   redux::{AsyncMiddleware, StoreStateMachine},
+  style_error, style_primary,
   utils::print_prompt,
 };
-use std::sync::Arc;
+use std::{io::Result, sync::Arc};
 use tokio::{fs::File, io::AsyncWriteExt, sync::RwLock};
 
 #[derive(Default)]
@@ -39,32 +40,46 @@ impl AsyncMiddleware<State, Action> for SaveCmdMw {
   ) {
     if let Action::Mw(Mw::SaveCmd) = action {
       fire_and_forget![{
+        println!();
+        print_header("╭──────────────────────────────────────────────────────╮");
+        print_header("│ SaveCmdMw: save to `state.json`                      │");
+        print_header("╰──────────────────────────────────────────────────────╯");
         do_save(store_ref).await;
+        print_prompt(PROMPT_STR).unwrap();
       }];
     }
   }
 }
 
 pub async fn do_save(store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>) {
-  println!();
-  print_header("╭──────────────────────────────────────────────────────╮");
-  print_header("│ SaveCmdMw: save to `state.json`                      │");
-  print_header("╰──────────────────────────────────────────────────────╯");
   let state = get_state_from(&store_ref).await;
-  save_state_to_file(&state, STATE_JSON_FNAME).await;
-  print_prompt(PROMPT_STR).unwrap();
+  let result = save_state_to_file(&state, STATE_JSON_FNAME).await;
+  match result {
+    Err(error) => {
+      println!(
+        "Could not save state to: `{}` due to: {}",
+        style_primary(STATE_JSON_FNAME),
+        style_error(&format!("{:#?}", error))
+      );
+    }
+    _ => {}
+  }
 }
 
+/// Produces error if:
+/// 1. Can't open the `fname` file for writing.
+/// 2. If something goes wrong when writing the bytes to the file.
+/// 3. If `state` can't be serialized to pretty JSON string.
 async fn save_state_to_file(
   state: &State,
   fname: &str,
-) {
-  let mut file = File::create(fname).await.unwrap();
-  let json = serde_json::to_string_pretty(&state).unwrap();
+) -> Result<()> {
+  let mut file = File::create(fname).await?;
+  let json = serde_json::to_string_pretty(&state)?;
   file
     .write_all(json.as_bytes())
-    .await
-    .unwrap();
+    .await?;
+  Ok(())
 }
 
 async fn get_state_from(

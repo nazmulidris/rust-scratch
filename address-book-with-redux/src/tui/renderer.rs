@@ -17,12 +17,11 @@
 
 use crate::{
   address_book::{Contact, State},
-  tui::{DELAY_ENABLED, MAX_DELAY, MIN_DELAY}, PROMPT_STR,
+  tui::{DELAY_ENABLED, MAX_DELAY, MIN_DELAY},
 };
 use async_trait::async_trait;
 use r3bl_rs_utils::{
   print_header, redux::AsyncSubscriber, style_dimmed, tree_memory_arena::HasId,
-  utils::print_prompt,
 };
 use rand::Rng;
 
@@ -68,7 +67,6 @@ fn render(state: State) {
       );
     }
   }
-  print_prompt(PROMPT_STR).unwrap();
 
   // Helper functions.
   fn contact_matches_search_term(

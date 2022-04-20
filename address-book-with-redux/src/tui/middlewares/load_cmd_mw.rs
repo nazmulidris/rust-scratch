@@ -15,13 +15,15 @@
  *   limitations under the License.
 */
 
-use crate::{Action, Mw, State, Std, STATE_JSON_FNAME};
+use crate::{Action, Mw, State, Std, PROMPT_STR, STATE_JSON_FNAME};
 use async_trait::async_trait;
 use r3bl_rs_utils::{
   fire_and_forget, print_header,
   redux::{AsyncMiddleware, StoreStateMachine},
+  style_error, style_primary,
+  utils::print_prompt,
 };
-use std::sync::Arc;
+use std::{io::Result, sync::Arc};
 use tokio::{fs::File, io::AsyncReadExt, sync::RwLock};
 
 #[derive(Default)]
@@ -40,29 +42,42 @@ impl AsyncMiddleware<State, Action> for LoadCmdMw {
       fire_and_forget![{
         println!();
         print_header("╭──────────────────────────────────────────────────────╮");
-        print_header("│ LoadCmdMw: load from `state.json` coming soon!       │");
+        print_header("│ LoadCmdMw: load from `state.json`                    │");
         print_header("╰──────────────────────────────────────────────────────╯");
-        let json_str = load_str_from_file(STATE_JSON_FNAME).await;
-        let state = get_state_from(json_str).await;
-        let action = Action::Std(Std::ResetState(state));
-        store_ref
-          .write()
-          .await
-          .dispatch_action(action, store_ref.clone())
-          .await;
+        do_load(store_ref).await;
+        print_prompt(PROMPT_STR).unwrap();
       }];
     }
   }
 }
 
-async fn load_str_from_file(fname: &str) -> String {
-  let mut file = File::open(fname).await.unwrap();
+pub async fn do_load(store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>) {
+  let json_str_result = load_str_from_file(STATE_JSON_FNAME).await;
+  match json_str_result {
+    Ok(json_str) => {
+      let state = get_state_from(json_str).await;
+      let action = Action::Std(Std::ResetState(state));
+      store_ref
+        .write()
+        .await
+        .dispatch_action(action, store_ref.clone())
+        .await;
+    }
+    Err(error) => println!(
+      "Did not load state from: `{}` due to: {}",
+      style_primary(STATE_JSON_FNAME),
+      style_error(&format!("{:#?}", error))
+    ),
+  }
+}
+
+async fn load_str_from_file(fname: &str) -> Result<String> {
+  let mut file = File::open(fname).await?;
   let mut file_content_str = String::new();
   file
     .read_to_string(&mut file_content_str)
-    .await
-    .unwrap();
-  file_content_str
+    .await?;
+  Ok(file_content_str)
 }
 
 async fn get_state_from(json_str: String) -> State {

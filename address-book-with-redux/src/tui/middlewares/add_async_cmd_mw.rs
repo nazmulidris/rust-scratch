@@ -19,12 +19,12 @@ use crate::{
   json_rpc::{
     fake_contact_data_api::make_request as fake_contact_data_api, FakeContactData,
   },
-  Action, Mw, State, Std,
+  Action, Mw, State, Std, PROMPT_STR,
 };
 use async_trait::async_trait;
 use r3bl_rs_utils::{
   fire_and_forget,
-  redux::{AsyncMiddleware, StoreStateMachine},
+  redux::{AsyncMiddleware, StoreStateMachine}, utils::print_prompt,
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -65,6 +65,8 @@ impl AsyncMiddleware<State, Action> for AddAsyncCmdMw {
           .await
           .dispatch_action(action, store_ref.clone())
           .await;
+
+        print_prompt(PROMPT_STR).unwrap();
       }
     }];
   }

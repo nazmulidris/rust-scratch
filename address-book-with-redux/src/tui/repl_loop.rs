@@ -17,14 +17,15 @@
 
 // Imports.
 use crate::{
-  load_cmd_mw::LoadCmdMw, Action, AddAsyncCmdMw, AirCmdMw, IpCmdMw, LoggerMw, Mw,
-  MyReducer, Renderer, SaveCmdMw, State, Std,
+  do_load, do_save, load_cmd_mw::LoadCmdMw, Action, AddAsyncCmdMw, AirCmdMw, IpCmdMw,
+  LoggerMw, Mw, MyReducer, Renderer, SaveCmdMw, State, Std,
 };
 use r3bl_rs_utils::{
   print_header,
   redux::{AsyncMiddleware, AsyncReducer, AsyncSubscriber, Store},
   style_dimmed, style_error, style_primary,
   utils::readline_with_prompt,
+  SafeToShare,
 };
 use rand::random;
 use std::error::Error;
@@ -61,6 +62,8 @@ const AVAIL_CMDS: &str =
 
 pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>> {
   print_header("Starting repl");
+
+  on_start(&store).await;
 
   // Repl.
   loop {
@@ -172,5 +175,17 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
     );
   }
 
+  on_end(&store).await;
+
   Ok(())
+}
+
+async fn on_start(store: &Store<State, Action>) {
+  print_header("on_start");
+  do_load(store.get_ref()).await;
+}
+
+async fn on_end(store: &Store<State, Action>) {
+  print_header("on_end");
+  do_save(store.get_ref()).await;
 }

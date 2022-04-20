@@ -2,6 +2,8 @@
 │ address-book-with-redux                              │
 ╰──────────────────────────────────────────────────────╯
 Pending:
+
+Done:
   save/restore state to/from json file:
     save cmd:
       ✔ serialize `State` to json string @done(22-04-20 11:45)
@@ -14,11 +16,10 @@ Pending:
       ✔ deserialize json string to `State` @done(22-04-20 14:10)
         - https://docs.serde.rs/serde_json/#parsing-json-as-strongly-typed-data-structures
     on exit:
-      ☐ call save cmd
+      ✔ call save cmd @done(22-04-20 14:59)
     on start:
-      ☐ call load cmd
+      ✔ call load cmd @done(22-04-20 14:59)
 
-Done:
   rewrite redux lib: use async trait objs & not wrapped fns:
     ✔ rewrite existing code to use this @done(22-04-17 18:21)
   async lambda & async traits:
