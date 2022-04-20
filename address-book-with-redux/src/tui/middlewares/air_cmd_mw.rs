@@ -16,18 +16,11 @@
 */
 
 use crate::{
-  json_rpc::awair_local_api::make_request as awair_local_api, Action, Mw, State, PROMPT_STR,
+  json_rpc::awair_local_api::make_request as awair_local_api, Action, Mw, State,
+  PROMPT_STR,
 };
 use async_trait::async_trait;
-use r3bl_rs_utils::{
-  fire_and_forget,
-  redux::{AsyncMiddleware, StoreStateMachine},
-  style_error,
-  utils::print_prompt,
-};
-
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use r3bl_rs_utils::{redux::AsyncMiddleware, style_error, utils::print_prompt};
 
 #[derive(Default)]
 pub struct AirCmdMw;
@@ -37,9 +30,9 @@ impl AsyncMiddleware<State, Action> for AirCmdMw {
   async fn run(
     &self,
     action: Action,
-    _store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
-  ) {
-    fire_and_forget![{
+    _state:State,
+  ) -> Option<Action> {
+    {
       if let Action::Mw(Mw::AirCmd) = action {
         match awair_local_api().await {
           Ok(resp_data) => {
@@ -49,6 +42,7 @@ impl AsyncMiddleware<State, Action> for AirCmdMw {
           Err(e) => println!("{}", style_error(&e.to_string())),
         };
       }
-    }];
+      None
+    }
   }
 }

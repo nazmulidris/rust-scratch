@@ -22,10 +22,9 @@ use crate::{
 };
 use r3bl_rs_utils::{
   print_header,
-  redux::{AsyncMiddleware, AsyncReducer, AsyncSubscriber, Store},
+  redux::{AsyncMiddleware, AsyncMiddlewareSpawns, AsyncReducer, AsyncSubscriber, Store},
   style_dimmed, style_error, style_primary,
   utils::readline_with_prompt,
-  SafeToShare,
 };
 use rand::random;
 use std::error::Error;
@@ -46,7 +45,7 @@ async fn create_store() -> Store<State, Action> {
     .await
     .add_middleware(IpCmdMw::new())
     .await
-    .add_middleware(AddAsyncCmdMw::new())
+    .add_middleware_spawns(AddAsyncCmdMw::new())
     .await
     .add_middleware(SaveCmdMw::new())
     .await
@@ -182,10 +181,13 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
 
 async fn on_start(store: &Store<State, Action>) {
   print_header("on_start");
-  do_load(store.get_ref()).await;
+  let opt_action = do_load().await;
+  if let Some(action) = opt_action {
+    store.dispatch_spawn(action);
+  }
 }
 
 async fn on_end(store: &Store<State, Action>) {
   print_header("on_end");
-  do_save(store.get_ref()).await;
+  do_save(&store.get_state().await).await;
 }

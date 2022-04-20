@@ -18,13 +18,10 @@
 use crate::{Action, Mw, State, Std, PROMPT_STR, STATE_JSON_FNAME};
 use async_trait::async_trait;
 use r3bl_rs_utils::{
-  fire_and_forget, print_header,
-  redux::{AsyncMiddleware, StoreStateMachine},
-  style_error, style_primary,
-  utils::print_prompt,
+  print_header, redux::AsyncMiddleware, style_error, style_primary, utils::print_prompt,
 };
-use std::{io::Result, sync::Arc};
-use tokio::{fs::File, io::AsyncReadExt, sync::RwLock};
+use std::io::Result;
+use tokio::{fs::File, io::AsyncReadExt};
 
 #[derive(Default)]
 pub struct LoadCmdMw;
@@ -36,38 +33,36 @@ impl AsyncMiddleware<State, Action> for LoadCmdMw {
   async fn run(
     &self,
     action: Action,
-    store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
-  ) {
+    _state: State,
+  ) -> Option<Action> {
     if let Action::Mw(Mw::LoadCmd) = action {
-      fire_and_forget![{
-        println!();
-        print_header("╭──────────────────────────────────────────────────────╮");
-        print_header("│ LoadCmdMw: load from `state.json`                    │");
-        print_header("╰──────────────────────────────────────────────────────╯");
-        do_load(store_ref).await;
-        print_prompt(PROMPT_STR).unwrap();
-      }];
+      println!();
+      print_header("╭──────────────────────────────────────────────────────╮");
+      print_header("│ LoadCmdMw: load from `state.json`                    │");
+      print_header("╰──────────────────────────────────────────────────────╯");
+      print_prompt(PROMPT_STR).unwrap();
+      return do_load().await;
     }
+    None
   }
 }
 
-pub async fn do_load(store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>) {
+pub async fn do_load() -> Option<Action> {
   let json_str_result = load_str_from_file(STATE_JSON_FNAME).await;
   match json_str_result {
     Ok(json_str) => {
       let state = get_state_from(json_str).await;
       let action = Action::Std(Std::ResetState(state));
-      store_ref
-        .write()
-        .await
-        .dispatch_action(action, store_ref.clone())
-        .await;
+      return Some(action);
     }
-    Err(error) => println!(
-      "Did not load state from: `{}` due to: {}",
-      style_primary(STATE_JSON_FNAME),
-      style_error(&format!("{:#?}", error))
-    ),
+    Err(error) => {
+      println!(
+        "Did not load state from: `{}` due to: {}",
+        style_primary(STATE_JSON_FNAME),
+        style_error(&format!("{:#?}", error))
+      );
+      return None;
+    }
   }
 }
 

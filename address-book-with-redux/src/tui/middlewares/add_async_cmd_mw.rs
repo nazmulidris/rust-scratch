@@ -22,52 +22,47 @@ use crate::{
   Action, Mw, State, Std, PROMPT_STR,
 };
 use async_trait::async_trait;
-use r3bl_rs_utils::{
-  fire_and_forget,
-  redux::{AsyncMiddleware, StoreStateMachine}, utils::print_prompt,
-};
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use r3bl_rs_utils::{fire_and_forget, redux::AsyncMiddlewareSpawns, utils::print_prompt};
+use tokio::task::JoinHandle;
 
 #[derive(Default)]
 pub struct AddAsyncCmdMw;
 
 #[async_trait]
-impl AsyncMiddleware<State, Action> for AddAsyncCmdMw {
+impl AsyncMiddlewareSpawns<State, Action> for AddAsyncCmdMw {
   async fn run(
     &self,
     action: Action,
-    store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
-  ) {
+    _state: State,
+  ) -> JoinHandle<Option<Action>> {
     fire_and_forget![{
-      if let Action::Mw(Mw::AsyncAddCmd) = action {
-        let fake_data = fake_contact_data_api()
-          .await
-          .unwrap_or_else(|_| FakeContactData {
-            name: "Foo Bar".to_string(),
-            phone_h: "123-456-7890".to_string(),
-            email_u: "foo".to_string(),
-            email_d: "bar.com".to_string(),
-            ..FakeContactData::default()
-          });
+      match action {
+        Action::Mw(Mw::AsyncAddCmd) => {
+          let fake_data = fake_contact_data_api()
+            .await
+            .unwrap_or_else(|_| FakeContactData {
+              name: "Foo Bar".to_string(),
+              phone_h: "123-456-7890".to_string(),
+              email_u: "foo".to_string(),
+              email_d: "bar.com".to_string(),
+              ..FakeContactData::default()
+            });
 
-        let action = Action::Std(Std::AddContact(
-          format!("{}", fake_data.name),
-          format!(
-            "{}@{}",
-            fake_data.email_u, fake_data.email_d
-          ),
-          format!("{}", fake_data.phone_h),
-        ));
+          let action = Action::Std(Std::AddContact(
+            format!("{}", fake_data.name),
+            format!(
+              "{}@{}",
+              fake_data.email_u, fake_data.email_d
+            ),
+            format!("{}", fake_data.phone_h),
+          ));
 
-        store_ref
-          .write()
-          .await
-          .dispatch_action(action, store_ref.clone())
-          .await;
+          print_prompt(PROMPT_STR).unwrap();
 
-        print_prompt(PROMPT_STR).unwrap();
+          return Some(action);
+        }
+        _ => return None,
       }
-    }];
+    }]
   }
 }

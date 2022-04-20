@@ -15,17 +15,11 @@
  *   limitations under the License.
 */
 
-use crate::{json_rpc::get_ip_api::make_request as get_ip_api, Action, Mw, State, PROMPT_STR};
-use async_trait::async_trait;
-use r3bl_rs_utils::{
-  fire_and_forget,
-  redux::{AsyncMiddleware, StoreStateMachine},
-  style_error,
-  utils::print_prompt,
+use crate::{
+  json_rpc::get_ip_api::make_request as get_ip_api, Action, Mw, State, PROMPT_STR,
 };
-
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use async_trait::async_trait;
+use r3bl_rs_utils::{redux::AsyncMiddleware, style_error, utils::print_prompt};
 
 #[derive(Default)]
 pub struct IpCmdMw;
@@ -35,18 +29,17 @@ impl AsyncMiddleware<State, Action> for IpCmdMw {
   async fn run(
     &self,
     action: Action,
-    _store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
-  ) {
-    fire_and_forget![{
-      if let Action::Mw(Mw::IpCmd) = action {
-        match get_ip_api().await {
-          Ok(resp_data) => {
-            println!("{}", resp_data);
-            print_prompt(PROMPT_STR).unwrap();
-          }
-          Err(e) => println!("{}", style_error(&e.to_string())),
-        };
-      }
-    }];
+    _state: State,
+  ) -> Option<Action> {
+    if let Action::Mw(Mw::IpCmd) = action {
+      match get_ip_api().await {
+        Ok(resp_data) => {
+          println!("{}", resp_data);
+          print_prompt(PROMPT_STR).unwrap();
+        }
+        Err(e) => println!("{}", style_error(&e.to_string())),
+      };
+    }
+    None
   }
 }

@@ -18,13 +18,10 @@
 use crate::{Action, Mw, State, PROMPT_STR, STATE_JSON_FNAME};
 use async_trait::async_trait;
 use r3bl_rs_utils::{
-  fire_and_forget, print_header,
-  redux::{AsyncMiddleware, StoreStateMachine},
-  style_error, style_primary,
-  utils::print_prompt,
+  print_header, redux::AsyncMiddleware, style_error, style_primary, utils::print_prompt,
 };
-use std::{io::Result, sync::Arc};
-use tokio::{fs::File, io::AsyncWriteExt, sync::RwLock};
+use std::io::Result;
+use tokio::{fs::File, io::AsyncWriteExt};
 
 #[derive(Default)]
 pub struct SaveCmdMw;
@@ -36,23 +33,21 @@ impl AsyncMiddleware<State, Action> for SaveCmdMw {
   async fn run(
     &self,
     action: Action,
-    store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
-  ) {
+    state: State,
+  ) -> Option<Action> {
     if let Action::Mw(Mw::SaveCmd) = action {
-      fire_and_forget![{
-        println!();
-        print_header("╭──────────────────────────────────────────────────────╮");
-        print_header("│ SaveCmdMw: save to `state.json`                      │");
-        print_header("╰──────────────────────────────────────────────────────╯");
-        do_save(store_ref).await;
-        print_prompt(PROMPT_STR).unwrap();
-      }];
+      println!();
+      print_header("╭──────────────────────────────────────────────────────╮");
+      print_header("│ SaveCmdMw: save to `state.json`                      │");
+      print_header("╰──────────────────────────────────────────────────────╯");
+      print_prompt(PROMPT_STR).unwrap();
+      return do_save(&state).await;
     }
+    None
   }
 }
 
-pub async fn do_save(store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>) {
-  let state = get_state_from(&store_ref).await;
+pub async fn do_save(state: &State) -> Option<Action> {
   let result = save_state_to_file(&state, STATE_JSON_FNAME).await;
   match result {
     Err(error) => {
@@ -64,6 +59,7 @@ pub async fn do_save(store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>) {
     }
     _ => {}
   }
+  None
 }
 
 /// Produces error if:
@@ -80,13 +76,4 @@ async fn save_state_to_file(
     .write_all(json.as_bytes())
     .await?;
   Ok(())
-}
-
-async fn get_state_from(
-  store_ref: &Arc<RwLock<StoreStateMachine<State, Action>>>
-) -> State {
-  store_ref
-    .write()
-    .await
-    .get_state_clone()
 }

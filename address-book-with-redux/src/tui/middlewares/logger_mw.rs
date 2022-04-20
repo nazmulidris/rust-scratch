@@ -20,13 +20,8 @@ use crate::{
   Action, State,
 };
 use async_trait::async_trait;
-use r3bl_rs_utils::{
-  print_header,
-  redux::{AsyncMiddleware, StoreStateMachine},
-};
+use r3bl_rs_utils::{print_header, redux::AsyncMiddleware};
 use rand::Rng;
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
 #[derive(Default)]
 pub struct LoggerMw;
@@ -36,8 +31,8 @@ impl AsyncMiddleware<State, Action> for LoggerMw {
   async fn run(
     &self,
     action: Action,
-    _store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
-  ) {
+    _state: State,
+  ) -> Option<Action> {
     if DELAY_ENABLED {
       // Artificial delay before calling the function.
       let delay_ms = rand::thread_rng().gen_range(MIN_DELAY..MAX_DELAY) as u64;
@@ -48,5 +43,6 @@ impl AsyncMiddleware<State, Action> for LoggerMw {
     println!("");
     print_header("logger_mw");
     println!("action: {:?}", action);
+    None
   }
 }
