@@ -15,7 +15,7 @@
  *   limitations under the License.
 */
 
-use crate::{json_rpc::get_ip_api::make_request as get_ip_api, Action, Mw, State};
+use crate::{json_rpc::get_ip_api::make_request as get_ip_api, Action, Mw, State, PROMPT_STR};
 use async_trait::async_trait;
 use r3bl_rs_utils::{
   fire_and_forget,
@@ -42,7 +42,7 @@ impl AsyncMiddleware<State, Action> for IpCmdMw {
         match get_ip_api().await {
           Ok(resp_data) => {
             println!("{}", resp_data);
-            print_prompt("r3bl> ").unwrap();
+            print_prompt(PROMPT_STR).unwrap();
           }
           Err(e) => println!("{}", style_error(&e.to_string())),
         };

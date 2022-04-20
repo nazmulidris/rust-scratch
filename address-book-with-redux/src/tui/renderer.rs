@@ -17,7 +17,7 @@
 
 use crate::{
   address_book::{Contact, State},
-  tui::{DELAY_ENABLED, MAX_DELAY, MIN_DELAY},
+  tui::{DELAY_ENABLED, MAX_DELAY, MIN_DELAY}, PROMPT_STR,
 };
 use async_trait::async_trait;
 use r3bl_rs_utils::{
@@ -68,7 +68,7 @@ fn render(state: State) {
       );
     }
   }
-  print_prompt("r3bl> ").unwrap();
+  print_prompt(PROMPT_STR).unwrap();
 
   // Helper functions.
   fn contact_matches_search_term(

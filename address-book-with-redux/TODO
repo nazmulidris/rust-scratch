@@ -4,13 +4,13 @@
 Pending:
   save/restore state to/from json file:
     save cmd:
-      ☐ serialize `State` to json string
+      ✔ serialize `State` to json string @done(22-04-20 11:45)
         - https://docs.serde.rs/serde_json/#creating-json-by-serializing-data-structures
-      ☐ save string to file
-        - https://doc.rust-lang.org/std/fs/struct.File.html
+      ✔ save string to file @done(22-04-20 11:45)
+        - https://docs.rs/tokio/latest/tokio/fs/struct.File.html
     load cmd:
       ☐ read string from file
-        - https://doc.rust-lang.org/std/fs/struct.File.html
+        - https://docs.rs/tokio/latest/tokio/fs/struct.File.html
       ☐ deserialize json string to `State`
         - https://docs.serde.rs/serde_json/#parsing-json-as-strongly-typed-data-structures
     on exit:

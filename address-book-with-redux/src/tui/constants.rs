@@ -18,3 +18,4 @@
 pub const MIN_DELAY: u64 = 500;
 pub const MAX_DELAY: u64 = 1_000;
 pub const DELAY_ENABLED: bool = false;
+pub const PROMPT_STR: &str = "r3bl ❯ ";
