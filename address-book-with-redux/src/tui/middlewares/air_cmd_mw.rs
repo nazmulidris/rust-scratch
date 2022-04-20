@@ -20,6 +20,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use r3bl_rs_utils::{
+  fire_and_forget,
   redux::{AsyncMiddleware, StoreStateMachine},
   style_error,
   utils::print_prompt,
@@ -38,14 +39,16 @@ impl AsyncMiddleware<State, Action> for AirCmdMw {
     action: Action,
     _store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
   ) {
-    if let Action::Mw(Mw::AirCmd) = action {
-      match awair_local_api().await {
-        Ok(resp_data) => {
-          println!("{:#?}", resp_data);
-          print_prompt("r3bl> ").unwrap();
-        }
-        Err(e) => println!("{}", style_error(&e.to_string())),
-      };
-    }
+    fire_and_forget![{
+      if let Action::Mw(Mw::AirCmd) = action {
+        match awair_local_api().await {
+          Ok(resp_data) => {
+            println!("{:#?}", resp_data);
+            print_prompt("r3bl> ").unwrap();
+          }
+          Err(e) => println!("{}", style_error(&e.to_string())),
+        };
+      }
+    }];
   }
 }

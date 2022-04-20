@@ -18,7 +18,7 @@
 use crate::{Action, Mw, State};
 use async_trait::async_trait;
 use r3bl_rs_utils::{
-  print_header,
+  fire_and_forget, print_header,
   redux::{AsyncMiddleware, StoreStateMachine},
 };
 use std::sync::Arc;
@@ -35,30 +35,12 @@ impl AsyncMiddleware<State, Action> for SaveCmdMw {
     _store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
   ) {
     if let Action::Mw(Mw::SaveCmd) = action {
-      // TODO: impl this!
-      print_header("╭──────────────────────────────────────────────────────╮");
-      print_header("│ SaveCmdMw coming soon!                               │");
-      print_header("╰──────────────────────────────────────────────────────╯");
-
-      // TODO: delete comments below
-      // let fake_data = fake_contact_data_api()
-      //   .await
-      //   .unwrap_or_else(|_| FakeContactData {
-      //     name: "Foo Bar".to_string(),
-      //     phone_h: "123-456-7890".to_string(),
-      //     email_u: "foo".to_string(),
-      //     email_d: "bar.com".to_string(),
-      //     ..FakeContactData::default()
-      //   });
-      // let action = Action::Std(Std::AddContact(
-      //   format!("{}", fake_data.name),
-      //   format!(
-      //     "{}@{}",
-      //     fake_data.email_u, fake_data.email_d
-      //   ),
-      //   format!("{}", fake_data.phone_h),
-      // ));
-      // return Some(action);
+      fire_and_forget![{
+        // TODO: impl this!
+        print_header("╭──────────────────────────────────────────────────────╮");
+        print_header("│ SaveCmdMw coming soon!                               │");
+        print_header("╰──────────────────────────────────────────────────────╯");
+      }];
     }
   }
 }

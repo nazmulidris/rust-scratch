@@ -39,7 +39,7 @@ impl AsyncMiddleware<State, Action> for AddAsyncCmdMw {
     action: Action,
     store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
   ) {
-    fire_and_forget!({
+    fire_and_forget![{
       if let Action::Mw(Mw::AsyncAddCmd) = action {
         let fake_data = fake_contact_data_api()
           .await
@@ -66,6 +66,6 @@ impl AsyncMiddleware<State, Action> for AddAsyncCmdMw {
           .dispatch_action(action, store_ref.clone())
           .await;
       }
-    });
+    }];
   }
 }
