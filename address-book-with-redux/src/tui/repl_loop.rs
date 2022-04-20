@@ -17,8 +17,8 @@
 
 // Imports.
 use crate::{
-  Action, AddAsyncCmdMw, AirCmdMw, IpCmdMw, LoggerMw, Mw, MyReducer, Renderer, SaveCmdMw,
-  State, Std,
+  load_cmd_mw::LoadCmdMw, Action, AddAsyncCmdMw, AirCmdMw, IpCmdMw, LoggerMw, Mw,
+  MyReducer, Renderer, SaveCmdMw, State, Std,
 };
 use r3bl_rs_utils::{
   print_header,
@@ -49,6 +49,8 @@ async fn create_store() -> Store<State, Action> {
     .add_middleware(AddAsyncCmdMw::new())
     .await
     .add_middleware(SaveCmdMw::new())
+    .await
+    .add_middleware(LoadCmdMw::new())
     .await
     .add_reducer(MyReducer::new())
     .await;
@@ -144,6 +146,14 @@ pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>
         println!(
           "{}",
           "🧵 Spawning save_cmd_mw.rs ..."
+        );
+      }
+      "load" => {
+        let action = Action::Mw(Mw::LoadCmd);
+        store.dispatch_spawn(action);
+        println!(
+          "{}",
+          "🧵 Spawning load_cmd_mw.rs ..."
         );
       }
       // Catchall.

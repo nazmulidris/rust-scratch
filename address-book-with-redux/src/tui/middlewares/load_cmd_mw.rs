@@ -15,7 +15,7 @@
  *   limitations under the License.
 */
 
-use crate::{Action, Mw, State, PROMPT_STR, STATE_JSON_FNAME};
+use crate::{Action, Mw, State, Std, PROMPT_STR, STATE_JSON_FNAME};
 use async_trait::async_trait;
 use r3bl_rs_utils::{
   fire_and_forget, print_header,
@@ -23,51 +23,54 @@ use r3bl_rs_utils::{
   utils::print_prompt,
 };
 use std::sync::Arc;
-use tokio::{fs::File, io::AsyncWriteExt, sync::RwLock};
+use tokio::{
+  fs::File,
+  io::{AsyncReadExt, AsyncWriteExt},
+  sync::RwLock,
+};
 
 #[derive(Default)]
-pub struct SaveCmdMw;
+pub struct LoadCmdMw;
 
-/// https://docs.serde.rs/serde_json/#creating-json-by-serializing-data-structures
+/// https://docs.serde.rs/serde_json/#parsing-json-as-strongly-typed-data-structures
 /// https://docs.rs/tokio/latest/tokio/fs/struct.File.html
 #[async_trait]
-impl AsyncMiddleware<State, Action> for SaveCmdMw {
+impl AsyncMiddleware<State, Action> for LoadCmdMw {
   async fn run(
     &self,
     action: Action,
     store_ref: Arc<RwLock<StoreStateMachine<State, Action>>>,
   ) {
-    if let Action::Mw(Mw::SaveCmd) = action {
+    if let Action::Mw(Mw::LoadCmd) = action {
       fire_and_forget![{
         println!();
         print_header("╭──────────────────────────────────────────────────────╮");
-        print_header("│ SaveCmdMw: save to `state.json`                      │");
+        print_header("│ LoadCmdMw: load from `state.json` coming soon!       │");
         print_header("╰──────────────────────────────────────────────────────╯");
-        let state = get_state_from(&store_ref).await;
-        save_state_to_file(&state, STATE_JSON_FNAME).await;
-        print_prompt(PROMPT_STR).unwrap();
+        let json_str = load_str_from_file(STATE_JSON_FNAME).await;
+        let state = get_state_from(json_str).await;
+        let action = Action::Std(Std::ResetState(state));
+        store_ref
+          .write()
+          .await
+          .dispatch_action(action, store_ref.clone())
+          .await;
       }];
     }
   }
 }
 
-async fn save_state_to_file(
-  state: &State,
-  fname: &str,
-) {
-  let mut file = File::create(fname).await.unwrap();
-  let json = serde_json::to_string_pretty(&state).unwrap();
+async fn load_str_from_file(fname: &str) -> String {
+  let mut file = File::open(fname).await.unwrap();
+  let mut file_content_str = String::new();
   file
-    .write_all(json.as_bytes())
+    .read_to_string(&mut file_content_str)
     .await
     .unwrap();
+  file_content_str
 }
 
-async fn get_state_from(
-  store_ref: &Arc<RwLock<StoreStateMachine<State, Action>>>
-) -> State {
-  store_ref
-    .write()
-    .await
-    .get_state_clone()
+async fn get_state_from(json_str: String) -> State {
+  let state: State = serde_json::from_str(&json_str).unwrap();
+  state
 }

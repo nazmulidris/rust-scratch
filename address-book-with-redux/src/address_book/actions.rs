@@ -47,4 +47,5 @@ pub enum Mw {
   AirCmd,
   IpCmd,
   SaveCmd,
+  LoadCmd,
 }
