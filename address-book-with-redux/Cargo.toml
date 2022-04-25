@@ -15,19 +15,21 @@ path = "src/lib.rs"
 
 [dependencies]
 rand = "0.8.5"
+
+# Tokio
 tokio = { version = "1.17.0", features = ["full"] }
 
-# HTTP Client.
+# HTTP Client
 reqwest = { version = "0.11.10", features = ["json"] }
 
-# Serde: https://github.com/serde-rs/serde,
+# Serde: https://github.com/serde-rs/serde
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 # Chrono & Serde: https://docs.rs/chrono/latest/chrono/index.html
 chrono = { version = "0.4.19", features = ["serde", "rustc-serialize"] }
 
-# Get the latest version of r3bl_rs_utils from local fs and not github.
+# Get the latest version of r3bl_rs_utils from local fs and not github
 r3bl_rs_utils = { version = "*", path = "../../r3bl-rs-utils" }
 r3bl_rs_utils_core = { version = "*", path = "../../r3bl-rs-utils/core" }
 

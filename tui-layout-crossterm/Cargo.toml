@@ -1,0 +1,28 @@
+[package]
+name = "tui-layout-crossterm"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Logging
+simple-logging = "2.0.2"
+log = "0.4.16"
+
+# Crossterm
+crossterm = "0.23.2"
+
+# Tokio
+tokio = { version = "1.17.0", features = ["full"] }
+
+# Serde: https://github.com/serde-rs/serde
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# https://crates.io/crates/async-trait
+async-trait = "0.1.53"
+
+# Latest r3bl_rs_utils
+r3bl_rs_utils = { version = "*", path = "../../r3bl-rs-utils" }
+r3bl_rs_utils_core = { version = "*", path = "../../r3bl-rs-utils/core" }
