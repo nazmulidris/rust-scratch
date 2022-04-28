@@ -314,9 +314,9 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31f4c6746584866f0feabcc69893c5b51beef3831656a968ed7ae254cdc4fd03"
+checksum = "ff8670570af52249509a86f5e3e18a08c60b177071826898fde8997cf5f6bfbb"
 dependencies = [
  "bytes",
  "fnv",
@@ -690,9 +690,12 @@ dependencies = [
  "atty",
  "chrono",
  "futures",
+ "log",
  "r3bl_rs_utils_core",
  "r3bl_rs_utils_macro",
  "rand",
+ "simplelog",
+ "time 0.3.9",
  "tokio",
 ]
 

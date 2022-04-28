@@ -21,10 +21,10 @@ fn main() {
   run().unwrap();
 }
 
-fn run() -> MainResult<()> {
-  info("This is a info message")?;
-  warn("This is a warning message")?;
-  error("This is a error message")?;
+fn run() -> ResultCommon<()> {
+  log!(INFO, "This is a info message");
+  log!(WARN, "This is a warning message");
+  log!(ERROR, "This is a error message");
   println!("Hello, world!");
   Ok(())
 }
