@@ -15,18 +15,8 @@
  *   limitations under the License.
 */
 
-use std::error::Error;
-use tui_layout_crossterm::*;
+// Attach source files.
+pub mod file_logging;
 
-fn main() {
-  run().unwrap();
-}
-
-fn run() -> Result<(), Box<dyn Error>> {
-  info("This is a info message")?;
-  warn("This is a warning message")?;
-  trace("This is a trace message")?;
-  error("This is a error message")?;
-  println!("Hello, world!");
-  Ok(())
-}
+// Re-export.
+pub use file_logging::*;
