@@ -7,8 +7,9 @@ edition = "2021"
 
 [dependencies]
 # Logging
-simple-logging = "2.0.2"
 log = "0.4.16"
+simplelog = "0.12.0"
+time = "0.3.9"
 
 # Crossterm
 crossterm = "0.23.2"

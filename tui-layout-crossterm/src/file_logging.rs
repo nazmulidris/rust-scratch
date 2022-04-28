@@ -15,22 +15,48 @@
  *   limitations under the License.
 */
 
-use log::{LevelFilter, info, warn, trace, error};
+use log::{LevelFilter, info, warn, error};
 use std::{error::Error, sync::Once, io::Error as IoError};
+use simplelog::*;
+use std::fs::File;
 
 const FILE_PATH: &str = "log.txt";
 
 static mut FILE_LOGGER_INIT: bool = false;
 static INIT_ONCE: Once = Once::new();
 
+pub type MainResult<T> = std::result::Result<T, Box<dyn Error>>;
+
 /// Simply open the [`FILE_PATH`] file and write the log message to it. This will be
 /// opened once per session (i.e. program execution). It is destructively opened, meaning
 /// that it will be rewritten when used in the next session.
-pub fn init_file_logger() -> Result<bool, Box<dyn Error>> {
+///
+/// # Docs
+/// - [`CombinedLogger`], [`WriteLogger`], [`ConfigBuilder`]: https://github.com/drakulix/simplelog.rs
+/// - [`format_description!`]: https://time-rs.github.io/book/api/format-description.html
+pub fn init_file_logger() -> MainResult<bool> {
   unsafe {
     INIT_ONCE.call_once(|| {
-      match simple_logging::log_to_file(FILE_PATH, LevelFilter::max()) {
-        Ok(_) => FILE_LOGGER_INIT = true,
+      let file_result = File::create(FILE_PATH);
+      match file_result {
+        Ok(file) => {
+          let config = match ConfigBuilder::new().set_time_offset_to_local() {
+            Ok(builder) => {
+              let formatted_time =
+                format_description!("[hour repr:12]:[minute] [period]");
+              builder.set_time_format_custom(formatted_time);
+              // To use the default use instead: `builder.set_time_format_rfc2822();`
+              builder.build()
+            }
+            Err(_) => Config::default(),
+          };
+          let log_open_result =
+            CombinedLogger::init(vec![WriteLogger::new(LevelFilter::Info, config, file)]);
+          match log_open_result {
+            Ok(_) => FILE_LOGGER_INIT = true,
+            Err(_) => FILE_LOGGER_INIT = false,
+          }
+        }
         Err(_) => FILE_LOGGER_INIT = false,
       }
     });
@@ -44,6 +70,8 @@ pub fn init_file_logger() -> Result<bool, Box<dyn Error>> {
   }
 }
 
+/// # Docs
+/// - [`info!`], [`warn!`], [`error!`]: https://docs.rs/log/latest/log/
 #[macro_export]
 macro_rules! log {
   (INFO, $($arg:tt)*) => {{
@@ -56,11 +84,6 @@ macro_rules! log {
     warn!($($arg)*);
     return Ok(())
   }};
-  (TRACE, $($arg:tt)*) => {{
-    init_file_logger()?;
-    trace!($($arg)*);
-    return Ok(())
-  }};
   (ERROR, $($arg:tt)*) => {{
     init_file_logger()?;
     error!($($arg)*);
@@ -68,18 +91,14 @@ macro_rules! log {
   }};
 }
 
-pub fn info(msg: &str) -> Result<(), Box<dyn Error>> {
+pub fn info(msg: &str) -> MainResult<()> {
   log!(INFO, "{}", msg);
 }
 
-pub fn warn(msg: &str) -> Result<(), Box<dyn Error>> {
+pub fn warn(msg: &str) -> MainResult<()> {
   log!(WARN, "{}", msg);
 }
 
-pub fn trace(msg: &str) -> Result<(), Box<dyn Error>> {
-  log!(TRACE, "{}", msg);
-}
-
-pub fn error(msg: &str) -> Result<(), Box<dyn Error>> {
+pub fn error(msg: &str) -> MainResult<()> {
   log!(ERROR, "{}", msg);
 }

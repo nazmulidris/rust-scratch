@@ -15,17 +15,15 @@
  *   limitations under the License.
 */
 
-use std::error::Error;
 use tui_layout_crossterm::*;
 
 fn main() {
   run().unwrap();
 }
 
-fn run() -> Result<(), Box<dyn Error>> {
+fn run() -> MainResult<()> {
   info("This is a info message")?;
   warn("This is a warning message")?;
-  trace("This is a trace message")?;
   error("This is a error message")?;
   println!("Hello, world!");
   Ok(())

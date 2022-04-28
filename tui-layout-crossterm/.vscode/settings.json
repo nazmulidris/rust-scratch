@@ -11,10 +11,13 @@
     "paren",
     "plasticcard",
     "qself",
+    "repr",
     "reqwest",
     "rustc",
     "rustup",
+    "simplelog",
     "stmts",
+    "termcolor",
     "turbofish",
     "useragent",
     "vecmac"

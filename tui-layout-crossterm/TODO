@@ -1,13 +1,9 @@
-Logging:
-  ✔ Find suitable logging crates: `log` and `simple-logging` @done(22-04-25 09:48)
-  ☐ Use file logging until layout engine supports debug output in TUI
-
 Layout engine:
   ☐ Build prototype in lib
 
 Crossterm learning:
-  ☐ just crossterm: https://medium.com/@otukof/build-your-text-editor-with-rust-part-2-74e03daef237
-  ☐ w/ tui: https://blog.logrocket.com/rust-and-tui-building-a-command-line-interface-in-rust/
+  ☐ just crossterm: https://tinyurl.com/y5je8mvr
+  ☐ w/ tui: https://tinyurl.com/y56m5jgl
 
 Integrate crossterm w/ layout engine:
   ☐ Emit crossterm commands from layout engine
@@ -15,3 +11,8 @@ Integrate crossterm w/ layout engine:
 Build app:
   ☐ Create a 2 col layout TUI app using crossterm & layout engine
   ☐ Write tests and add layout engine supports debug output in TUI
+
+Done:
+  Logging:
+    ✔ Find suitable logging crates: `log` and `simple-logging` @done(22-04-25 09:48)
+    ✔ Use file logging until layout engine supports debug output in TUI @done(22-04-27 21:16)
