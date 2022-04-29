@@ -16,7 +16,5 @@
 */
 
 // Attach source files.
-pub mod file_logging;
 
 // Re-export.
-pub use file_logging::*;
