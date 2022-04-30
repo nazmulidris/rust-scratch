@@ -1,18 +1,21 @@
-Layout engine:
-  ☐ Build prototype in lib
+▶PENDING:
+  layout engine:
+    ☐ build prototype in lib
 
-Crossterm learning:
-  ☐ just crossterm: https://tinyurl.com/y5je8mvr
-  ☐ w/ tui: https://tinyurl.com/y56m5jgl
+  crossterm learning:
+    ☐ just crossterm: https://tinyurl.com/y5je8mvr
+    ☐ w/ tui: https://tinyurl.com/y56m5jgl
 
-Integrate crossterm w/ layout engine:
-  ☐ Emit crossterm commands from layout engine
+  integrate crossterm w/ layout engine:
+    ☐ emit crossterm commands from layout engine
 
-Build app:
-  ☐ Create a 2 col layout TUI app using crossterm & layout engine
-  ☐ Write tests and add layout engine supports debug output in TUI
+  build app:
+    ☐ create a 2 col layout TUI app using crossterm & layout engine
+    ☐ write tests and add layout engine supports debug output in TUI
 
-Done:
-  Logging:
-    ✔ Find suitable logging crates: `log` and `simple-logging` @done(22-04-25 09:48)
-    ✔ Use file logging until layout engine supports debug output in TUI @done(22-04-27 21:16)
+▶DONE:
+  logging:
+    ✔ find suitable logging crates: `log` and `simple-logging` @done(22-04-25 09:48)
+    ✔ use file logging until layout engine supports debug output in TUI @done(22-04-27 21:16)
+  fix simplelog crate fail when using Tokio:
+    ✔ https://github.com/r3bl-org/r3bl-rs-utils/commit/1a6308f5effd2504d60db2e896c431a0262db1a1 @done(22-04-30 08:11)

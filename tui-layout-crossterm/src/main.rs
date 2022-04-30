@@ -17,11 +17,13 @@
 
 use r3bl_rs_utils::{init_file_logger_once, log, ResultCommon};
 
-fn main() {
-  run().unwrap();
+#[tokio::main]
+async fn main() -> ResultCommon<()> {
+  run().await?;
+  Ok(())
 }
 
-fn run() -> ResultCommon<()> {
+async fn run() -> ResultCommon<()> {
   log!(INFO, "This is a info message");
   log!(WARN, "This is a warning message");
   log!(ERROR, "This is a error message");
