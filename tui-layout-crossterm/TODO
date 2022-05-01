@@ -1,6 +1,7 @@
 ▶PENDING:
-  layout engine:
-    ☐ build prototype in lib
+  layout engine in lib:
+    ✔ create `BoxPosition` and `BoxSize` structs @done(22-04-30 11:38)
+    ☐ test `BoxPosition` and `BoxSize` structs
 
   crossterm learning:
     ☐ just crossterm: https://tinyurl.com/y5je8mvr
