@@ -1,7 +1,9 @@
 ▶PENDING:
   layout engine in lib:
     ✔ create `BoxPosition` and `BoxSize` structs @done(22-04-30 11:38)
-    ☐ test `BoxPosition` and `BoxSize` structs
+    ✔ test `BoxPosition` and `BoxSize` structs @done(22-05-01 19:03)
+    ☐ create `engine.rs` & `Canvas` interface
+    ☐ create `Canvas` implementation
 
   crossterm learning:
     ☐ just crossterm: https://tinyurl.com/y5je8mvr

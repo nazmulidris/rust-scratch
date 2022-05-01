@@ -34,6 +34,7 @@
 
 use std::ops::{Add, Mul};
 
+/// Maps to whatever base units `crossterm` uses.
 type BoxUnit = u16;
 
 /// Position, defined as [x, y].

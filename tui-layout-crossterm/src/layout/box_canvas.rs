@@ -15,12 +15,37 @@
  *   limitations under the License.
 */
 
-// Attach source files.
-pub mod base_dimens;
-pub mod base_layout;
-pub mod box_canvas;
+use crate::*;
 
-// Re-export the public items.
-pub use base_dimens::*;
-pub use base_layout::*;
-pub use box_canvas::*;
+impl Layout for BoxLayout {
+  fn start(
+    &mut self,
+    position: BoxPosition,
+    size: BoxSize,
+  ) -> r3bl_rs_utils::ResultCommon<()> {
+    todo!()
+  }
+
+  fn end(&mut self) -> r3bl_rs_utils::ResultCommon<()> {
+    todo!()
+  }
+
+  fn start_box(
+    &mut self,
+    orientation: BoxDirection,
+  ) -> r3bl_rs_utils::ResultCommon<()> {
+    todo!()
+  }
+
+  fn end_box(&mut self) -> r3bl_rs_utils::ResultCommon<()> {
+    todo!()
+  }
+
+  fn next_position() -> r3bl_rs_utils::ResultCommon<BoxPosition> {
+    todo!()
+  }
+
+  fn paint_text(text: String) -> r3bl_rs_utils::ResultCommon<()> {
+    todo!()
+  }
+}
