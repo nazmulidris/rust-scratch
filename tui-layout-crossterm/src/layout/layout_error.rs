@@ -35,7 +35,7 @@ pub struct LayoutError {
 pub enum LayoutErrorType {
   MismatchedEnd,
   MismatchedStart,
-  LayoutStackUnderflow,
+  LayoutStackShouldNotBeEmpty,
 }
 
 /// Implement [`Error`] trait.

@@ -42,18 +42,50 @@ impl Default for Direction {
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Layout {
   pub direction: Direction,
-  pub position: Position,
+  pub pos: Position,
   pub size: Size,
   pub width_hint: Option<PerCent>, // TODO: use this to calc box size during layout
   pub height_hint: Option<PerCent>, // TODO: use this to calc box size during layout
+}
+
+impl Layout {
+  /// Explicitly set the position & size of our box.
+  pub fn new_root(
+    direction: Direction,
+    pos: Position,
+    size: Size,
+  ) -> Self {
+    Self {
+      direction,
+      pos,
+      size,
+      width_hint: None,
+      height_hint: None,
+    }
+  }
+
+  /// Actual position and size for our box will be calculated based on provided hints.
+  pub fn new(
+    direction: Direction,
+    width_hint: PerCent,
+    height_hint: PerCent,
+  ) -> Self {
+    Self {
+      direction,
+      pos: Position::default(),
+      size: Size::default(),
+      width_hint: Some(width_hint),
+      height_hint: Some(height_hint),
+    }
+  }
 }
 
 /// Represents a rectangular area of the terminal screen, and not necessarily the full
 /// terminal screen.
 #[derive(Clone, Debug, Default)]
 pub struct Canvas {
-  pub origin: Position,
-  pub size: Size,
+  pub origin_pos: Position,
+  pub canvas_size: Size,
   pub layout_stack: Vec<Layout>,
   pub output_commands: Vec<String>, // TODO: String is a placeholder for now, replace w/ enum
 }
@@ -69,17 +101,28 @@ pub trait LayoutManager {
   fn end(&mut self) -> ResultCommon<()>;
 
   // Start and end a box layout.
-  fn start_box(
+  fn start_layout(
     &mut self,
     orientation: Direction,
   ) -> ResultCommon<()>;
-  fn end_box(&mut self) -> ResultCommon<()>;
+  fn end_layout(&mut self) -> ResultCommon<()>;
 
   // Layout calculations.
-  fn next_position(&mut self) -> ResultCommon<Position>;
+  fn get_current_layout(
+    &mut self,
+    err_msg: &str,
+  ) -> ResultCommon<&mut Layout>;
+  fn next_position(
+    &mut self,
+    err_msg: &str,
+  ) -> ResultCommon<Position>;
 
   // Painting operations.
-  fn paint_text(
+  fn alloc_space_for_paint(
+    &mut self,
+    size: Size,
+  ) -> ResultCommon<()>;
+  fn paint(
     &mut self,
     text: String,
   ) -> ResultCommon<()>;

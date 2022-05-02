@@ -18,14 +18,17 @@
 // TODO: impl this & collect pseudo "output commands" in self.output_commands for testing
 // TODO: impl all the todo!()s in this file
 
+use r3bl_rs_utils::ResultCommon;
+
 use crate::*;
 
 impl LayoutManager for Canvas {
+  /// Explicitly set the origin position and size of our box (container).
   fn start(
     &mut self,
-    position: Position,
-    size: Size,
-  ) -> r3bl_rs_utils::ResultCommon<()> {
+    origin_pos: Position,
+    canvas_size: Size,
+  ) -> ResultCommon<()> {
     // Expect layout_stack to be empty!
     if !self.layout_stack.is_empty() {
       return Err(LayoutError::new(
@@ -36,12 +39,12 @@ impl LayoutManager for Canvas {
         ),
       ));
     }
-    self.origin = position;
-    self.size = size;
+    self.origin_pos = origin_pos;
+    self.canvas_size = canvas_size;
     Ok(())
   }
 
-  fn end(&mut self) -> r3bl_rs_utils::ResultCommon<()> {
+  fn end(&mut self) -> ResultCommon<()> {
     // Expect layout_stack to only have 1 element!
     if self.layout_stack.len() != 1 {
       return Err(LayoutError::new(
@@ -56,22 +59,31 @@ impl LayoutManager for Canvas {
     Ok(())
   }
 
-  fn next_position(&mut self) -> r3bl_rs_utils::ResultCommon<Position> {
+  fn get_current_layout(
+    &mut self,
+    err_msg: &str,
+  ) -> ResultCommon<&mut Layout> {
     // Expect layout_stack not to be empty!
-    if !self.layout_stack.is_empty() {
+    if self.layout_stack.is_empty() {
       return Err(LayoutError::new(
-        LayoutErrorType::LayoutStackUnderflow,
-        LayoutError::format_msg_with_stack_len(
-          &self.layout_stack,
-          "Layout stack should not be empty",
-        ),
+        LayoutErrorType::LayoutStackShouldNotBeEmpty,
+        LayoutError::format_msg_with_stack_len(&self.layout_stack, &err_msg),
       ));
     }
-    let layout = self
-      .layout_stack
-      .last_mut()
-      .unwrap();
-    let new_pos = layout.position + layout.size;
+    Ok(
+      self
+        .layout_stack
+        .last_mut()
+        .unwrap(),
+    )
+  }
+
+  fn next_position(
+    &mut self,
+    err_msg: &str,
+  ) -> ResultCommon<Position> {
+    let layout = self.get_current_layout(err_msg)?;
+    let new_pos = layout.pos + layout.size;
     let direction_adj_pos = match layout.direction {
       Direction::Vert => new_pos * Pair::new(0, 1),
       Direction::Horiz => new_pos * Pair::new(1, 0),
@@ -79,21 +91,41 @@ impl LayoutManager for Canvas {
     Ok(direction_adj_pos)
   }
 
-  fn start_box(
+  fn start_layout(
     &mut self,
     direction: Direction,
-  ) -> r3bl_rs_utils::ResultCommon<()> {
+  ) -> ResultCommon<()> {
+    // Handle first layout to add to stack, explicitly sized & positioned.
+    if self.layout_stack.is_empty() {
+      let root = Layout::new_root(
+        direction,
+        self.origin_pos,
+        self.canvas_size,
+      );
+      self.layout_stack.push(root);
+      return Ok(());
+    }
+
+    // Handle subsequent layout to add to stack. Position and size will be calculated.
+
     todo!()
   }
 
-  fn end_box(&mut self) -> r3bl_rs_utils::ResultCommon<()> {
+  fn end_layout(&mut self) -> ResultCommon<()> {
     todo!()
   }
 
-  fn paint_text(
+  fn paint(
     &mut self,
     text: String,
-  ) -> r3bl_rs_utils::ResultCommon<()> {
+  ) -> ResultCommon<()> {
+    todo!()
+  }
+
+  fn alloc_space_for_paint(
+    &mut self,
+    size: Size,
+  ) -> ResultCommon<()> {
     todo!()
   }
 }
