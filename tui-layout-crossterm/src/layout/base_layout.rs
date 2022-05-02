@@ -19,57 +19,59 @@ use r3bl_rs_utils::ResultCommon;
 
 use crate::base_dimens::*;
 
+/// Direction of the layout of the box.
+#[derive(Copy, Clone, Debug)]
+pub enum Orientation {
+  Horiz,
+  Vert,
+}
+
+impl Default for Orientation {
+  fn default() -> Orientation {
+    Orientation::Horiz
+  }
+}
+
+/// A box is a rectangle with a position and size. The direction of the box determines how
+/// it's contained elements are positioned.
+#[derive(Copy, Clone, Debug, Default)]
+pub struct Layout {
+  pub direction: Orientation,
+  pub calc_pos: Position,
+  pub calc_size: Size,
+  pub width_hint: Option<usize>, // TODO: use this to calc box size during layout
+}
+
+/// Represents a rectangular area of the terminal screen, and not necessarily the full
+/// terminal screen.
+#[derive(Clone, Debug, Default)]
+pub struct Canvas {
+  pub origin: Position,
+  pub size: Size,
+  pub layout_stack: Vec<Layout>,
+  pub output_commands: Vec<String>, // TODO: this is a placeholder (need it for testing)
+}
+
 /// API interface to create nested & responsive layout based UIs.
-pub trait Layout {
+pub trait LayoutManager {
   // Start and end entire canvas.
   fn start(
     &mut self,
-    position: BoxPosition,
-    size: BoxSize,
+    position: Position,
+    size: Size,
   ) -> ResultCommon<()>;
   fn end(&mut self) -> ResultCommon<()>;
 
   // Start and end a box layout.
   fn start_box(
     &mut self,
-    orientation: BoxDirection,
+    orientation: Orientation,
   ) -> ResultCommon<()>;
   fn end_box(&mut self) -> ResultCommon<()>;
 
   // Layout calculations.
-  fn next_position() -> ResultCommon<BoxPosition>;
+  fn next_position() -> ResultCommon<Position>;
 
   // Painting operations.
   fn paint_text(text: String) -> ResultCommon<()>;
-}
-
-/// Direction of the layout of the box.
-#[derive(Copy, Clone, Debug)]
-pub enum BoxDirection {
-  Horizontal,
-  Vertical,
-}
-
-impl Default for BoxDirection {
-  fn default() -> BoxDirection {
-    BoxDirection::Horizontal
-  }
-}
-
-/// Represents a rectangular area of the terminal screen, and not necessarily the full
-/// terminal screen.
-#[derive(Clone, Debug, Default)]
-pub struct BoxCanvas {
-  pub origin: BoxPosition,
-  pub size: BoxSize,
-  pub layout_stack: Vec<BoxLayout>,
-}
-
-/// A box is a rectangle with a position and size. The direction of the box determines how
-/// it's contained elements are positioned.
-#[derive(Copy, Clone, Debug, Default)]
-pub struct BoxLayout {
-  pub position: BoxPosition,
-  pub size: BoxSize,
-  pub direction: BoxDirection,
 }

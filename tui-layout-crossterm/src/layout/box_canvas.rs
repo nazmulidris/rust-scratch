@@ -17,11 +17,13 @@
 
 use crate::*;
 
-impl Layout for BoxLayout {
+// TODO: impl this & collect pseudo "output commands" in self.output_commands for testing
+
+impl LayoutManager for Canvas {
   fn start(
     &mut self,
-    position: BoxPosition,
-    size: BoxSize,
+    position: Position,
+    size: Size,
   ) -> r3bl_rs_utils::ResultCommon<()> {
     todo!()
   }
@@ -32,7 +34,7 @@ impl Layout for BoxLayout {
 
   fn start_box(
     &mut self,
-    orientation: BoxDirection,
+    orientation: Orientation,
   ) -> r3bl_rs_utils::ResultCommon<()> {
     todo!()
   }
@@ -41,7 +43,7 @@ impl Layout for BoxLayout {
     todo!()
   }
 
-  fn next_position() -> r3bl_rs_utils::ResultCommon<BoxPosition> {
+  fn next_position() -> r3bl_rs_utils::ResultCommon<Position> {
     todo!()
   }
 

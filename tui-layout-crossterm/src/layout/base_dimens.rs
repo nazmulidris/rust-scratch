@@ -39,33 +39,33 @@ type BoxUnit = u16;
 
 /// Position, defined as [x, y].
 #[derive(Copy, Clone, Debug, Default)]
-pub struct BoxPosition {
+pub struct Position {
   pub x: BoxUnit,
   pub y: BoxUnit,
 }
 
-impl BoxPosition {
+impl Position {
   pub fn new(
     x: BoxUnit,
     y: BoxUnit,
-  ) -> BoxPosition {
-    BoxPosition { x, y }
+  ) -> Position {
+    Position { x, y }
   }
 }
 
 /// Size, defined as [height, width].
 #[derive(Copy, Clone, Debug, Default)]
-pub struct BoxSize {
+pub struct Size {
   pub width: BoxUnit,  // number of cols (y).
   pub height: BoxUnit, // number of rows (x).
 }
 
-impl BoxSize {
+impl Size {
   pub fn new(
     width: BoxUnit,
     height: BoxUnit,
-  ) -> BoxSize {
-    BoxSize { height, width }
+  ) -> Size {
+    Size { height, width }
   }
 }
 
@@ -87,13 +87,13 @@ impl Pair {
 
 /// Add: BoxPosition + BoxSize = BoxPosition.
 /// https://doc.rust-lang.org/book/ch19-03-advanced-traits.html
-impl Add<BoxSize> for BoxPosition {
-  type Output = BoxPosition;
+impl Add<Size> for Position {
+  type Output = Position;
   fn add(
     self,
-    rhs: BoxSize,
-  ) -> BoxPosition {
-    BoxPosition::new(
+    rhs: Size,
+  ) -> Position {
+    Position::new(
       self.x + rhs.width,
       self.y + rhs.height,
     )
@@ -102,13 +102,13 @@ impl Add<BoxSize> for BoxPosition {
 
 /// Mul: BoxPosition * Pair = BoxPosition.
 /// https://doc.rust-lang.org/book/ch19-03-advanced-traits.html
-impl Mul<Pair> for BoxPosition {
-  type Output = BoxPosition;
+impl Mul<Pair> for Position {
+  type Output = Position;
   fn mul(
     self,
     rhs: Pair,
-  ) -> BoxPosition {
-    BoxPosition::new(
+  ) -> Position {
+    Position::new(
       self.x * rhs.first,
       self.y * rhs.second,
     )

@@ -15,13 +15,13 @@
  *   limitations under the License.
 */
 
-use tui_layout_crossterm::{BoxPosition, BoxSize, Pair};
+use tui_layout_crossterm::{Position, Size, Pair};
 
 #[tokio::test]
 async fn test_add_box_size_to_pos() {
   // [10, 10] + [30, 10] = [40, 20]
-  let pos = BoxPosition::new(10, 10);
-  let size = BoxSize::new(30, 10);
+  let pos = Position::new(10, 10);
+  let size = Size::new(30, 10);
   let new_pos = pos + size; // `size + pos` is not defined.
   assert_eq!(new_pos.x, 40);
   assert_eq!(new_pos.y, 20);
@@ -31,7 +31,7 @@ async fn test_add_box_size_to_pos() {
 async fn test_mul_box_pos_to_pair() {
   // [30, 10] * [1, 0] = [30, 0]
   {
-    let pos = BoxPosition::new(30, 10);
+    let pos = Position::new(30, 10);
     let pair_cancel_y = Pair::new(1, 0);
     let new_pair = pos * pair_cancel_y;
     assert_eq!(new_pair.x, 30);
@@ -40,7 +40,7 @@ async fn test_mul_box_pos_to_pair() {
 
   // [30, 10] * [0, 1] = [0, 10]
   {
-    let pos = BoxPosition::new(30, 10);
+    let pos = Position::new(30, 10);
     let pair_cancel_x = Pair::new(0, 1);
     let new_pair = pos * pair_cancel_x;
     assert_eq!(new_pair.x, 0);
