@@ -15,9 +15,14 @@
  *   limitations under the License.
 */
 
+use crate::base_dimens::*;
+use bounded_integer::bounded_integer;
 use r3bl_rs_utils::ResultCommon;
 
-use crate::base_dimens::*;
+bounded_integer! {
+  /// https://docs.rs/bounded-integer/latest/bounded_integer/index.html#
+  pub struct PerCent { 0..100 }
+}
 
 /// Direction of the layout of the box.
 #[derive(Copy, Clone, Debug)]
@@ -39,7 +44,8 @@ pub struct Layout {
   pub direction: Orientation,
   pub calc_pos: Position,
   pub calc_size: Size,
-  pub width_hint: Option<usize>, // TODO: use this to calc box size during layout
+  pub width_hint: Option<PerCent>, // TODO: use this to calc box size during layout
+  pub height_hint: Option<PerCent>, // TODO: use this to calc box size during layout
 }
 
 /// Represents a rectangular area of the terminal screen, and not necessarily the full
@@ -49,7 +55,7 @@ pub struct Canvas {
   pub origin: Position,
   pub size: Size,
   pub layout_stack: Vec<Layout>,
-  pub output_commands: Vec<String>, // TODO: this is a placeholder (need it for testing)
+  pub output_commands: Vec<String>, // TODO: String is a placeholder for now, replace w/ enum
 }
 
 /// API interface to create nested & responsive layout based UIs.
