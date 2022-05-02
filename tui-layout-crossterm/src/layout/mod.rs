@@ -16,6 +16,7 @@
 */
 
 // Attach source files.
+pub mod layout_error;
 pub mod base_dimens;
 pub mod base_layout;
 pub mod box_canvas;
@@ -24,3 +25,4 @@ pub mod box_canvas;
 pub use base_dimens::*;
 pub use base_layout::*;
 pub use box_canvas::*;
+pub use layout_error::*;

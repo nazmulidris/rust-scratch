@@ -26,14 +26,14 @@ bounded_integer! {
 
 /// Direction of the layout of the box.
 #[derive(Copy, Clone, Debug)]
-pub enum Orientation {
+pub enum Direction {
   Horiz,
   Vert,
 }
 
-impl Default for Orientation {
-  fn default() -> Orientation {
-    Orientation::Horiz
+impl Default for Direction {
+  fn default() -> Direction {
+    Direction::Horiz
   }
 }
 
@@ -41,9 +41,9 @@ impl Default for Orientation {
 /// it's contained elements are positioned.
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Layout {
-  pub direction: Orientation,
-  pub calc_pos: Position,
-  pub calc_size: Size,
+  pub direction: Direction,
+  pub position: Position,
+  pub size: Size,
   pub width_hint: Option<PerCent>, // TODO: use this to calc box size during layout
   pub height_hint: Option<PerCent>, // TODO: use this to calc box size during layout
 }
@@ -71,13 +71,16 @@ pub trait LayoutManager {
   // Start and end a box layout.
   fn start_box(
     &mut self,
-    orientation: Orientation,
+    orientation: Direction,
   ) -> ResultCommon<()>;
   fn end_box(&mut self) -> ResultCommon<()>;
 
   // Layout calculations.
-  fn next_position() -> ResultCommon<Position>;
+  fn next_position(&mut self) -> ResultCommon<Position>;
 
   // Painting operations.
-  fn paint_text(text: String) -> ResultCommon<()>;
+  fn paint_text(
+    &mut self,
+    text: String,
+  ) -> ResultCommon<()>;
 }
