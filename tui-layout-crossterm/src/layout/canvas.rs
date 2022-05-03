@@ -51,12 +51,6 @@ pub trait LayoutManager {
 
   fn end_layout(&mut self) -> ResultCommon<()>;
 
-  /// Get the last layout on the stack (if none found then return Err).
-  fn get_current_layout(
-    &mut self,
-    err_msg: &str,
-  ) -> ResultCommon<&mut Layout>;
-
   /// Calculate the position of where the next layout can be added to the stack.
   fn calc_next_layout_pos_on_stack(
     &mut self,
@@ -67,11 +61,6 @@ pub trait LayoutManager {
   fn print(
     &mut self,
     text: &str,
-  ) -> ResultCommon<()>;
-
-  fn alloc_space_for_print(
-    &mut self,
-    size: Size,
   ) -> ResultCommon<()>;
 }
 
@@ -111,25 +100,7 @@ impl LayoutManager for Canvas {
     Ok(())
   }
 
-  fn get_current_layout(
-    &mut self,
-    err_msg: &str,
-  ) -> ResultCommon<&mut Layout> {
-    // Expect layout_stack not to be empty!
-    if self.layout_stack.is_empty() {
-      LayoutError::new_err(
-        LayoutErrorType::LayoutStackShouldNotBeEmpty,
-        LayoutError::format_msg_with_stack_len(&self.layout_stack, &err_msg),
-      )?
-    }
-    Ok(
-      self
-        .layout_stack
-        .last_mut()
-        .unwrap(),
-    )
-  }
-
+  // TODO:
   fn calc_next_layout_pos_on_stack(
     &mut self,
     err_msg: &str,
@@ -176,21 +147,47 @@ impl LayoutManager for Canvas {
       return Ok(());
     }
 
+    // TODO:
     // 🍀 Non-root: Handle layout to add to stack. Position and size will be calculated.
     todo!()
   }
 
+  // TODO:
   fn end_layout(&mut self) -> ResultCommon<()> {
     todo!()
   }
 
+  // TODO:
   fn print(
     &mut self,
     text: &str,
   ) -> ResultCommon<()> {
     todo!()
   }
+}
 
+impl Canvas {
+  /// Get the last layout on the stack (if none found then return Err).
+  fn get_current_layout(
+    &mut self,
+    err_msg: &str,
+  ) -> ResultCommon<&mut Layout> {
+    // Expect layout_stack not to be empty!
+    if self.layout_stack.is_empty() {
+      LayoutError::new_err(
+        LayoutErrorType::LayoutStackShouldNotBeEmpty,
+        LayoutError::format_msg_with_stack_len(&self.layout_stack, &err_msg),
+      )?
+    }
+    Ok(
+      self
+        .layout_stack
+        .last_mut()
+        .unwrap(),
+    )
+  }
+
+  // TODO:
   fn alloc_space_for_print(
     &mut self,
     size: Size,
@@ -198,5 +195,3 @@ impl LayoutManager for Canvas {
     todo!()
   }
 }
-
-impl Canvas {}
