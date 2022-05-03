@@ -138,7 +138,7 @@ impl PerCent {
 }
 
 /// Return the calculated percentage of the given value.
-pub fn calc(
+pub fn calc_percentage(
   percentage: PerCent,
   value: Unit,
 ) -> Unit {

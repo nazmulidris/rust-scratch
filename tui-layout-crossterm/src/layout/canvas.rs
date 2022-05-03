@@ -51,12 +51,6 @@ pub trait LayoutManager {
 
   fn end_layout(&mut self) -> ResultCommon<()>;
 
-  /// Calculate the position of where the next layout can be added to the stack.
-  fn calc_next_layout_pos_on_stack(
-    &mut self,
-    err_msg: &str,
-  ) -> ResultCommon<Position>;
-
   /// Painting operations.
   fn print(
     &mut self,
@@ -98,21 +92,6 @@ impl LayoutManager for Canvas {
     }
     self.layout_stack.pop();
     Ok(())
-  }
-
-  // TODO:
-  fn calc_next_layout_pos_on_stack(
-    &mut self,
-    err_msg: &str,
-  ) -> ResultCommon<Position> {
-    todo!();
-    // let layout = self.get_current_layout(err_msg)?;
-    // let new_pos: Position = layout.position + layout.content_size;
-    // let direction_adj_pos: Position = match layout.direction {
-    //   Direction::Vert => new_pos * Pair::new(0, 1),
-    //   Direction::Horiz => new_pos * Pair::new(1, 0),
-    // };
-    // Ok(direction_adj_pos)
   }
 
   fn start_layout(
@@ -167,6 +146,22 @@ impl LayoutManager for Canvas {
 }
 
 impl Canvas {
+  // TODO:
+  /// Calculate the position of where the next layout can be added to the stack.
+  fn calc_next_layout_pos_on_stack(
+    &mut self,
+    err_msg: &str,
+  ) -> ResultCommon<Position> {
+    todo!();
+    // let layout = self.get_current_layout(err_msg)?;
+    // let new_pos: Position = layout.position + layout.content_size;
+    // let direction_adj_pos: Position = match layout.direction {
+    //   Direction::Vert => new_pos * Pair::new(0, 1),
+    //   Direction::Horiz => new_pos * Pair::new(1, 0),
+    // };
+    // Ok(direction_adj_pos)
+  }
+
   /// Get the last layout on the stack (if none found then return Err).
   fn get_current_layout(
     &mut self,

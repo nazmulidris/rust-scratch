@@ -51,15 +51,15 @@ impl Layout {
     height_pc: PerCent,
     dir: Direction,
   ) -> Layout {
-    let bounds_width = calc(width_pc, canvas_size.width);
-    let bounds_height = calc(height_pc, canvas_size.height);
+    let bounds_width = calc_percentage(width_pc, canvas_size.width);
+    let bounds_height = calc_percentage(height_pc, canvas_size.height);
     Self {
       dir,
       pos: origin_pos.as_some(),
       bounds_size: Size::new(bounds_width, bounds_height).as_some(),
+      req_width_pc: width_pc.as_some(),
+      req_height_pc: height_pc.as_some(),
       content_size: None,
-      req_width_pc: None,
-      req_height_pc: None,
     }
   }
 
