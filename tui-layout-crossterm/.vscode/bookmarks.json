@@ -1,0 +1,39 @@
+{
+	"files": [
+		{
+			"path": "src/layout/canvas.rs",
+			"bookmarks": [
+				{
+					"line": 146,
+					"column": 18,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "tests/test_canvas.rs",
+			"bookmarks": [
+				{
+					"line": 31,
+					"column": 19,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/layout/layout.rs",
+			"bookmarks": [
+				{
+					"line": 46,
+					"column": 0,
+					"label": ""
+				},
+				{
+					"line": 62,
+					"column": 0,
+					"label": ""
+				}
+			]
+		}
+	]
+}

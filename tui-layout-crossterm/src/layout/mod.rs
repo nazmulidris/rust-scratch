@@ -17,12 +17,12 @@
 
 // Attach source files.
 pub mod layout_error;
-pub mod base_dimens;
-pub mod base_layout;
-pub mod box_canvas;
+pub mod dimens;
+pub mod layout;
+pub mod canvas;
 
 // Re-export the public items.
-pub use base_dimens::*;
-pub use base_layout::*;
-pub use box_canvas::*;
+pub use dimens::*;
+pub use layout::*;
+pub use canvas::*;
 pub use layout_error::*;

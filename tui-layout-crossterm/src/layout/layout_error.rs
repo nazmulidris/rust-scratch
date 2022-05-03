@@ -36,6 +36,7 @@ pub enum LayoutErrorType {
   MismatchedEnd,
   MismatchedStart,
   LayoutStackShouldNotBeEmpty,
+  InvalidLayoutSizePercentage,
 }
 
 /// Implement [`Error`] trait.

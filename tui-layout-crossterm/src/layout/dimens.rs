@@ -32,22 +32,23 @@
 //!    y
 //! ```
 
+use bounded_integer::bounded_integer;
 use std::ops::{Add, Mul};
 
 /// Maps to whatever base units `crossterm` uses.
-type BoxUnit = u16;
+pub type Unit = u16;
 
 /// Position, defined as [x, y].
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Position {
-  pub x: BoxUnit,
-  pub y: BoxUnit,
+  pub x: Unit,
+  pub y: Unit,
 }
 
 impl Position {
   pub fn new(
-    x: BoxUnit,
-    y: BoxUnit,
+    x: Unit,
+    y: Unit,
   ) -> Position {
     Position { x, y }
   }
@@ -56,14 +57,14 @@ impl Position {
 /// Size, defined as [height, width].
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Size {
-  pub width: BoxUnit,  // number of cols (y).
-  pub height: BoxUnit, // number of rows (x).
+  pub width: Unit,  // number of cols (y).
+  pub height: Unit, // number of rows (x).
 }
 
 impl Size {
   pub fn new(
-    width: BoxUnit,
-    height: BoxUnit,
+    width: Unit,
+    height: Unit,
   ) -> Size {
     Size { height, width }
   }
@@ -72,14 +73,14 @@ impl Size {
 /// Pair, defined as [left, right].
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Pair {
-  pub first: BoxUnit,
-  pub second: BoxUnit,
+  pub first: Unit,
+  pub second: Unit,
 }
 
 impl Pair {
   pub fn new(
-    first: BoxUnit,
-    second: BoxUnit,
+    first: Unit,
+    second: Unit,
   ) -> Pair {
     Pair { first, second }
   }
@@ -113,4 +114,23 @@ impl Mul<Pair> for Position {
       self.y * rhs.second,
     )
   }
+}
+
+bounded_integer! {
+  /// Represents an integer value between 9 and 100 (inclusive).
+  /// https://docs.rs/bounded-integer/latest/bounded_integer/index.html#
+  pub struct PerCent { 0..101 }
+}
+
+/// Return the calculated percentage of the given value.
+pub fn calc(
+  percentage: PerCent,
+  value: Unit,
+) -> Unit {
+  type Int = Unit;
+  let percentage_int = Int::from(percentage);
+  let percentage_f32 = f32::from(percentage_int) / 100.0;
+  let result_f32 = percentage_f32 * f32::from(value);
+  let result_int = unsafe { result_f32.to_int_unchecked::<Int>() };
+  result_int
 }
