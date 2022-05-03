@@ -15,6 +15,8 @@
  *   limitations under the License.
 */
 
+use r3bl_rs_utils::ResultCommon;
+
 use crate::*;
 use std::{
   error::Error,
@@ -54,6 +56,13 @@ impl Display for LayoutError {
 
 /// Implement constructor that is compatible w/ [`ResultCommon<T>`].
 impl LayoutError {
+  pub fn new_err<T>(
+    err_type: LayoutErrorType,
+    msg: String,
+  ) -> ResultCommon<T> {
+    Err(LayoutError::new(err_type, msg))
+  }
+
   pub fn new(
     err_type: LayoutErrorType,
     msg: String,

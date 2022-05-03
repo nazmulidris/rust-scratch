@@ -38,24 +38,28 @@ pub struct Layout {
   pub pos: Option<Position>,
   pub content_size: Option<Size>,
   pub bounds_size: Option<Size>,
-  pub width_hint_pc: Option<PerCent>, // TODO: use this to calc box size during layout
-  pub height_hint_pc: Option<PerCent>, // TODO: use this to calc box size during layout
+  pub req_width_pc: Option<PerCent>, // TODO: use this to calc box size during layout
+  pub req_height_pc: Option<PerCent>, // TODO: use this to calc box size during layout
 }
 
 impl Layout {
   /// Explicitly set the position & size of our box.
-  pub fn new_root(
+  pub fn make_root_layout(
+    canvas_size: Size,
+    origin_pos: Position,
+    width_pc: PerCent,
+    height_pc: PerCent,
     dir: Direction,
-    pos: Position,
-    size: Size,
-  ) -> Self {
+  ) -> Layout {
+    let bounds_width = calc(width_pc, canvas_size.width);
+    let bounds_height = calc(height_pc, canvas_size.height);
     Self {
       dir,
-      pos: Some(pos),
-      bounds_size: Some(size),
+      pos: origin_pos.as_some(),
+      bounds_size: Size::new(bounds_width, bounds_height).as_some(),
       content_size: None,
-      width_hint_pc: None,
-      height_hint_pc: None,
+      req_width_pc: None,
+      req_height_pc: None,
     }
   }
 
@@ -70,8 +74,8 @@ impl Layout {
       pos: None,
       bounds_size: None,
       content_size: None,
-      width_hint_pc: Some(width_pc),
-      height_hint_pc: Some(height_pc),
+      req_width_pc: width_pc.as_some(),
+      req_height_pc: height_pc.as_some(),
     }
   }
 }

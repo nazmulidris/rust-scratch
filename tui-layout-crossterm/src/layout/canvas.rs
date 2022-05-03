@@ -83,13 +83,13 @@ impl LayoutManager for Canvas {
   ) -> ResultCommon<()> {
     // Expect layout_stack to be empty!
     if !self.layout_stack.is_empty() {
-      return Err(LayoutError::new(
+      LayoutError::new_err(
         LayoutErrorType::MismatchedStart,
         LayoutError::format_msg_with_stack_len(
           &self.layout_stack,
           "Layout stack should be empty",
         ),
-      ));
+      )?
     }
     self.origin_pos = Position::new(pos.0, pos.1);
     self.canvas_size = Size::new(size.0, size.1);
@@ -99,13 +99,13 @@ impl LayoutManager for Canvas {
   fn end(&mut self) -> ResultCommon<()> {
     // Expect layout_stack to only have 1 element!
     if self.layout_stack.len() != 1 {
-      return Err(LayoutError::new(
+      LayoutError::new_err(
         LayoutErrorType::MismatchedEnd,
         LayoutError::format_msg_with_stack_len(
           &self.layout_stack,
           "Layout stack should only have 1 element",
         ),
-      ));
+      )?
     }
     self.layout_stack.pop();
     Ok(())
@@ -117,10 +117,10 @@ impl LayoutManager for Canvas {
   ) -> ResultCommon<&mut Layout> {
     // Expect layout_stack not to be empty!
     if self.layout_stack.is_empty() {
-      return Err(LayoutError::new(
+      LayoutError::new_err(
         LayoutErrorType::LayoutStackShouldNotBeEmpty,
         LayoutError::format_msg_with_stack_len(&self.layout_stack, &err_msg),
-      ));
+      )?
     }
     Ok(
       self
@@ -150,35 +150,29 @@ impl LayoutManager for Canvas {
     sizes_pc: (u8, u8),
   ) -> ResultCommon<()> {
     debug!(self);
-    // Calculate the bounds for this layout (width and height) based on percentages.
-    let width_pc: Option<PerCent> = PerCent::new(sizes_pc.0);
-    let height_pc: Option<PerCent> = PerCent::new(sizes_pc.1);
-    if width_pc.is_none() && height_pc.is_none() {
-      return Err(LayoutError::new(
+
+    let (width_pc, height_pc) = match convert_to_percent(sizes_pc) {
+      Some(result) => result,
+      None => LayoutError::new_err(
         LayoutErrorType::InvalidLayoutSizePercentage,
         LayoutError::format_msg_with_stack_len(
           &self.layout_stack,
           "Invalid layout size percentages",
         ),
-      ));
-    }
-    let width_pc: PerCent = width_pc.unwrap();
-    let height_pc: PerCent = height_pc.unwrap();
+      )?,
+    };
 
     // 🌳 Root: Handle first layout to add to stack, explicitly sized & positioned.
     if self.layout_stack.is_empty() {
-      let bounds_width = calc(width_pc, self.canvas_size.width);
-      let bounds_height = calc(height_pc, self.canvas_size.height);
-      let root = Layout {
-        dir,
-        pos: Some(self.origin_pos),
-        bounds_size: Some(Size::new(
-          bounds_width,
-          bounds_height,
-        )),
-        ..Default::default()
-      };
-      self.layout_stack.push(root);
+      self
+        .layout_stack
+        .push(Layout::make_root_layout(
+          self.canvas_size,
+          self.origin_pos,
+          width_pc,
+          height_pc,
+          dir,
+        ));
       return Ok(());
     }
 
@@ -204,3 +198,5 @@ impl LayoutManager for Canvas {
     todo!()
   }
 }
+
+impl Canvas {}

@@ -33,6 +33,7 @@
 //! ```
 
 use bounded_integer::bounded_integer;
+use r3bl_rs_utils::ResultCommon;
 use std::ops::{Add, Mul};
 
 /// Maps to whatever base units `crossterm` uses.
@@ -52,6 +53,10 @@ impl Position {
   ) -> Position {
     Position { x, y }
   }
+
+  pub fn as_some(&self) -> Option<Position> {
+    Some(*self)
+  }
 }
 
 /// Size, defined as [height, width].
@@ -67,6 +72,10 @@ impl Size {
     height: Unit,
   ) -> Size {
     Size { height, width }
+  }
+
+  pub fn as_some(&self) -> Option<Size> {
+    Some(*self)
   }
 }
 
@@ -122,6 +131,12 @@ bounded_integer! {
   pub struct PerCent { 0..101 }
 }
 
+impl PerCent {
+  pub fn as_some(&self) -> Option<PerCent> {
+    Some(*self)
+  }
+}
+
 /// Return the calculated percentage of the given value.
 pub fn calc(
   percentage: PerCent,
@@ -133,4 +148,17 @@ pub fn calc(
   let result_f32 = percentage_f32 * f32::from(value);
   let result_int = unsafe { result_f32.to_int_unchecked::<Int>() };
   result_int
+}
+
+/// Try and convert the (width %: u8, height %: u8) into (PerCent, PerCent). Return None
+/// if this fails.
+pub fn convert_to_percent(sizes_pc: (u8, u8)) -> Option<(PerCent, PerCent)> {
+  let width_pc: Option<PerCent> = PerCent::new(sizes_pc.0);
+  let height_pc: Option<PerCent> = PerCent::new(sizes_pc.1);
+  if width_pc.is_none() && height_pc.is_none() {
+    return None;
+  }
+  let width_pc: PerCent = width_pc.unwrap();
+  let height_pc: PerCent = height_pc.unwrap();
+  Some((width_pc, height_pc))
 }
