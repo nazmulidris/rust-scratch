@@ -31,15 +31,19 @@ fn test_simple_2_col_layout() {
     // start layout (main container)
     {
       canvas
-        .start_layout(Direction::Horiz, (100, 100))
+        .start_layout(
+          "container",
+          Direction::Horiz,
+          (100, 100),
+        )
         .unwrap();
-
       {
         // start layout (left column)
         canvas
-          .start_layout(Direction::Vert, (50, 100))
+          .start_layout("col_1", Direction::Vert, (50, 100))
           .unwrap();
         debug!(canvas);
+        println!("🏳️‍🌈🏳️‍🌈🏳️‍🌈");
         {
           canvas
             .print("col 1 - Hello")
@@ -52,7 +56,7 @@ fn test_simple_2_col_layout() {
 
         // start layout (right column)
         canvas
-          .start_layout(Direction::Vert, (50, 100))
+          .start_layout("col_2", Direction::Vert, (50, 100))
           .unwrap();
         {
           canvas

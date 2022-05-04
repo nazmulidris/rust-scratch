@@ -19,7 +19,7 @@
 // TODO: impl all the todo!()s in this file
 
 use crate::*;
-use r3bl_rs_utils::{debug, ResultCommon};
+use r3bl_rs_utils::ResultCommon;
 
 /// Represents a rectangular area of the terminal screen, and not necessarily the full
 /// terminal screen.
@@ -45,6 +45,7 @@ pub trait LayoutManager {
   /// Add a new layout on the stack w/ the direction & (width, height) percentages.
   fn start_layout(
     &mut self,
+    id: &str,
     dir: Direction,
     sizes_pc: (u8, u8),
   ) -> ResultCommon<()>;
@@ -96,6 +97,7 @@ impl LayoutManager for Canvas {
 
   fn start_layout(
     &mut self,
+    id: &str,
     dir: Direction,
     sizes_pc: (u8, u8),
   ) -> ResultCommon<()> {
@@ -115,6 +117,7 @@ impl LayoutManager for Canvas {
       self
         .layout_stack
         .push(Layout::make_root_layout(
+          id.to_string(),
           self.canvas_size,
           self.origin_pos,
           width_pc,
@@ -125,18 +128,38 @@ impl LayoutManager for Canvas {
     }
 
     // 🍀 Non-root: Handle layout to add to stack. Position and size will be calculated.
-    let container_bounds = self
-      .get_current_layout("Problem adding normal layout")?
-      .bounds_size
-      .unwrap();
-    let pos = self.calc_next_layout_pos_on_stack("Problem adding normal layout")?;
+    let container_bounds_size = self
+      .get_current_layout()?
+      .bounds_size;
+    if container_bounds_size.is_none() {
+      LayoutError::new_err(LayoutErrorType::ContainerBoundsNotDefined)?
+    }
+    let container_bounds = container_bounds_size.unwrap();
+
+    let requested_allocated_size = Size::new(
+      calc_percentage(width_pc, container_bounds.width),
+      calc_percentage(height_pc, container_bounds.height),
+    );
+
+    let old_position = self
+      .get_current_layout()?
+      .layout_cursor_pos;
+    if old_position.is_none() {
+      LayoutError::new_err(LayoutErrorType::LayoutCursorPositionNotDefined)?
+    }
+    let old_position = old_position.unwrap();
+
+    self.calc_next_layout_cursor_pos(requested_allocated_size)?;
+
     let layout = Layout::make_layout(
+      id.to_string(),
       dir,
       container_bounds,
-      pos,
+      old_position,
       width_pc,
       height_pc,
     );
+
     self.layout_stack.push(layout);
     Ok(())
   }
@@ -156,43 +179,41 @@ impl LayoutManager for Canvas {
 }
 
 impl Canvas {
-  /// Calculate the position of where the next layout can be added to the stack.
-  fn calc_next_layout_pos_on_stack(
+  /// Calculate and return the position of where the next layout can be added to the
+  /// stack. This updates the `layout_cursor_pos` of the current layout.
+  fn calc_next_layout_cursor_pos(
     &mut self,
-    err_msg: &str,
+    allocated_size: Size,
   ) -> ResultCommon<Position> {
-    let current_layout = self.get_current_layout(err_msg)?;
+    let current_layout = self.get_current_layout()?;
+    let layout_cursor_pos = current_layout.layout_cursor_pos;
 
-    if current_layout.origin_pos.is_none()
-      || current_layout
-        .bounds_size
-        .is_none()
-    {
+    if layout_cursor_pos.is_none() {
       LayoutError::new_err(LayoutErrorType::ErrorCalculatingNextLayoutPos)?
     }
+    let layout_cursor_pos = layout_cursor_pos.unwrap();
 
-    let new_pos: Position =
-      current_layout.origin_pos.unwrap() + current_layout.bounds_size.unwrap();
+    let new_pos: Position = layout_cursor_pos + allocated_size;
 
-    let direction_adj_pos: Position = match current_layout.dir {
+    // Adjust `new_pos` using Direction.
+    let new_pos: Position = match current_layout.dir {
       Direction::Vert => new_pos * Pair::new(0, 1),
       Direction::Horiz => new_pos * Pair::new(1, 0),
     };
 
-    Ok(direction_adj_pos)
+    // Update the layout cursor position.
+    self
+      .get_current_layout()?
+      .layout_cursor_pos = new_pos.as_some();
+
+    Ok(new_pos)
   }
 
   /// Get the last layout on the stack (if none found then return Err).
-  fn get_current_layout(
-    &mut self,
-    err_msg: &str,
-  ) -> ResultCommon<&mut Layout> {
+  fn get_current_layout(&mut self) -> ResultCommon<&mut Layout> {
     // Expect layout_stack not to be empty!
     if self.layout_stack.is_empty() {
-      LayoutError::new_err_with_msg(
-        LayoutErrorType::LayoutStackShouldNotBeEmpty,
-        LayoutError::format_msg_with_stack_len(&self.layout_stack, &err_msg),
-      )?
+      LayoutError::new_err(LayoutErrorType::LayoutStackShouldNotBeEmpty)?
     }
     Ok(
       self

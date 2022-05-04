@@ -32,8 +32,9 @@ impl Default for Direction {
 
 /// A box is a rectangle with a position and size. The direction of the box determines how
 /// it's contained elements are positioned.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Layout {
+  pub id: String,
   pub dir: Direction,
   pub origin_pos: Option<Position>,
   pub content_size: Option<Size>,
@@ -46,6 +47,7 @@ pub struct Layout {
 impl Layout {
   /// Explicitly set the position & size of our box.
   pub fn make_root_layout(
+    id: String,
     canvas_size: Size,
     origin_pos: Position,
     width_pc: PerCent,
@@ -55,12 +57,13 @@ impl Layout {
     let bounds_width = calc_percentage(width_pc, canvas_size.width);
     let bounds_height = calc_percentage(height_pc, canvas_size.height);
     Self {
+      id,
       dir,
       origin_pos: origin_pos.as_some(),
       bounds_size: Size::new(bounds_width, bounds_height).as_some(),
       req_size_pc: RequestedSize::new(width_pc, height_pc).as_some(),
+      layout_cursor_pos: origin_pos.as_some(),
       content_size: None,
-      layout_cursor_pos: None,
       content_cursor_pos: None,
     }
   }
@@ -68,6 +71,7 @@ impl Layout {
   // TODO:
   /// Actual position and size for our box will be calculated based on provided hints.
   pub fn make_layout(
+    id: String,
     dir: Direction,
     container_bounds: Size,
     origin_pos: Position,
@@ -77,6 +81,7 @@ impl Layout {
     let bounds_width = calc_percentage(width_pc, container_bounds.width);
     let bounds_height = calc_percentage(height_pc, container_bounds.height);
     Self {
+      id,
       dir,
       origin_pos: origin_pos.as_some(),
       bounds_size: Size::new(bounds_width, bounds_height).as_some(),
