@@ -15,9 +15,6 @@
  *   limitations under the License.
 */
 
-// TODO: impl this & collect pseudo "output commands" in self.output_commands for testing
-// TODO: impl all the todo!()s in this file
-
 use crate::*;
 use r3bl_rs_utils::{with, ResultCommon};
 
@@ -28,6 +25,7 @@ pub struct Canvas {
   pub origin_pos: Position,
   pub canvas_size: Size,
   pub layout_stack: Vec<Layout>,
+  // TODO: impl this & collect pseudo "output commands" in self.output_commands for testing
   pub output_commands: Vec<String>, // TODO: String is a placeholder for now, replace w/ enum
 }
 
@@ -131,9 +129,19 @@ impl LayoutManager for Canvas {
     Ok(())
   }
 
-  // TODO:
   fn end_layout(&mut self) -> ResultCommon<()> {
-    todo!()
+    // Expect layout_stack not to be empty!
+    if self.is_layout_stack_empty() {
+      LayoutError::new_err_with_msg(
+        LayoutErrorType::MismatchedEndLayout,
+        LayoutError::format_msg_with_stack_len(
+          &self.layout_stack,
+          "Layout stack should not be empty",
+        ),
+      )?
+    }
+    self.pop_layout();
+    Ok(())
   }
 
   // TODO:
@@ -146,6 +154,14 @@ impl LayoutManager for Canvas {
 }
 
 impl Canvas {
+  // TODO:
+  fn alloc_space_for_print(
+    &mut self,
+    size: Size,
+  ) -> ResultCommon<()> {
+    todo!()
+  }
+
   fn is_layout_stack_empty(&self) -> bool {
     self.layout_stack.is_empty()
   }
@@ -208,14 +224,6 @@ impl Canvas {
         .last_mut()
         .unwrap(),
     )
-  }
-
-  // TODO:
-  fn alloc_space_for_print(
-    &mut self,
-    size: Size,
-  ) -> ResultCommon<()> {
-    todo!()
   }
 
   /// 🌳 Root: Handle first layout to add to stack, explicitly sized & positioned.

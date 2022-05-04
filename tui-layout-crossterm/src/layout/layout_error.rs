@@ -37,6 +37,7 @@ pub struct LayoutError {
 pub enum LayoutErrorType {
   MismatchedEnd,
   MismatchedStart,
+  MismatchedEndLayout,
   LayoutStackShouldNotBeEmpty,
   InvalidLayoutSizePercentage,
   ErrorCalculatingNextLayoutPos,
