@@ -33,7 +33,6 @@
 //! ```
 
 use bounded_integer::bounded_integer;
-use r3bl_rs_utils::ResultCommon;
 use std::ops::{Add, Mul};
 
 /// Maps to whatever base units `crossterm` uses.
@@ -50,11 +49,11 @@ impl Position {
   pub fn new(
     x: Unit,
     y: Unit,
-  ) -> Position {
-    Position { x, y }
+  ) -> Self {
+    Self { x, y }
   }
 
-  pub fn as_some(&self) -> Option<Position> {
+  pub fn as_some(&self) -> Option<Self> {
     Some(*self)
   }
 }
@@ -70,11 +69,11 @@ impl Size {
   pub fn new(
     width: Unit,
     height: Unit,
-  ) -> Size {
-    Size { height, width }
+  ) -> Self {
+    Self { height, width }
   }
 
-  pub fn as_some(&self) -> Option<Size> {
+  pub fn as_some(&self) -> Option<Self> {
     Some(*self)
   }
 }
@@ -90,8 +89,8 @@ impl Pair {
   pub fn new(
     first: Unit,
     second: Unit,
-  ) -> Pair {
-    Pair { first, second }
+  ) -> Self {
+    Self { first, second }
   }
 }
 
@@ -102,8 +101,8 @@ impl Add<Size> for Position {
   fn add(
     self,
     rhs: Size,
-  ) -> Position {
-    Position::new(
+  ) -> Self {
+    Self::new(
       self.x + rhs.width,
       self.y + rhs.height,
     )
@@ -117,8 +116,8 @@ impl Mul<Pair> for Position {
   fn mul(
     self,
     rhs: Pair,
-  ) -> Position {
-    Position::new(
+  ) -> Self {
+    Self::new(
       self.x * rhs.first,
       self.y * rhs.second,
     )
@@ -161,4 +160,24 @@ pub fn convert_to_percent(sizes_pc: (u8, u8)) -> Option<(PerCent, PerCent)> {
   let width_pc: PerCent = width_pc.unwrap();
   let height_pc: PerCent = height_pc.unwrap();
   Some((width_pc, height_pc))
+}
+
+/// Size, defined as [height, width].
+#[derive(Copy, Clone, Debug, Default)]
+pub struct RequestedSize {
+  pub width: PerCent,
+  pub height: PerCent,
+}
+
+impl RequestedSize {
+  pub fn new(
+    width: PerCent,
+    height: PerCent,
+  ) -> Self {
+    Self { height, width }
+  }
+
+  pub fn as_some(&self) -> Option<Self> {
+    Some(*self)
+  }
 }

@@ -7,6 +7,8 @@
       ✔ use crate to implement `PerCent` bounded range unsigned integer type @done(22-05-02 11:30)
       ✔ create `LayoutError` struct and `LayoutErrorType` enum @done(22-05-02 11:44)
       ☐ implement `LayoutManager` for `Canvas`
+        ✔ handle root layout @done(22-05-03 17:07)
+        ☐ handle normal layout
     ☐ create test for `box_canvas.rs` for a simple 2 column layout
 
   crossterm learning:

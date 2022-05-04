@@ -38,8 +38,7 @@ pub struct Layout {
   pub pos: Option<Position>,
   pub content_size: Option<Size>,
   pub bounds_size: Option<Size>,
-  pub req_width_pc: Option<PerCent>, // TODO: use this to calc box size during layout
-  pub req_height_pc: Option<PerCent>, // TODO: use this to calc box size during layout
+  pub req_size_pc: Option<RequestedSize>,
 }
 
 impl Layout {
@@ -57,25 +56,18 @@ impl Layout {
       dir,
       pos: origin_pos.as_some(),
       bounds_size: Size::new(bounds_width, bounds_height).as_some(),
-      req_width_pc: width_pc.as_some(),
-      req_height_pc: height_pc.as_some(),
+      req_size_pc: RequestedSize::new(width_pc, height_pc).as_some(),
       content_size: None,
     }
   }
 
+  // TODO:
   /// Actual position and size for our box will be calculated based on provided hints.
-  pub fn new(
+  pub fn make_layout(
     dir: Direction,
     width_pc: PerCent,
     height_pc: PerCent,
   ) -> Self {
-    Self {
-      dir,
-      pos: None,
-      bounds_size: None,
-      content_size: None,
-      req_width_pc: width_pc.as_some(),
-      req_height_pc: height_pc.as_some(),
-    }
+    todo!()
   }
 }

@@ -17,6 +17,11 @@
 					"line": 31,
 					"column": 19,
 					"label": ""
+				},
+				{
+					"line": 37,
+					"column": 0,
+					"label": ""
 				}
 			]
 		},
@@ -24,7 +29,7 @@
 			"path": "src/layout/layout.rs",
 			"bookmarks": [
 				{
-					"line": 66,
+					"line": 65,
 					"column": 0,
 					"label": ""
 				}
