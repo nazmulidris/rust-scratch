@@ -149,7 +149,8 @@ impl LayoutManager for Canvas {
     }
     let old_position = old_position.unwrap();
 
-    self.calc_next_layout_cursor_pos(requested_allocated_size)?;
+    let new_pos = self.calc_next_layout_cursor_pos(requested_allocated_size)?;
+    self.update_layout_cursor_pos(new_pos)?;
 
     let layout = Layout::make_layout(
       id.to_string(),
@@ -201,12 +202,17 @@ impl Canvas {
       Direction::Horizontal => new_pos * Pair::new(1, 0),
     };
 
-    // Update the layout cursor position.
+    Ok(new_pos)
+  }
+
+  fn update_layout_cursor_pos(
+    &mut self,
+    new_pos: Position,
+  ) -> ResultCommon<()> {
     self
       .get_current_layout()?
       .layout_cursor_pos = new_pos.as_some();
-
-    Ok(new_pos)
+    Ok(())
   }
 
   /// Get the last layout on the stack (if none found then return Err).
