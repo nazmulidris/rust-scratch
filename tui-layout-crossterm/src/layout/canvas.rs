@@ -19,7 +19,7 @@
 // TODO: impl all the todo!()s in this file
 
 use crate::*;
-use r3bl_rs_utils::ResultCommon;
+use r3bl_rs_utils::{with, ResultCommon};
 
 /// Represents a rectangular area of the terminal screen, and not necessarily the full
 /// terminal screen.
@@ -59,6 +59,13 @@ pub trait LayoutManager {
   ) -> ResultCommon<()>;
 }
 
+#[derive(Clone, Debug, Default)]
+struct LayoutProps {
+  pub id: String,
+  pub dir: Direction,
+  pub req_size: RequestedSize,
+}
+
 impl LayoutManager for Canvas {
   fn start(
     &mut self,
@@ -66,7 +73,7 @@ impl LayoutManager for Canvas {
     size: (Unit, Unit),
   ) -> ResultCommon<()> {
     // Expect layout_stack to be empty!
-    if !self.layout_stack.is_empty() {
+    if !self.is_layout_stack_empty() {
       LayoutError::new_err_with_msg(
         LayoutErrorType::MismatchedStart,
         LayoutError::format_msg_with_stack_len(
@@ -91,7 +98,7 @@ impl LayoutManager for Canvas {
         ),
       )?
     }
-    self.layout_stack.pop();
+    self.pop_layout();
     Ok(())
   }
 
@@ -101,67 +108,26 @@ impl LayoutManager for Canvas {
     dir: Direction,
     sizes_pc: (u8, u8),
   ) -> ResultCommon<()> {
-    let (width_pc, height_pc) = match convert_to_percent(sizes_pc) {
-      Some(result) => result,
-      None => LayoutError::new_err_with_msg(
-        LayoutErrorType::InvalidLayoutSizePercentage,
-        LayoutError::format_msg_with_stack_len(
-          &self.layout_stack,
-          "Invalid layout size percentages",
-        ),
-      )?,
+    let (width_pc, height_pc) = unwrap_or_return_with_err! {
+      convert_to_percent(sizes_pc),
+      LayoutErrorType::InvalidLayoutSizePercentage
     };
 
-    // 🌳 Root: Handle first layout to add to stack, explicitly sized & positioned.
-    if self.layout_stack.is_empty() {
-      self
-        .layout_stack
-        .push(Layout::make_root_layout(
-          id.to_string(),
-          self.canvas_size,
-          self.origin_pos,
-          width_pc,
-          height_pc,
-          dir,
-        ));
-      return Ok(());
+    with! {
+      LayoutProps {
+        id: id.to_string(),
+        dir,
+        req_size: RequestedSize::new(width_pc, height_pc),
+      },
+      as it,
+      run {
+        match self.is_layout_stack_empty() {
+          true => self.add_root_layout(it),
+          false => self.add_normal_layout(it),
+        }?;
+      }
     }
 
-    // 🍀 Non-root: Handle layout to add to stack. Position and size will be calculated.
-    let container_bounds_size = self
-      .get_current_layout()?
-      .bounds_size;
-    if container_bounds_size.is_none() {
-      LayoutError::new_err(LayoutErrorType::ContainerBoundsNotDefined)?
-    }
-    let container_bounds = container_bounds_size.unwrap();
-
-    let requested_allocated_size = Size::new(
-      calc_percentage(width_pc, container_bounds.width),
-      calc_percentage(height_pc, container_bounds.height),
-    );
-
-    let old_position = self
-      .get_current_layout()?
-      .layout_cursor_pos;
-    if old_position.is_none() {
-      LayoutError::new_err(LayoutErrorType::LayoutCursorPositionNotDefined)?
-    }
-    let old_position = old_position.unwrap();
-
-    let new_pos = self.calc_next_layout_cursor_pos(requested_allocated_size)?;
-    self.update_layout_cursor_pos(new_pos)?;
-
-    let layout = Layout::make_layout(
-      id.to_string(),
-      dir,
-      container_bounds,
-      old_position,
-      width_pc,
-      height_pc,
-    );
-
-    self.layout_stack.push(layout);
     Ok(())
   }
 
@@ -180,6 +146,21 @@ impl LayoutManager for Canvas {
 }
 
 impl Canvas {
+  fn is_layout_stack_empty(&self) -> bool {
+    self.layout_stack.is_empty()
+  }
+
+  fn push_layout(
+    &mut self,
+    layout: Layout,
+  ) {
+    self.layout_stack.push(layout);
+  }
+
+  fn pop_layout(&mut self) {
+    self.layout_stack.pop();
+  }
+
   /// Calculate and return the position of where the next layout can be added to the
   /// stack. This updates the `layout_cursor_pos` of the current layout.
   fn calc_next_layout_cursor_pos(
@@ -189,10 +170,10 @@ impl Canvas {
     let current_layout = self.get_current_layout()?;
     let layout_cursor_pos = current_layout.layout_cursor_pos;
 
-    if layout_cursor_pos.is_none() {
-      LayoutError::new_err(LayoutErrorType::ErrorCalculatingNextLayoutPos)?
-    }
-    let layout_cursor_pos = layout_cursor_pos.unwrap();
+    let layout_cursor_pos = unwrap_or_return_with_err! {
+      layout_cursor_pos,
+      LayoutErrorType::ErrorCalculatingNextLayoutPos
+    };
 
     let new_pos: Position = layout_cursor_pos + allocated_size;
 
@@ -235,5 +216,65 @@ impl Canvas {
     size: Size,
   ) -> ResultCommon<()> {
     todo!()
+  }
+
+  /// 🌳 Root: Handle first layout to add to stack, explicitly sized & positioned.
+  fn add_root_layout(
+    &mut self,
+    props: LayoutProps,
+  ) -> ResultCommon<()> {
+    let LayoutProps { id, dir, req_size } = props;
+    let RequestedSize {
+      width: width_pc,
+      height: height_pc,
+    } = req_size;
+    self.push_layout(Layout::make_root_layout(
+      id.to_string(),
+      self.canvas_size,
+      self.origin_pos,
+      width_pc,
+      height_pc,
+      dir,
+    ));
+    Ok(())
+  }
+
+  /// 🍀 Non-root: Handle layout to add to stack. Position and Size will be calculated.
+  fn add_normal_layout(
+    &mut self,
+    props: LayoutProps,
+  ) -> ResultCommon<()> {
+    let LayoutProps { id, dir, req_size } = props;
+    let RequestedSize {
+      width: width_pc,
+      height: height_pc,
+    } = req_size;
+    let container_bounds = unwrap_or_return_with_err! {
+      self.get_current_layout()?.bounds_size,
+      LayoutErrorType::ContainerBoundsNotDefined
+    };
+
+    let requested_size_allocation = Size::new(
+      calc_percentage(width_pc, container_bounds.width),
+      calc_percentage(height_pc, container_bounds.height),
+    );
+
+    let old_position = unwrap_or_return_with_err! {
+      self.get_current_layout()?.layout_cursor_pos,
+      LayoutErrorType::LayoutCursorPositionNotDefined
+    };
+
+    let new_pos = self.calc_next_layout_cursor_pos(requested_size_allocation)?;
+    self.update_layout_cursor_pos(new_pos)?;
+
+    self.push_layout(Layout::make_layout(
+      id.to_string(),
+      dir,
+      container_bounds,
+      old_position,
+      width_pc,
+      height_pc,
+    ));
+    Ok(())
   }
 }

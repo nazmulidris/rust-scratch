@@ -191,8 +191,8 @@ pub fn calc_percentage(
   result_int
 }
 
-/// Try and convert the (width %: u8, height %: u8) into (PerCent, PerCent). Return None
-/// if this fails.
+/// Try and convert the (width %: `u8`, height %: `u8`) into (`PerCent`, `PerCent`).
+/// If this fails, return `None`.
 pub fn convert_to_percent(sizes_pc: (u8, u8)) -> Option<(PerCent, PerCent)> {
   let width_pc: Option<PerCent> = PerCent::new(sizes_pc.0);
   let height_pc: Option<PerCent> = PerCent::new(sizes_pc.1);

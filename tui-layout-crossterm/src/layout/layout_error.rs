@@ -91,3 +91,28 @@ impl LayoutError {
     )
   }
 }
+
+/// Unwrap the `$option`, and if `None` then return the given `$err_type`. Otherwise
+/// return the unwrapped `$option`. This macro must be called in a block that returns a
+/// `ResultCommon<T>`.
+#[macro_export]
+macro_rules! unwrap_or_return_with_err {
+  ($option:expr, $err_type:expr) => {
+    match $option {
+      Some(value) => value,
+      None => return LayoutError::new_err($err_type),
+    }
+  };
+  ($option:expr, $err_type:expr, $msg:expr) => {
+    match $option {
+      Some(value) => value,
+      None => return LayoutError::new_err_with_msg($err_type, $msg.to_string()),
+    }
+  };
+  ($option:expr, $err_type:expr, $msg:expr, $($arg:tt)*) => {
+    match $option {
+      Some(value) => value,
+      None => return LayoutError::new_err_with_msg($err_type, format!($msg, $($arg)*)),
+    }
+  };
+}
