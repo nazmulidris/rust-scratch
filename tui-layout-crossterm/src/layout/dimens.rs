@@ -33,13 +33,16 @@
 //! ```
 
 use bounded_integer::bounded_integer;
-use std::ops::{Add, Mul};
+use std::{
+  fmt::{self, Debug},
+  ops::{Add, Mul},
+};
 
 /// Maps to whatever base units `crossterm` uses.
 pub type Unit = u16;
 
 /// Position, defined as [x, y].
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Default)]
 pub struct Position {
   pub x: Unit,
   pub y: Unit,
@@ -58,8 +61,21 @@ impl Position {
   }
 }
 
+impl Debug for Position {
+  fn fmt(
+    &self,
+    f: &mut fmt::Formatter<'_>,
+  ) -> fmt::Result {
+    write!(
+      f,
+      "Position [x:{}, y:{}]",
+      self.x, self.y
+    )
+  }
+}
+
 /// Size, defined as [height, width].
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Default)]
 pub struct Size {
   pub width: Unit,  // number of cols (y).
   pub height: Unit, // number of rows (x).
@@ -78,8 +94,21 @@ impl Size {
   }
 }
 
+impl Debug for Size {
+  fn fmt(
+    &self,
+    f: &mut fmt::Formatter<'_>,
+  ) -> fmt::Result {
+    write!(
+      f,
+      "Size [width:{}, height:{}]",
+      self.width, self.height
+    )
+  }
+}
+
 /// Pair, defined as [left, right].
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Default)]
 pub struct Pair {
   pub first: Unit,
   pub second: Unit,
@@ -91,6 +120,19 @@ impl Pair {
     second: Unit,
   ) -> Self {
     Self { first, second }
+  }
+}
+
+impl Debug for Pair {
+  fn fmt(
+    &self,
+    f: &mut fmt::Formatter<'_>,
+  ) -> fmt::Result {
+    write!(
+      f,
+      "Pair [first:{}, second:{}]",
+      self.first, self.second
+    )
   }
 }
 
@@ -163,7 +205,7 @@ pub fn convert_to_percent(sizes_pc: (u8, u8)) -> Option<(PerCent, PerCent)> {
 }
 
 /// Size, defined as [height, width].
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Default)]
 pub struct RequestedSize {
   pub width: PerCent,
   pub height: PerCent,
@@ -179,5 +221,18 @@ impl RequestedSize {
 
   pub fn as_some(&self) -> Option<Self> {
     Some(*self)
+  }
+}
+
+impl Debug for RequestedSize {
+  fn fmt(
+    &self,
+    f: &mut fmt::Formatter<'_>,
+  ) -> fmt::Result {
+    write!(
+      f,
+      "RequestedSize [width:{}%, height:{}%]",
+      self.width, self.height
+    )
   }
 }

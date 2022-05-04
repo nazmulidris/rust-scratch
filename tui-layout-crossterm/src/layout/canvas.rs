@@ -197,8 +197,8 @@ impl Canvas {
 
     // Adjust `new_pos` using Direction.
     let new_pos: Position = match current_layout.dir {
-      Direction::Vert => new_pos * Pair::new(0, 1),
-      Direction::Horiz => new_pos * Pair::new(1, 0),
+      Direction::Vertical => new_pos * Pair::new(0, 1),
+      Direction::Horizontal => new_pos * Pair::new(1, 0),
     };
 
     // Update the layout cursor position.

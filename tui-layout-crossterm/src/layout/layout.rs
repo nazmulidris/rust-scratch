@@ -20,13 +20,13 @@ use crate::dimens::*;
 /// Direction of the layout of the box.
 #[derive(Copy, Clone, Debug)]
 pub enum Direction {
-  Horiz,
-  Vert,
+  Horizontal,
+  Vertical,
 }
 
 impl Default for Direction {
   fn default() -> Direction {
-    Direction::Horiz
+    Direction::Horizontal
   }
 }
 
