@@ -29,7 +29,7 @@ use std::{
 #[allow(dead_code)]
 pub struct LayoutError {
   err_type: LayoutErrorType,
-  msg: String,
+  msg: Option<String>,
 }
 
 /// Specific types of errors.
@@ -39,6 +39,7 @@ pub enum LayoutErrorType {
   MismatchedStart,
   LayoutStackShouldNotBeEmpty,
   InvalidLayoutSizePercentage,
+  ErrorCalculatingNextLayoutPos,
 }
 
 /// Implement [`Error`] trait.
@@ -56,16 +57,23 @@ impl Display for LayoutError {
 
 /// Implement constructor that is compatible w/ [`ResultCommon<T>`].
 impl LayoutError {
-  pub fn new_err<T>(
+  pub fn new_err<T>(err_type: LayoutErrorType) -> ResultCommon<T> {
+    Err(LayoutError::new(err_type, None))
+  }
+
+  pub fn new_err_with_msg<T>(
     err_type: LayoutErrorType,
     msg: String,
   ) -> ResultCommon<T> {
-    Err(LayoutError::new(err_type, msg))
+    Err(LayoutError::new(
+      err_type,
+      Some(msg),
+    ))
   }
 
   pub fn new(
     err_type: LayoutErrorType,
-    msg: String,
+    msg: Option<String>,
   ) -> Box<Self> {
     Box::new(LayoutError { err_type, msg })
   }

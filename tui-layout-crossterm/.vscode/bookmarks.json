@@ -14,12 +14,12 @@
 			"path": "tests/test_canvas.rs",
 			"bookmarks": [
 				{
-					"line": 31,
+					"line": 32,
 					"column": 19,
 					"label": ""
 				},
 				{
-					"line": 37,
+					"line": 38,
 					"column": 0,
 					"label": ""
 				}
@@ -29,7 +29,7 @@
 			"path": "src/layout/layout.rs",
 			"bookmarks": [
 				{
-					"line": 65,
+					"line": 69,
 					"column": 0,
 					"label": ""
 				}

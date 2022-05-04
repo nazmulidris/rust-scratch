@@ -66,7 +66,7 @@ impl LayoutManager for Canvas {
   ) -> ResultCommon<()> {
     // Expect layout_stack to be empty!
     if !self.layout_stack.is_empty() {
-      LayoutError::new_err(
+      LayoutError::new_err_with_msg(
         LayoutErrorType::MismatchedStart,
         LayoutError::format_msg_with_stack_len(
           &self.layout_stack,
@@ -82,7 +82,7 @@ impl LayoutManager for Canvas {
   fn end(&mut self) -> ResultCommon<()> {
     // Expect layout_stack to only have 1 element!
     if self.layout_stack.len() != 1 {
-      LayoutError::new_err(
+      LayoutError::new_err_with_msg(
         LayoutErrorType::MismatchedEnd,
         LayoutError::format_msg_with_stack_len(
           &self.layout_stack,
@@ -99,11 +99,9 @@ impl LayoutManager for Canvas {
     dir: Direction,
     sizes_pc: (u8, u8),
   ) -> ResultCommon<()> {
-    debug!(self);
-
     let (width_pc, height_pc) = match convert_to_percent(sizes_pc) {
       Some(result) => result,
-      None => LayoutError::new_err(
+      None => LayoutError::new_err_with_msg(
         LayoutErrorType::InvalidLayoutSizePercentage,
         LayoutError::format_msg_with_stack_len(
           &self.layout_stack,
@@ -126,9 +124,21 @@ impl LayoutManager for Canvas {
       return Ok(());
     }
 
-    // TODO:
     // 🍀 Non-root: Handle layout to add to stack. Position and size will be calculated.
-    todo!()
+    let container_bounds = self
+      .get_current_layout("Problem adding normal layout")?
+      .bounds_size
+      .unwrap();
+    let pos = self.calc_next_layout_pos_on_stack("Problem adding normal layout")?;
+    let layout = Layout::make_layout(
+      dir,
+      container_bounds,
+      pos,
+      width_pc,
+      height_pc,
+    );
+    self.layout_stack.push(layout);
+    Ok(())
   }
 
   // TODO:
@@ -146,20 +156,30 @@ impl LayoutManager for Canvas {
 }
 
 impl Canvas {
-  // TODO:
   /// Calculate the position of where the next layout can be added to the stack.
   fn calc_next_layout_pos_on_stack(
     &mut self,
     err_msg: &str,
   ) -> ResultCommon<Position> {
-    todo!();
-    // let layout = self.get_current_layout(err_msg)?;
-    // let new_pos: Position = layout.position + layout.content_size;
-    // let direction_adj_pos: Position = match layout.direction {
-    //   Direction::Vert => new_pos * Pair::new(0, 1),
-    //   Direction::Horiz => new_pos * Pair::new(1, 0),
-    // };
-    // Ok(direction_adj_pos)
+    let current_layout = self.get_current_layout(err_msg)?;
+
+    if current_layout.origin_pos.is_none()
+      || current_layout
+        .bounds_size
+        .is_none()
+    {
+      LayoutError::new_err(LayoutErrorType::ErrorCalculatingNextLayoutPos)?
+    }
+
+    let new_pos: Position =
+      current_layout.origin_pos.unwrap() + current_layout.bounds_size.unwrap();
+
+    let direction_adj_pos: Position = match current_layout.dir {
+      Direction::Vert => new_pos * Pair::new(0, 1),
+      Direction::Horiz => new_pos * Pair::new(1, 0),
+    };
+
+    Ok(direction_adj_pos)
   }
 
   /// Get the last layout on the stack (if none found then return Err).
@@ -169,7 +189,7 @@ impl Canvas {
   ) -> ResultCommon<&mut Layout> {
     // Expect layout_stack not to be empty!
     if self.layout_stack.is_empty() {
-      LayoutError::new_err(
+      LayoutError::new_err_with_msg(
         LayoutErrorType::LayoutStackShouldNotBeEmpty,
         LayoutError::format_msg_with_stack_len(&self.layout_stack, &err_msg),
       )?

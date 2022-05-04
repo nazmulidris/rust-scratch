@@ -15,6 +15,7 @@
  *   limitations under the License.
 */
 
+use r3bl_rs_utils::debug;
 use tui_layout_crossterm::layout::*;
 
 // TODO: write test for box_canvas.rs
@@ -30,7 +31,7 @@ fn test_simple_2_col_layout() {
     // start layout (main container)
     {
       canvas
-        .start_layout(Direction::Vert, (100, 100))
+        .start_layout(Direction::Horiz, (100, 100))
         .unwrap();
 
       {
@@ -38,6 +39,7 @@ fn test_simple_2_col_layout() {
         canvas
           .start_layout(Direction::Vert, (50, 100))
           .unwrap();
+        debug!(canvas);
         {
           canvas
             .print("col 1 - Hello")
