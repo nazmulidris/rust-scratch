@@ -18,7 +18,7 @@
 use r3bl_rs_utils::{debug, ResultCommon};
 use tui_layout_crossterm::layout::*;
 
-// TODO: write test for box_canvas.rs
+// TODO: write assertions for this test
 #[test]
 fn test_simple_2_col_layout() -> ResultCommon<()> {
   let mut canvas = Canvas::default();

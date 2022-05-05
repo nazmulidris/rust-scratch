@@ -66,7 +66,6 @@ impl Layout {
     }
   }
 
-  // TODO:
   /// Actual position and size for our box will be calculated based on provided hints.
   pub fn make_layout(
     id: String,
