@@ -37,7 +37,6 @@ pub struct Layout {
   pub id: String,
   pub dir: Direction,
   pub origin_pos: Option<Position>,
-  pub content_size: Option<Size>,
   pub bounds_size: Option<Size>,
   pub req_size_pc: Option<RequestedSize>,
   pub layout_cursor_pos: Option<Position>,
@@ -63,7 +62,6 @@ impl Layout {
       bounds_size: Size::new(bounds_width, bounds_height).as_some(),
       req_size_pc: RequestedSize::new(width_pc, height_pc).as_some(),
       layout_cursor_pos: origin_pos.as_some(),
-      content_size: None,
       content_cursor_pos: None,
     }
   }
@@ -86,7 +84,6 @@ impl Layout {
       origin_pos: origin_pos.as_some(),
       bounds_size: Size::new(bounds_width, bounds_height).as_some(),
       req_size_pc: RequestedSize::new(width_pc, height_pc).as_some(),
-      content_size: None,
       layout_cursor_pos: None,
       content_cursor_pos: None,
     }

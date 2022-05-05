@@ -43,6 +43,7 @@ pub enum LayoutErrorType {
   ErrorCalculatingNextLayoutPos,
   ContainerBoundsNotDefined,
   LayoutCursorPositionNotDefined,
+  ContentCursorPositionNotDefined,
 }
 
 /// Implement [`Error`] trait.

@@ -15,64 +15,57 @@
  *   limitations under the License.
 */
 
-use r3bl_rs_utils::debug;
+use r3bl_rs_utils::{debug, ResultCommon};
 use tui_layout_crossterm::layout::*;
 
 // TODO: write test for box_canvas.rs
 #[test]
-fn test_simple_2_col_layout() {
+fn test_simple_2_col_layout() -> ResultCommon<()> {
   let mut canvas = Canvas::default();
-  {
-    // start
-    canvas
-      .start((0, 0), (500, 500))
-      .unwrap();
+  canvas.start((0, 0), (500, 500))?;
+  main_container_layout(&mut canvas)?;
+  canvas.end()?;
+  Ok(())
+}
 
-    // start layout (main container)
-    {
-      canvas
-        .start_layout(
-          "container",
-          Direction::Horizontal,
-          (100, 100),
-        )
-        .unwrap();
-      {
-        // start layout (left column)
-        canvas
-          .start_layout("col_1", Direction::Vertical, (50, 100))
-          .unwrap();
-        debug!(canvas);
-        println!("🏳️‍🌈🏳️‍🌈🏳️‍🌈");
-        {
-          canvas
-            .print("col 1 - Hello")
-            .unwrap();
-          canvas
-            .print("col 1 - World")
-            .unwrap();
-        }
-        canvas.end_layout().unwrap();
+fn main_container_layout(canvas: &mut Canvas) -> ResultCommon<()> {
+  canvas.start_layout(
+    "container",
+    Direction::Horizontal,
+    (100, 100),
+  )?;
+  col_1_layout(canvas)?;
+  col_2_layout(canvas)?;
+  canvas.end_layout()?;
+  Ok(())
+}
 
-        // start layout (right column)
-        canvas
-          .start_layout("col_2", Direction::Vertical, (50, 100))
-          .unwrap();
-        {
-          canvas
-            .print("col 2 - Hello")
-            .unwrap();
-          canvas
-            .print("col 2 - World")
-            .unwrap();
-        }
-        canvas.end_layout().unwrap();
-      }
+fn col_1_layout(canvas: &mut Canvas) -> ResultCommon<()> {
+  // start layout (left column)
+  canvas.start_layout(
+    "col_1",
+    Direction::Vertical,
+    (50, 100),
+  )?;
+  canvas.print(vec!["col 1 - Hello"])?;
+  canvas.print(vec!["col 1 - World"])?;
+  debug!(canvas);
+  println!("🏳️‍🌈🏳️‍🌈🏳️‍🌈");
+  canvas.end_layout()?;
+  Ok(())
+}
 
-      canvas.end_layout().unwrap();
-    }
-
-    // end
-    canvas.end().unwrap();
-  }
+fn col_2_layout(canvas: &mut Canvas) -> ResultCommon<()> {
+  // start layout (right column)
+  canvas.start_layout(
+    "col_2",
+    Direction::Vertical,
+    (50, 100),
+  )?;
+  canvas.print(vec!["col 2 - Hello"])?;
+  canvas.print(vec!["col 2 - World"])?;
+  debug!(canvas);
+  println!("🏳️‍🌈🏳️‍🌈🏳️‍🌈");
+  canvas.end_layout()?;
+  Ok(())
 }

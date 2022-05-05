@@ -4,28 +4,8 @@
 			"path": "src/layout/canvas.rs",
 			"bookmarks": [
 				{
-					"line": 102,
+					"line": 101,
 					"column": 18,
-					"label": ""
-				}
-			]
-		},
-		{
-			"path": "tests/test_canvas.rs",
-			"bookmarks": [
-				{
-					"line": 32,
-					"column": 19,
-					"label": ""
-				},
-				{
-					"line": 41,
-					"column": 0,
-					"label": ""
-				},
-				{
-					"line": 45,
-					"column": 8,
 					"label": ""
 				}
 			]
@@ -34,7 +14,7 @@
 			"path": "src/layout/layout.rs",
 			"bookmarks": [
 				{
-					"line": 72,
+					"line": 70,
 					"column": 0,
 					"label": ""
 				}

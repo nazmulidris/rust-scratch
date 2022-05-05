@@ -53,7 +53,7 @@ pub trait LayoutManager {
   /// Painting operations.
   fn print(
     &mut self,
-    text: &str,
+    text_vec: Vec<&str>,
   ) -> ResultCommon<()>;
 }
 
@@ -86,17 +86,16 @@ impl LayoutManager for Canvas {
   }
 
   fn end(&mut self) -> ResultCommon<()> {
-    // Expect layout_stack to only have 1 element!
-    if self.layout_stack.len() != 1 {
+    // Expect layout_stack to be empty!
+    if !self.is_layout_stack_empty() {
       LayoutError::new_err_with_msg(
         LayoutErrorType::MismatchedEnd,
         LayoutError::format_msg_with_stack_len(
           &self.layout_stack,
-          "Layout stack should only have 1 element",
+          "Layout stack should be empty",
         ),
       )?
     }
-    self.pop_layout();
     Ok(())
   }
 
@@ -144,24 +143,27 @@ impl LayoutManager for Canvas {
     Ok(())
   }
 
-  // TODO:
   fn print(
     &mut self,
-    text: &str,
+    text_vec: Vec<&str>,
   ) -> ResultCommon<()> {
-    todo!()
+    with! {
+      self.get_current_layout()?,
+      as current_layout,
+      run {
+        let mut pos:Position = match current_layout.content_cursor_pos {
+          Some(value) => value,
+          None => Position::new(0, 0),
+        };
+        pos.y += text_vec.len() as Unit;
+        current_layout.content_cursor_pos = Some(pos);
+      }
+    };
+    Ok(())
   }
 }
 
 impl Canvas {
-  // TODO:
-  fn alloc_space_for_print(
-    &mut self,
-    size: Size,
-  ) -> ResultCommon<()> {
-    todo!()
-  }
-
   fn is_layout_stack_empty(&self) -> bool {
     self.layout_stack.is_empty()
   }
