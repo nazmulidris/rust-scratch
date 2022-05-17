@@ -35,8 +35,8 @@ pub trait LayoutManager {
   /// Set the origin pos (x, y) & canvas size (width, height) of our box (container).
   fn start(
     &mut self,
-    pos: (Unit, Unit),
-    size: (Unit, Unit),
+    pos: Position,
+    size: Size,
   ) -> ResultCommon<()>;
 
   fn end(&mut self) -> ResultCommon<()>;
@@ -68,8 +68,8 @@ struct LayoutProps {
 impl LayoutManager for Canvas {
   fn start(
     &mut self,
-    pos: (Unit, Unit),
-    size: (Unit, Unit),
+    pos: Position,
+    size: Size,
   ) -> ResultCommon<()> {
     // Expect layout_stack to be empty!
     if !self.is_layout_stack_empty() {
@@ -81,8 +81,8 @@ impl LayoutManager for Canvas {
         ),
       )?
     }
-    self.origin_pos = Position::new(pos.0, pos.1);
-    self.canvas_size = Size::new(size.0, size.1);
+    self.origin_pos = pos;
+    self.canvas_size = size;
     Ok(())
   }
 

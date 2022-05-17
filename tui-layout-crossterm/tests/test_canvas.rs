@@ -22,7 +22,10 @@ use tui_layout_crossterm::layout::*;
 #[test]
 fn test_simple_2_col_layout() -> ResultCommon<()> {
   let mut canvas = Canvas::default();
-  canvas.start((0, 0), (500, 500))?;
+  canvas.start(
+    Position::new(0, 0),
+    Size::new(500, 500),
+  )?;
   main_container_layout(&mut canvas)?;
   canvas.end()?;
   Ok(())
