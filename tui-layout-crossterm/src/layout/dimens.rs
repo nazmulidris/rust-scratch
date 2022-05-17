@@ -34,6 +34,7 @@
 
 use crate::LayoutError;
 use crate::LayoutErrorType;
+use r3bl_rs_utils::unwrap_option_or_run_fn_returning_err;
 use r3bl_rs_utils::ResultCommon;
 use std::{
   fmt::{self, Debug},
@@ -211,6 +212,20 @@ impl PerCent {
     }
 
     return Ok((first.unwrap(), second.unwrap()));
+  }
+
+  pub fn parse(item: i32) -> ResultCommon<PerCent> {
+    let value = unwrap_option_or_run_fn_returning_err!(PerCent::from(item), || {
+      let err_msg = format!(
+        "Invalid percentage value: {}",
+        item
+      );
+      return LayoutError::new_err_with_msg(
+        LayoutErrorType::InvalidLayoutSizePercentage,
+        err_msg,
+      );
+    });
+    return Ok(value);
   }
 
   pub fn from(item: i32) -> Option<PerCent> {

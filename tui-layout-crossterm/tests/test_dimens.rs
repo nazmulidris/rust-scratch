@@ -67,9 +67,16 @@ fn test_percent_works_as_expected() {
 }
 
 #[test]
-fn test_percent_fails_as_expected() {
-  fn assert_is_none(raw_num: i32) {
-    assert!(PerCent::from(raw_num).is_none());
-  }
-  assert_is_none(101);
+fn test_percent_parsing_fails_as_expected() {
+  assert!(PerCent::from(-1).is_none());
+  assert!(PerCent::parse(-1).is_err());
+
+  assert!(PerCent::from(0).is_some());
+  assert!(PerCent::parse(0).is_ok());
+
+  assert!(PerCent::from(100).is_some());
+  assert!(PerCent::parse(100).is_ok());
+
+  assert!(PerCent::from(101).is_none());
+  assert!(PerCent::parse(101).is_err());
 }
