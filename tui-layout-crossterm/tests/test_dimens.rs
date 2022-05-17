@@ -50,17 +50,17 @@ async fn test_mul_box_pos_to_pair() {
 
 #[test]
 fn test_percent_works_as_expected() {
-  let pc_100 = PerCent::from(100).unwrap();
+  let pc_100 = Percent::from(100).unwrap();
   assert_eq!(pc_100.value, 100);
   let result = calc_percentage(pc_100, 500);
   assert_eq!(result, 500);
 
-  let pc_50 = PerCent::from(50).unwrap();
+  let pc_50 = Percent::from(50).unwrap();
   assert_eq!(pc_50.value, 50);
   let result = calc_percentage(pc_50, 500);
   assert_eq!(result, 250);
 
-  let pc_0 = PerCent::from(0).unwrap();
+  let pc_0 = Percent::from(0).unwrap();
   assert_eq!(pc_0.value, 0);
   let result = calc_percentage(pc_0, 500);
   assert_eq!(result, 0);
@@ -68,15 +68,15 @@ fn test_percent_works_as_expected() {
 
 #[test]
 fn test_percent_parsing_fails_as_expected() {
-  assert!(PerCent::from(-1).is_none());
-  assert!(PerCent::parse(-1).is_err());
+  assert!(Percent::from(-1).is_none());
+  assert!(Percent::parse(-1).is_err());
 
-  assert!(PerCent::from(0).is_some());
-  assert!(PerCent::parse(0).is_ok());
+  assert!(Percent::from(0).is_some());
+  assert!(Percent::parse(0).is_ok());
 
-  assert!(PerCent::from(100).is_some());
-  assert!(PerCent::parse(100).is_ok());
+  assert!(Percent::from(100).is_some());
+  assert!(Percent::parse(100).is_ok());
 
-  assert!(PerCent::from(101).is_none());
-  assert!(PerCent::parse(101).is_err());
+  assert!(Percent::from(101).is_none());
+  assert!(Percent::parse(101).is_err());
 }

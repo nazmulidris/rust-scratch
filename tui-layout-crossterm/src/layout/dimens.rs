@@ -42,25 +42,107 @@ use std::{
 };
 
 /// Maps to whatever base units `crossterm` uses.
-pub type Unit = u16;
+pub type UnitType = u16;
+
+#[derive(Copy, Clone, Default, PartialEq, Eq, Debug)]
+pub struct Unit {
+  value: UnitType,
+}
+
+impl fmt::Display for Unit {
+  fn fmt(
+    &self,
+    f: &mut fmt::Formatter<'_>,
+  ) -> fmt::Result {
+    write!(f, "{}", self.value)
+  }
+}
+
+impl Unit {
+  /// Convert given `i32` value to `Unit`.
+  pub fn from(value: i32) -> Self {
+    Self {
+      value: value as UnitType,
+    }
+  }
+
+  /// Convert given `i32` tuple value to `Unit` tuple.
+  pub fn from_values(
+    first: i32,
+    second: i32,
+  ) -> (Self, Self) {
+    (
+      Self {
+        value: (first as UnitType),
+      },
+      Self {
+        value: (second as UnitType),
+      },
+    )
+  }
+
+  /// Wrap given value as `Unit`.
+  pub fn new(value: UnitType) -> Self {
+    Self { value }
+  }
+
+  /// Wrap given values as `(Unit, Unit)`.
+  pub fn new_tuple(
+    first: UnitType,
+    second: UnitType,
+  ) -> (Self, Self) {
+    (
+      Self { value: first },
+      Self { value: second },
+    )
+  }
+}
 
 /// Position, defined as [x, y].
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub struct Position {
-  pub x: Unit,
-  pub y: Unit,
+  pub x: UnitType,
+  pub y: UnitType,
 }
 
 impl Position {
+  /// Convert given `i32` tuple value to `Position` struct.
+  pub fn from_tuple((first, second): (Unit, Unit)) -> Self {
+    Self {
+      x: first.value,
+      y: second.value,
+    }
+  }
+
+  /// Wrap given values as `Position`.
   pub fn new(
-    x: Unit,
-    y: Unit,
+    x: UnitType,
+    y: UnitType,
   ) -> Self {
     Self { x, y }
   }
 
+  /// Return an `Option` with `self`.
   pub fn as_some(&self) -> Option<Self> {
     Some(*self)
+  }
+
+  /// Add given `x` value to `self`.
+  pub fn add_x(
+    &mut self,
+    value: usize,
+  ) {
+    let value: UnitType = value as UnitType;
+    self.x = self.x + value;
+  }
+
+  /// Add given `y` value to `self`.
+  pub fn add_y(
+    &mut self,
+    value: usize,
+  ) {
+    let value = value as UnitType;
+    self.y = self.y + value;
   }
 }
 
@@ -80,18 +162,28 @@ impl Debug for Position {
 /// Size, defined as [height, width].
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub struct Size {
-  pub width: Unit,  // number of cols (y).
-  pub height: Unit, // number of rows (x).
+  pub width: UnitType,  // number of cols (y).
+  pub height: UnitType, // number of rows (x).
 }
 
 impl Size {
+  /// Convert given `Unit` tuple value to `Size` struct.
+  pub fn from_tuple((first, second): (Unit, Unit)) -> Self {
+    Self {
+      width: first.value,
+      height: second.value,
+    }
+  }
+
+  /// Wrap given values as `Size`.
   pub fn new(
-    width: Unit,
-    height: Unit,
+    width: UnitType,
+    height: UnitType,
   ) -> Self {
     Self { height, width }
   }
 
+  /// Return an `Option` with `self`.
   pub fn as_some(&self) -> Option<Self> {
     Some(*self)
   }
@@ -113,14 +205,15 @@ impl Debug for Size {
 /// Pair, defined as [left, right].
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub struct Pair {
-  pub first: Unit,
-  pub second: Unit,
+  pub first: UnitType,
+  pub second: UnitType,
 }
 
 impl Pair {
+  // Wrap given values as `Pair`.
   pub fn new(
-    first: Unit,
-    second: Unit,
+    first: UnitType,
+    second: UnitType,
   ) -> Self {
     Self { first, second }
   }
@@ -171,11 +264,11 @@ impl Mul<Pair> for Position {
 
 /// Represents an integer value between 0 and 100 (inclusive).
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
-pub struct PerCent {
+pub struct Percent {
   pub value: u8,
 }
 
-impl fmt::Display for PerCent {
+impl fmt::Display for Percent {
   fn fmt(
     &self,
     f: &mut fmt::Formatter<'_>,
@@ -184,7 +277,7 @@ impl fmt::Display for PerCent {
   }
 }
 
-impl Debug for PerCent {
+impl Debug for Percent {
   fn fmt(
     &self,
     f: &mut fmt::Formatter<'_>,
@@ -193,12 +286,14 @@ impl Debug for PerCent {
   }
 }
 
-impl PerCent {
-  pub fn parse_tuple(tuple: (i32, i32)) -> ResultCommon<(PerCent, PerCent)> {
+impl Percent {
+  /// Try and convert given `i32` value to `Percent`. Return
+  /// `InvalidLayoutSizePercentage` error if given value is not between 0 and 100.
+  pub fn parse_tuple(tuple: (Unit, Unit)) -> ResultCommon<(Percent, Percent)> {
     let (first, second) = tuple;
 
-    let first = PerCent::from(first);
-    let second = PerCent::from(second);
+    let first = Percent::from(first.value.into());
+    let second = Percent::from(second.value.into());
 
     if first.is_none() || second.is_none() {
       let err_msg = format!(
@@ -214,8 +309,10 @@ impl PerCent {
     return Ok((first.unwrap(), second.unwrap()));
   }
 
-  pub fn parse(item: i32) -> ResultCommon<PerCent> {
-    let value = unwrap_option_or_run_fn_returning_err!(PerCent::from(item), || {
+  /// Try and convert given `i32` value to `Percent`. Return `InvalidLayoutSizePercentage`
+  /// error if given value is not between 0 and 100.
+  pub fn parse(item: i32) -> ResultCommon<Percent> {
+    let value = unwrap_option_or_run_fn_returning_err!(Percent::from(item), || {
       let err_msg = format!(
         "Invalid percentage value: {}",
         item
@@ -228,63 +325,64 @@ impl PerCent {
     return Ok(value);
   }
 
-  pub fn from(item: i32) -> Option<PerCent> {
+  /// Try and convert given `i32` value to `Percent`. Return `None` if given value is not
+  /// between 0 and 100.
+  pub fn from(item: i32) -> Option<Percent> {
     if item < 0 || item > 100 {
       return None;
     }
-    return Some(PerCent { value: item as u8 });
+    return Some(Percent { value: item as u8 });
   }
 
-  pub fn as_some(&self) -> Option<PerCent> {
+  /// Wrap `self` in `Option`.
+  pub fn as_some(&self) -> Option<Percent> {
     Some(*self)
   }
 }
 
 /// Return the calculated percentage of the given value.
 pub fn calc_percentage(
-  percentage: PerCent,
-  value: Unit,
-) -> Unit {
-  type Int = Unit;
+  percentage: Percent,
+  value: UnitType,
+) -> UnitType {
+  type Integer = UnitType;
   let percentage_int = percentage.value;
   let percentage_f32 = f32::from(percentage_int) / 100.0;
   let result_f32 = percentage_f32 * f32::from(value);
-  let result_int = unsafe { result_f32.to_int_unchecked::<Int>() };
+  let result_int = unsafe { result_f32.to_int_unchecked::<Integer>() };
   result_int
 }
 
 /// Size, defined as [height, width].
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
-pub struct RequestedSize {
-  pub width: PerCent,
-  pub height: PerCent,
+pub struct RequestedSizePercent {
+  pub width: Percent,
+  pub height: Percent,
 }
 
-impl RequestedSize {
-  /// Try and parse the two given numbers as percentages. Returns error if the parsing
+impl RequestedSizePercent {
+  /// Try and convert the two given numbers as percentages. Returns error if the parsing
   /// fails.
-  pub fn from(
-    width_percent: i32,
-    height_percent: i32,
-  ) -> ResultCommon<RequestedSize> {
-    let size_tuple = (width_percent, height_percent);
-    let (width_pc, height_pc) = PerCent::parse_tuple(size_tuple)?;
+  pub fn parse_tuple(tuple: (Unit, Unit)) -> ResultCommon<RequestedSizePercent> {
+    let (width_pc, height_pc) = Percent::parse_tuple(tuple)?;
     Ok(Self::new(width_pc, height_pc))
   }
 
+  /// Wrap given values as `RequestedSizePercent`.
   pub fn new(
-    width: PerCent,
-    height: PerCent,
+    width: Percent,
+    height: Percent,
   ) -> Self {
     Self { height, width }
   }
 
+  /// Wrap `self` in `Option`.
   pub fn as_some(&self) -> Option<Self> {
     Some(*self)
   }
 }
 
-impl Debug for RequestedSize {
+impl Debug for RequestedSizePercent {
   fn fmt(
     &self,
     f: &mut fmt::Formatter<'_>,

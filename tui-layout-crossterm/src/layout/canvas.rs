@@ -46,7 +46,7 @@ pub trait LayoutManager {
     &mut self,
     id: &str,
     dir: Direction,
-    sizes_pc: RequestedSize,
+    sizes_pc: RequestedSizePercent,
   ) -> ResultCommon<()>;
 
   fn end_layout(&mut self) -> ResultCommon<()>;
@@ -62,7 +62,7 @@ pub trait LayoutManager {
 struct LayoutProps {
   pub id: String,
   pub dir: Direction,
-  pub req_size: RequestedSize,
+  pub req_size: RequestedSizePercent,
 }
 
 impl LayoutManager for Canvas {
@@ -104,7 +104,7 @@ impl LayoutManager for Canvas {
     &mut self,
     id: &str,
     dir: Direction,
-    req_size: RequestedSize,
+    req_size: RequestedSizePercent,
   ) -> ResultCommon<()> {
     with! {
       LayoutProps {
@@ -151,7 +151,7 @@ impl LayoutManager for Canvas {
           Some(value) => value,
           None => Position::new(0, 0),
         };
-        pos.y += text_vec.len() as Unit;
+        pos.add_y(text_vec.len());
         current_layout.content_cursor_pos = Some(pos);
       }
     };
@@ -230,7 +230,7 @@ impl Canvas {
     props: LayoutProps,
   ) -> ResultCommon<()> {
     let LayoutProps { id, dir, req_size } = props;
-    let RequestedSize {
+    let RequestedSizePercent {
       width: width_pc,
       height: height_pc,
     } = req_size;
@@ -251,7 +251,7 @@ impl Canvas {
     props: LayoutProps,
   ) -> ResultCommon<()> {
     let LayoutProps { id, dir, req_size } = props;
-    let RequestedSize {
+    let RequestedSizePercent {
       width: width_pc,
       height: height_pc,
     } = req_size;

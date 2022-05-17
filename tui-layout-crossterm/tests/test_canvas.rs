@@ -18,13 +18,12 @@
 use r3bl_rs_utils::{debug, ResultCommon};
 use tui_layout_crossterm::layout::*;
 
-// TODO: write assertions for this test
 #[test]
 fn test_simple_2_col_layout() -> ResultCommon<()> {
   let mut canvas = Canvas::default();
   canvas.start(
-    Position::new(0, 0),
-    Size::new(500, 500),
+    Position::from_tuple(Unit::new_tuple(0, 0)),
+    Size::from_tuple(Unit::new_tuple(500, 500)),
   )?;
   layout_container(&mut canvas)?;
   canvas.end()?;
@@ -35,7 +34,7 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "container",
     Direction::Horizontal,
-    RequestedSize::from(100, 100)?,
+    RequestedSizePercent::parse_tuple(Unit::new_tuple(100, 100))?,
   )?;
 
   make_container_assertions(canvas)?;
@@ -47,6 +46,9 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
   return Ok(());
 
   fn make_container_assertions(canvas: &Canvas) -> ResultCommon<()> {
+    println!("🟢");
+    debug!(canvas);
+
     let layout_item = canvas
       .layout_stack
       .first()
@@ -67,7 +69,9 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
     );
     assert_eq!(
       layout_item.req_size_pc,
-      Some(RequestedSize::from(100, 100)?)
+      Some(RequestedSizePercent::parse_tuple(
+        Unit::new_tuple(100, 100)
+      )?)
     );
     assert_eq!(
       layout_item.layout_cursor_pos,
@@ -82,32 +86,38 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
   }
 }
 
+// TODO: write assertions for this test
 /// Left column.
 fn layout_col_1(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "col_1",
     Direction::Vertical,
-    RequestedSize::from(50, 100)?,
+    RequestedSizePercent::parse_tuple(Unit::new_tuple(50, 100))?,
   )?;
   canvas.print(vec!["col 1 - Hello"])?;
   canvas.print(vec!["col 1 - World"])?;
+
+  println!("🟢🟢");
   debug!(canvas);
-  println!("🏳️‍🌈🏳️‍🌈🏳️‍🌈");
+
   canvas.end_layout()?;
   Ok(())
 }
 
+// TODO: write assertions for this test
 /// Right column.
 fn layout_col_2(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "col_2",
     Direction::Vertical,
-    RequestedSize::from(50, 100)?,
+    RequestedSizePercent::parse_tuple(Unit::new_tuple(50, 100))?,
   )?;
   canvas.print(vec!["col 2 - Hello"])?;
   canvas.print(vec!["col 2 - World"])?;
+
+  println!("🟢🟢🟢");
   debug!(canvas);
-  println!("🏳️‍🌈🏳️‍🌈🏳️‍🌈");
+
   canvas.end_layout()?;
   Ok(())
 }
