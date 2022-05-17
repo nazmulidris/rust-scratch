@@ -22,8 +22,8 @@ use tui_layout_crossterm::layout::*;
 fn test_simple_2_col_layout() -> ResultCommon<()> {
   let mut canvas = Canvas::default();
   canvas.start(
-    Position::from_tuple(Unit::new_tuple(0, 0)),
-    Size::from_tuple(Unit::new_tuple(500, 500)),
+    Position::from_pair(Pair::new(0, 0)),
+    Size::from_pair(Pair::new(500, 500)),
   )?;
   layout_container(&mut canvas)?;
   canvas.end()?;
@@ -34,7 +34,7 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "container",
     Direction::Horizontal,
-    RequestedSizePercent::parse_tuple(Unit::new_tuple(100, 100))?,
+    RequestedSizePercent::parse_pair(Pair::new(100, 100))?,
   )?;
 
   make_container_assertions(canvas)?;
@@ -68,9 +68,9 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
       Some(Size::new(500, 500))
     );
     assert_eq!(
-      layout_item.req_size_pc,
-      Some(RequestedSizePercent::parse_tuple(
-        Unit::new_tuple(100, 100)
+      layout_item.req_size_percent,
+      Some(RequestedSizePercent::parse_pair(
+        Pair::new(100, 100)
       )?)
     );
     assert_eq!(
@@ -92,7 +92,7 @@ fn layout_col_1(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "col_1",
     Direction::Vertical,
-    RequestedSizePercent::parse_tuple(Unit::new_tuple(50, 100))?,
+    RequestedSizePercent::parse_pair(Pair::new(50, 100))?,
   )?;
   canvas.print(vec!["col 1 - Hello"])?;
   canvas.print(vec!["col 1 - World"])?;
@@ -110,7 +110,7 @@ fn layout_col_2(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "col_2",
     Direction::Vertical,
-    RequestedSizePercent::parse_tuple(Unit::new_tuple(50, 100))?,
+    RequestedSizePercent::parse_pair(Pair::new(50, 100))?,
   )?;
   canvas.print(vec!["col 2 - Hello"])?;
   canvas.print(vec!["col 2 - World"])?;

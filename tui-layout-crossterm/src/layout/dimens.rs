@@ -44,56 +44,32 @@ use std::{
 /// Maps to whatever base units `crossterm` uses.
 pub type UnitType = u16;
 
-#[derive(Copy, Clone, Default, PartialEq, Eq, Debug)]
-pub struct Unit {
-  value: UnitType,
+/// Pair, defined as [left, right].
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+pub struct Pair {
+  pub first: UnitType,
+  pub second: UnitType,
 }
 
-impl fmt::Display for Unit {
+impl Pair {
+  // Wrap given values as `Pair`.
+  pub fn new(
+    first: UnitType,
+    second: UnitType,
+  ) -> Self {
+    Self { first, second }
+  }
+}
+
+impl Debug for Pair {
   fn fmt(
     &self,
     f: &mut fmt::Formatter<'_>,
   ) -> fmt::Result {
-    write!(f, "{}", self.value)
-  }
-}
-
-impl Unit {
-  /// Convert given `i32` value to `Unit`.
-  pub fn from(value: i32) -> Self {
-    Self {
-      value: value as UnitType,
-    }
-  }
-
-  /// Convert given `i32` tuple value to `Unit` tuple.
-  pub fn from_values(
-    first: i32,
-    second: i32,
-  ) -> (Self, Self) {
-    (
-      Self {
-        value: (first as UnitType),
-      },
-      Self {
-        value: (second as UnitType),
-      },
-    )
-  }
-
-  /// Wrap given value as `Unit`.
-  pub fn new(value: UnitType) -> Self {
-    Self { value }
-  }
-
-  /// Wrap given values as `(Unit, Unit)`.
-  pub fn new_tuple(
-    first: UnitType,
-    second: UnitType,
-  ) -> (Self, Self) {
-    (
-      Self { value: first },
-      Self { value: second },
+    write!(
+      f,
+      "Pair [first:{}, second:{}]",
+      self.first, self.second
     )
   }
 }
@@ -107,10 +83,10 @@ pub struct Position {
 
 impl Position {
   /// Convert given `i32` tuple value to `Position` struct.
-  pub fn from_tuple((first, second): (Unit, Unit)) -> Self {
+  pub fn from_pair(pair: Pair) -> Self {
     Self {
-      x: first.value,
-      y: second.value,
+      x: pair.first,
+      y: pair.second,
     }
   }
 
@@ -151,11 +127,7 @@ impl Debug for Position {
     &self,
     f: &mut fmt::Formatter<'_>,
   ) -> fmt::Result {
-    write!(
-      f,
-      "Position [x:{}, y:{}]",
-      self.x, self.y
-    )
+    write!(f, "[x:{}, y:{}]", self.x, self.y)
   }
 }
 
@@ -168,10 +140,10 @@ pub struct Size {
 
 impl Size {
   /// Convert given `Unit` tuple value to `Size` struct.
-  pub fn from_tuple((first, second): (Unit, Unit)) -> Self {
+  pub fn from_pair(pair: Pair) -> Self {
     Self {
-      width: first.value,
-      height: second.value,
+      width: pair.first,
+      height: pair.second,
     }
   }
 
@@ -196,38 +168,8 @@ impl Debug for Size {
   ) -> fmt::Result {
     write!(
       f,
-      "Size [width:{}, height:{}]",
+      "[width:{}, height:{}]",
       self.width, self.height
-    )
-  }
-}
-
-/// Pair, defined as [left, right].
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
-pub struct Pair {
-  pub first: UnitType,
-  pub second: UnitType,
-}
-
-impl Pair {
-  // Wrap given values as `Pair`.
-  pub fn new(
-    first: UnitType,
-    second: UnitType,
-  ) -> Self {
-    Self { first, second }
-  }
-}
-
-impl Debug for Pair {
-  fn fmt(
-    &self,
-    f: &mut fmt::Formatter<'_>,
-  ) -> fmt::Result {
-    write!(
-      f,
-      "Pair [first:{}, second:{}]",
-      self.first, self.second
     )
   }
 }
@@ -287,18 +229,16 @@ impl Debug for Percent {
 }
 
 impl Percent {
-  /// Try and convert given `i32` value to `Percent`. Return
-  /// `InvalidLayoutSizePercentage` error if given value is not between 0 and 100.
-  pub fn parse_tuple(tuple: (Unit, Unit)) -> ResultCommon<(Percent, Percent)> {
-    let (first, second) = tuple;
-
-    let first = Percent::from(first.value.into());
-    let second = Percent::from(second.value.into());
+  /// Try and convert given `Pair` into a `(Percent, Percent)`. Return
+  /// `InvalidLayoutSizePercentage` error if given values are not between 0 and 100.
+  pub fn parse_pair(pair: Pair) -> ResultCommon<(Percent, Percent)> {
+    let first = Percent::from(pair.first.into());
+    let second = Percent::from(pair.second.into());
 
     if first.is_none() || second.is_none() {
       let err_msg = format!(
         "Invalid percentage values in tuple: {:?}",
-        tuple
+        pair
       );
       return LayoutError::new_err_with_msg(
         LayoutErrorType::InvalidLayoutSizePercentage,
@@ -325,8 +265,8 @@ impl Percent {
     return Ok(value);
   }
 
-  /// Try and convert given `i32` value to `Percent`. Return `None` if given value is not
-  /// between 0 and 100.
+  /// Try and convert given `UnitType` value to `Percent`. Return `None` if given value is
+  /// not between 0 and 100.
   pub fn from(item: i32) -> Option<Percent> {
     if item < 0 || item > 100 {
       return None;
@@ -363,8 +303,8 @@ pub struct RequestedSizePercent {
 impl RequestedSizePercent {
   /// Try and convert the two given numbers as percentages. Returns error if the parsing
   /// fails.
-  pub fn parse_tuple(tuple: (Unit, Unit)) -> ResultCommon<RequestedSizePercent> {
-    let (width_pc, height_pc) = Percent::parse_tuple(tuple)?;
+  pub fn parse_pair(pair: Pair) -> ResultCommon<RequestedSizePercent> {
+    let (width_pc, height_pc) = Percent::parse_pair(pair)?;
     Ok(Self::new(width_pc, height_pc))
   }
 
@@ -389,7 +329,7 @@ impl Debug for RequestedSizePercent {
   ) -> fmt::Result {
     write!(
       f,
-      "RequestedSize [width:{}%, height:{}%]",
+      "[width:{}, height:{}]",
       self.width, self.height
     )
   }

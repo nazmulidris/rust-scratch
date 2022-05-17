@@ -32,15 +32,56 @@ impl Default for Direction {
 
 /// A box is a rectangle with a position and size. The direction of the box determines how
 /// it's contained elements are positioned.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Default)]
 pub struct Layout {
   pub id: String,
   pub dir: Direction,
   pub origin_pos: Option<Position>,
   pub bounds_size: Option<Size>,
-  pub req_size_pc: Option<RequestedSizePercent>,
+  pub req_size_percent: Option<RequestedSizePercent>,
   pub layout_cursor_pos: Option<Position>,
   pub content_cursor_pos: Option<Position>,
+}
+
+macro_rules! fmt_opt {
+  ($opt:expr) => {
+    match ($opt) {
+      Some(v) => v,
+      None => &"✖",
+    }
+  };
+}
+
+impl std::fmt::Debug for Layout {
+  fn fmt(
+    &self,
+    f: &mut std::fmt::Formatter<'_>,
+  ) -> std::fmt::Result {
+    f.debug_struct("Layout")
+      .field("id", &self.id)
+      .field("dir", &self.dir)
+      .field(
+        "origin_pos",
+        fmt_opt!(&self.origin_pos),
+      )
+      .field(
+        "bounds_size",
+        fmt_opt!(&self.bounds_size),
+      )
+      .field(
+        "req_size_percent",
+        fmt_opt!(&self.req_size_percent),
+      )
+      .field(
+        "layout_cursor_pos",
+        fmt_opt!(&self.layout_cursor_pos),
+      )
+      .field(
+        "content_cursor_pos",
+        fmt_opt!(&self.content_cursor_pos),
+      )
+      .finish()
+  }
 }
 
 impl Layout {
@@ -60,7 +101,7 @@ impl Layout {
       dir,
       origin_pos: origin_pos.as_some(),
       bounds_size: Size::new(bounds_width, bounds_height).as_some(),
-      req_size_pc: RequestedSizePercent::new(width_pc, height_pc).as_some(),
+      req_size_percent: RequestedSizePercent::new(width_pc, height_pc).as_some(),
       layout_cursor_pos: origin_pos.as_some(),
       content_cursor_pos: None,
     }
@@ -82,7 +123,7 @@ impl Layout {
       dir,
       origin_pos: origin_pos.as_some(),
       bounds_size: Size::new(bounds_width, bounds_height).as_some(),
-      req_size_pc: RequestedSizePercent::new(width_pc, height_pc).as_some(),
+      req_size_percent: RequestedSizePercent::new(width_pc, height_pc).as_some(),
       layout_cursor_pos: None,
       content_cursor_pos: None,
     }
