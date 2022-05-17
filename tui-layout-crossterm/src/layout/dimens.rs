@@ -215,7 +215,11 @@ pub struct RequestedSize {
 }
 
 impl RequestedSize {
-  pub fn from(size_tuple: (u8, u8)) -> ResultCommon<RequestedSize> {
+  pub fn from(
+    first: u8,
+    second: u8,
+  ) -> ResultCommon<RequestedSize> {
+    let size_tuple = (first, second);
     let (width_pc, height_pc) = unwrap_or_return_with_err! {
       convert_to_percent(size_tuple),
       LayoutErrorType::InvalidLayoutSizePercentage

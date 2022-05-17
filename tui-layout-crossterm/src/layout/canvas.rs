@@ -46,7 +46,7 @@ pub trait LayoutManager {
     &mut self,
     id: &str,
     dir: Direction,
-    sizes_pc: (u8, u8),
+    sizes_pc: RequestedSize,
   ) -> ResultCommon<()>;
 
   fn end_layout(&mut self) -> ResultCommon<()>;
@@ -104,18 +104,13 @@ impl LayoutManager for Canvas {
     &mut self,
     id: &str,
     dir: Direction,
-    sizes_pc: (u8, u8),
+    req_size: RequestedSize,
   ) -> ResultCommon<()> {
-    let (width_pc, height_pc) = unwrap_or_return_with_err! {
-      convert_to_percent(sizes_pc),
-      LayoutErrorType::InvalidLayoutSizePercentage
-    };
-
     with! {
       LayoutProps {
         id: id.to_string(),
         dir,
-        req_size: RequestedSize::new(width_pc, height_pc),
+        req_size
       },
       as it,
       run {
