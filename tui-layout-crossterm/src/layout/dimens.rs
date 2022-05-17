@@ -215,11 +215,13 @@ pub struct RequestedSize {
 }
 
 impl RequestedSize {
-  pub fn from(
-    first: u8,
-    second: u8,
+  /// Try and parse the two given numbers as percentages. Throws error if the parsing
+  /// fails.
+  pub fn parse(
+    width_percent: u8,
+    height_percent: u8,
   ) -> ResultCommon<RequestedSize> {
-    let size_tuple = (first, second);
+    let size_tuple = (width_percent, height_percent);
     let (width_pc, height_pc) = unwrap_or_return_with_err! {
       convert_to_percent(size_tuple),
       LayoutErrorType::InvalidLayoutSizePercentage

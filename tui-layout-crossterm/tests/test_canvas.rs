@@ -35,7 +35,7 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "container",
     Direction::Horizontal,
-    RequestedSize::from(100, 100)?,
+    RequestedSize::parse(100, 100)?,
   )?;
   layout_col_1(canvas)?;
   layout_col_2(canvas)?;
@@ -48,7 +48,7 @@ fn layout_col_1(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "col_1",
     Direction::Vertical,
-    RequestedSize::from(50, 100)?,
+    RequestedSize::parse(50, 100)?,
   )?;
   canvas.print(vec!["col 1 - Hello"])?;
   canvas.print(vec!["col 1 - World"])?;
@@ -63,7 +63,7 @@ fn layout_col_2(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "col_2",
     Direction::Vertical,
-    RequestedSize::from(50, 100)?,
+    RequestedSize::parse(50, 100)?,
   )?;
   canvas.print(vec!["col 2 - Hello"])?;
   canvas.print(vec!["col 2 - World"])?;
