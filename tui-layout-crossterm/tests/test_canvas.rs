@@ -15,7 +15,7 @@
  *   limitations under the License.
 */
 
-use r3bl_rs_utils::{debug, ResultCommon};
+use r3bl_rs_utils::ResultCommon;
 use tui_layout_crossterm::layout::*;
 
 #[test]
@@ -30,25 +30,20 @@ fn test_simple_2_col_layout() -> ResultCommon<()> {
   Ok(())
 }
 
+/// Main container.
 fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "container",
     Direction::Horizontal,
     RequestedSizePercent::parse_pair(Pair::new(100, 100))?,
   )?;
-
   make_container_assertions(canvas)?;
-
   layout_col_1(canvas)?;
   layout_col_2(canvas)?;
-
   canvas.end_layout()?;
   return Ok(());
 
   fn make_container_assertions(canvas: &Canvas) -> ResultCommon<()> {
-    println!("🟢");
-    debug!(canvas);
-
     let layout_item = canvas
       .layout_stack
       .first()
@@ -86,7 +81,6 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
   }
 }
 
-// TODO: write assertions for this test
 /// Left column.
 fn layout_col_1(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
@@ -96,15 +90,40 @@ fn layout_col_1(canvas: &mut Canvas) -> ResultCommon<()> {
   )?;
   canvas.print(vec!["col 1 - Hello"])?;
   canvas.print(vec!["col 1 - World"])?;
-
-  println!("🟢🟢");
-  debug!(canvas);
-
+  make_left_col_assertions(canvas)?;
   canvas.end_layout()?;
-  Ok(())
+  return Ok(());
+
+  fn make_left_col_assertions(canvas: &Canvas) -> ResultCommon<()> {
+    let layout_item = canvas.layout_stack.last().unwrap();
+    assert_eq!(layout_item.id, "col_1");
+    assert_eq!(
+      layout_item.dir,
+      Direction::Vertical
+    );
+    assert_eq!(
+      layout_item.origin_pos,
+      Some(Position::new(0, 0))
+    );
+    assert_eq!(
+      layout_item.bounds_size,
+      Some(Size::new(250, 500))
+    );
+    assert_eq!(
+      layout_item.req_size_percent,
+      Some(RequestedSizePercent::parse_pair(
+        Pair::new(50, 100)
+      )?)
+    );
+    assert_eq!(layout_item.layout_cursor_pos, None);
+    assert_eq!(
+      layout_item.content_cursor_pos,
+      Some(Position::new(0, 2))
+    );
+    Ok(())
+  }
 }
 
-// TODO: write assertions for this test
 /// Right column.
 fn layout_col_2(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
@@ -114,10 +133,36 @@ fn layout_col_2(canvas: &mut Canvas) -> ResultCommon<()> {
   )?;
   canvas.print(vec!["col 2 - Hello"])?;
   canvas.print(vec!["col 2 - World"])?;
-
-  println!("🟢🟢🟢");
-  debug!(canvas);
-
+  make_right_col_assertions(canvas)?;
   canvas.end_layout()?;
-  Ok(())
+  return Ok(());
+
+  fn make_right_col_assertions(canvas: &Canvas) -> ResultCommon<()> {
+    let layout_item = canvas.layout_stack.last().unwrap();
+    assert_eq!(layout_item.id, "col_2");
+    assert_eq!(
+      layout_item.dir,
+      Direction::Vertical
+    );
+    assert_eq!(
+      layout_item.origin_pos,
+      Some(Position::new(250, 0))
+    );
+    assert_eq!(
+      layout_item.bounds_size,
+      Some(Size::new(250, 500))
+    );
+    assert_eq!(
+      layout_item.req_size_percent,
+      Some(RequestedSizePercent::parse_pair(
+        Pair::new(50, 100)
+      )?)
+    );
+    assert_eq!(layout_item.layout_cursor_pos, None);
+    assert_eq!(
+      layout_item.content_cursor_pos,
+      Some(Position::new(0, 2))
+    );
+    Ok(())
+  }
 }
