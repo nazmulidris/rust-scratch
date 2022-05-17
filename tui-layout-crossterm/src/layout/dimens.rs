@@ -32,7 +32,10 @@
 //!    y
 //! ```
 
+use crate::LayoutError;
+use crate::{unwrap_or_return_with_err, LayoutErrorType};
 use bounded_integer::bounded_integer;
+use r3bl_rs_utils::ResultCommon;
 use std::{
   fmt::{self, Debug},
   ops::{Add, Mul},
@@ -212,6 +215,14 @@ pub struct RequestedSize {
 }
 
 impl RequestedSize {
+  pub fn from(size_tuple: (u8, u8)) -> ResultCommon<RequestedSize> {
+    let (width_pc, height_pc) = unwrap_or_return_with_err! {
+      convert_to_percent(size_tuple),
+      LayoutErrorType::InvalidLayoutSizePercentage
+    };
+    Ok(Self::new(width_pc, height_pc))
+  }
+
   pub fn new(
     width: PerCent,
     height: PerCent,

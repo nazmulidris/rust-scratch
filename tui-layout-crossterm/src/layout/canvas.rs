@@ -25,8 +25,9 @@ pub struct Canvas {
   pub origin_pos: Position,
   pub canvas_size: Size,
   pub layout_stack: Vec<Layout>,
-  // TODO: impl this & collect pseudo "output commands" in self.output_commands for testing
-  pub output_commands: Vec<String>, // TODO: String is a placeholder for now, replace w/ enum
+  // TODO: impl this & collect "output commands" in self.output_commands for testing
+  // TODO: String is a placeholder for now, replace w/ enum
+  pub output_commands: Vec<String>,
 }
 
 /// API interface to create nested & responsive layout based UIs.
