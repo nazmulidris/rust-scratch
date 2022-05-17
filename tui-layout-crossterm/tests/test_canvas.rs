@@ -26,25 +26,25 @@ fn test_simple_2_col_layout() -> ResultCommon<()> {
     Position::new(0, 0),
     Size::new(500, 500),
   )?;
-  main_container_layout(&mut canvas)?;
+  layout_container(&mut canvas)?;
   canvas.end()?;
   Ok(())
 }
 
-fn main_container_layout(canvas: &mut Canvas) -> ResultCommon<()> {
+fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "container",
     Direction::Horizontal,
     RequestedSize::from(100, 100)?,
   )?;
-  col_1_layout(canvas)?;
-  col_2_layout(canvas)?;
+  layout_col_1(canvas)?;
+  layout_col_2(canvas)?;
   canvas.end_layout()?;
   Ok(())
 }
 
-fn col_1_layout(canvas: &mut Canvas) -> ResultCommon<()> {
-  // start layout (left column)
+/// Left column.
+fn layout_col_1(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "col_1",
     Direction::Vertical,
@@ -58,8 +58,8 @@ fn col_1_layout(canvas: &mut Canvas) -> ResultCommon<()> {
   Ok(())
 }
 
-fn col_2_layout(canvas: &mut Canvas) -> ResultCommon<()> {
-  // start layout (right column)
+/// Right column.
+fn layout_col_2(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "col_2",
     Direction::Vertical,
