@@ -43,11 +43,16 @@ pub struct Layout {
   pub content_cursor_pos: Option<Position>,
 }
 
-macro_rules! fmt_opt {
+#[derive(Clone, Copy, Debug)]
+enum FormatMsg {
+  None,
+}
+
+macro_rules! format_option {
   ($opt:expr) => {
     match ($opt) {
       Some(v) => v,
-      None => &"✖",
+      None => &FormatMsg::None,
     }
   };
 }
@@ -62,23 +67,23 @@ impl std::fmt::Debug for Layout {
       .field("dir", &self.dir)
       .field(
         "origin_pos",
-        fmt_opt!(&self.origin_pos),
+        format_option!(&self.origin_pos),
       )
       .field(
         "bounds_size",
-        fmt_opt!(&self.bounds_size),
+        format_option!(&self.bounds_size),
       )
       .field(
         "req_size_percent",
-        fmt_opt!(&self.req_size_percent),
+        format_option!(&self.req_size_percent),
       )
       .field(
         "layout_cursor_pos",
-        fmt_opt!(&self.layout_cursor_pos),
+        format_option!(&self.layout_cursor_pos),
       )
       .field(
         "content_cursor_pos",
-        fmt_opt!(&self.content_cursor_pos),
+        format_option!(&self.content_cursor_pos),
       )
       .finish()
   }
