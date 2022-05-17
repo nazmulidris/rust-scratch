@@ -1,4 +1,25 @@
 ▶PENDING:
+  styling for layout engine:
+    ☐ create style for layout & figure out positioning for padding
+    ☐ concept of styling for layout (padding, fg color, bg color, focus highlight)
+    ☐ figure out positioning for padding in layout engine & passing style to layouts 
+
+  crossterm integration:
+    ☐ just crossterm: https://tinyurl.com/y5je8mvr
+    ☐ w/ tui: https://tinyurl.com/y56m5jgl
+    ☐ emit crossterm commands from `canvas.rs`
+    ☐ figure out how to use crossterm
+    ☐ emit crossterm commands from `canvas.rs`
+    ☐ write test for `canvas.rs` to ensure it emits crossterm commands correctly
+
+  focus mgmt:
+    ☐ key input processing & state mgmt (redux?)
+
+  build app:
+    ☐ create a 2 col layout TUI app using crossterm & layout engine
+    ☐ write tests and add layout engine supports debug output in TUI
+
+▶DONE:
   layout engine in lib:
     ✔ create `BoxPosition` and `BoxSize` structs @done(22-04-30 11:38)
     ✔ test `BoxPosition` and `BoxSize` structs @done(22-05-01 19:03)
@@ -9,23 +30,11 @@
       ✔ implement `LayoutManager` for `Canvas` @done(22-05-04 20:01)
         ✔ handle root layout @done(22-05-03 17:07)
         ✔ handle normal layout @done(22-05-04 20:01)
-    ☐ create test for `box_canvas.rs` for a simple 2 column layout
-    ☐ emit crossterm commands from `canvas.rs`
+    ✔ create test for `box_canvas.rs` for a simple 2 column layout @done(22-05-17 16:23)
 
-  crossterm learning:
-    ☐ just crossterm: https://tinyurl.com/y5je8mvr
-    ☐ w/ tui: https://tinyurl.com/y56m5jgl
-
-  integrate crossterm w/ layout engine:
-    ☐ emit crossterm commands from layout engine
-
-  build app:
-    ☐ create a 2 col layout TUI app using crossterm & layout engine
-    ☐ write tests and add layout engine supports debug output in TUI
-
-▶DONE:
   logging:
     ✔ find suitable logging crates: `log` and `simple-logging` @done(22-04-25 09:48)
     ✔ use file logging until layout engine supports debug output in TUI @done(22-04-27 21:16)
+  
   fix simplelog crate fail when using Tokio:
     ✔ https://github.com/r3bl-org/r3bl-rs-utils/commit/1a6308f5effd2504d60db2e896c431a0262db1a1 @done(22-04-30 08:11)
