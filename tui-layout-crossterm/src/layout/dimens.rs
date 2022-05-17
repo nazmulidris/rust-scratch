@@ -45,7 +45,7 @@ use std::{
 pub type Unit = u16;
 
 /// Position, defined as [x, y].
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub struct Position {
   pub x: Unit,
   pub y: Unit,
@@ -78,7 +78,7 @@ impl Debug for Position {
 }
 
 /// Size, defined as [height, width].
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub struct Size {
   pub width: Unit,  // number of cols (y).
   pub height: Unit, // number of rows (x).
@@ -111,7 +111,7 @@ impl Debug for Size {
 }
 
 /// Pair, defined as [left, right].
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub struct Pair {
   pub first: Unit,
   pub second: Unit,
@@ -208,7 +208,7 @@ pub fn convert_to_percent(sizes_pc: (u8, u8)) -> Option<(PerCent, PerCent)> {
 }
 
 /// Size, defined as [height, width].
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub struct RequestedSize {
   pub width: PerCent,
   pub height: PerCent,

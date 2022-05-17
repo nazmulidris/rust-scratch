@@ -18,7 +18,7 @@
 use crate::dimens::*;
 
 /// Direction of the layout of the box.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Direction {
   Horizontal,
   Vertical,

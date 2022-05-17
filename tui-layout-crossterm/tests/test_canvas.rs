@@ -37,10 +37,49 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
     Direction::Horizontal,
     RequestedSize::parse(100, 100)?,
   )?;
+
+  make_container_assertions(canvas)?;
+
   layout_col_1(canvas)?;
   layout_col_2(canvas)?;
+
   canvas.end_layout()?;
-  Ok(())
+  return Ok(());
+
+  fn make_container_assertions(canvas: &Canvas) -> ResultCommon<()> {
+    let layout_item = canvas
+      .layout_stack
+      .first()
+      .unwrap();
+
+    assert_eq!(layout_item.id, "container");
+    assert_eq!(
+      layout_item.dir,
+      Direction::Horizontal
+    );
+    assert_eq!(
+      layout_item.origin_pos,
+      Some(Position::new(0, 0))
+    );
+    assert_eq!(
+      layout_item.bounds_size,
+      Some(Size::new(500, 500))
+    );
+    assert_eq!(
+      layout_item.req_size_pc,
+      Some(RequestedSize::parse(100, 100)?)
+    );
+    assert_eq!(
+      layout_item.layout_cursor_pos,
+      Some(Position::new(0, 0))
+    );
+    assert_eq!(
+      layout_item.content_cursor_pos,
+      None
+    );
+
+    Ok(())
+  }
 }
 
 /// Left column.
