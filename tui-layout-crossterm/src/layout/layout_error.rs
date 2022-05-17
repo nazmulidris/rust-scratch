@@ -98,7 +98,7 @@ impl LayoutError {
 /// return the unwrapped `$option`. This macro must be called in a block that returns a
 /// `ResultCommon<T>`.
 #[macro_export]
-macro_rules! unwrap_or_return_with_err {
+macro_rules! unwrap_or_err {
   ($option:expr, $err_type:expr) => {
     match $option {
       Some(value) => value,

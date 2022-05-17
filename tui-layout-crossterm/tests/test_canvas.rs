@@ -35,7 +35,7 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "container",
     Direction::Horizontal,
-    RequestedSize::parse(100, 100)?,
+    RequestedSize::from(100, 100)?,
   )?;
 
   make_container_assertions(canvas)?;
@@ -67,7 +67,7 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
     );
     assert_eq!(
       layout_item.req_size_pc,
-      Some(RequestedSize::parse(100, 100)?)
+      Some(RequestedSize::from(100, 100)?)
     );
     assert_eq!(
       layout_item.layout_cursor_pos,
@@ -87,7 +87,7 @@ fn layout_col_1(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "col_1",
     Direction::Vertical,
-    RequestedSize::parse(50, 100)?,
+    RequestedSize::from(50, 100)?,
   )?;
   canvas.print(vec!["col 1 - Hello"])?;
   canvas.print(vec!["col 1 - World"])?;
@@ -102,7 +102,7 @@ fn layout_col_2(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "col_2",
     Direction::Vertical,
-    RequestedSize::parse(50, 100)?,
+    RequestedSize::from(50, 100)?,
   )?;
   canvas.print(vec!["col 2 - Hello"])?;
   canvas.print(vec!["col 2 - World"])?;

@@ -6,9 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# Bounded integer
-bounded-integer = { version = "0.5.2", features = ["macro"] }
-
 # Logging
 log = "0.4.16"
 simplelog = "0.12.0"

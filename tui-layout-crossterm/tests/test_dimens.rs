@@ -49,19 +49,27 @@ async fn test_mul_box_pos_to_pair() {
 }
 
 #[test]
-fn test_percent_works() {
-  let pc_100 = PerCent::new(100).unwrap();
-  assert_eq!(pc_100, 100);
+fn test_percent_works_as_expected() {
+  let pc_100 = PerCent::from(100).unwrap();
+  assert_eq!(pc_100.value, 100);
   let result = calc_percentage(pc_100, 500);
   assert_eq!(result, 500);
 
-  let pc_50 = PerCent::new(50).unwrap();
-  assert_eq!(pc_50, 50);
+  let pc_50 = PerCent::from(50).unwrap();
+  assert_eq!(pc_50.value, 50);
   let result = calc_percentage(pc_50, 500);
   assert_eq!(result, 250);
 
-  let pc_0 = PerCent::new(0).unwrap();
-  assert_eq!(pc_0, 0);
+  let pc_0 = PerCent::from(0).unwrap();
+  assert_eq!(pc_0.value, 0);
   let result = calc_percentage(pc_0, 500);
   assert_eq!(result, 0);
+}
+
+#[test]
+fn test_percent_fails_as_expected() {
+  fn assert_is_none(raw_num: i32) {
+    assert!(PerCent::from(raw_num).is_none());
+  }
+  assert_is_none(101);
 }

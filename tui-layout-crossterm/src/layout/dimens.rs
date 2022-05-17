@@ -33,8 +33,7 @@
 //! ```
 
 use crate::LayoutError;
-use crate::{unwrap_or_return_with_err, LayoutErrorType};
-use bounded_integer::bounded_integer;
+use crate::LayoutErrorType;
 use r3bl_rs_utils::ResultCommon;
 use std::{
   fmt::{self, Debug},
@@ -169,13 +168,58 @@ impl Mul<Pair> for Position {
   }
 }
 
-bounded_integer! {
-  /// Represents an integer value between 9 and 100 (inclusive).
-  /// https://docs.rs/bounded-integer/latest/bounded_integer/index.html#
-  pub struct PerCent { 0..101 }
+/// Represents an integer value between 0 and 100 (inclusive).
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub struct PerCent {
+  pub value: u8,
+}
+
+impl fmt::Display for PerCent {
+  fn fmt(
+    &self,
+    f: &mut fmt::Formatter<'_>,
+  ) -> fmt::Result {
+    write!(f, "{}%", self.value)
+  }
+}
+
+impl Debug for PerCent {
+  fn fmt(
+    &self,
+    f: &mut fmt::Formatter<'_>,
+  ) -> fmt::Result {
+    write!(f, "PerCent value:{}%", self.value)
+  }
 }
 
 impl PerCent {
+  pub fn parse_tuple(tuple: (i32, i32)) -> ResultCommon<(PerCent, PerCent)> {
+    let (first, second) = tuple;
+
+    let first = PerCent::from(first);
+    let second = PerCent::from(second);
+
+    if first.is_none() || second.is_none() {
+      let err_msg = format!(
+        "Invalid percentage values in tuple: {:?}",
+        tuple
+      );
+      return LayoutError::new_err_with_msg(
+        LayoutErrorType::InvalidLayoutSizePercentage,
+        err_msg,
+      );
+    }
+
+    return Ok((first.unwrap(), second.unwrap()));
+  }
+
+  pub fn from(item: i32) -> Option<PerCent> {
+    if item < 0 || item > 100 {
+      return None;
+    }
+    return Some(PerCent { value: item as u8 });
+  }
+
   pub fn as_some(&self) -> Option<PerCent> {
     Some(*self)
   }
@@ -187,24 +231,11 @@ pub fn calc_percentage(
   value: Unit,
 ) -> Unit {
   type Int = Unit;
-  let percentage_int = Int::from(percentage);
+  let percentage_int = percentage.value;
   let percentage_f32 = f32::from(percentage_int) / 100.0;
   let result_f32 = percentage_f32 * f32::from(value);
   let result_int = unsafe { result_f32.to_int_unchecked::<Int>() };
   result_int
-}
-
-/// Try and convert the (width %: `u8`, height %: `u8`) into (`PerCent`, `PerCent`).
-/// If this fails, return `None`.
-pub fn convert_to_percent(sizes_pc: (u8, u8)) -> Option<(PerCent, PerCent)> {
-  let width_pc: Option<PerCent> = PerCent::new(sizes_pc.0);
-  let height_pc: Option<PerCent> = PerCent::new(sizes_pc.1);
-  if width_pc.is_none() && height_pc.is_none() {
-    return None;
-  }
-  let width_pc: PerCent = width_pc.unwrap();
-  let height_pc: PerCent = height_pc.unwrap();
-  Some((width_pc, height_pc))
 }
 
 /// Size, defined as [height, width].
@@ -215,17 +246,14 @@ pub struct RequestedSize {
 }
 
 impl RequestedSize {
-  /// Try and parse the two given numbers as percentages. Throws error if the parsing
+  /// Try and parse the two given numbers as percentages. Returns error if the parsing
   /// fails.
-  pub fn parse(
-    width_percent: u8,
-    height_percent: u8,
+  pub fn from(
+    width_percent: i32,
+    height_percent: i32,
   ) -> ResultCommon<RequestedSize> {
     let size_tuple = (width_percent, height_percent);
-    let (width_pc, height_pc) = unwrap_or_return_with_err! {
-      convert_to_percent(size_tuple),
-      LayoutErrorType::InvalidLayoutSizePercentage
-    };
+    let (width_pc, height_pc) = PerCent::parse_tuple(size_tuple)?;
     Ok(Self::new(width_pc, height_pc))
   }
 

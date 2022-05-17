@@ -184,7 +184,7 @@ impl Canvas {
     let current_layout = self.get_current_layout()?;
     let layout_cursor_pos = current_layout.layout_cursor_pos;
 
-    let layout_cursor_pos = unwrap_or_return_with_err! {
+    let layout_cursor_pos = unwrap_or_err! {
       layout_cursor_pos,
       LayoutErrorType::ErrorCalculatingNextLayoutPos
     };
@@ -255,7 +255,7 @@ impl Canvas {
       width: width_pc,
       height: height_pc,
     } = req_size;
-    let container_bounds = unwrap_or_return_with_err! {
+    let container_bounds = unwrap_or_err! {
       self.get_current_layout()?.bounds_size,
       LayoutErrorType::ContainerBoundsNotDefined
     };
@@ -265,7 +265,7 @@ impl Canvas {
       calc_percentage(height_pc, container_bounds.height),
     );
 
-    let old_position = unwrap_or_return_with_err! {
+    let old_position = unwrap_or_err! {
       self.get_current_layout()?.layout_cursor_pos,
       LayoutErrorType::LayoutCursorPositionNotDefined
     };
