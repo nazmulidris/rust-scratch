@@ -38,8 +38,8 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
     RequestedSizePercent::parse_pair(Pair::new(100, 100))?,
   )?;
   make_container_assertions(canvas)?;
-  layout_col_1(canvas)?;
-  layout_col_2(canvas)?;
+  layout_left_col(canvas)?;
+  layout_right_col(canvas)?;
   canvas.end_layout()?;
   return Ok(());
 
@@ -82,7 +82,7 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
 }
 
 /// Left column.
-fn layout_col_1(canvas: &mut Canvas) -> ResultCommon<()> {
+fn layout_left_col(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "col_1",
     Direction::Vertical,
@@ -125,7 +125,7 @@ fn layout_col_1(canvas: &mut Canvas) -> ResultCommon<()> {
 }
 
 /// Right column.
-fn layout_col_2(canvas: &mut Canvas) -> ResultCommon<()> {
+fn layout_right_col(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.start_layout(
     "col_2",
     Direction::Vertical,

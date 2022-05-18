@@ -14,7 +14,12 @@
 			"path": "src/layout/layout.rs",
 			"bookmarks": [
 				{
-					"line": 115,
+					"line": 48,
+					"column": 0,
+					"label": ""
+				},
+				{
+					"line": 73,
 					"column": 0,
 					"label": ""
 				}

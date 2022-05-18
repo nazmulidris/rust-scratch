@@ -16,6 +16,7 @@
 */
 
 use crate::dimens::*;
+use r3bl_rs_utils::Builder;
 
 /// Direction of the layout of the box.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -32,7 +33,7 @@ impl Default for Direction {
 
 /// A box is a rectangle with a position and size. The direction of the box determines how
 /// it's contained elements are positioned.
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Builder)]
 pub struct Layout {
   pub id: String,
   pub dir: Direction,
@@ -43,11 +44,64 @@ pub struct Layout {
   pub content_cursor_pos: Option<Position>,
 }
 
+impl Layout {
+  /// Explicitly set the position & size of our box.
+  pub fn make_root_layout(
+    id: String,
+    canvas_size: Size,
+    origin_pos: Position,
+    width_pc: Percent,
+    height_pc: Percent,
+    dir: Direction,
+  ) -> Layout {
+    LayoutBuilder::new()
+      .set_id(id)
+      .set_dir(dir)
+      .set_origin_pos(origin_pos.as_some())
+      .set_bounds_size(
+        Size::new(
+          calc_percentage(width_pc, canvas_size.width),
+          calc_percentage(height_pc, canvas_size.height),
+        )
+        .as_some(),
+      )
+      .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some())
+      .set_layout_cursor_pos(origin_pos.as_some())
+      .build()
+  }
+
+  /// Actual position and size for our box will be calculated based on provided hints.
+  pub fn make_layout(
+    id: String,
+    dir: Direction,
+    container_bounds: Size,
+    origin_pos: Position,
+    width_pc: Percent,
+    height_pc: Percent,
+  ) -> Self {
+    LayoutBuilder::new()
+      .set_id(id)
+      .set_dir(dir)
+      .set_origin_pos(origin_pos.as_some())
+      .set_bounds_size(
+        Size::new(
+          calc_percentage(width_pc, container_bounds.width),
+          calc_percentage(height_pc, container_bounds.height),
+        )
+        .as_some(),
+      )
+      .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some())
+      .build()
+  }
+}
+
+/// Pretty print `Layout`.
 #[derive(Clone, Copy, Debug)]
 enum FormatMsg {
   None,
 }
 
+/// Pretty print `Layout`.
 macro_rules! format_option {
   ($opt:expr) => {
     match ($opt) {
@@ -57,6 +111,7 @@ macro_rules! format_option {
   };
 }
 
+/// Pretty print `Layout`.
 impl std::fmt::Debug for Layout {
   fn fmt(
     &self,
@@ -86,51 +141,5 @@ impl std::fmt::Debug for Layout {
         format_option!(&self.content_cursor_pos),
       )
       .finish()
-  }
-}
-
-impl Layout {
-  /// Explicitly set the position & size of our box.
-  pub fn make_root_layout(
-    id: String,
-    canvas_size: Size,
-    origin_pos: Position,
-    width_pc: Percent,
-    height_pc: Percent,
-    dir: Direction,
-  ) -> Layout {
-    let bounds_width = calc_percentage(width_pc, canvas_size.width);
-    let bounds_height = calc_percentage(height_pc, canvas_size.height);
-    Self {
-      id,
-      dir,
-      origin_pos: origin_pos.as_some(),
-      bounds_size: Size::new(bounds_width, bounds_height).as_some(),
-      req_size_percent: RequestedSizePercent::new(width_pc, height_pc).as_some(),
-      layout_cursor_pos: origin_pos.as_some(),
-      content_cursor_pos: None,
-    }
-  }
-
-  /// Actual position and size for our box will be calculated based on provided hints.
-  pub fn make_layout(
-    id: String,
-    dir: Direction,
-    container_bounds: Size,
-    origin_pos: Position,
-    width_pc: Percent,
-    height_pc: Percent,
-  ) -> Self {
-    let bounds_width = calc_percentage(width_pc, container_bounds.width);
-    let bounds_height = calc_percentage(height_pc, container_bounds.height);
-    Self {
-      id,
-      dir,
-      origin_pos: origin_pos.as_some(),
-      bounds_size: Size::new(bounds_width, bounds_height).as_some(),
-      req_size_percent: RequestedSizePercent::new(width_pc, height_pc).as_some(),
-      layout_cursor_pos: None,
-      content_cursor_pos: None,
-    }
   }
 }
