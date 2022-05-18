@@ -52,6 +52,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
+name = "bitmask"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5da9b3d9f6f585199287a473f4f8dfab6566cf827d15c00c219f53c645687ead"
+
+[[package]]
 name = "bumpalo"
 version = "3.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -675,7 +681,7 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils"
-version = "0.7.24"
+version = "0.7.25"
 dependencies = [
  "ansi_term",
  "async-trait",
@@ -693,7 +699,7 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils_core"
-version = "0.7.6"
+version = "0.7.7"
 dependencies = [
  "ansi_term",
  "async-trait",
@@ -703,7 +709,7 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils_macro"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1127,6 +1133,7 @@ name = "tui-layout-crossterm"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "bitmask",
  "crossterm",
  "log",
  "r3bl_rs_utils",
