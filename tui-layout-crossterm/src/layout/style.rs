@@ -15,16 +15,14 @@
  *   limitations under the License.
 */
 
-// Attach source files.
-pub mod layout_error;
-pub mod dimens;
-pub mod layout;
-pub mod canvas;
-pub mod style;
+use crossterm::style::Color;
+use r3bl_rs_utils::Builder;
 
-// Re-export the public items.
-pub use dimens::*;
-pub use layout::*;
-pub use canvas::*;
-pub use layout_error::*;
-pub use style::*;
+#[derive(Builder, Debug, Clone, PartialEq, Eq, Default)]
+struct Style {
+  fg_color: Option<Color>,
+  bg_color: Option<Color>,
+  bold: bool,
+  italic: bool,
+  underline: bool,
+}

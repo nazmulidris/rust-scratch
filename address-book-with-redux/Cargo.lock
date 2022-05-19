@@ -675,7 +675,7 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils"
-version = "0.7.22"
+version = "0.7.25"
 dependencies = [
  "ansi_term",
  "async-trait",
@@ -693,7 +693,7 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils_core"
-version = "0.7.5"
+version = "0.7.7"
 dependencies = [
  "ansi_term",
  "async-trait",
@@ -703,7 +703,7 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils_macro"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "proc-macro2",
  "quote",
