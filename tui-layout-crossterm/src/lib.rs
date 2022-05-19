@@ -15,6 +15,9 @@
  *   limitations under the License.
 */
 
+/// Use bitflags! macro.
+extern crate bitflags;
+
 // Attach source files.
 pub mod layout;
 

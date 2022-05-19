@@ -16,15 +16,54 @@
 */
 
 use crate::UnitType;
+use bitflags::bitflags;
 use crossterm::style::Color;
 use r3bl_rs_utils::Builder;
 
-#[derive(Builder, Debug, Clone, PartialEq, Eq, Default)]
-struct Style {
-  fg_color: Option<Color>,
-  bg_color: Option<Color>,
-  padding: Option<UnitType>,
-  bold: bool,
-  italic: bool,
-  underline: bool,
+#[derive(Clone, Default, Builder, Copy, Debug)]
+pub struct Style {
+  pub color_fg: Option<Color>,
+  pub color_bg: Option<Color>,
+  pub padding: Option<UnitType>,
+  pub bold: bool,
+  pub italic: bool,
+  pub underline: bool,
+}
+
+bitflags! {
+  pub struct StyleFlag: u8 {
+    const COLOR_FG_SET  = 0b00000001;
+    const COLOR_BG_SET  = 0b00000010;
+    const BOLD_SET      = 0b00000100;
+    const ITALIC_SET    = 0b00001000;
+    const UNDERLINE_SET = 0b00010000;
+    const PADDING_SET   = 0b00100000;
+  }
+}
+
+impl Style {
+  pub fn get_set_bitflags(&self) -> StyleFlag {
+    let mut mask = StyleFlag::empty();
+
+    if self.color_fg.is_some() {
+      mask.insert(StyleFlag::COLOR_FG_SET);
+    }
+    if self.color_bg.is_some() {
+      mask.insert(StyleFlag::COLOR_BG_SET);
+    }
+    if self.padding.is_some() {
+      mask.insert(StyleFlag::PADDING_SET);
+    }
+    if self.bold {
+      mask.insert(StyleFlag::BOLD_SET);
+    }
+    if self.italic {
+      mask.insert(StyleFlag::ITALIC_SET);
+    }
+    if self.underline {
+      mask.insert(StyleFlag::UNDERLINE_SET);
+    }
+
+    mask
+  }
 }
