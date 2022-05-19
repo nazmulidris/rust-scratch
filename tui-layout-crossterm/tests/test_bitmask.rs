@@ -29,6 +29,7 @@ bitmask! {
     BoldSet = 3,
     ItalicSet = 4,
     UnderlineSet = 5,
+    PaddingSet = 6,
   }
 }
 

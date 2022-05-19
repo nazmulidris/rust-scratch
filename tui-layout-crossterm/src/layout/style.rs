@@ -15,6 +15,7 @@
  *   limitations under the License.
 */
 
+use crate::UnitType;
 use crossterm::style::Color;
 use r3bl_rs_utils::Builder;
 
@@ -22,6 +23,7 @@ use r3bl_rs_utils::Builder;
 struct Style {
   fg_color: Option<Color>,
   bg_color: Option<Color>,
+  padding: Option<UnitType>,
   bold: bool,
   italic: bool,
   underline: bool,
