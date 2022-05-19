@@ -57,7 +57,8 @@ async fn create_store() -> Store<State, Action> {
 }
 
 const AVAIL_CMDS: &str =
-  "quit, exit, add-async, add-sync, save, clear, remove, reset, search, history, ip, help";
+  "quit, exit, add-async, add-sync, save, load, clear, remove, reset, search, history, \
+  ip, air, help";
 
 pub async fn repl_loop(store: Store<State, Action>) -> Result<(), Box<dyn Error>> {
   print_header("Starting repl");
