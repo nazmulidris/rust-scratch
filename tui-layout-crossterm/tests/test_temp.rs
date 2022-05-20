@@ -15,6 +15,8 @@
  *   limitations under the License.
 */
 
+const DEBUG: bool = false;
+
 type ThunkResult<T> = Result<T, Box<ThunkError>>;
 type ThunkFunction<T> = fn() -> ThunkResult<T>;
 
@@ -64,10 +66,16 @@ where
       let computed_field_value_result = (self.compute_field_value_fn)();
       match computed_field_value_result {
         Ok(computed_field_value) => {
+          if DEBUG {
+            println!("once - computing value");
+          }
           self.field = ThunkState::ComputedResultingInValue(computed_field_value.clone());
           return Ok(computed_field_value);
         }
         Err(e) => {
+          if DEBUG {
+            println!("once - problem computing value");
+          }
           let e_clone = *e.clone();
           self.field = ThunkState::ComputedResultingInError(e_clone);
           return Err(e);
@@ -76,10 +84,16 @@ where
     }
 
     if let ThunkState::ComputedResultingInValue(value) = self.field {
+      if DEBUG {
+        println!("returning cached value");
+      }
       return Ok(value.clone());
     }
 
     if let ThunkState::ComputedResultingInError(e) = self.field {
+      if DEBUG {
+        println!("returning cached error");
+      }
       return Err(Box::new(e));
     }
 
@@ -90,11 +104,26 @@ where
 #[test]
 fn test_name() {
   let mut thunk = Thunk::new(|| Ok(1));
-  let result = thunk.access_field();
-  if result.is_err() {
-    panic!("error");
-  } else {
-    let field_value = result.unwrap();
-    assert_eq!(field_value, 1);
+
+  // First access to the field will trigger the computation.
+  {
+    let result = thunk.access_field();
+    if result.is_err() {
+      panic!("error");
+    } else {
+      let field_value = result.unwrap();
+      assert_eq!(field_value, 1);
+    }
+  }
+
+  // Subsequent accesses to the field will return the cached value.
+  {
+    let result = thunk.access_field();
+    if result.is_err() {
+      panic!("error");
+    } else {
+      let field_value = result.unwrap();
+      assert_eq!(field_value, 1);
+    }
   }
 }
