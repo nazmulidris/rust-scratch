@@ -20,12 +20,22 @@ type ThunkResult<T> = Result<T, Box<dyn Error>>;
 type ThunkFunction<T> = fn() -> T;
 
 #[derive(Debug)]
+enum ThunkState<T>
+where
+  T: Clone,
+{
+  NotComputedYet,
+  ComputedResultingInError(Box<dyn Error>),
+  ComputedResultingInValue(T),
+}
+
+#[derive(Debug)]
 struct Thunk<T>
 where
   T: Clone,
 {
-  pub field: ThunkResult<T>,
-  pub compute_field: ThunkFunction<T>,
+  pub field: ThunkState<T>,
+  pub compute_field_fn: ThunkFunction<T>,
 }
 
 impl<T> Thunk<T>
@@ -34,31 +44,44 @@ where
 {
   pub fn new(expensive_method: ThunkFunction<T>) -> Self {
     Self {
-      field: Err(Box::new(std::io::Error::new(
-        std::io::ErrorKind::Other,
-        "Not yet evaluated",
-      ))),
-      compute_field: expensive_method,
+      field: ThunkState::NotComputedYet,
+      compute_field_fn: expensive_method,
     }
   }
 
   pub fn access_field(&mut self) -> ThunkResult<T> {
-    if self.field.is_err() {
-      self.field = Ok((self.compute_field)());
+    match self.field {
+      ThunkState::NotComputedYet => {
+        let computed_field_value = (self.compute_field_fn)();
+        self.field = ThunkState::ComputedResultingInValue(computed_field_value.clone());
+        Ok(computed_field_value)
+      }
+      _ => {
+        todo!();
+      }
     }
-    if self.field.is_ok() {
-      let field_value = self
-        .field
-        .as_ref()
-        .unwrap()
-        .clone();
-      Ok(field_value.clone())
-    } else {
-      Err(Box::new(std::io::Error::new(
-        std::io::ErrorKind::Other,
-        "Can't be evaluated",
-      )))
-    }
+
+    // match self.field {
+    //   ThunkState::ComputedResultingInValue(&value) => Ok(value.clone()),
+    //   _ => Err(Box::new(std::io::Error::new(
+    //     std::io::ErrorKind::Other,
+    //     "Can't be evaluated",
+    //   ))),
+    // }
+
+    // if self.field.is_ok() {
+    //   let field_value = self
+    //     .field
+    //     .as_ref()
+    //     .unwrap()
+    //     .clone();
+    //   Ok(field_value.clone())
+    // } else {
+    //   Err(Box::new(std::io::Error::new(
+    //     std::io::ErrorKind::Other,
+    //     "Can't be evaluated",
+    //   )))
+    // }
   }
 }
 
