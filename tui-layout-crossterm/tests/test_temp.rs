@@ -18,11 +18,10 @@
 type ThunkResult<T> = Result<T, Box<ThunkError>>;
 type ThunkFunction<T> = fn() -> ThunkResult<T>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
 pub struct ThunkError {
   err_type: ThunkErrorType,
-  msg: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -33,7 +32,7 @@ pub enum ThunkErrorType {
 #[derive(Debug)]
 enum ThunkState<T>
 where
-  T: Clone,
+  T: Clone + Copy,
 {
   NotComputedYet,
   ComputedResultingInError(ThunkError),
@@ -43,65 +42,48 @@ where
 #[derive(Debug)]
 struct Thunk<T>
 where
-  T: Clone,
+  T: Clone + Copy,
 {
   pub field: ThunkState<T>,
-  pub compute_field_fn: ThunkFunction<T>,
+  pub compute_field_value_fn: ThunkFunction<T>,
 }
 
 impl<T> Thunk<T>
 where
-  T: Clone,
+  T: Clone + Copy,
 {
-  pub fn new(expensive_method: ThunkFunction<T>) -> Self {
+  pub fn new(compute_field_value_fn: ThunkFunction<T>) -> Self {
     Self {
       field: ThunkState::NotComputedYet,
-      compute_field_fn: expensive_method,
+      compute_field_value_fn,
     }
   }
 
   pub fn access_field(&mut self) -> ThunkResult<T> {
-    match self.field {
-      ThunkState::NotComputedYet => {
-        let computed_field_value_result = (self.compute_field_fn)();
-        match computed_field_value_result {
-          Ok(computed_field_value) => {
-            self.field =
-              ThunkState::ComputedResultingInValue(computed_field_value.clone());
-            return Ok(computed_field_value);
-          }
-          Err(e) => {
-            let e_clone = *e.clone();
-            self.field = ThunkState::ComputedResultingInError(e_clone);
-            return Err(e);
-          }
+    if let ThunkState::NotComputedYet = self.field {
+      let computed_field_value_result = (self.compute_field_value_fn)();
+      match computed_field_value_result {
+        Ok(computed_field_value) => {
+          self.field = ThunkState::ComputedResultingInValue(computed_field_value.clone());
+          return Ok(computed_field_value);
+        }
+        Err(e) => {
+          let e_clone = *e.clone();
+          self.field = ThunkState::ComputedResultingInError(e_clone);
+          return Err(e);
         }
       }
-      ThunkState::ComputedResultingInError(_) => todo!(),
-      ThunkState::ComputedResultingInValue(_) => todo!(),
     }
 
-    // match self.field {
-    //   ThunkState::ComputedResultingInValue(&value) => Ok(value.clone()),
-    //   _ => Err(Box::new(std::io::Error::new(
-    //     std::io::ErrorKind::Other,
-    //     "Can't be evaluated",
-    //   ))),
-    // }
+    if let ThunkState::ComputedResultingInValue(value) = self.field {
+      return Ok(value.clone());
+    }
 
-    // if self.field.is_ok() {
-    //   let field_value = self
-    //     .field
-    //     .as_ref()
-    //     .unwrap()
-    //     .clone();
-    //   Ok(field_value.clone())
-    // } else {
-    //   Err(Box::new(std::io::Error::new(
-    //     std::io::ErrorKind::Other,
-    //     "Can't be evaluated",
-    //   )))
-    // }
+    if let ThunkState::ComputedResultingInError(e) = self.field {
+      return Err(Box::new(e));
+    }
+
+    panic!("unreachable");
   }
 }
 
