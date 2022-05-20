@@ -63,7 +63,7 @@ fn test_style() {
     .set_italic(true)
     .set_bold(true)
     .build();
-  let set_bitflags = style.get_set_bitflags();
+  let set_bitflags = style.get_bitflags();
 
   debug!(style);
   debug!(set_bitflags);

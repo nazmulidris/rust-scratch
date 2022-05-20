@@ -18,8 +18,12 @@
 use crate::UnitType;
 use bitflags::bitflags;
 use crossterm::style::Color;
+use lazy_st::lazy;
 use r3bl_rs_utils::Builder;
 
+/// Use the `StyleBuilder` to create a `Style`. `Style` objects are meant to be immutable.
+/// If you need to modify a `Style`, you should use the `StyleBuilder` to create a new
+/// one.
 #[derive(Clone, Default, Builder, Copy, Debug)]
 pub struct Style {
   pub color_fg: Option<Color>,
@@ -31,6 +35,7 @@ pub struct Style {
 }
 
 bitflags! {
+  /// https://docs.rs/bitflags/0.8.2/bitflags/macro.bitflags.html
   pub struct StyleFlag: u8 {
     const COLOR_FG_SET  = 0b00000001;
     const COLOR_BG_SET  = 0b00000010;
@@ -41,8 +46,16 @@ bitflags! {
   }
 }
 
+/// https://crates.io/crates/lazy-st
 impl Style {
-  pub fn get_set_bitflags(&self) -> StyleFlag {
+  /// The `StyleFlag` is lazily computed and cached after the first time it is evaluated.
+  /// A `Style` should be built using via `StyleBuilder and the expectation is that once
+  /// built, the style won't be modified.
+  pub fn get_bitflags(&self) -> StyleFlag {
+    *lazy!(self.gen_bitflags())
+  }
+
+  fn gen_bitflags(&self) -> StyleFlag {
     let mut mask = StyleFlag::empty();
 
     if self.color_fg.is_some() {
