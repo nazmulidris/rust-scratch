@@ -15,9 +15,20 @@
  *   limitations under the License.
 */
 
-use std::error::Error;
-type ThunkResult<T> = Result<T, Box<dyn Error>>;
-type ThunkFunction<T> = fn() -> T;
+type ThunkResult<T> = Result<T, Box<ThunkError>>;
+type ThunkFunction<T> = fn() -> ThunkResult<T>;
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ThunkError {
+  err_type: ThunkErrorType,
+  msg: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ThunkErrorType {
+  ComputeFieldFnError,
+}
 
 #[derive(Debug)]
 enum ThunkState<T>
@@ -25,7 +36,7 @@ where
   T: Clone,
 {
   NotComputedYet,
-  ComputedResultingInError(Box<dyn Error>),
+  ComputedResultingInError(ThunkError),
   ComputedResultingInValue(T),
 }
 
@@ -52,13 +63,22 @@ where
   pub fn access_field(&mut self) -> ThunkResult<T> {
     match self.field {
       ThunkState::NotComputedYet => {
-        let computed_field_value = (self.compute_field_fn)();
-        self.field = ThunkState::ComputedResultingInValue(computed_field_value.clone());
-        Ok(computed_field_value)
+        let computed_field_value_result = (self.compute_field_fn)();
+        match computed_field_value_result {
+          Ok(computed_field_value) => {
+            self.field =
+              ThunkState::ComputedResultingInValue(computed_field_value.clone());
+            return Ok(computed_field_value);
+          }
+          Err(e) => {
+            let e_clone = *e.clone();
+            self.field = ThunkState::ComputedResultingInError(e_clone);
+            return Err(e);
+          }
+        }
       }
-      _ => {
-        todo!();
-      }
+      ThunkState::ComputedResultingInError(_) => todo!(),
+      ThunkState::ComputedResultingInValue(_) => todo!(),
     }
 
     // match self.field {
@@ -87,7 +107,7 @@ where
 
 #[test]
 fn test_name() {
-  let mut thunk = Thunk::new(|| 1);
+  let mut thunk = Thunk::new(|| Ok(1));
   let result = thunk.access_field();
   if result.is_err() {
     panic!("error");
