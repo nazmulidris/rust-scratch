@@ -57,7 +57,7 @@ fn test_bitflags() {
 #[test]
 fn test_style() {
   let black = Color::Rgb { r: 0, g: 0, b: 0 };
-  let style = StyleBuilder::new()
+  let mut style = StyleBuilder::new()
     .set_color_bg(Some(black))
     .set_color_fg(Some(black))
     .set_italic(true)

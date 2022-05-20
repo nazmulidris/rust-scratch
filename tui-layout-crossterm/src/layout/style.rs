@@ -18,13 +18,12 @@
 use crate::UnitType;
 use bitflags::bitflags;
 use crossterm::style::Color;
-use lazy_st::lazy;
-use r3bl_rs_utils::{Builder, LazyField};
+use r3bl_rs_utils::Builder;
 
 /// Use the `StyleBuilder` to create a `Style`. `Style` objects are meant to be immutable.
 /// If you need to modify a `Style`, you should use the `StyleBuilder` to create a new
 /// one.
-#[derive(Clone, Default, Builder, Debug)]
+#[derive(Default, Builder, Debug)]
 pub struct Style {
   pub color_fg: Option<Color>,
   pub color_bg: Option<Color>,
@@ -32,7 +31,7 @@ pub struct Style {
   pub bold: bool,
   pub italic: bool,
   pub underline: bool,
-  pub cached_bitflags: Option<LazyField<StyleFlag>>,
+  pub cached_bitflags: Option<StyleFlag>,
 }
 
 bitflags! {
@@ -52,8 +51,11 @@ impl Style {
   /// The `StyleFlag` is lazily computed and cached after the first time it is evaluated.
   /// A `Style` should be built using via `StyleBuilder and the expectation is that once
   /// built, the style won't be modified.
-  pub fn get_bitflags(&self) -> StyleFlag {
-    *lazy!(self.gen_bitflags())
+  pub fn get_bitflags(&mut self) -> StyleFlag {
+    if self.cached_bitflags.is_none() {
+      self.cached_bitflags = Some(self.gen_bitflags());
+    }
+    self.cached_bitflags.unwrap()
   }
 
   fn gen_bitflags(&self) -> StyleFlag {
