@@ -1,6 +1,7 @@
 ▶PENDING:
   styling for layout engine:
-    ☐ create style for layout & figure out positioning for padding
+    ✔ create style struct @done(22-05-20 19:06)
+    ☐ attach style to canvas & figure out positioning of layouts w/ padding
     ☐ concept of styling for layout (padding, fg color, bg color, focus highlight)
     ☐ figure out positioning for padding in layout engine & passing style to layouts 
 
