@@ -1,9 +1,19 @@
 ▶PENDING:
   styling for layout engine:
     ✔ create style struct @done(22-05-20 19:06)
+    ✔ impl lazy eval macro (in r3bl_rs_utils), and use it in Style @done(22-05-21 10:40)
+    ✔ impl lazy executor trait for r3bl_rs_utils @done(22-05-21 10:40)
+    ✔ concept of styling for layout (padding, fg color, bg color, focus highlight) @done(22-05-21 10:44)
+  ☐ stylesheets
+      ☐ extend style to have an id field
+      ☐ create a stylesheet struct
+      ☐ attach it to canvas
+      ☐ extend layout to have style id
+  ☐ layout & position w/ styling support
     ☐ attach style to canvas & figure out positioning of layouts w/ padding
-    ☐ concept of styling for layout (padding, fg color, bg color, focus highlight)
-    ☐ figure out positioning for padding in layout engine & passing style to layouts 
+  ☐ figure out how to accomodate focus management
+    ☐ extend canvas to have a focus field (current id w/ focus)
+    ☐ how does this affect rendering of a layout (paint focus highlight?)
 
   crossterm integration:
     ☐ just crossterm: https://tinyurl.com/y5je8mvr
