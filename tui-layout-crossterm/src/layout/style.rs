@@ -18,7 +18,7 @@
 use crate::UnitType;
 use bitflags::bitflags;
 use crossterm::style::Color;
-use r3bl_rs_utils::Builder;
+use r3bl_rs_utils::{unwrap_option_or_compute_if_none, Builder};
 
 /// Use the `StyleBuilder` to create a `Style`. `Style` objects are meant to be immutable.
 /// If you need to modify a `Style`, you should use the `StyleBuilder` to create a new
@@ -46,16 +46,15 @@ bitflags! {
   }
 }
 
-/// https://crates.io/crates/lazy-st
 impl Style {
   /// The `StyleFlag` is lazily computed and cached after the first time it is evaluated.
   /// A `Style` should be built using via `StyleBuilder and the expectation is that once
   /// built, the style won't be modified.
   pub fn get_bitflags(&mut self) -> StyleFlag {
-    if self.cached_bitflags.is_none() {
-      self.cached_bitflags = Some(self.gen_bitflags());
+    unwrap_option_or_compute_if_none! {
+      self.cached_bitflags,
+      || self.gen_bitflags()
     }
-    self.cached_bitflags.unwrap()
   }
 
   fn gen_bitflags(&self) -> StyleFlag {
