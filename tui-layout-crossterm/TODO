@@ -7,6 +7,7 @@
   ☐ stylesheets
       ✔ extend style to have an id field @done(22-05-22 09:55)
       ✔ create a stylesheet struct @done(22-05-22 11:27)
+      ✔ write test @done(22-05-22 12:03)
       ☐ attach it to canvas
       ☐ extend layout to have style id
   ☐ layout & position w/ styling support
