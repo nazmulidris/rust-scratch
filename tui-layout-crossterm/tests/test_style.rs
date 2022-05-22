@@ -19,7 +19,7 @@
 
 use crossterm::style::Color;
 use r3bl_rs_utils::{debug, with_mut};
-use tui_layout_crossterm::{StyleBuilder, StyleFlag};
+use tui_layout_crossterm::{Style, StyleBuilder, StyleFlag, Stylesheet};
 
 #[test]
 fn test_bitflags() {
@@ -54,24 +54,62 @@ fn test_bitflags() {
   assert_eq!(mask1.contains(mask2), false);
 }
 
-#[test]
-fn test_style() {
+fn make_a_style(id: &str) -> Style {
   let black = Color::Rgb { r: 0, g: 0, b: 0 };
-  let mut style = StyleBuilder::new()
+  let style = StyleBuilder::new()
+    .set_id(id.to_string())
     .set_color_bg(Some(black))
     .set_color_fg(Some(black))
     .set_italic(true)
     .set_bold(true)
     .build();
-  let set_bitflags = style.get_bitflags();
+  style
+}
 
+#[test]
+fn test_style() {
+  let mut style = make_a_style("test_style");
+  let bitflags = style.get_bitflags();
   debug!(style);
-  debug!(set_bitflags);
-
-  assert!(set_bitflags.contains(StyleFlag::BOLD_SET));
-  assert!(set_bitflags.contains(StyleFlag::ITALIC_SET));
+  debug!(bitflags);
+  assert!(bitflags.contains(StyleFlag::BOLD_SET));
+  assert!(bitflags.contains(StyleFlag::ITALIC_SET));
   assert_eq!(
-    set_bitflags.contains(StyleFlag::UNDERLINE_SET),
+    bitflags.contains(StyleFlag::UNDERLINE_SET),
     false
   );
+}
+
+#[test]
+fn test_stylesheet() {
+  let mut stylesheet = Stylesheet::new();
+  let style1 = make_a_style("style1");
+  let result = stylesheet.add_style(style1);
+  assert!(result.is_ok());
+  assert_eq!(stylesheet.styles.len(), 1);
+
+  let style2 = make_a_style("style2");
+  let result = stylesheet.add_style(style2);
+  assert!(result.is_ok());
+  assert_eq!(stylesheet.styles.len(), 2);
+
+  assert_eq!(
+    stylesheet
+      .get_style_by_id("style1")
+      .unwrap()
+      .id,
+    "style1"
+  );
+
+  assert_eq!(
+    stylesheet
+      .get_style_by_id("style2")
+      .unwrap()
+      .id,
+    "style2"
+  );
+
+  assert!(stylesheet
+    .get_style_by_id("style3")
+    .is_none());
 }

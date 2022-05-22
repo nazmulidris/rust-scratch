@@ -6,7 +6,7 @@
     ✔ concept of styling for layout (padding, fg color, bg color, focus highlight) @done(22-05-21 10:44)
   ☐ stylesheets
       ✔ extend style to have an id field @done(22-05-22 09:55)
-      ☐ create a stylesheet struct
+      ✔ create a stylesheet struct @done(22-05-22 11:27)
       ☐ attach it to canvas
       ☐ extend layout to have style id
   ☐ layout & position w/ styling support

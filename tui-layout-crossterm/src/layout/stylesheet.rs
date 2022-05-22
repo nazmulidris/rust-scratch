@@ -39,4 +39,14 @@ impl Stylesheet {
     self.styles.push(style);
     Ok(())
   }
+
+  pub fn get_style_by_id(
+    &self,
+    id: &str,
+  ) -> Option<&Style> {
+    self
+      .styles
+      .iter()
+      .find(|style| style.id == id)
+  }
 }
