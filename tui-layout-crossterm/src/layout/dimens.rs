@@ -35,7 +35,7 @@
 use crate::LayoutError;
 use crate::LayoutErrorType;
 use r3bl_rs_utils::unwrap_option_or_run_fn_returning_err;
-use r3bl_rs_utils::ResultCommon;
+use r3bl_rs_utils::CommonResult;
 use std::{
   fmt::{self, Debug},
   ops::{Add, Mul},
@@ -231,7 +231,7 @@ impl Debug for Percent {
 impl Percent {
   /// Try and convert given `Pair` into a `(Percent, Percent)`. Return
   /// `InvalidLayoutSizePercentage` error if given values are not between 0 and 100.
-  pub fn parse_pair(pair: Pair) -> ResultCommon<(Percent, Percent)> {
+  pub fn parse_pair(pair: Pair) -> CommonResult<(Percent, Percent)> {
     let first = Percent::from(pair.first.into());
     let second = Percent::from(pair.second.into());
 
@@ -251,7 +251,7 @@ impl Percent {
 
   /// Try and convert given `i32` value to `Percent`. Return `InvalidLayoutSizePercentage`
   /// error if given value is not between 0 and 100.
-  pub fn parse(item: i32) -> ResultCommon<Percent> {
+  pub fn parse(item: i32) -> CommonResult<Percent> {
     let value = unwrap_option_or_run_fn_returning_err!(Percent::from(item), || {
       let err_msg = format!(
         "Invalid percentage value: {}",
@@ -303,7 +303,7 @@ pub struct RequestedSizePercent {
 impl RequestedSizePercent {
   /// Try and convert the two given numbers as percentages. Returns error if the parsing
   /// fails.
-  pub fn parse_pair(pair: Pair) -> ResultCommon<RequestedSizePercent> {
+  pub fn parse_pair(pair: Pair) -> CommonResult<RequestedSizePercent> {
     let (width_pc, height_pc) = Percent::parse_pair(pair)?;
     Ok(Self::new(width_pc, height_pc))
   }

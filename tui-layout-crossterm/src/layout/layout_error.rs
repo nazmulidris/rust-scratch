@@ -15,7 +15,7 @@
  *   limitations under the License.
 */
 
-use r3bl_rs_utils::ResultCommon;
+use r3bl_rs_utils::CommonResult;
 
 use crate::*;
 use std::{
@@ -59,16 +59,16 @@ impl Display for LayoutError {
   }
 }
 
-/// Implement constructor that is compatible w/ [`ResultCommon<T>`].
+/// Implement constructor that is compatible w/ [`CommonResult<T>`].
 impl LayoutError {
-  pub fn new_err<T>(err_type: LayoutErrorType) -> ResultCommon<T> {
+  pub fn new_err<T>(err_type: LayoutErrorType) -> CommonResult<T> {
     Err(LayoutError::new(err_type, None))
   }
 
   pub fn new_err_with_msg<T>(
     err_type: LayoutErrorType,
     msg: String,
-  ) -> ResultCommon<T> {
+  ) -> CommonResult<T> {
     Err(LayoutError::new(
       err_type,
       Some(msg),
@@ -96,7 +96,7 @@ impl LayoutError {
 
 /// Unwrap the `$option`, and if `None` then return the given `$err_type`. Otherwise
 /// return the unwrapped `$option`. This macro must be called in a block that returns a
-/// `ResultCommon<T>`.
+/// `CommonResult<T>`.
 #[macro_export]
 macro_rules! unwrap_or_err {
   ($option:expr, $err_type:expr) => {

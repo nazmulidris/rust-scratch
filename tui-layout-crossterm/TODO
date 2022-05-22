@@ -5,7 +5,7 @@
     ✔ impl lazy executor trait for r3bl_rs_utils @done(22-05-21 10:40)
     ✔ concept of styling for layout (padding, fg color, bg color, focus highlight) @done(22-05-21 10:44)
   ☐ stylesheets
-      ☐ extend style to have an id field
+      ✔ extend style to have an id field @done(22-05-22 09:55)
       ☐ create a stylesheet struct
       ☐ attach it to canvas
       ☐ extend layout to have style id

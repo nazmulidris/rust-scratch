@@ -15,11 +15,11 @@
  *   limitations under the License.
 */
 
-use r3bl_rs_utils::ResultCommon;
+use r3bl_rs_utils::CommonResult;
 use tui_layout_crossterm::layout::*;
 
 #[test]
-fn test_simple_2_col_layout() -> ResultCommon<()> {
+fn test_simple_2_col_layout() -> CommonResult<()> {
   let mut canvas = Canvas::default();
   canvas.start(
     Position::from_pair(Pair::new(0, 0)),
@@ -31,7 +31,7 @@ fn test_simple_2_col_layout() -> ResultCommon<()> {
 }
 
 /// Main container.
-fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
+fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
   canvas.start_layout(
     "container",
     Direction::Horizontal,
@@ -43,7 +43,7 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.end_layout()?;
   return Ok(());
 
-  fn make_container_assertions(canvas: &Canvas) -> ResultCommon<()> {
+  fn make_container_assertions(canvas: &Canvas) -> CommonResult<()> {
     let layout_item = canvas
       .layout_stack
       .first()
@@ -82,7 +82,7 @@ fn layout_container(canvas: &mut Canvas) -> ResultCommon<()> {
 }
 
 /// Left column.
-fn layout_left_col(canvas: &mut Canvas) -> ResultCommon<()> {
+fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
   canvas.start_layout(
     "col_1",
     Direction::Vertical,
@@ -94,7 +94,7 @@ fn layout_left_col(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.end_layout()?;
   return Ok(());
 
-  fn make_left_col_assertions(canvas: &Canvas) -> ResultCommon<()> {
+  fn make_left_col_assertions(canvas: &Canvas) -> CommonResult<()> {
     let layout_item = canvas.layout_stack.last().unwrap();
     assert_eq!(layout_item.id, "col_1");
     assert_eq!(
@@ -125,7 +125,7 @@ fn layout_left_col(canvas: &mut Canvas) -> ResultCommon<()> {
 }
 
 /// Right column.
-fn layout_right_col(canvas: &mut Canvas) -> ResultCommon<()> {
+fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
   canvas.start_layout(
     "col_2",
     Direction::Vertical,
@@ -137,7 +137,7 @@ fn layout_right_col(canvas: &mut Canvas) -> ResultCommon<()> {
   canvas.end_layout()?;
   return Ok(());
 
-  fn make_right_col_assertions(canvas: &Canvas) -> ResultCommon<()> {
+  fn make_right_col_assertions(canvas: &Canvas) -> CommonResult<()> {
     let layout_item = canvas.layout_stack.last().unwrap();
     assert_eq!(layout_item.id, "col_2");
     assert_eq!(

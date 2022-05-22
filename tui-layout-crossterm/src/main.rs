@@ -15,15 +15,15 @@
  *   limitations under the License.
 */
 
-use r3bl_rs_utils::{init_file_logger_once, log, ResultCommon};
+use r3bl_rs_utils::{init_file_logger_once, log, CommonResult};
 
 #[tokio::main]
-async fn main() -> ResultCommon<()> {
+async fn main() -> CommonResult<()> {
   run().await?;
   Ok(())
 }
 
-async fn run() -> ResultCommon<()> {
+async fn run() -> CommonResult<()> {
   log!(INFO, "This is a info message");
   log!(WARN, "This is a warning message");
   log!(ERROR, "This is a error message");

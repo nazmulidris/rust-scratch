@@ -21,6 +21,7 @@
     "rustup",
     "simplelog",
     "stmts",
+    "Stylesheet",
     "termcolor",
     "turbofish",
     "useragent",

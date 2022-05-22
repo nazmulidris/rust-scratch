@@ -15,18 +15,28 @@
  *   limitations under the License.
 */
 
-// Attach source files.
-pub mod layout_error;
-pub mod dimens;
-pub mod layout;
-pub mod canvas;
-pub mod style;
-pub mod stylesheet;
+use crate::Style;
+use r3bl_rs_utils::{CommonError, CommonResult};
 
-// Re-export the public items.
-pub use dimens::*;
-pub use layout::*;
-pub use canvas::*;
-pub use layout_error::*;
-pub use style::*;
-pub use stylesheet::*;
+#[derive(Default, Debug, Clone)]
+pub struct Stylesheet {
+  pub styles: Vec<Style>,
+}
+
+impl Stylesheet {
+  pub fn new() -> Self {
+    Self::default()
+  }
+
+  pub fn add_style(
+    &mut self,
+    style: Style,
+  ) -> CommonResult<()> {
+    if style.id.is_empty() {
+      return CommonError::new_err_with_only_msg("Style id cannot be empty");
+    }
+
+    self.styles.push(style);
+    Ok(())
+  }
+}

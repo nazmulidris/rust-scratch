@@ -16,7 +16,7 @@
 */
 
 use crate::*;
-use r3bl_rs_utils::{with, ResultCommon};
+use r3bl_rs_utils::{with, CommonResult};
 
 /// Represents a rectangular area of the terminal screen, and not necessarily the full
 /// terminal screen.
@@ -37,9 +37,9 @@ pub trait LayoutManager {
     &mut self,
     pos: Position,
     size: Size,
-  ) -> ResultCommon<()>;
+  ) -> CommonResult<()>;
 
-  fn end(&mut self) -> ResultCommon<()>;
+  fn end(&mut self) -> CommonResult<()>;
 
   /// Add a new layout on the stack w/ the direction & (width, height) percentages.
   fn start_layout(
@@ -47,15 +47,15 @@ pub trait LayoutManager {
     id: &str,
     dir: Direction,
     sizes_pc: RequestedSizePercent,
-  ) -> ResultCommon<()>;
+  ) -> CommonResult<()>;
 
-  fn end_layout(&mut self) -> ResultCommon<()>;
+  fn end_layout(&mut self) -> CommonResult<()>;
 
   /// Painting operations.
   fn print(
     &mut self,
     text_vec: Vec<&str>,
-  ) -> ResultCommon<()>;
+  ) -> CommonResult<()>;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -70,7 +70,7 @@ impl LayoutManager for Canvas {
     &mut self,
     pos: Position,
     size: Size,
-  ) -> ResultCommon<()> {
+  ) -> CommonResult<()> {
     // Expect layout_stack to be empty!
     if !self.is_layout_stack_empty() {
       LayoutError::new_err_with_msg(
@@ -86,7 +86,7 @@ impl LayoutManager for Canvas {
     Ok(())
   }
 
-  fn end(&mut self) -> ResultCommon<()> {
+  fn end(&mut self) -> CommonResult<()> {
     // Expect layout_stack to be empty!
     if !self.is_layout_stack_empty() {
       LayoutError::new_err_with_msg(
@@ -105,7 +105,7 @@ impl LayoutManager for Canvas {
     id: &str,
     dir: Direction,
     req_size: RequestedSizePercent,
-  ) -> ResultCommon<()> {
+  ) -> CommonResult<()> {
     with! {
       LayoutProps {
         id: id.to_string(),
@@ -124,7 +124,7 @@ impl LayoutManager for Canvas {
     Ok(())
   }
 
-  fn end_layout(&mut self) -> ResultCommon<()> {
+  fn end_layout(&mut self) -> CommonResult<()> {
     // Expect layout_stack not to be empty!
     if self.is_layout_stack_empty() {
       LayoutError::new_err_with_msg(
@@ -142,7 +142,7 @@ impl LayoutManager for Canvas {
   fn print(
     &mut self,
     text_vec: Vec<&str>,
-  ) -> ResultCommon<()> {
+  ) -> CommonResult<()> {
     with! {
       self.get_current_layout()?,
       as current_layout,
@@ -180,7 +180,7 @@ impl Canvas {
   fn calc_next_layout_cursor_pos(
     &mut self,
     allocated_size: Size,
-  ) -> ResultCommon<Position> {
+  ) -> CommonResult<Position> {
     let current_layout = self.get_current_layout()?;
     let layout_cursor_pos = current_layout.layout_cursor_pos;
 
@@ -203,7 +203,7 @@ impl Canvas {
   fn update_layout_cursor_pos(
     &mut self,
     new_pos: Position,
-  ) -> ResultCommon<()> {
+  ) -> CommonResult<()> {
     self
       .get_current_layout()?
       .layout_cursor_pos = new_pos.as_some();
@@ -211,7 +211,7 @@ impl Canvas {
   }
 
   /// Get the last layout on the stack (if none found then return Err).
-  fn get_current_layout(&mut self) -> ResultCommon<&mut Layout> {
+  fn get_current_layout(&mut self) -> CommonResult<&mut Layout> {
     // Expect layout_stack not to be empty!
     if self.layout_stack.is_empty() {
       LayoutError::new_err(LayoutErrorType::LayoutStackShouldNotBeEmpty)?
@@ -228,7 +228,7 @@ impl Canvas {
   fn add_root_layout(
     &mut self,
     props: LayoutProps,
-  ) -> ResultCommon<()> {
+  ) -> CommonResult<()> {
     let LayoutProps { id, dir, req_size } = props;
     let RequestedSizePercent {
       width: width_pc,
@@ -249,7 +249,7 @@ impl Canvas {
   fn add_normal_layout(
     &mut self,
     props: LayoutProps,
-  ) -> ResultCommon<()> {
+  ) -> CommonResult<()> {
     let LayoutProps { id, dir, req_size } = props;
     let RequestedSizePercent {
       width: width_pc,

@@ -23,8 +23,9 @@ use r3bl_rs_utils::{unwrap_option_or_compute_if_none, Builder};
 /// Use the `StyleBuilder` to create a `Style`. `Style` objects are meant to be immutable.
 /// If you need to modify a `Style`, you should use the `StyleBuilder` to create a new
 /// one.
-#[derive(Default, Builder, Debug)]
+#[derive(Default, Builder, Debug, Clone)]
 pub struct Style {
+  pub id: String,
   pub color_fg: Option<Color>,
   pub color_bg: Option<Color>,
   pub padding: Option<UnitType>,

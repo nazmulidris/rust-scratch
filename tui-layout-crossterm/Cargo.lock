@@ -675,7 +675,7 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils"
-version = "0.7.28"
+version = "0.7.29"
 dependencies = [
  "ansi_term",
  "async-trait",
