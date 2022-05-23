@@ -15,12 +15,14 @@
  *   limitations under the License.
 */
 
+use crossterm::style::Color;
 use r3bl_rs_utils::CommonResult;
 use tui_layout_crossterm::layout::*;
 
 #[test]
 fn test_simple_2_col_layout() -> CommonResult<()> {
   let mut canvas = Canvas::default();
+  canvas.stylesheet = create_stylesheet()?;
   canvas.start(
     Position::from_pair(Pair::new(0, 0)),
     Size::from_pair(Pair::new(500, 500)),
@@ -28,6 +30,29 @@ fn test_simple_2_col_layout() -> CommonResult<()> {
   layout_container(&mut canvas)?;
   canvas.end()?;
   Ok(())
+}
+
+/// Create stylesheet.
+fn create_stylesheet() -> CommonResult<Stylesheet> {
+  let mut stylesheet = Stylesheet::new();
+  stylesheet.add_styles(vec![
+    create_style("style1"),
+    create_style("style2"),
+  ])?;
+  Ok(stylesheet)
+}
+
+/// Helper function.
+fn create_style(id: &str) -> Style {
+  let black = Color::Rgb { r: 0, g: 0, b: 0 };
+  let style = StyleBuilder::new()
+    .set_id(id.to_string())
+    .set_color_bg(Some(black))
+    .set_color_fg(Some(black))
+    .set_italic(true)
+    .set_bold(true)
+    .build();
+  style
 }
 
 /// Main container.

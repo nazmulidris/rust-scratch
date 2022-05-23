@@ -35,8 +35,17 @@ impl Stylesheet {
     if style.id.is_empty() {
       return CommonError::new_err_with_only_msg("Style id cannot be empty");
     }
-
     self.styles.push(style);
+    Ok(())
+  }
+
+  pub fn add_styles(
+    &mut self,
+    styles: Vec<Style>,
+  ) -> CommonResult<()> {
+    for style in styles {
+      self.add_style(style)?;
+    }
     Ok(())
   }
 

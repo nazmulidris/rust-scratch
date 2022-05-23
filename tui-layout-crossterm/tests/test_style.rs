@@ -54,18 +54,6 @@ fn test_bitflags() {
   assert_eq!(mask1.contains(mask2), false);
 }
 
-fn make_a_style(id: &str) -> Style {
-  let black = Color::Rgb { r: 0, g: 0, b: 0 };
-  let style = StyleBuilder::new()
-    .set_id(id.to_string())
-    .set_color_bg(Some(black))
-    .set_color_fg(Some(black))
-    .set_italic(true)
-    .set_bold(true)
-    .build();
-  style
-}
-
 #[test]
 fn test_style() {
   let mut style = make_a_style("test_style");
@@ -112,4 +100,17 @@ fn test_stylesheet() {
   assert!(stylesheet
     .get_style_by_id("style3")
     .is_none());
+}
+
+/// Helper function.
+fn make_a_style(id: &str) -> Style {
+  let black = Color::Rgb { r: 0, g: 0, b: 0 };
+  let style = StyleBuilder::new()
+    .set_id(id.to_string())
+    .set_color_bg(Some(black))
+    .set_color_fg(Some(black))
+    .set_italic(true)
+    .set_bold(true)
+    .build();
+  style
 }
