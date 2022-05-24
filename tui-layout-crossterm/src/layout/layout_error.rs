@@ -33,6 +33,7 @@ pub struct LayoutError {
 }
 
 /// Specific types of errors.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub enum LayoutErrorType {
   MismatchedEnd,

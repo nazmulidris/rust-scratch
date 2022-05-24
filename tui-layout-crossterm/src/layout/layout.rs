@@ -19,6 +19,7 @@ use crate::dimens::*;
 use r3bl_rs_utils::Builder;
 
 /// Direction of the layout of the box.
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Direction {
   Horizontal,
@@ -96,6 +97,7 @@ impl Layout {
 }
 
 /// Pretty print `Layout`.
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug)]
 enum FormatMsg {
   None,
