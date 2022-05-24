@@ -59,7 +59,7 @@ pub trait LayoutManager {
 }
 
 #[derive(Clone, Debug, Default)]
-struct LayoutProps {
+pub struct LayoutProps {
   pub id: String,
   pub dir: Direction,
   pub req_size: RequestedSizePercent,
@@ -75,10 +75,7 @@ impl LayoutManager for Canvas {
     if !self.is_layout_stack_empty() {
       LayoutError::new_err_with_msg(
         LayoutErrorType::MismatchedStart,
-        LayoutError::format_msg_with_stack_len(
-          &self.layout_stack,
-          "Layout stack should be empty",
-        ),
+        LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
       )?
     }
     self.origin_pos = pos;
@@ -91,10 +88,7 @@ impl LayoutManager for Canvas {
     if !self.is_layout_stack_empty() {
       LayoutError::new_err_with_msg(
         LayoutErrorType::MismatchedEnd,
-        LayoutError::format_msg_with_stack_len(
-          &self.layout_stack,
-          "Layout stack should be empty",
-        ),
+        LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
       )?
     }
     Ok(())
@@ -211,9 +205,7 @@ impl Canvas {
     &mut self,
     new_pos: Position,
   ) -> CommonResult<()> {
-    self
-      .get_current_layout()?
-      .layout_cursor_pos = new_pos.as_some();
+    self.get_current_layout()?.layout_cursor_pos = new_pos.as_some();
     Ok(())
   }
 
@@ -223,12 +215,7 @@ impl Canvas {
     if self.layout_stack.is_empty() {
       LayoutError::new_err(LayoutErrorType::LayoutStackShouldNotBeEmpty)?
     }
-    Ok(
-      self
-        .layout_stack
-        .last_mut()
-        .unwrap(),
-    )
+    Ok(self.layout_stack.last_mut().unwrap())
   }
 
   /// 🌳 Root: Handle first layout to add to stack, explicitly sized & positioned.

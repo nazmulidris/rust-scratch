@@ -9,8 +9,15 @@
       ✔ create a stylesheet struct @done(22-05-22 11:27)
       ✔ write test @done(22-05-22 12:03)
       ✔ attach it to canvas @done(22-05-23 16:07)
-      ✔ extend layout to have vec of style id's @done(22-05-24 12:50)
-      ☐ impl `Add` trait for `Style`
+      ☐ layout.rs
+        ✔ extend it to have vec of style id's @done(22-05-24 12:50)
+      ☐ canvas.rs: Canvas, LayoutManager & their test:
+        ✔ pass stylesheet in to Canvas @done(22-05-24 13:04)
+        ☐ update LayoutProps to handle styles
+        ☐ use LayoutProps in LayoutManager trait
+        ☐ pass styles into LayoutManager
+      ☐ style.rs
+        ☐ impl `Add` trait for `Style`
   ☐ layout & position w/ styling support
     ☐ attach style to canvas & figure out positioning of layouts w/ padding
     ☐ generate `output_commands` (in `Canvas`) for crossterm

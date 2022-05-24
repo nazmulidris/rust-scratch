@@ -35,10 +35,7 @@ fn test_simple_2_col_layout() -> CommonResult<()> {
 /// Create stylesheet.
 fn create_stylesheet() -> CommonResult<Stylesheet> {
   let mut stylesheet = Stylesheet::new();
-  stylesheet.add_styles(vec![
-    create_style("style1"),
-    create_style("style2"),
-  ])?;
+  stylesheet.add_styles(vec![create_style("style1"), create_style("style2")])?;
   Ok(stylesheet)
 }
 
@@ -69,38 +66,18 @@ fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
   return Ok(());
 
   fn make_container_assertions(canvas: &Canvas) -> CommonResult<()> {
-    let layout_item = canvas
-      .layout_stack
-      .first()
-      .unwrap();
+    let layout_item = canvas.layout_stack.first().unwrap();
 
     assert_eq!(layout_item.id, "container");
-    assert_eq!(
-      layout_item.dir,
-      Direction::Horizontal
-    );
-    assert_eq!(
-      layout_item.origin_pos,
-      Some(Position::new(0, 0))
-    );
-    assert_eq!(
-      layout_item.bounds_size,
-      Some(Size::new(500, 500))
-    );
+    assert_eq!(layout_item.dir, Direction::Horizontal);
+    assert_eq!(layout_item.origin_pos, Some(Position::new(0, 0)));
+    assert_eq!(layout_item.bounds_size, Some(Size::new(500, 500)));
     assert_eq!(
       layout_item.req_size_percent,
-      Some(RequestedSizePercent::parse_pair(
-        Pair::new(100, 100)
-      )?)
+      Some(RequestedSizePercent::parse_pair(Pair::new(100, 100))?)
     );
-    assert_eq!(
-      layout_item.layout_cursor_pos,
-      Some(Position::new(0, 0))
-    );
-    assert_eq!(
-      layout_item.content_cursor_pos,
-      None
-    );
+    assert_eq!(layout_item.layout_cursor_pos, Some(Position::new(0, 0)));
+    assert_eq!(layout_item.content_cursor_pos, None);
 
     Ok(())
   }
@@ -122,29 +99,15 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
   fn make_left_col_assertions(canvas: &Canvas) -> CommonResult<()> {
     let layout_item = canvas.layout_stack.last().unwrap();
     assert_eq!(layout_item.id, "col_1");
-    assert_eq!(
-      layout_item.dir,
-      Direction::Vertical
-    );
-    assert_eq!(
-      layout_item.origin_pos,
-      Some(Position::new(0, 0))
-    );
-    assert_eq!(
-      layout_item.bounds_size,
-      Some(Size::new(250, 500))
-    );
+    assert_eq!(layout_item.dir, Direction::Vertical);
+    assert_eq!(layout_item.origin_pos, Some(Position::new(0, 0)));
+    assert_eq!(layout_item.bounds_size, Some(Size::new(250, 500)));
     assert_eq!(
       layout_item.req_size_percent,
-      Some(RequestedSizePercent::parse_pair(
-        Pair::new(50, 100)
-      )?)
+      Some(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
     );
     assert_eq!(layout_item.layout_cursor_pos, None);
-    assert_eq!(
-      layout_item.content_cursor_pos,
-      Some(Position::new(0, 2))
-    );
+    assert_eq!(layout_item.content_cursor_pos, Some(Position::new(0, 2)));
     Ok(())
   }
 }
@@ -165,29 +128,15 @@ fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
   fn make_right_col_assertions(canvas: &Canvas) -> CommonResult<()> {
     let layout_item = canvas.layout_stack.last().unwrap();
     assert_eq!(layout_item.id, "col_2");
-    assert_eq!(
-      layout_item.dir,
-      Direction::Vertical
-    );
-    assert_eq!(
-      layout_item.origin_pos,
-      Some(Position::new(250, 0))
-    );
-    assert_eq!(
-      layout_item.bounds_size,
-      Some(Size::new(250, 500))
-    );
+    assert_eq!(layout_item.dir, Direction::Vertical);
+    assert_eq!(layout_item.origin_pos, Some(Position::new(250, 0)));
+    assert_eq!(layout_item.bounds_size, Some(Size::new(250, 500)));
     assert_eq!(
       layout_item.req_size_percent,
-      Some(RequestedSizePercent::parse_pair(
-        Pair::new(50, 100)
-      )?)
+      Some(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
     );
     assert_eq!(layout_item.layout_cursor_pos, None);
-    assert_eq!(
-      layout_item.content_cursor_pos,
-      Some(Position::new(0, 2))
-    );
+    assert_eq!(layout_item.content_cursor_pos, Some(Position::new(0, 2)));
     Ok(())
   }
 }
