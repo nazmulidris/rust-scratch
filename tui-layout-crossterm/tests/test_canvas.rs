@@ -24,8 +24,10 @@ fn test_simple_2_col_layout() -> CommonResult<()> {
   let mut canvas = Canvas::default();
   canvas.set_stylesheet(create_stylesheet()?);
   canvas.start(
-    Position::from_pair(Pair::new(0, 0)),
-    Size::from_pair(Pair::new(500, 500)),
+    BoundsPropsBuilder::new()
+      .set_pos(Position::from_pair(Pair::new(0, 0)))
+      .set_size(Size::from_pair(Pair::new(500, 500)))
+      .build(),
   )?;
   layout_container(&mut canvas)?;
   canvas.end()?;
@@ -55,9 +57,11 @@ fn create_style(id: &str) -> Style {
 /// Main container.
 fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
   canvas.start_layout(
-    "container",
-    Direction::Horizontal,
-    RequestedSizePercent::parse_pair(Pair::new(100, 100))?,
+    LayoutPropsBuilder::new()
+      .set_id("container".to_string())
+      .set_dir(Direction::Horizontal)
+      .set_req_size(RequestedSizePercent::parse_pair(Pair::new(100, 100))?)
+      .build(),
   )?;
   make_container_assertions(canvas)?;
   layout_left_col(canvas)?;
@@ -86,9 +90,11 @@ fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
 /// Left column.
 fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
   canvas.start_layout(
-    "col_1",
-    Direction::Vertical,
-    RequestedSizePercent::parse_pair(Pair::new(50, 100))?,
+    LayoutPropsBuilder::new()
+      .set_id("col_1".to_string())
+      .set_dir(Direction::Vertical)
+      .set_req_size(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
+      .build(),
   )?;
   canvas.print(vec!["col 1 - Hello"])?;
   canvas.print(vec!["col 1 - World"])?;
@@ -115,9 +121,11 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
 /// Right column.
 fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
   canvas.start_layout(
-    "col_2",
-    Direction::Vertical,
-    RequestedSizePercent::parse_pair(Pair::new(50, 100))?,
+    LayoutPropsBuilder::new()
+      .set_id("col_2".to_string())
+      .set_dir(Direction::Vertical)
+      .set_req_size(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
+      .build(),
   )?;
   canvas.print(vec!["col 2 - Hello"])?;
   canvas.print(vec!["col 2 - World"])?;

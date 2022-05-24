@@ -16,7 +16,7 @@
 */
 
 use crate::*;
-use r3bl_rs_utils::{with, CommonResult};
+use r3bl_rs_utils::{with, Builder, CommonResult};
 
 /// Represents a rectangular area of the terminal screen, and not necessarily the full
 /// terminal screen.
@@ -35,8 +35,7 @@ pub trait LayoutManager {
   /// Set the origin pos (x, y) & canvas size (width, height) of our box (container).
   fn start(
     &mut self,
-    pos: Position,
-    size: Size,
+    bounds_props: BoundsProps,
   ) -> CommonResult<()>;
 
   fn end(&mut self) -> CommonResult<()>;
@@ -44,9 +43,7 @@ pub trait LayoutManager {
   /// Add a new layout on the stack w/ the direction & (width, height) percentages.
   fn start_layout(
     &mut self,
-    id: &str,
-    dir: Direction,
-    sizes_pc: RequestedSizePercent,
+    layout_props: LayoutProps,
   ) -> CommonResult<()>;
 
   fn end_layout(&mut self) -> CommonResult<()>;
@@ -58,18 +55,26 @@ pub trait LayoutManager {
   ) -> CommonResult<()>;
 }
 
-#[derive(Clone, Debug, Default)]
+#[readonly::make]
+#[derive(Clone, Debug, Default, Builder)]
 pub struct LayoutProps {
   pub id: String,
   pub dir: Direction,
   pub req_size: RequestedSizePercent,
+  pub styles: Option<Vec<Style>>,
+}
+
+#[readonly::make]
+#[derive(Clone, Debug, Default, Builder)]
+pub struct BoundsProps {
+  pub pos: Position,
+  pub size: Size,
 }
 
 impl LayoutManager for Canvas {
   fn start(
     &mut self,
-    pos: Position,
-    size: Size,
+    bounds_props: BoundsProps,
   ) -> CommonResult<()> {
     // Expect layout_stack to be empty!
     if !self.is_layout_stack_empty() {
@@ -78,6 +83,7 @@ impl LayoutManager for Canvas {
         LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
       )?
     }
+    let BoundsProps { pos, size } = bounds_props;
     self.origin_pos = pos;
     self.canvas_size = size;
     Ok(())
@@ -96,25 +102,14 @@ impl LayoutManager for Canvas {
 
   fn start_layout(
     &mut self,
-    id: &str,
-    dir: Direction,
-    req_size: RequestedSizePercent,
+    layout_props: LayoutProps,
   ) -> CommonResult<()> {
-    with! {
-      LayoutProps {
-        id: id.to_string(),
-        dir,
-        req_size
-      },
-      as it,
-      run {
-        match self.is_layout_stack_empty() {
-          true => self.add_root_layout(it),
-          false => self.add_normal_layout(it),
-        }?;
-      }
+    {
+      match self.is_layout_stack_empty() {
+        true => self.add_root_layout(layout_props),
+        false => self.add_normal_layout(layout_props),
+      }?
     }
-
     Ok(())
   }
 
@@ -154,7 +149,7 @@ impl LayoutManager for Canvas {
 }
 
 impl Canvas {
-  fn set_stylesheet(
+  pub fn set_stylesheet(
     &mut self,
     stylesheet: Stylesheet,
   ) {
@@ -223,7 +218,12 @@ impl Canvas {
     &mut self,
     props: LayoutProps,
   ) -> CommonResult<()> {
-    let LayoutProps { id, dir, req_size } = props;
+    let LayoutProps {
+      id,
+      dir,
+      req_size,
+      styles,
+    } = props;
     let RequestedSizePercent {
       width: width_pc,
       height: height_pc,
@@ -235,6 +235,7 @@ impl Canvas {
       width_pc,
       height_pc,
       dir,
+      styles,
     ));
     Ok(())
   }
@@ -244,7 +245,12 @@ impl Canvas {
     &mut self,
     props: LayoutProps,
   ) -> CommonResult<()> {
-    let LayoutProps { id, dir, req_size } = props;
+    let LayoutProps {
+      id,
+      dir,
+      req_size,
+      styles,
+    } = props;
     let RequestedSizePercent {
       width: width_pc,
       height: height_pc,
@@ -274,6 +280,7 @@ impl Canvas {
       old_position,
       width_pc,
       height_pc,
+      styles,
     ));
     Ok(())
   }

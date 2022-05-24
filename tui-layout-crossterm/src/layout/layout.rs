@@ -71,9 +71,11 @@ impl Layout {
       .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some())
       .set_layout_cursor_pos(origin_pos.as_some());
     if let Some(styles) = styles {
-      builder.set_styles(styles);
+      builder.set_styles(styles)
+    } else {
+      builder
     }
-    builder.build()
+    .build()
   }
 
   /// Actual position and size for our box will be calculated based on provided hints.
@@ -99,9 +101,11 @@ impl Layout {
       )
       .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some());
     if let Some(styles) = styles {
-      builder.set_styles(styles);
+      builder.set_styles(styles)
+    } else {
+      builder
     }
-    builder.build()
+    .build()
   }
 }
 
@@ -131,22 +135,10 @@ impl std::fmt::Debug for Layout {
     f.debug_struct("Layout")
       .field("id", &self.id)
       .field("dir", &self.dir)
-      .field(
-        "origin_pos",
-        format_option!(&self.origin_pos),
-      )
-      .field(
-        "bounds_size",
-        format_option!(&self.bounds_size),
-      )
-      .field(
-        "req_size_percent",
-        format_option!(&self.req_size_percent),
-      )
-      .field(
-        "layout_cursor_pos",
-        format_option!(&self.layout_cursor_pos),
-      )
+      .field("origin_pos", format_option!(&self.origin_pos))
+      .field("bounds_size", format_option!(&self.bounds_size))
+      .field("req_size_percent", format_option!(&self.req_size_percent))
+      .field("layout_cursor_pos", format_option!(&self.layout_cursor_pos))
       .field(
         "content_cursor_pos",
         format_option!(&self.content_cursor_pos),

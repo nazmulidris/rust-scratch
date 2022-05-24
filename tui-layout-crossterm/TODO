@@ -4,24 +4,26 @@
     ✔ impl lazy eval macro (in r3bl_rs_utils), and use it in Style @done(22-05-21 10:40)
     ✔ impl lazy executor trait for r3bl_rs_utils @done(22-05-21 10:40)
     ✔ concept of styling for layout (padding, fg color, bg color, focus highlight) @done(22-05-21 10:44)
-  ☐ stylesheets
+  stylesheets:
       ✔ extend style to have an id field @done(22-05-22 09:55)
       ✔ create a stylesheet struct @done(22-05-22 11:27)
       ✔ write test @done(22-05-22 12:03)
       ✔ attach it to canvas @done(22-05-23 16:07)
-      ☐ layout.rs
+      layout.rs:
         ✔ extend it to have vec of style id's @done(22-05-24 12:50)
-      ☐ canvas.rs: Canvas, LayoutManager & their test:
+      canvas.rs: Canvas, LayoutManager & their test:
         ✔ pass stylesheet in to Canvas @done(22-05-24 13:04)
-        ☐ update LayoutProps to handle styles
-        ☐ use LayoutProps in LayoutManager trait
-        ☐ pass styles into LayoutManager
-      ☐ style.rs
+        ✔ introduce BoundsProps (for LayoutManager) @done(22-05-24 14:56)
+        ✔ update LayoutProps to handle styles @done(22-05-24 16:08)
+        ✔ use LayoutProps in LayoutManager trait @done(22-05-24 16:08)
+        ✔ pass styles into LayoutManager @done(22-05-24 16:08)
+      style.rs & test_canvas.rs:
         ☐ impl `Add` trait for `Style`
-  ☐ layout & position w/ styling support
+        ☐ update test_canvas.rs to use cascading styles
+  layout & position w/ styling support:
     ☐ attach style to canvas & figure out positioning of layouts w/ padding
     ☐ generate `output_commands` (in `Canvas`) for crossterm
-  ☐ figure out how to accomodate focus management
+  figure out how to accomodate focus management:
     ☐ extend canvas to have a focus field (current id w/ focus)
     ☐ how does this affect rendering of a layout (paint focus highlight?)
 

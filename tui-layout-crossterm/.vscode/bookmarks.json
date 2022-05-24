@@ -9,27 +9,7 @@
 					"label": ""
 				},
 				{
-					"line": 78,
-					"column": 0,
-					"label": ""
-				}
-			]
-		},
-		{
-			"path": "tests/test_canvas.rs",
-			"bookmarks": [
-				{
-					"line": 25,
-					"column": 2,
-					"label": ""
-				},
-				{
-					"line": 59,
-					"column": 0,
-					"label": ""
-				},
-				{
-					"line": 110,
+					"line": 80,
 					"column": 0,
 					"label": ""
 				}
