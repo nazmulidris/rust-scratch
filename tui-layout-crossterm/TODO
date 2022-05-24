@@ -9,7 +9,8 @@
       ✔ create a stylesheet struct @done(22-05-22 11:27)
       ✔ write test @done(22-05-22 12:03)
       ✔ attach it to canvas @done(22-05-23 16:07)
-      ☐ extend layout to have style id
+      ☐ extend layout to have style id vec
+      ☐ impl `Add` trait for `Style`
   ☐ layout & position w/ styling support
     ☐ attach style to canvas & figure out positioning of layouts w/ padding
     ☐ generate `output_commands` (in `Canvas`) for crossterm
