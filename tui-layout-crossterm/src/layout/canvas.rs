@@ -21,6 +21,7 @@ use r3bl_rs_utils::{with, CommonResult};
 /// Represents a rectangular area of the terminal screen, and not necessarily the full
 /// terminal screen.
 #[derive(Clone, Debug, Default)]
+#[readonly::make]
 pub struct Canvas {
   pub origin_pos: Position,
   pub canvas_size: Size,
@@ -159,6 +160,13 @@ impl LayoutManager for Canvas {
 }
 
 impl Canvas {
+  fn set_stylesheet(
+    &mut self,
+    stylesheet: Stylesheet,
+  ) {
+    self.stylesheet = stylesheet;
+  }
+
   fn is_layout_stack_empty(&self) -> bool {
     self.layout_stack.is_empty()
   }

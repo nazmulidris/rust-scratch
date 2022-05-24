@@ -22,7 +22,7 @@ use tui_layout_crossterm::layout::*;
 #[test]
 fn test_simple_2_col_layout() -> CommonResult<()> {
   let mut canvas = Canvas::default();
-  canvas.stylesheet = create_stylesheet()?;
+  canvas.set_stylesheet(create_stylesheet()?);
   canvas.start(
     Position::from_pair(Pair::new(0, 0)),
     Size::from_pair(Pair::new(500, 500)),

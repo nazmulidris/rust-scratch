@@ -742,6 +742,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "readonly"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1195d8cd0ebd43f09af81cbfabd0105419337d13baf2b537ee6788f2c63f825d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1132,6 +1143,7 @@ dependencies = [
  "log",
  "r3bl_rs_utils",
  "r3bl_rs_utils_core",
+ "readonly",
  "serde",
  "serde_json",
  "simplelog",

@@ -1,16 +1,6 @@
 {
 	"files": [
 		{
-			"path": "src/layout/canvas.rs",
-			"bookmarks": [
-				{
-					"line": 101,
-					"column": 18,
-					"label": ""
-				}
-			]
-		},
-		{
 			"path": "src/layout/layout.rs",
 			"bookmarks": [
 				{
@@ -19,7 +9,32 @@
 					"label": ""
 				},
 				{
-					"line": 74,
+					"line": 78,
+					"column": 0,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "tests/test_canvas.rs",
+			"bookmarks": [
+				{
+					"line": 25,
+					"column": 2,
+					"label": ""
+				},
+				{
+					"line": 59,
+					"column": 0,
+					"label": ""
+				},
+				{
+					"line": 110,
+					"column": 0,
+					"label": ""
+				},
+				{
+					"line": 153,
 					"column": 0,
 					"label": ""
 				}

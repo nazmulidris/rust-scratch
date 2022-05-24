@@ -15,7 +15,7 @@
  *   limitations under the License.
 */
 
-use crate::dimens::*;
+use crate::*;
 use r3bl_rs_utils::Builder;
 
 /// Direction of the layout of the box.
@@ -43,6 +43,7 @@ pub struct Layout {
   pub req_size_percent: Option<RequestedSizePercent>,
   pub layout_cursor_pos: Option<Position>,
   pub content_cursor_pos: Option<Position>,
+  pub styles: Vec<Style>,
 }
 
 impl Layout {
@@ -54,8 +55,9 @@ impl Layout {
     width_pc: Percent,
     height_pc: Percent,
     dir: Direction,
+    styles: Option<Vec<Style>>,
   ) -> Layout {
-    LayoutBuilder::new()
+    let builder = LayoutBuilder::new()
       .set_id(id)
       .set_dir(dir)
       .set_origin_pos(origin_pos.as_some())
@@ -67,8 +69,11 @@ impl Layout {
         .as_some(),
       )
       .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some())
-      .set_layout_cursor_pos(origin_pos.as_some())
-      .build()
+      .set_layout_cursor_pos(origin_pos.as_some());
+    if let Some(styles) = styles {
+      builder.set_styles(styles);
+    }
+    builder.build()
   }
 
   /// Actual position and size for our box will be calculated based on provided hints.
@@ -79,8 +84,9 @@ impl Layout {
     origin_pos: Position,
     width_pc: Percent,
     height_pc: Percent,
+    styles: Option<Vec<Style>>,
   ) -> Self {
-    LayoutBuilder::new()
+    let builder = LayoutBuilder::new()
       .set_id(id)
       .set_dir(dir)
       .set_origin_pos(origin_pos.as_some())
@@ -91,8 +97,11 @@ impl Layout {
         )
         .as_some(),
       )
-      .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some())
-      .build()
+      .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some());
+    if let Some(styles) = styles {
+      builder.set_styles(styles);
+    }
+    builder.build()
   }
 }
 
