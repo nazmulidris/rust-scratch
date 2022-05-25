@@ -17,8 +17,9 @@
         ✔ update LayoutProps to handle styles @done(22-05-24 16:08)
         ✔ use LayoutProps in LayoutManager trait @done(22-05-24 16:08)
         ✔ pass styles into LayoutManager @done(22-05-24 16:08)
-      style.rs & test_canvas.rs:
-        ☐ impl `Add` trait for `Style`
+      style.rs, test_style.rs, & test_canvas.rs:
+        ✔ impl `Add` trait for `Style` @done(22-05-25 12:26)
+        ✔ update test_style.rs to use `Add` trait @done(22-05-25 14:59)
         ☐ update test_canvas.rs to use cascading styles
   layout & position w/ styling support:
     ☐ attach style to canvas & figure out positioning of layouts w/ padding

@@ -62,10 +62,41 @@ fn test_style() {
   debug!(bitflags);
   assert!(bitflags.contains(StyleFlag::BOLD_SET));
   assert!(bitflags.contains(StyleFlag::ITALIC_SET));
-  assert_eq!(
-    bitflags.contains(StyleFlag::UNDERLINE_SET),
-    false
-  );
+  assert_eq!(bitflags.contains(StyleFlag::UNDERLINE_SET), false);
+}
+
+#[test]
+fn test_cascade_style() {
+  let style_bold_green_fg = StyleBuilder::new()
+    .set_bold(true)
+    .set_color_fg(Some(Color::Green))
+    .build();
+  let style_italic = StyleBuilder::new().set_italic(true).build();
+  let style_yellow_bg = StyleBuilder::new()
+    .set_color_bg(Some(Color::Yellow))
+    .build();
+  let style_padding = StyleBuilder::new().set_padding(Some(2)).build();
+  let style_red_fg = StyleBuilder::new().set_color_fg(Some(Color::Red)).build();
+
+  let mut computed_style =
+    style_bold_green_fg + style_italic + style_yellow_bg + style_padding + style_red_fg;
+
+  assert!(computed_style.get_bitflags().contains(
+    StyleFlag::COLOR_FG_SET
+      | StyleFlag::COLOR_BG_SET
+      | StyleFlag::BOLD_SET
+      | StyleFlag::ITALIC_SET
+      | StyleFlag::PADDING_SET
+      | StyleFlag::COMPUTED_SET
+  ));
+
+  assert_eq!(computed_style.color_bg.unwrap(), Color::Yellow);
+  assert_eq!(computed_style.color_fg.unwrap(), Color::Red);
+  assert_eq!(computed_style.bold, true);
+  assert_eq!(computed_style.italic, true);
+  assert_eq!(computed_style.computed, true);
+  assert_eq!(computed_style.padding.unwrap(), 2);
+  assert_eq!(computed_style.underline, false);
 }
 
 #[test]
@@ -81,25 +112,11 @@ fn test_stylesheet() {
   assert!(result.is_ok());
   assert_eq!(stylesheet.styles.len(), 2);
 
-  assert_eq!(
-    stylesheet
-      .get_style_by_id("style1")
-      .unwrap()
-      .id,
-    "style1"
-  );
+  assert_eq!(stylesheet.get_style_by_id("style1").unwrap().id, "style1");
 
-  assert_eq!(
-    stylesheet
-      .get_style_by_id("style2")
-      .unwrap()
-      .id,
-    "style2"
-  );
+  assert_eq!(stylesheet.get_style_by_id("style2").unwrap().id, "style2");
 
-  assert!(stylesheet
-    .get_style_by_id("style3")
-    .is_none());
+  assert!(stylesheet.get_style_by_id("style3").is_none());
 }
 
 /// Helper function.

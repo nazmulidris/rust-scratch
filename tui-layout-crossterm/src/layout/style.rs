@@ -15,6 +15,8 @@
  *   limitations under the License.
 */
 
+use std::ops::Add;
+
 use crate::UnitType;
 use bitflags::bitflags;
 use crossterm::style::Color;
@@ -26,12 +28,13 @@ use r3bl_rs_utils::{unwrap_option_or_compute_if_none, Builder};
 #[derive(Default, Builder, Debug, Clone, PartialEq, Eq)]
 pub struct Style {
   pub id: String,
-  pub color_fg: Option<Color>,
-  pub color_bg: Option<Color>,
-  pub padding: Option<UnitType>,
   pub bold: bool,
   pub italic: bool,
   pub underline: bool,
+  pub computed: bool,
+  pub color_fg: Option<Color>,
+  pub color_bg: Option<Color>,
+  pub padding: Option<UnitType>,
   pub cached_bitflags: Option<StyleFlag>,
 }
 
@@ -44,6 +47,7 @@ bitflags! {
     const ITALIC_SET    = 0b00001000;
     const UNDERLINE_SET = 0b00010000;
     const PADDING_SET   = 0b00100000;
+    const COMPUTED_SET = 0b01000000;
   }
 }
 
@@ -56,6 +60,10 @@ impl Style {
       self.cached_bitflags,
       || self.gen_bitflags()
     }
+  }
+
+  pub fn reset_bitflags(&mut self) {
+    self.cached_bitflags = None;
   }
 
   fn gen_bitflags(&self) -> StyleFlag {
@@ -79,7 +87,52 @@ impl Style {
     if self.underline {
       mask.insert(StyleFlag::UNDERLINE_SET);
     }
-
+    if self.computed {
+      mask.insert(StyleFlag::COMPUTED_SET);
+    }
     mask
+  }
+}
+
+/// Add: Style + Style (overrides) = Style.
+/// https://doc.rust-lang.org/book/ch19-03-advanced-traits.html
+impl Add<Self> for Style {
+  type Output = Self;
+
+  fn add(
+    self,
+    other: Self,
+  ) -> Self {
+    let mut new_style = self.clone();
+
+    // Computed style has no id.
+    new_style.computed = true;
+    new_style.id = "".to_string();
+
+    // other (if set) overrides self.
+    if let Some(color_fg) = other.color_fg {
+      new_style.color_fg = Some(color_fg);
+    }
+    if let Some(color_bg) = other.color_bg {
+      new_style.color_bg = Some(color_bg);
+    }
+    if let Some(padding) = other.padding {
+      new_style.padding = Some(padding);
+    }
+    if other.bold {
+      new_style.bold = true;
+    }
+    if other.italic {
+      new_style.italic = true;
+    }
+    if other.underline {
+      new_style.underline = true;
+    }
+
+    // Recalculate the bitflags.
+    new_style.reset_bitflags();
+    new_style.get_bitflags();
+
+    new_style
   }
 }

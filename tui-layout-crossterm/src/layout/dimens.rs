@@ -180,11 +180,11 @@ impl Add<Size> for Position {
   type Output = Position;
   fn add(
     self,
-    rhs: Size,
+    other: Size,
   ) -> Self {
     Self::new(
-      self.x + rhs.width,
-      self.y + rhs.height,
+      self.x + other.width,
+      self.y + other.height,
     )
   }
 }
@@ -195,11 +195,11 @@ impl Mul<Pair> for Position {
   type Output = Position;
   fn mul(
     self,
-    rhs: Pair,
+    other: Pair,
   ) -> Self {
     Self::new(
-      self.x * rhs.first,
-      self.y * rhs.second,
+      self.x * other.first,
+      self.y * other.second,
     )
   }
 }
