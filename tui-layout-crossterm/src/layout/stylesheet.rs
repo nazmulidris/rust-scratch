@@ -49,13 +49,34 @@ impl Stylesheet {
     Ok(())
   }
 
-  pub fn get_style_by_id(
+  pub fn find_style_by_id(
     &self,
     id: &str,
-  ) -> Option<&Style> {
+  ) -> Option<Style> {
     self
       .styles
       .iter()
       .find(|style| style.id == id)
+      .map(|style| style.clone())
+  }
+
+  /// Returns [None] if no style in `ids` [Vec] is found.
+  pub fn find_styles_by_ids(
+    &self,
+    ids: Vec<&str>,
+  ) -> Option<Vec<Style>> {
+    let mut styles = Vec::new();
+
+    for id in ids {
+      if let Some(style) = self.find_style_by_id(id) {
+        styles.push(style.clone());
+      }
+    }
+
+    if styles.is_empty() {
+      None
+    } else {
+      Some(styles)
+    }
   }
 }

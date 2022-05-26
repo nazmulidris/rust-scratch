@@ -43,7 +43,7 @@ pub struct Layout {
   pub req_size_percent: Option<RequestedSizePercent>,
   pub layout_cursor_pos: Option<Position>,
   pub content_cursor_pos: Option<Position>,
-  pub styles: Vec<Style>,
+  pub styles: Option<Vec<Style>>,
 }
 
 impl Layout {
@@ -57,7 +57,7 @@ impl Layout {
     dir: Direction,
     styles: Option<Vec<Style>>,
   ) -> Layout {
-    let builder = LayoutBuilder::new()
+    LayoutBuilder::new()
       .set_id(id)
       .set_dir(dir)
       .set_origin_pos(origin_pos.as_some())
@@ -69,13 +69,9 @@ impl Layout {
         .as_some(),
       )
       .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some())
-      .set_layout_cursor_pos(origin_pos.as_some());
-    if let Some(styles) = styles {
-      builder.set_styles(styles)
-    } else {
-      builder
-    }
-    .build()
+      .set_layout_cursor_pos(origin_pos.as_some())
+      .set_styles(styles)
+      .build()
   }
 
   /// Actual position and size for our box will be calculated based on provided hints.
@@ -88,7 +84,7 @@ impl Layout {
     height_pc: Percent,
     styles: Option<Vec<Style>>,
   ) -> Self {
-    let builder = LayoutBuilder::new()
+    LayoutBuilder::new()
       .set_id(id)
       .set_dir(dir)
       .set_origin_pos(origin_pos.as_some())
@@ -99,13 +95,9 @@ impl Layout {
         )
         .as_some(),
       )
-      .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some());
-    if let Some(styles) = styles {
-      builder.set_styles(styles)
-    } else {
-      builder
-    }
-    .build()
+      .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some())
+      .set_styles(styles)
+      .build()
   }
 }
 

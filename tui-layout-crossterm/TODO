@@ -20,9 +20,10 @@
       style.rs, test_style.rs, & test_canvas.rs:
         ✔ impl `Add` trait for `Style` @done(22-05-25 12:26)
         ✔ update test_style.rs to use `Add` trait @done(22-05-25 14:59)
-        ☐ update test_canvas.rs to use cascading styles
+        ✔ update test_canvas.rs to use cascading styles @done(22-05-26 13:07)
   layout & position w/ styling support:
     ☐ attach style to canvas & figure out positioning of layouts w/ padding
+    ☐ update tests to match above
     ☐ generate `output_commands` (in `Canvas`) for crossterm
   figure out how to accomodate focus management:
     ☐ extend canvas to have a focus field (current id w/ focus)

@@ -102,6 +102,7 @@ fn test_cascade_style() {
 #[test]
 fn test_stylesheet() {
   let mut stylesheet = Stylesheet::new();
+
   let style1 = make_a_style("style1");
   let result = stylesheet.add_style(style1);
   assert!(result.is_ok());
@@ -112,11 +113,18 @@ fn test_stylesheet() {
   assert!(result.is_ok());
   assert_eq!(stylesheet.styles.len(), 2);
 
-  assert_eq!(stylesheet.get_style_by_id("style1").unwrap().id, "style1");
+  assert_eq!(stylesheet.find_style_by_id("style1").unwrap().id, "style1");
+  assert_eq!(stylesheet.find_style_by_id("style2").unwrap().id, "style2");
+  assert!(stylesheet.find_style_by_id("style3").is_none());
 
-  assert_eq!(stylesheet.get_style_by_id("style2").unwrap().id, "style2");
-
-  assert!(stylesheet.get_style_by_id("style3").is_none());
+  let result = stylesheet.find_styles_by_ids(vec!["style1", "style2"]);
+  assert_eq!(result.as_ref().unwrap().len(), 2);
+  assert_eq!(result.as_ref().unwrap()[0].id, "style1");
+  assert_eq!(result.as_ref().unwrap()[1].id, "style2");
+  assert_eq!(
+    stylesheet.find_styles_by_ids(vec!["style3", "style4"]),
+    None
+  );
 }
 
 /// Helper function.

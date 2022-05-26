@@ -94,8 +94,9 @@ impl Style {
   }
 }
 
-/// Add: Style + Style (overrides) = Style.
-/// https://doc.rust-lang.org/book/ch19-03-advanced-traits.html
+/// Implement specificity behavior for [Style] by implementing [Add] trait. Here's the
+/// rule: `Style + Style (overrides) = Style`.
+/// - https://doc.rust-lang.org/book/ch19-03-advanced-traits.html
 impl Add<Self> for Style {
   type Output = Self;
 

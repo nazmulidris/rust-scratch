@@ -24,7 +24,7 @@ fn test_simple_2_col_layout() -> CommonResult<()> {
   let mut canvas = Canvas::default();
   canvas.set_stylesheet(create_stylesheet()?);
   canvas.start(
-    BoundsPropsBuilder::new()
+    CanvasPropsBuilder::new()
       .set_pos(Position::from_pair(Pair::new(0, 0)))
       .set_size(Size::from_pair(Pair::new(500, 500)))
       .build(),
@@ -34,27 +34,7 @@ fn test_simple_2_col_layout() -> CommonResult<()> {
   Ok(())
 }
 
-/// Create stylesheet.
-fn create_stylesheet() -> CommonResult<Stylesheet> {
-  let mut stylesheet = Stylesheet::new();
-  stylesheet.add_styles(vec![create_style("style1"), create_style("style2")])?;
-  Ok(stylesheet)
-}
-
-/// Helper function.
-fn create_style(id: &str) -> Style {
-  let black = Color::Rgb { r: 0, g: 0, b: 0 };
-  let style = StyleBuilder::new()
-    .set_id(id.to_string())
-    .set_color_bg(Some(black))
-    .set_color_fg(Some(black))
-    .set_italic(true)
-    .set_bold(true)
-    .build();
-  style
-}
-
-/// Main container.
+/// Main container "container".
 fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
   canvas.start_layout(
     LayoutPropsBuilder::new()
@@ -82,15 +62,17 @@ fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
     );
     assert_eq!(layout_item.layout_cursor_pos, Some(Position::new(0, 0)));
     assert_eq!(layout_item.content_cursor_pos, None);
+    assert_eq!(layout_item.styles, None);
 
     Ok(())
   }
 }
 
-/// Left column.
+/// Left column "col_1".
 fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
   canvas.start_layout(
     LayoutPropsBuilder::new()
+      .set_styles(canvas.get_stylesheet().find_styles_by_ids(vec!["style1"]))
       .set_id("col_1".to_string())
       .set_dir(Direction::Vertical)
       .set_req_size(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
@@ -104,6 +86,7 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
 
   fn make_left_col_assertions(canvas: &Canvas) -> CommonResult<()> {
     let layout_item = canvas.layout_stack.last().unwrap();
+
     assert_eq!(layout_item.id, "col_1");
     assert_eq!(layout_item.dir, Direction::Vertical);
     assert_eq!(layout_item.origin_pos, Some(Position::new(0, 0)));
@@ -114,14 +97,23 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
     );
     assert_eq!(layout_item.layout_cursor_pos, None);
     assert_eq!(layout_item.content_cursor_pos, Some(Position::new(0, 2)));
+    assert_eq!(
+      layout_item.styles.clone().unwrap(),
+      canvas
+        .get_stylesheet()
+        .find_styles_by_ids(vec!["style1"])
+        .unwrap()
+    );
+
     Ok(())
   }
 }
 
-/// Right column.
+/// Right column "col_2".
 fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
   canvas.start_layout(
     LayoutPropsBuilder::new()
+      .set_styles(canvas.get_stylesheet().find_styles_by_ids(vec!["style2"]))
       .set_id("col_2".to_string())
       .set_dir(Direction::Vertical)
       .set_req_size(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
@@ -135,6 +127,7 @@ fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
 
   fn make_right_col_assertions(canvas: &Canvas) -> CommonResult<()> {
     let layout_item = canvas.layout_stack.last().unwrap();
+
     assert_eq!(layout_item.id, "col_2");
     assert_eq!(layout_item.dir, Direction::Vertical);
     assert_eq!(layout_item.origin_pos, Some(Position::new(250, 0)));
@@ -145,6 +138,34 @@ fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
     );
     assert_eq!(layout_item.layout_cursor_pos, None);
     assert_eq!(layout_item.content_cursor_pos, Some(Position::new(0, 2)));
+    assert_eq!(
+      layout_item.styles.clone().unwrap(),
+      canvas
+        .get_stylesheet()
+        .find_styles_by_ids(vec!["style2"])
+        .unwrap()
+    );
+
     Ok(())
   }
+}
+
+/// Create a stylesheet containing styles.
+fn create_stylesheet() -> CommonResult<Stylesheet> {
+  let mut stylesheet = Stylesheet::new();
+  stylesheet.add_styles(vec![create_style("style1"), create_style("style2")])?;
+  Ok(stylesheet)
+}
+
+/// Create a style.
+fn create_style(id: &str) -> Style {
+  let black = Color::Rgb { r: 0, g: 0, b: 0 };
+  let style = StyleBuilder::new()
+    .set_id(id.to_string())
+    .set_color_bg(Some(black))
+    .set_color_fg(Some(black))
+    .set_italic(true)
+    .set_bold(true)
+    .build();
+  style
 }

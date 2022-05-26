@@ -35,7 +35,7 @@ pub trait LayoutManager {
   /// Set the origin pos (x, y) & canvas size (width, height) of our box (container).
   fn start(
     &mut self,
-    bounds_props: BoundsProps,
+    bounds_props: CanvasProps,
   ) -> CommonResult<()>;
 
   fn end(&mut self) -> CommonResult<()>;
@@ -55,6 +55,7 @@ pub trait LayoutManager {
   ) -> CommonResult<()>;
 }
 
+/// Properties that are needed to create a [Layout].
 #[readonly::make]
 #[derive(Clone, Debug, Default, Builder)]
 pub struct LayoutProps {
@@ -64,17 +65,19 @@ pub struct LayoutProps {
   pub styles: Option<Vec<Style>>,
 }
 
+/// Properties that are needed to create a [Canvas].
 #[readonly::make]
 #[derive(Clone, Debug, Default, Builder)]
-pub struct BoundsProps {
+pub struct CanvasProps {
   pub pos: Position,
   pub size: Size,
 }
 
+/// Implementation of the [LayoutManager] trait for [Canvas].
 impl LayoutManager for Canvas {
   fn start(
     &mut self,
-    bounds_props: BoundsProps,
+    bounds_props: CanvasProps,
   ) -> CommonResult<()> {
     // Expect layout_stack to be empty!
     if !self.is_layout_stack_empty() {
@@ -83,7 +86,7 @@ impl LayoutManager for Canvas {
         LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
       )?
     }
-    let BoundsProps { pos, size } = bounds_props;
+    let CanvasProps { pos, size } = bounds_props;
     self.origin_pos = pos;
     self.canvas_size = size;
     Ok(())
@@ -148,12 +151,17 @@ impl LayoutManager for Canvas {
   }
 }
 
+/// Implementation of other public and private methods for [Canvas] struct.
 impl Canvas {
   pub fn set_stylesheet(
     &mut self,
     stylesheet: Stylesheet,
   ) {
     self.stylesheet = stylesheet;
+  }
+
+  pub fn get_stylesheet(&self) -> &Stylesheet {
+    &self.stylesheet
   }
 
   fn is_layout_stack_empty(&self) -> bool {
