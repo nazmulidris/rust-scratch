@@ -20,13 +20,6 @@ use r3bl_rs_utils::{Builder, CommonResult};
 
 /// Public API interface to create nested & responsive layout based UIs.
 pub trait LayoutManager {
-  fn set_stylesheet(
-    &mut self,
-    stylesheet: Stylesheet,
-  );
-
-  fn get_stylesheet(&self) -> &Stylesheet;
-
   /// Set the origin pos (x, y) & canvas size (width, height) of our box (container).
   fn start(
     &mut self,

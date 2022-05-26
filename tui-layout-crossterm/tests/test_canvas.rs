@@ -22,7 +22,7 @@ use tui_layout_crossterm::layout::*;
 #[test]
 fn test_simple_2_col_layout() -> CommonResult<()> {
   let mut canvas = Canvas::default();
-  canvas.set_stylesheet(create_stylesheet()?);
+  canvas.stylesheet = create_stylesheet()?;
   canvas.start(
     CanvasPropsBuilder::new()
       .set_pos(Position::from_pair(Pair::new(0, 0)))
@@ -72,7 +72,7 @@ fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
 fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
   canvas.start_layout(
     LayoutPropsBuilder::new()
-      .set_styles(canvas.get_stylesheet().find_styles_by_ids(vec!["style1"]))
+      .set_styles(canvas.stylesheet.find_styles_by_ids(vec!["style1"]))
       .set_id("col_1".to_string())
       .set_dir(Direction::Vertical)
       .set_req_size(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
@@ -100,7 +100,7 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(
       layout_item.styles.clone().unwrap(),
       canvas
-        .get_stylesheet()
+        .stylesheet
         .find_styles_by_ids(vec!["style1"])
         .unwrap()
     );
@@ -113,7 +113,7 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
 fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
   canvas.start_layout(
     LayoutPropsBuilder::new()
-      .set_styles(canvas.get_stylesheet().find_styles_by_ids(vec!["style2"]))
+      .set_styles(canvas.stylesheet.find_styles_by_ids(vec!["style2"]))
       .set_id("col_2".to_string())
       .set_dir(Direction::Vertical)
       .set_req_size(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
@@ -141,7 +141,7 @@ fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(
       layout_item.styles.clone().unwrap(),
       canvas
-        .get_stylesheet()
+        .stylesheet
         .find_styles_by_ids(vec!["style2"])
         .unwrap()
     );

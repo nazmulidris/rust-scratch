@@ -31,17 +31,6 @@ pub struct Canvas {
 }
 
 impl LayoutManager for Canvas {
-  fn set_stylesheet(
-    &mut self,
-    stylesheet: Stylesheet,
-  ) {
-    self.stylesheet = stylesheet;
-  }
-
-  fn get_stylesheet(&self) -> &Stylesheet {
-    &self.stylesheet
-  }
-
   fn start(
     &mut self,
     bounds_props: CanvasProps,
