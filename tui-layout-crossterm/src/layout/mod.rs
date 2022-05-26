@@ -22,6 +22,7 @@ pub mod layout;
 pub mod canvas;
 pub mod style;
 pub mod stylesheet;
+pub mod layout_manager;
 
 // Re-export the public items.
 pub use dimens::*;
@@ -30,3 +31,4 @@ pub use canvas::*;
 pub use layout_error::*;
 pub use style::*;
 pub use stylesheet::*;
+pub use layout_manager::*;
