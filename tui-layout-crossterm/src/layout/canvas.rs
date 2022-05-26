@@ -30,8 +30,33 @@ pub struct Canvas {
   pub output_commands: Vec<String>,
 }
 
-/// API interface to create nested & responsive layout based UIs.
+/// Properties that are needed to create a [Layout].
+#[readonly::make]
+#[derive(Clone, Debug, Default, Builder)]
+pub struct LayoutProps {
+  pub id: String,
+  pub dir: Direction,
+  pub req_size: RequestedSizePercent,
+  pub styles: Option<Vec<Style>>,
+}
+
+/// Properties that are needed to create a [Canvas].
+#[readonly::make]
+#[derive(Clone, Debug, Default, Builder)]
+pub struct CanvasProps {
+  pub pos: Position,
+  pub size: Size,
+}
+
+/// Public API interface to create nested & responsive layout based UIs.
 pub trait LayoutManager {
+  fn set_stylesheet(
+    &mut self,
+    stylesheet: Stylesheet,
+  );
+
+  fn get_stylesheet(&self) -> &Stylesheet;
+
   /// Set the origin pos (x, y) & canvas size (width, height) of our box (container).
   fn start(
     &mut self,
@@ -55,26 +80,18 @@ pub trait LayoutManager {
   ) -> CommonResult<()>;
 }
 
-/// Properties that are needed to create a [Layout].
-#[readonly::make]
-#[derive(Clone, Debug, Default, Builder)]
-pub struct LayoutProps {
-  pub id: String,
-  pub dir: Direction,
-  pub req_size: RequestedSizePercent,
-  pub styles: Option<Vec<Style>>,
-}
-
-/// Properties that are needed to create a [Canvas].
-#[readonly::make]
-#[derive(Clone, Debug, Default, Builder)]
-pub struct CanvasProps {
-  pub pos: Position,
-  pub size: Size,
-}
-
-/// Implementation of the [LayoutManager] trait for [Canvas].
 impl LayoutManager for Canvas {
+  fn set_stylesheet(
+    &mut self,
+    stylesheet: Stylesheet,
+  ) {
+    self.stylesheet = stylesheet;
+  }
+
+  fn get_stylesheet(&self) -> &Stylesheet {
+    &self.stylesheet
+  }
+
   fn start(
     &mut self,
     bounds_props: CanvasProps,
@@ -151,19 +168,41 @@ impl LayoutManager for Canvas {
   }
 }
 
-/// Implementation of other public and private methods for [Canvas] struct.
-impl Canvas {
-  pub fn set_stylesheet(
+/// Private methods that actually perform the layout and positioning.
+trait PerformLayoutAndPositioning {
+  fn is_layout_stack_empty(&self) -> bool;
+
+  fn push_layout(
     &mut self,
-    stylesheet: Stylesheet,
-  ) {
-    self.stylesheet = stylesheet;
-  }
+    layout: Layout,
+  );
 
-  pub fn get_stylesheet(&self) -> &Stylesheet {
-    &self.stylesheet
-  }
+  fn pop_layout(&mut self);
 
+  fn calc_next_layout_cursor_pos(
+    &mut self,
+    allocated_size: Size,
+  ) -> CommonResult<Position>;
+
+  fn update_layout_cursor_pos(
+    &mut self,
+    new_pos: Position,
+  ) -> CommonResult<()>;
+
+  fn get_current_layout(&mut self) -> CommonResult<&mut Layout>;
+
+  fn add_root_layout(
+    &mut self,
+    props: LayoutProps,
+  ) -> CommonResult<()>;
+
+  fn add_normal_layout(
+    &mut self,
+    props: LayoutProps,
+  ) -> CommonResult<()>;
+}
+
+impl PerformLayoutAndPositioning for Canvas {
   fn is_layout_stack_empty(&self) -> bool {
     self.layout_stack.is_empty()
   }
