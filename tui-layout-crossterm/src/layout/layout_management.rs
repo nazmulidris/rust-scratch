@@ -16,7 +16,7 @@
 */
 
 use crate::*;
-use r3bl_rs_utils::CommonResult;
+use r3bl_rs_utils::{Builder, CommonResult};
 
 /// Public API interface to create nested & responsive layout based UIs.
 pub trait LayoutManager {
@@ -82,4 +82,20 @@ pub(in crate::layout) trait PerformLayoutAndPositioning {
     &mut self,
     props: LayoutProps,
   ) -> CommonResult<()>;
+}
+
+/// Properties that are needed to create a [Layout].
+#[derive(Clone, Debug, Default, Builder)]
+pub struct LayoutProps {
+  pub id: String,
+  pub dir: Direction,
+  pub req_size: RequestedSizePercent,
+  pub styles: Option<Vec<Style>>,
+}
+
+/// Properties that are needed to create a [Canvas].
+#[derive(Clone, Debug, Default, Builder)]
+pub struct CanvasProps {
+  pub pos: Position,
+  pub size: Size,
 }

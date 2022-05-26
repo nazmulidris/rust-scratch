@@ -17,36 +17,17 @@
 
 use crate::layout::*;
 use crate::*;
-use r3bl_rs_utils::{with, Builder, CommonResult};
+use r3bl_rs_utils::{with, CommonResult};
 
 /// Represents a rectangular area of the terminal screen, and not necessarily the full
 /// terminal screen.
 #[derive(Clone, Debug, Default)]
-#[readonly::make]
 pub struct Canvas {
   pub origin_pos: Position,
   pub canvas_size: Size,
   pub layout_stack: Vec<Layout>,
   pub stylesheet: Stylesheet,
   pub output_commands: Vec<String>,
-}
-
-/// Properties that are needed to create a [Layout].
-#[readonly::make]
-#[derive(Clone, Debug, Default, Builder)]
-pub struct LayoutProps {
-  pub id: String,
-  pub dir: Direction,
-  pub req_size: RequestedSizePercent,
-  pub styles: Option<Vec<Style>>,
-}
-
-/// Properties that are needed to create a [Canvas].
-#[readonly::make]
-#[derive(Clone, Debug, Default, Builder)]
-pub struct CanvasProps {
-  pub pos: Position,
-  pub size: Size,
 }
 
 impl LayoutManager for Canvas {
