@@ -38,7 +38,7 @@ impl LayoutManager for Canvas {
     // Expect layout_stack to be empty!
     if !self.layout_stack.is_empty() {
       LayoutError::new_err_with_msg(
-        LayoutErrorType::MismatchedStart,
+        LayoutErrorType::MismatchedCanvasStart,
         LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
       )?
     }
@@ -51,7 +51,7 @@ impl LayoutManager for Canvas {
     // Expect layout_stack to be empty!
     if !self.layout_stack.is_empty() {
       LayoutError::new_err_with_msg(
-        LayoutErrorType::MismatchedEnd,
+        LayoutErrorType::MismatchedCanvasEnd,
         LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
       )?
     }
@@ -73,7 +73,7 @@ impl LayoutManager for Canvas {
     // Expect layout_stack not to be empty!
     if self.layout_stack.is_empty() {
       LayoutError::new_err_with_msg(
-        LayoutErrorType::MismatchedEndLayout,
+        LayoutErrorType::MismatchedLayoutEnd,
         LayoutError::format_msg_with_stack_len(
           &self.layout_stack,
           "Layout stack should not be empty",
@@ -94,59 +94,6 @@ impl LayoutManager for Canvas {
 }
 
 impl PerformPositioningAndSizing for Canvas {
-  /// This updates the `content_cursor_pos` of the current [Layout].
-  fn calc_where_to_insert_new_content_in_layout(
-    &mut self,
-    content_size: Size,
-  ) -> CommonResult<()> {
-    let current_layout = self.current_layout()?;
-    let pos = unwrap_option_or_compute_if_none! {
-      current_layout.content_cursor_pos,
-      || Position::new(0, 0)
-    };
-    current_layout.content_cursor_pos = Some(pos + content_size);
-    Ok(())
-  }
-
-  /// This updates the `layout_cursor_pos` of the current [Layout]. Calculate and return
-  /// the position of where the next layout can be added to the stack.
-  fn calc_where_to_insert_new_layout_in_canvas(
-    &mut self,
-    allocated_size: Size,
-  ) -> CommonResult<Position> {
-    let current_layout = self.current_layout()?;
-    let layout_cursor_pos = current_layout.layout_cursor_pos;
-
-    let layout_cursor_pos = unwrap_or_err! {
-      layout_cursor_pos,
-      LayoutErrorType::ErrorCalculatingNextLayoutPos
-    };
-
-    let new_pos: Position = layout_cursor_pos + allocated_size;
-
-    // Adjust `new_pos` using Direction.
-    let new_pos: Position = match current_layout.dir {
-      Direction::Vertical => new_pos * Pair::new(0, 1),
-      Direction::Horizontal => new_pos * Pair::new(1, 0),
-    };
-
-    let return_pos = new_pos.clone();
-
-    // Update the cursor position of the current layout.
-    current_layout.layout_cursor_pos = new_pos.as_some();
-
-    Ok(return_pos)
-  }
-
-  /// Get the last layout on the stack (if none found then return Err).
-  fn current_layout(&mut self) -> CommonResult<&mut Layout> {
-    // Expect layout_stack not to be empty!
-    if self.layout_stack.is_empty() {
-      LayoutError::new_err(LayoutErrorType::LayoutStackShouldNotBeEmpty)?
-    }
-    Ok(self.layout_stack.last_mut().unwrap())
-  }
-
   /// 🌳 Root: Handle first layout to add to stack, explicitly sized & positioned.
   fn add_root_layout(
     &mut self,
@@ -212,6 +159,61 @@ impl PerformPositioningAndSizing for Canvas {
       styles,
     ));
 
+    Ok(())
+  }
+
+  /// Must be called *before* the new [Layout] is added to the stack otherwise
+  /// [LayoutErrorType::ErrorCalculatingNextLayoutPos] error is returned.
+  ///
+  /// This updates the `layout_cursor_pos` of the current [Layout].
+  ///
+  /// Returns the [Position] where the next [Layout] can be added to the stack.
+  fn calc_where_to_insert_new_layout_in_canvas(
+    &mut self,
+    allocated_size: Size,
+  ) -> CommonResult<Position> {
+    let current_layout = self.current_layout()?;
+    let layout_cursor_pos = current_layout.layout_cursor_pos;
+
+    let layout_cursor_pos = unwrap_or_err! {
+      layout_cursor_pos,
+      LayoutErrorType::ErrorCalculatingNextLayoutPos
+    };
+
+    let new_pos: Position = layout_cursor_pos + allocated_size;
+
+    // Adjust `new_pos` using Direction.
+    let new_pos: Position = match current_layout.dir {
+      Direction::Vertical => new_pos * Pair::new(0, 1),
+      Direction::Horizontal => new_pos * Pair::new(1, 0),
+    };
+
+    // Update the layout_cursor_pos of the current layout.
+    current_layout.layout_cursor_pos = new_pos.as_some();
+
+    Ok(new_pos)
+  }
+
+  /// Get the last layout on the stack (if none found then return Err).
+  fn current_layout(&mut self) -> CommonResult<&mut Layout> {
+    // Expect layout_stack not to be empty!
+    if self.layout_stack.is_empty() {
+      LayoutError::new_err(LayoutErrorType::LayoutStackShouldNotBeEmpty)?
+    }
+    Ok(self.layout_stack.last_mut().unwrap())
+  }
+
+  /// This updates the `content_cursor_pos` of the current [Layout].
+  fn calc_where_to_insert_new_content_in_layout(
+    &mut self,
+    content_size: Size,
+  ) -> CommonResult<()> {
+    let current_layout = self.current_layout()?;
+    let pos = unwrap_option_or_compute_if_none! {
+      current_layout.content_cursor_pos,
+      || Position::new(0, 0)
+    };
+    current_layout.content_cursor_pos = Some(pos + content_size);
     Ok(())
   }
 }

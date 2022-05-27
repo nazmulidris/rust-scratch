@@ -51,7 +51,7 @@ pub(in crate::layout) trait PerformPositioningAndSizing {
     pos: Size,
   ) -> CommonResult<()>;
 
-  /// Update `layout_cursor_pos`.
+  /// Update `layout_cursor_pos`. This needs to be called before adding a new [Layout].
   fn calc_where_to_insert_new_layout_in_canvas(
     &mut self,
     allocated_size: Size,

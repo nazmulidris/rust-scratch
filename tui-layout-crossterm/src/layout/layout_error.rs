@@ -36,9 +36,9 @@ pub struct LayoutError {
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub enum LayoutErrorType {
-  MismatchedEnd,
-  MismatchedStart,
-  MismatchedEndLayout,
+  MismatchedCanvasEnd,
+  MismatchedCanvasStart,
+  MismatchedLayoutEnd,
   LayoutStackShouldNotBeEmpty,
   InvalidLayoutSizePercentage,
   ErrorCalculatingNextLayoutPos,
@@ -70,10 +70,7 @@ impl LayoutError {
     err_type: LayoutErrorType,
     msg: String,
   ) -> CommonResult<T> {
-    Err(LayoutError::new(
-      err_type,
-      Some(msg),
-    ))
+    Err(LayoutError::new(err_type, Some(msg)))
   }
 
   pub fn new(
@@ -87,11 +84,7 @@ impl LayoutError {
     layout_stack: &Vec<Layout>,
     msg: &str,
   ) -> String {
-    format!(
-      "{}, layout_stack.len(): {}",
-      msg,
-      layout_stack.len()
-    )
+    format!("{}, layout_stack.len(): {}", msg, layout_stack.len())
   }
 }
 
