@@ -116,6 +116,7 @@ impl PerformPositioningAndSizing for Canvas {
       dir,
       styles,
     ));
+
     Ok(())
   }
 
@@ -132,8 +133,10 @@ impl PerformPositioningAndSizing for Canvas {
       styles,
     }: LayoutProps,
   ) -> CommonResult<()> {
+    let current_layout = self.current_layout()?;
+
     let container_bounds = unwrap_or_err! {
-      self.current_layout()?.bounds_size,
+      current_layout.bounds_size,
       LayoutErrorType::ContainerBoundsNotDefined
     };
 
@@ -143,7 +146,7 @@ impl PerformPositioningAndSizing for Canvas {
     );
 
     let old_position = unwrap_or_err! {
-      self.current_layout()?.layout_cursor_pos,
+      current_layout.layout_cursor_pos,
       LayoutErrorType::LayoutCursorPositionNotDefined
     };
 
@@ -200,11 +203,13 @@ impl PerformPositioningAndSizing for Canvas {
     content_size: Size,
   ) -> CommonResult<()> {
     let current_layout = self.current_layout()?;
+
     let pos = unwrap_option_or_compute_if_none! {
       current_layout.content_cursor_pos,
       || Position::new(0, 0)
     };
     current_layout.content_cursor_pos = Some(pos + content_size);
+
     Ok(())
   }
 
