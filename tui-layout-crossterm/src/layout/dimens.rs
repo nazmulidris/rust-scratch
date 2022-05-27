@@ -287,8 +287,8 @@ pub struct RequestedSizePercent {
 }
 
 impl RequestedSizePercent {
-  /// Try and convert the two given numbers as percentages. Returns error if the parsing
-  /// fails.
+  /// Try and convert the [Pair] as percentages (first is width, second is height).
+  /// Returns error if the parsing fails.
   pub fn parse_pair(pair: Pair) -> CommonResult<RequestedSizePercent> {
     let (width_pc, height_pc) = Percent::parse_pair(pair)?;
     Ok(Self::new(width_pc, height_pc))

@@ -47,7 +47,7 @@ bitflags! {
     const ITALIC_SET    = 0b00001000;
     const UNDERLINE_SET = 0b00010000;
     const PADDING_SET   = 0b00100000;
-    const COMPUTED_SET = 0b01000000;
+    const COMPUTED_SET  = 0b01000000;
   }
 }
 
@@ -67,30 +67,31 @@ impl Style {
   }
 
   fn gen_bitflags(&self) -> StyleFlag {
-    let mut mask = StyleFlag::empty();
+    let mut it = StyleFlag::empty();
 
     if self.color_fg.is_some() {
-      mask.insert(StyleFlag::COLOR_FG_SET);
+      it.insert(StyleFlag::COLOR_FG_SET);
     }
     if self.color_bg.is_some() {
-      mask.insert(StyleFlag::COLOR_BG_SET);
+      it.insert(StyleFlag::COLOR_BG_SET);
     }
     if self.padding.is_some() {
-      mask.insert(StyleFlag::PADDING_SET);
+      it.insert(StyleFlag::PADDING_SET);
     }
     if self.bold {
-      mask.insert(StyleFlag::BOLD_SET);
+      it.insert(StyleFlag::BOLD_SET);
     }
     if self.italic {
-      mask.insert(StyleFlag::ITALIC_SET);
+      it.insert(StyleFlag::ITALIC_SET);
     }
     if self.underline {
-      mask.insert(StyleFlag::UNDERLINE_SET);
+      it.insert(StyleFlag::UNDERLINE_SET);
     }
     if self.computed {
-      mask.insert(StyleFlag::COMPUTED_SET);
+      it.insert(StyleFlag::COMPUTED_SET);
     }
-    mask
+
+    it
   }
 }
 

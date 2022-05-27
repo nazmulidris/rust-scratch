@@ -23,20 +23,20 @@ use tui_layout_crossterm::layout::*;
 fn test_simple_2_col_layout() -> CommonResult<()> {
   let mut canvas = Canvas::default();
   canvas.stylesheet = create_stylesheet()?;
-  canvas.start(
+  canvas.canvas_start(
     CanvasPropsBuilder::new()
       .set_pos(Position::from_pair(Pair::new(0, 0)))
       .set_size(Size::from_pair(Pair::new(500, 500)))
       .build(),
   )?;
   layout_container(&mut canvas)?;
-  canvas.end()?;
+  canvas.canvas_end()?;
   Ok(())
 }
 
 /// Main container "container".
 fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
-  canvas.start_layout(
+  canvas.layout_start(
     LayoutPropsBuilder::new()
       .set_id("container".to_string())
       .set_dir(Direction::Horizontal)
@@ -46,7 +46,7 @@ fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
   make_container_assertions(canvas)?;
   layout_left_col(canvas)?;
   layout_right_col(canvas)?;
-  canvas.end_layout()?;
+  canvas.layout_end()?;
   return Ok(());
 
   fn make_container_assertions(canvas: &Canvas) -> CommonResult<()> {
@@ -70,7 +70,7 @@ fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
 
 /// Left column "col_1".
 fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
-  canvas.start_layout(
+  canvas.layout_start(
     LayoutPropsBuilder::new()
       .set_styles(canvas.stylesheet.find_styles_by_ids(vec!["style1"]))
       .set_id("col_1".to_string())
@@ -78,10 +78,10 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
       .set_req_size(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
       .build(),
   )?;
-  canvas.print(vec!["col 1 - Hello"])?;
-  canvas.print(vec!["col 1 - World"])?;
+  canvas.paint(vec!["col 1 - Hello"])?;
+  canvas.paint(vec!["col 1 - World"])?;
   make_left_col_assertions(canvas)?;
-  canvas.end_layout()?;
+  canvas.layout_end()?;
   return Ok(());
 
   fn make_left_col_assertions(canvas: &Canvas) -> CommonResult<()> {
@@ -111,7 +111,7 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
 
 /// Right column "col_2".
 fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
-  canvas.start_layout(
+  canvas.layout_start(
     LayoutPropsBuilder::new()
       .set_styles(canvas.stylesheet.find_styles_by_ids(vec!["style2"]))
       .set_id("col_2".to_string())
@@ -119,10 +119,10 @@ fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
       .set_req_size(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
       .build(),
   )?;
-  canvas.print(vec!["col 2 - Hello"])?;
-  canvas.print(vec!["col 2 - World"])?;
+  canvas.paint(vec!["col 2 - Hello"])?;
+  canvas.paint(vec!["col 2 - World"])?;
   make_right_col_assertions(canvas)?;
-  canvas.end_layout()?;
+  canvas.layout_end()?;
   return Ok(());
 
   fn make_right_col_assertions(canvas: &Canvas) -> CommonResult<()> {

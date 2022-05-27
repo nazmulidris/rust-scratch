@@ -31,7 +31,7 @@ pub struct Canvas {
 }
 
 impl LayoutManager for Canvas {
-  fn start(
+  fn canvas_start(
     &mut self,
     CanvasProps { pos, size }: CanvasProps,
   ) -> CommonResult<()> {
@@ -47,7 +47,7 @@ impl LayoutManager for Canvas {
     Ok(())
   }
 
-  fn end(&mut self) -> CommonResult<()> {
+  fn canvas_end(&mut self) -> CommonResult<()> {
     // Expect layout_stack to be empty!
     if !self.layout_stack.is_empty() {
       LayoutError::new_err_with_msg(
@@ -58,18 +58,18 @@ impl LayoutManager for Canvas {
     Ok(())
   }
 
-  fn start_layout(
+  fn layout_start(
     &mut self,
     layout_props: LayoutProps,
   ) -> CommonResult<()> {
     match self.layout_stack.is_empty() {
       true => self.add_root_layout(layout_props),
-      false => self.add_normal_layout(layout_props),
+      false => self.add_layout(layout_props),
     }?;
     Ok(())
   }
 
-  fn end_layout(&mut self) -> CommonResult<()> {
+  fn layout_end(&mut self) -> CommonResult<()> {
     // Expect layout_stack not to be empty!
     if self.layout_stack.is_empty() {
       LayoutError::new_err_with_msg(
@@ -84,22 +84,22 @@ impl LayoutManager for Canvas {
     Ok(())
   }
 
-  fn print(
+  fn paint(
     &mut self,
     text_vec: Vec<&str>,
   ) -> CommonResult<()> {
-    self.calc_next_content_cursor_pos(Size::from_usize(0, text_vec.len()))?;
+    self.calc_where_to_insert_new_content_in_layout(Size::from_usize(0, text_vec.len()))?;
     Ok(())
   }
 }
 
-impl PerformSizingAndPositioning for Canvas {
+impl PerformPositioningAndSizing for Canvas {
   /// This updates the `content_cursor_pos` of the current [Layout].
-  fn calc_next_content_cursor_pos(
+  fn calc_where_to_insert_new_content_in_layout(
     &mut self,
     content_size: Size,
   ) -> CommonResult<()> {
-    let current_layout = self.get_current_layout()?;
+    let current_layout = self.current_layout()?;
     let pos = unwrap_option_or_compute_if_none! {
       current_layout.content_cursor_pos,
       || Position::new(0, 0)
@@ -110,11 +110,11 @@ impl PerformSizingAndPositioning for Canvas {
 
   /// This updates the `layout_cursor_pos` of the current [Layout]. Calculate and return
   /// the position of where the next layout can be added to the stack.
-  fn calc_next_layout_cursor_pos(
+  fn calc_where_to_insert_new_layout_in_canvas(
     &mut self,
     allocated_size: Size,
   ) -> CommonResult<Position> {
-    let current_layout = self.get_current_layout()?;
+    let current_layout = self.current_layout()?;
     let layout_cursor_pos = current_layout.layout_cursor_pos;
 
     let layout_cursor_pos = unwrap_or_err! {
@@ -133,13 +133,13 @@ impl PerformSizingAndPositioning for Canvas {
     let return_pos = new_pos.clone();
 
     // Update the cursor position of the current layout.
-    self.get_current_layout()?.layout_cursor_pos = new_pos.as_some();
+    current_layout.layout_cursor_pos = new_pos.as_some();
 
     Ok(return_pos)
   }
 
   /// Get the last layout on the stack (if none found then return Err).
-  fn get_current_layout(&mut self) -> CommonResult<&mut Layout> {
+  fn current_layout(&mut self) -> CommonResult<&mut Layout> {
     // Expect layout_stack not to be empty!
     if self.layout_stack.is_empty() {
       LayoutError::new_err(LayoutErrorType::LayoutStackShouldNotBeEmpty)?
@@ -172,8 +172,8 @@ impl PerformSizingAndPositioning for Canvas {
     Ok(())
   }
 
-  /// 🍀 Non-root: Handle layout to add to stack. Position and Size will be calculated.
-  fn add_normal_layout(
+  /// 🍀 Non-root: Handle layout to add to stack. [Position] and [Size] will be calculated.
+  fn add_layout(
     &mut self,
     LayoutProps {
       id,
@@ -186,7 +186,7 @@ impl PerformSizingAndPositioning for Canvas {
     }: LayoutProps,
   ) -> CommonResult<()> {
     let container_bounds = unwrap_or_err! {
-      self.get_current_layout()?.bounds_size,
+      self.current_layout()?.bounds_size,
       LayoutErrorType::ContainerBoundsNotDefined
     };
 
@@ -196,11 +196,11 @@ impl PerformSizingAndPositioning for Canvas {
     );
 
     let old_position = unwrap_or_err! {
-      self.get_current_layout()?.layout_cursor_pos,
+      self.current_layout()?.layout_cursor_pos,
       LayoutErrorType::LayoutCursorPositionNotDefined
     };
 
-    self.calc_next_layout_cursor_pos(requested_size_allocation)?;
+    self.calc_where_to_insert_new_layout_in_canvas(requested_size_allocation)?;
 
     self.layout_stack.push(Layout::make_layout(
       id.to_string(),
@@ -211,6 +211,7 @@ impl PerformSizingAndPositioning for Canvas {
       height_pc,
       styles,
     ));
+
     Ok(())
   }
 }

@@ -21,48 +21,55 @@ use r3bl_rs_utils::{Builder, CommonResult};
 /// Public API interface to create nested & responsive layout based UIs.
 pub trait LayoutManager {
   /// Set the origin pos (x, y) & canvas size (width, height) of our box (container).
-  fn start(
+  fn canvas_start(
     &mut self,
     bounds_props: CanvasProps,
   ) -> CommonResult<()>;
 
-  fn end(&mut self) -> CommonResult<()>;
+  fn canvas_end(&mut self) -> CommonResult<()>;
 
   /// Add a new layout on the stack w/ the direction & (width, height) percentages.
-  fn start_layout(
+  fn layout_start(
     &mut self,
     layout_props: LayoutProps,
   ) -> CommonResult<()>;
 
-  fn end_layout(&mut self) -> CommonResult<()>;
+  fn layout_end(&mut self) -> CommonResult<()>;
 
   /// Painting operations.
-  fn print(
+  fn paint(
     &mut self,
     text_vec: Vec<&str>,
   ) -> CommonResult<()>;
 }
 
 /// Internal (semi-private) methods that actually perform the layout and positioning.
-pub(in crate::layout) trait PerformSizingAndPositioning {
-  fn calc_next_content_cursor_pos(
+pub(in crate::layout) trait PerformPositioningAndSizing {
+  /// Update `content_cursor_pos`.
+  fn calc_where_to_insert_new_content_in_layout(
     &mut self,
     pos: Size,
   ) -> CommonResult<()>;
 
-  fn calc_next_layout_cursor_pos(
+  /// Update `layout_cursor_pos`.
+  fn calc_where_to_insert_new_layout_in_canvas(
     &mut self,
     allocated_size: Size,
   ) -> CommonResult<Position>;
 
-  fn get_current_layout(&mut self) -> CommonResult<&mut Layout>;
+  /// Get the [Layout] at the "top" of the `layout_stack`.
+  fn current_layout(&mut self) -> CommonResult<&mut Layout>;
 
+  /// Add the first [Layout] to the [Canvas].
+  /// 1. This one is explicitly sized.
+  /// 2. there can be only one.
   fn add_root_layout(
     &mut self,
     props: LayoutProps,
   ) -> CommonResult<()>;
 
-  fn add_normal_layout(
+  /// Add non-root [Layout].
+  fn add_layout(
     &mut self,
     props: LayoutProps,
   ) -> CommonResult<()>;
