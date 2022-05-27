@@ -17,7 +17,7 @@
 
 use crate::layout::*;
 use crate::*;
-use r3bl_rs_utils::{with, CommonResult};
+use r3bl_rs_utils::{unwrap_option_or_compute_if_none, with, CommonResult};
 
 /// Represents a rectangular area of the terminal screen, and not necessarily the full
 /// terminal screen.
@@ -36,7 +36,7 @@ impl LayoutManager for Canvas {
     bounds_props: CanvasProps,
   ) -> CommonResult<()> {
     // Expect layout_stack to be empty!
-    if !self.is_layout_stack_empty() {
+    if !self.layout_stack.is_empty() {
       LayoutError::new_err_with_msg(
         LayoutErrorType::MismatchedStart,
         LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
@@ -50,7 +50,7 @@ impl LayoutManager for Canvas {
 
   fn end(&mut self) -> CommonResult<()> {
     // Expect layout_stack to be empty!
-    if !self.is_layout_stack_empty() {
+    if !self.layout_stack.is_empty() {
       LayoutError::new_err_with_msg(
         LayoutErrorType::MismatchedEnd,
         LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
@@ -63,18 +63,16 @@ impl LayoutManager for Canvas {
     &mut self,
     layout_props: LayoutProps,
   ) -> CommonResult<()> {
-    {
-      match self.is_layout_stack_empty() {
-        true => self.add_root_layout(layout_props),
-        false => self.add_normal_layout(layout_props),
-      }?
-    }
+    match self.layout_stack.is_empty() {
+      true => self.add_root_layout(layout_props),
+      false => self.add_normal_layout(layout_props),
+    }?;
     Ok(())
   }
 
   fn end_layout(&mut self) -> CommonResult<()> {
     // Expect layout_stack not to be empty!
-    if self.is_layout_stack_empty() {
+    if self.layout_stack.is_empty() {
       LayoutError::new_err_with_msg(
         LayoutErrorType::MismatchedEndLayout,
         LayoutError::format_msg_with_stack_len(
@@ -83,7 +81,7 @@ impl LayoutManager for Canvas {
         ),
       )?
     }
-    self.pop_layout();
+    self.layout_stack.pop();
     Ok(())
   }
 
@@ -95,34 +93,18 @@ impl LayoutManager for Canvas {
       self.get_current_layout()?,
       as current_layout,
       run {
-        let mut pos:Position = match current_layout.content_cursor_pos {
-          Some(value) => value,
-          None => Position::new(0, 0),
+        let mut pos = unwrap_option_or_compute_if_none!{
+          current_layout.content_cursor_pos,
+          || Position::new(0, 0)
         };
-        pos.add_y(text_vec.len());
-        current_layout.content_cursor_pos = Some(pos);
+        current_layout.content_cursor_pos = pos.add_y(text_vec.len()).as_some();
       }
-    };
+    }
     Ok(())
   }
 }
 
 impl PerformLayoutAndPositioning for Canvas {
-  fn is_layout_stack_empty(&self) -> bool {
-    self.layout_stack.is_empty()
-  }
-
-  fn push_layout(
-    &mut self,
-    layout: Layout,
-  ) {
-    self.layout_stack.push(layout);
-  }
-
-  fn pop_layout(&mut self) {
-    self.layout_stack.pop();
-  }
-
   /// Calculate and return the position of where the next layout can be added to the
   /// stack. This updates the `layout_cursor_pos` of the current layout.
   fn calc_next_layout_cursor_pos(
@@ -180,7 +162,7 @@ impl PerformLayoutAndPositioning for Canvas {
       width: width_pc,
       height: height_pc,
     } = req_size;
-    self.push_layout(Layout::make_root_layout(
+    self.layout_stack.push(Layout::make_root_layout(
       id.to_string(),
       self.canvas_size,
       self.origin_pos,
@@ -225,7 +207,7 @@ impl PerformLayoutAndPositioning for Canvas {
     let new_pos = self.calc_next_layout_cursor_pos(requested_size_allocation)?;
     self.update_layout_cursor_pos(new_pos)?;
 
-    self.push_layout(Layout::make_layout(
+    self.layout_stack.push(Layout::make_layout(
       id.to_string(),
       dir,
       container_bounds,

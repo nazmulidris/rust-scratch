@@ -66,11 +66,7 @@ impl Debug for Pair {
     &self,
     f: &mut fmt::Formatter<'_>,
   ) -> fmt::Result {
-    write!(
-      f,
-      "Pair [first:{}, second:{}]",
-      self.first, self.second
-    )
+    write!(f, "Pair [first:{}, second:{}]", self.first, self.second)
   }
 }
 
@@ -107,18 +103,20 @@ impl Position {
   pub fn add_x(
     &mut self,
     value: usize,
-  ) {
+  ) -> Self {
     let value: UnitType = value as UnitType;
     self.x = self.x + value;
+    *self
   }
 
   /// Add given `y` value to `self`.
   pub fn add_y(
     &mut self,
     value: usize,
-  ) {
+  ) -> Self {
     let value = value as UnitType;
     self.y = self.y + value;
+    *self
   }
 }
 
@@ -166,11 +164,7 @@ impl Debug for Size {
     &self,
     f: &mut fmt::Formatter<'_>,
   ) -> fmt::Result {
-    write!(
-      f,
-      "[width:{}, height:{}]",
-      self.width, self.height
-    )
+    write!(f, "[width:{}, height:{}]", self.width, self.height)
   }
 }
 
@@ -182,10 +176,7 @@ impl Add<Size> for Position {
     self,
     other: Size,
   ) -> Self {
-    Self::new(
-      self.x + other.width,
-      self.y + other.height,
-    )
+    Self::new(self.x + other.width, self.y + other.height)
   }
 }
 
@@ -197,10 +188,7 @@ impl Mul<Pair> for Position {
     self,
     other: Pair,
   ) -> Self {
-    Self::new(
-      self.x * other.first,
-      self.y * other.second,
-    )
+    Self::new(self.x * other.first, self.y * other.second)
   }
 }
 
@@ -236,14 +224,8 @@ impl Percent {
     let second = Percent::from(pair.second.into());
 
     if first.is_none() || second.is_none() {
-      let err_msg = format!(
-        "Invalid percentage values in tuple: {:?}",
-        pair
-      );
-      return LayoutError::new_err_with_msg(
-        LayoutErrorType::InvalidLayoutSizePercentage,
-        err_msg,
-      );
+      let err_msg = format!("Invalid percentage values in tuple: {:?}", pair);
+      return LayoutError::new_err_with_msg(LayoutErrorType::InvalidLayoutSizePercentage, err_msg);
     }
 
     return Ok((first.unwrap(), second.unwrap()));
@@ -253,14 +235,8 @@ impl Percent {
   /// error if given value is not between 0 and 100.
   pub fn parse(item: i32) -> CommonResult<Percent> {
     let value = unwrap_option_or_run_fn_returning_err!(Percent::from(item), || {
-      let err_msg = format!(
-        "Invalid percentage value: {}",
-        item
-      );
-      return LayoutError::new_err_with_msg(
-        LayoutErrorType::InvalidLayoutSizePercentage,
-        err_msg,
-      );
+      let err_msg = format!("Invalid percentage value: {}", item);
+      return LayoutError::new_err_with_msg(LayoutErrorType::InvalidLayoutSizePercentage, err_msg);
     });
     return Ok(value);
   }
@@ -327,10 +303,6 @@ impl Debug for RequestedSizePercent {
     &self,
     f: &mut fmt::Formatter<'_>,
   ) -> fmt::Result {
-    write!(
-      f,
-      "[width:{}, height:{}]",
-      self.width, self.height
-    )
+    write!(f, "[width:{}, height:{}]", self.width, self.height)
   }
 }

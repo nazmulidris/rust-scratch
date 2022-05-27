@@ -45,15 +45,6 @@ pub trait LayoutManager {
 
 /// Internal (semi-private) methods that actually perform the layout and positioning.
 pub(in crate::layout) trait PerformLayoutAndPositioning {
-  fn is_layout_stack_empty(&self) -> bool;
-
-  fn push_layout(
-    &mut self,
-    layout: Layout,
-  );
-
-  fn pop_layout(&mut self);
-
   fn calc_next_layout_cursor_pos(
     &mut self,
     allocated_size: Size,
