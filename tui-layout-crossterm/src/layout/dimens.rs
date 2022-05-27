@@ -145,6 +145,16 @@ impl Size {
     }
   }
 
+  pub fn from_usize(
+    width: usize,
+    height: usize,
+  ) -> Self {
+    Self {
+      width: width as UnitType,
+      height: height as UnitType,
+    }
+  }
+
   /// Wrap given values as `Size`.
   pub fn new(
     width: UnitType,

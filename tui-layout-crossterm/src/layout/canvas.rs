@@ -17,7 +17,7 @@
 
 use crate::layout::*;
 use crate::*;
-use r3bl_rs_utils::{unwrap_option_or_compute_if_none, with, CommonResult};
+use r3bl_rs_utils::{unwrap_option_or_compute_if_none, CommonResult};
 
 /// Represents a rectangular area of the terminal screen, and not necessarily the full
 /// terminal screen.
@@ -33,7 +33,7 @@ pub struct Canvas {
 impl LayoutManager for Canvas {
   fn start(
     &mut self,
-    bounds_props: CanvasProps,
+    CanvasProps { pos, size }: CanvasProps,
   ) -> CommonResult<()> {
     // Expect layout_stack to be empty!
     if !self.layout_stack.is_empty() {
@@ -42,7 +42,6 @@ impl LayoutManager for Canvas {
         LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
       )?
     }
-    let CanvasProps { pos, size } = bounds_props;
     self.origin_pos = pos;
     self.canvas_size = size;
     Ok(())
@@ -89,24 +88,28 @@ impl LayoutManager for Canvas {
     &mut self,
     text_vec: Vec<&str>,
   ) -> CommonResult<()> {
-    with! {
-      self.get_current_layout()?,
-      as current_layout,
-      run {
-        let mut pos = unwrap_option_or_compute_if_none!{
-          current_layout.content_cursor_pos,
-          || Position::new(0, 0)
-        };
-        current_layout.content_cursor_pos = pos.add_y(text_vec.len()).as_some();
-      }
-    }
+    self.calc_next_content_cursor_pos(Size::from_usize(0, text_vec.len()))?;
     Ok(())
   }
 }
 
-impl PerformLayoutAndPositioning for Canvas {
-  /// Calculate and return the position of where the next layout can be added to the
-  /// stack. This updates the `layout_cursor_pos` of the current layout.
+impl PerformSizingAndPositioning for Canvas {
+  /// This updates the `content_cursor_pos` of the current [Layout].
+  fn calc_next_content_cursor_pos(
+    &mut self,
+    content_size: Size,
+  ) -> CommonResult<()> {
+    let current_layout = self.get_current_layout()?;
+    let pos = unwrap_option_or_compute_if_none! {
+      current_layout.content_cursor_pos,
+      || Position::new(0, 0)
+    };
+    current_layout.content_cursor_pos = Some(pos + content_size);
+    Ok(())
+  }
+
+  /// This updates the `layout_cursor_pos` of the current [Layout]. Calculate and return
+  /// the position of where the next layout can be added to the stack.
   fn calc_next_layout_cursor_pos(
     &mut self,
     allocated_size: Size,
@@ -127,15 +130,12 @@ impl PerformLayoutAndPositioning for Canvas {
       Direction::Horizontal => new_pos * Pair::new(1, 0),
     };
 
-    Ok(new_pos)
-  }
+    let return_pos = new_pos.clone();
 
-  fn update_layout_cursor_pos(
-    &mut self,
-    new_pos: Position,
-  ) -> CommonResult<()> {
+    // Update the cursor position of the current layout.
     self.get_current_layout()?.layout_cursor_pos = new_pos.as_some();
-    Ok(())
+
+    Ok(return_pos)
   }
 
   /// Get the last layout on the stack (if none found then return Err).
@@ -150,18 +150,16 @@ impl PerformLayoutAndPositioning for Canvas {
   /// 🌳 Root: Handle first layout to add to stack, explicitly sized & positioned.
   fn add_root_layout(
     &mut self,
-    props: LayoutProps,
-  ) -> CommonResult<()> {
-    let LayoutProps {
+    LayoutProps {
       id,
       dir,
-      req_size,
+      req_size: RequestedSizePercent {
+        width: width_pc,
+        height: height_pc,
+      },
       styles,
-    } = props;
-    let RequestedSizePercent {
-      width: width_pc,
-      height: height_pc,
-    } = req_size;
+    }: LayoutProps,
+  ) -> CommonResult<()> {
     self.layout_stack.push(Layout::make_root_layout(
       id.to_string(),
       self.canvas_size,
@@ -177,18 +175,16 @@ impl PerformLayoutAndPositioning for Canvas {
   /// 🍀 Non-root: Handle layout to add to stack. Position and Size will be calculated.
   fn add_normal_layout(
     &mut self,
-    props: LayoutProps,
-  ) -> CommonResult<()> {
-    let LayoutProps {
+    LayoutProps {
       id,
       dir,
-      req_size,
+      req_size: RequestedSizePercent {
+        width: width_pc,
+        height: height_pc,
+      },
       styles,
-    } = props;
-    let RequestedSizePercent {
-      width: width_pc,
-      height: height_pc,
-    } = req_size;
+    }: LayoutProps,
+  ) -> CommonResult<()> {
     let container_bounds = unwrap_or_err! {
       self.get_current_layout()?.bounds_size,
       LayoutErrorType::ContainerBoundsNotDefined
@@ -204,8 +200,7 @@ impl PerformLayoutAndPositioning for Canvas {
       LayoutErrorType::LayoutCursorPositionNotDefined
     };
 
-    let new_pos = self.calc_next_layout_cursor_pos(requested_size_allocation)?;
-    self.update_layout_cursor_pos(new_pos)?;
+    self.calc_next_layout_cursor_pos(requested_size_allocation)?;
 
     self.layout_stack.push(Layout::make_layout(
       id.to_string(),

@@ -44,16 +44,16 @@ pub trait LayoutManager {
 }
 
 /// Internal (semi-private) methods that actually perform the layout and positioning.
-pub(in crate::layout) trait PerformLayoutAndPositioning {
+pub(in crate::layout) trait PerformSizingAndPositioning {
+  fn calc_next_content_cursor_pos(
+    &mut self,
+    pos: Size,
+  ) -> CommonResult<()>;
+
   fn calc_next_layout_cursor_pos(
     &mut self,
     allocated_size: Size,
   ) -> CommonResult<Position>;
-
-  fn update_layout_cursor_pos(
-    &mut self,
-    new_pos: Position,
-  ) -> CommonResult<()>;
 
   fn get_current_layout(&mut self) -> CommonResult<&mut Layout>;
 
