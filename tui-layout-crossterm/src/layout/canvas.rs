@@ -194,15 +194,6 @@ impl PerformPositioningAndSizing for Canvas {
     Ok(new_pos)
   }
 
-  /// Get the last layout on the stack (if none found then return Err).
-  fn current_layout(&mut self) -> CommonResult<&mut Layout> {
-    // Expect layout_stack not to be empty!
-    if self.layout_stack.is_empty() {
-      LayoutError::new_err(LayoutErrorType::LayoutStackShouldNotBeEmpty)?
-    }
-    Ok(self.layout_stack.last_mut().unwrap())
-  }
-
   /// This updates the `content_cursor_pos` of the current [Layout].
   fn calc_where_to_insert_new_content_in_layout(
     &mut self,
@@ -215,5 +206,14 @@ impl PerformPositioningAndSizing for Canvas {
     };
     current_layout.content_cursor_pos = Some(pos + content_size);
     Ok(())
+  }
+
+  /// Get the last layout on the stack (if none found then return Err).
+  fn current_layout(&mut self) -> CommonResult<&mut Layout> {
+    // Expect layout_stack not to be empty!
+    if self.layout_stack.is_empty() {
+      LayoutError::new_err(LayoutErrorType::LayoutStackShouldNotBeEmpty)?
+    }
+    Ok(self.layout_stack.last_mut().unwrap())
   }
 }
