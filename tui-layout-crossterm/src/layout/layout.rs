@@ -87,8 +87,9 @@ impl Layout {
     LayoutBuilder::new()
       .set_id(id)
       .set_dir(dir)
-      .set_origin_pos(origin_pos.as_some())
+      .set_origin_pos(origin_pos.as_some()) // TODO: handle padding
       .set_bounds_size(
+        // TODO: handle padding
         Size::new(
           calc_percentage(width_pc, container_bounds.width),
           calc_percentage(height_pc, container_bounds.height),

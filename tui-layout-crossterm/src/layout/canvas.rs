@@ -155,8 +155,8 @@ impl PerformPositioningAndSizing for Canvas {
     self.layout_stack.push(Layout::make_layout(
       id.to_string(),
       dir,
-      container_bounds,
-      old_position,
+      container_bounds, // TODO: handle padding
+      old_position,     // TODO: handle padding
       width_pc,
       height_pc,
       styles,
