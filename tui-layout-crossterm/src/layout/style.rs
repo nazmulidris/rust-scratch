@@ -15,7 +15,7 @@
  *   limitations under the License.
 */
 
-use std::ops::Add;
+use std::ops::{Add, AddAssign};
 
 use crate::UnitType;
 use bitflags::bitflags;
@@ -136,5 +136,14 @@ impl Add<Self> for Style {
     new_style.get_bitflags();
 
     new_style
+  }
+}
+
+impl AddAssign<&Style> for Style {
+  fn add_assign(
+    &mut self,
+    other: &Style,
+  ) {
+    *self = self.clone() + other.clone();
   }
 }

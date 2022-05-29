@@ -43,7 +43,7 @@ pub struct Layout {
   pub req_size_percent: Option<RequestedSizePercent>,
   pub layout_cursor_pos: Option<Position>,
   pub content_cursor_pos: Option<Position>,
-  pub styles: Option<Vec<Style>>,
+  pub styles: Option<Style>,
 }
 
 impl Layout {
@@ -55,22 +55,20 @@ impl Layout {
     width_pc: Percent,
     height_pc: Percent,
     dir: Direction,
-    styles: Option<Vec<Style>>,
+    style: Option<Style>,
   ) -> Layout {
+    let bounds_size = Size::new(
+      calc_percentage(width_pc, canvas_size.width),
+      calc_percentage(height_pc, canvas_size.height),
+    );
     LayoutBuilder::new()
       .set_id(id)
       .set_dir(dir)
       .set_origin_pos(origin_pos.as_some())
-      .set_bounds_size(
-        Size::new(
-          calc_percentage(width_pc, canvas_size.width),
-          calc_percentage(height_pc, canvas_size.height),
-        )
-        .as_some(),
-      )
+      .set_bounds_size(bounds_size.as_some())
       .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some())
       .set_layout_cursor_pos(origin_pos.as_some())
-      .set_styles(styles)
+      .set_styles(style)
       .build()
   }
 
@@ -82,22 +80,24 @@ impl Layout {
     origin_pos: Position,
     width_pc: Percent,
     height_pc: Percent,
-    styles: Option<Vec<Style>>,
+    style: Option<Style>,
   ) -> Self {
+    let style_adjusted_origin_pos = origin_pos;
+    let style_adjusted_bounds_size = Size::new(
+      calc_percentage(width_pc, container_bounds.width),
+      calc_percentage(height_pc, container_bounds.height),
+    );
+    if let Some(ref style) = style {
+      // TODO: Adjust origin_pos & bounds_size based on styles (padding).
+    }
+
     LayoutBuilder::new()
       .set_id(id)
       .set_dir(dir)
-      .set_origin_pos(origin_pos.as_some()) // TODO: handle padding
-      .set_bounds_size(
-        // TODO: handle padding
-        Size::new(
-          calc_percentage(width_pc, container_bounds.width),
-          calc_percentage(height_pc, container_bounds.height),
-        )
-        .as_some(),
-      )
+      .set_origin_pos(style_adjusted_origin_pos.as_some())
+      .set_bounds_size(style_adjusted_bounds_size.as_some())
       .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some())
-      .set_styles(styles)
+      .set_styles(style)
       .build()
   }
 }
@@ -136,6 +136,7 @@ impl std::fmt::Debug for Layout {
         "content_cursor_pos",
         format_option!(&self.content_cursor_pos),
       )
+      .field("styles", format_option!(&self.styles))
       .finish()
   }
 }

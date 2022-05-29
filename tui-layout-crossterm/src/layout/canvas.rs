@@ -114,7 +114,7 @@ impl PerformPositioningAndSizing for Canvas {
       width_pc,
       height_pc,
       dir,
-      styles,
+      Stylesheet::compute(styles),
     ));
 
     Ok(())
@@ -155,11 +155,11 @@ impl PerformPositioningAndSizing for Canvas {
     self.layout_stack.push(Layout::make_layout(
       id.to_string(),
       dir,
-      container_bounds, // TODO: handle padding
-      old_position,     // TODO: handle padding
+      container_bounds,
+      old_position,
       width_pc,
       height_pc,
-      styles,
+      Stylesheet::compute(styles),
     ));
 
     Ok(())

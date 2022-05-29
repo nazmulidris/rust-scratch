@@ -15,7 +15,7 @@
  *   limitations under the License.
 */
 
-use crate::Style;
+use crate::*;
 use r3bl_rs_utils::{CommonError, CommonResult};
 
 #[derive(Default, Debug, Clone)]
@@ -77,6 +77,16 @@ impl Stylesheet {
       None
     } else {
       Some(styles)
+    }
+  }
+
+  pub fn compute(styles: Option<Vec<Style>>) -> Option<Style> {
+    if let Some(styles) = styles {
+      let mut computed = StyleBuilder::new().build();
+      styles.iter().for_each(|style| computed += style);
+      Some(computed)
+    } else {
+      None
     }
   }
 }

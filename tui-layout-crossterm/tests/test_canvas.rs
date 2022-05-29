@@ -98,11 +98,8 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(layout_item.layout_cursor_pos, None);
     assert_eq!(layout_item.content_cursor_pos, Some(Position::new(0, 2)));
     assert_eq!(
-      layout_item.styles.clone().unwrap(),
-      canvas
-        .stylesheet
-        .find_styles_by_ids(vec!["style1"])
-        .unwrap()
+      layout_item.styles.clone(),
+      Stylesheet::compute(canvas.stylesheet.find_styles_by_ids(vec!["style1"]))
     );
 
     Ok(())
@@ -139,11 +136,8 @@ fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(layout_item.layout_cursor_pos, None);
     assert_eq!(layout_item.content_cursor_pos, Some(Position::new(0, 2)));
     assert_eq!(
-      layout_item.styles.clone().unwrap(),
-      canvas
-        .stylesheet
-        .find_styles_by_ids(vec!["style2"])
-        .unwrap()
+      layout_item.styles.clone(),
+      Stylesheet::compute(canvas.stylesheet.find_styles_by_ids(vec!["style2"]))
     );
 
     Ok(())
