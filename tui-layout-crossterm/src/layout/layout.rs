@@ -82,7 +82,6 @@ impl Layout {
     height_pc: Percent,
     style: Option<Style>,
   ) -> Self {
-    // TODO: Update existing tests to exercise this functionality.
     // Adjust `bounds_size` & `origin_pos` based on the style's margin.
     let mut style_adjusted_origin_pos = origin_pos;
     let mut style_adjusted_bounds_size = Size::new(
