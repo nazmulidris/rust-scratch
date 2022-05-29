@@ -89,8 +89,8 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
 
     assert_eq!(layout_item.id, "col_1");
     assert_eq!(layout_item.dir, Direction::Vertical);
-    assert_eq!(layout_item.origin_pos, Some(Position::new(0, 0)));
-    assert_eq!(layout_item.bounds_size, Some(Size::new(250, 500)));
+    assert_eq!(layout_item.origin_pos, Some(Position::new(2, 2))); // Take margin into account.
+    assert_eq!(layout_item.bounds_size, Some(Size::new(246, 496))); // Take margin into account.
     assert_eq!(
       layout_item.req_size_percent,
       Some(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
@@ -127,8 +127,8 @@ fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
 
     assert_eq!(layout_item.id, "col_2");
     assert_eq!(layout_item.dir, Direction::Vertical);
-    assert_eq!(layout_item.origin_pos, Some(Position::new(250, 0)));
-    assert_eq!(layout_item.bounds_size, Some(Size::new(250, 500)));
+    assert_eq!(layout_item.origin_pos, Some(Position::new(252, 2))); // Take margin into account.
+    assert_eq!(layout_item.bounds_size, Some(Size::new(246, 496))); // Take margin into account.
     assert_eq!(
       layout_item.req_size_percent,
       Some(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
@@ -160,6 +160,7 @@ fn create_style(id: &str) -> Style {
     .set_color_fg(Some(black))
     .set_italic(true)
     .set_bold(true)
+    .set_margin(Some(2))
     .build();
   style
 }

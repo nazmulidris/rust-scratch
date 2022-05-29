@@ -36,6 +36,8 @@ use crate::LayoutError;
 use crate::LayoutErrorType;
 use r3bl_rs_utils::unwrap_option_or_run_fn_returning_err;
 use r3bl_rs_utils::CommonResult;
+use std::ops::AddAssign;
+use std::ops::SubAssign;
 use std::{
   fmt::{self, Debug},
   ops::{Add, Mul},
@@ -75,6 +77,16 @@ impl Debug for Pair {
 pub struct Position {
   pub x: UnitType,
   pub y: UnitType,
+}
+
+impl AddAssign<UnitType> for Position {
+  fn add_assign(
+    &mut self,
+    other: UnitType,
+  ) {
+    self.x += other;
+    self.y += other;
+  }
 }
 
 impl Position {
@@ -134,6 +146,16 @@ impl Debug for Position {
 pub struct Size {
   pub width: UnitType,  // number of cols (y).
   pub height: UnitType, // number of rows (x).
+}
+
+impl SubAssign<UnitType> for Size {
+  fn sub_assign(
+    &mut self,
+    other: UnitType,
+  ) {
+    self.width -= other;
+    self.height -= other;
+  }
 }
 
 impl Size {

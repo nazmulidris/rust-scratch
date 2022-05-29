@@ -3,7 +3,7 @@
     ✔ create style struct @done(22-05-20 19:06)
     ✔ impl lazy eval macro (in r3bl_rs_utils), and use it in Style @done(22-05-21 10:40)
     ✔ impl lazy executor trait for r3bl_rs_utils @done(22-05-21 10:40)
-    ✔ concept of styling for layout (padding, fg color, bg color, focus highlight) @done(22-05-21 10:44)
+    ✔ concept of styling for layout (margin, fg color, bg color, focus highlight) @done(22-05-21 10:44)
   stylesheets:
       ✔ extend style to have an id field @done(22-05-22 09:55)
       ✔ create a stylesheet struct @done(22-05-22 11:27)
@@ -22,7 +22,7 @@
         ✔ update test_style.rs to use `Add` trait @done(22-05-25 14:59)
         ✔ update test_canvas.rs to use cascading styles @done(22-05-26 13:07)
   layout & position w/ styling support:
-    ☐ impl positioning of layouts w/ padding 
+    ☐ impl positioning of layouts w/ margin 
       ☐ in canvas.rs, 
         ☐ add_layout()
       ☐ in layout.rs

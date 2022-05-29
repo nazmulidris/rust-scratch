@@ -34,7 +34,7 @@ fn test_bitflags() {
       assert!(!mask1.contains(StyleFlag::COLOR_FG_SET));
       assert!(!mask1.contains(StyleFlag::COLOR_BG_SET));
       assert!(!mask1.contains(StyleFlag::BOLD_SET));
-      assert!(!mask1.contains(StyleFlag::PADDING_SET));
+      assert!(!mask1.contains(StyleFlag::MARGIN_SET));
     }
   };
 
@@ -47,7 +47,7 @@ fn test_bitflags() {
       assert!(!mask2.contains(StyleFlag::UNDERLINE_SET));
       assert!(!mask2.contains(StyleFlag::COLOR_FG_SET));
       assert!(!mask2.contains(StyleFlag::COLOR_BG_SET));
-      assert!(!mask2.contains(StyleFlag::PADDING_SET));
+      assert!(!mask2.contains(StyleFlag::MARGIN_SET));
     }
   }
 
@@ -75,18 +75,18 @@ fn test_cascade_style() {
   let style_yellow_bg = StyleBuilder::new()
     .set_color_bg(Some(Color::Yellow))
     .build();
-  let style_padding = StyleBuilder::new().set_padding(Some(2)).build();
+  let style_margin = StyleBuilder::new().set_margin(Some(2)).build();
   let style_red_fg = StyleBuilder::new().set_color_fg(Some(Color::Red)).build();
 
   let mut computed_style =
-    style_bold_green_fg + style_italic + style_yellow_bg + style_padding + style_red_fg;
+    style_bold_green_fg + style_italic + style_yellow_bg + style_margin + style_red_fg;
 
   assert!(computed_style.get_bitflags().contains(
     StyleFlag::COLOR_FG_SET
       | StyleFlag::COLOR_BG_SET
       | StyleFlag::BOLD_SET
       | StyleFlag::ITALIC_SET
-      | StyleFlag::PADDING_SET
+      | StyleFlag::MARGIN_SET
       | StyleFlag::COMPUTED_SET
   ));
 
@@ -95,7 +95,7 @@ fn test_cascade_style() {
   assert_eq!(computed_style.bold, true);
   assert_eq!(computed_style.italic, true);
   assert_eq!(computed_style.computed, true);
-  assert_eq!(computed_style.padding.unwrap(), 2);
+  assert_eq!(computed_style.margin.unwrap(), 2);
   assert_eq!(computed_style.underline, false);
 }
 

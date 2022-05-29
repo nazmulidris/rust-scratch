@@ -34,7 +34,7 @@ pub struct Style {
   pub computed: bool,
   pub color_fg: Option<Color>,
   pub color_bg: Option<Color>,
-  pub padding: Option<UnitType>,
+  pub margin: Option<UnitType>,
   pub cached_bitflags: Option<StyleFlag>,
 }
 
@@ -46,7 +46,7 @@ bitflags! {
     const BOLD_SET      = 0b00000100;
     const ITALIC_SET    = 0b00001000;
     const UNDERLINE_SET = 0b00010000;
-    const PADDING_SET   = 0b00100000;
+    const MARGIN_SET   = 0b00100000;
     const COMPUTED_SET  = 0b01000000;
   }
 }
@@ -75,8 +75,8 @@ impl Style {
     if self.color_bg.is_some() {
       it.insert(StyleFlag::COLOR_BG_SET);
     }
-    if self.padding.is_some() {
-      it.insert(StyleFlag::PADDING_SET);
+    if self.margin.is_some() {
+      it.insert(StyleFlag::MARGIN_SET);
     }
     if self.bold {
       it.insert(StyleFlag::BOLD_SET);
@@ -118,8 +118,8 @@ impl Add<Self> for Style {
     if let Some(color_bg) = other.color_bg {
       new_style.color_bg = Some(color_bg);
     }
-    if let Some(padding) = other.padding {
-      new_style.padding = Some(padding);
+    if let Some(margin) = other.margin {
+      new_style.margin = Some(margin);
     }
     if other.bold {
       new_style.bold = true;

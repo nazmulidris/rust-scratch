@@ -82,13 +82,18 @@ impl Layout {
     height_pc: Percent,
     style: Option<Style>,
   ) -> Self {
-    let style_adjusted_origin_pos = origin_pos;
-    let style_adjusted_bounds_size = Size::new(
+    // TODO: Update existing tests to exercise this functionality.
+    // Adjust `bounds_size` & `origin_pos` based on the style's margin.
+    let mut style_adjusted_origin_pos = origin_pos;
+    let mut style_adjusted_bounds_size = Size::new(
       calc_percentage(width_pc, container_bounds.width),
       calc_percentage(height_pc, container_bounds.height),
     );
     if let Some(ref style) = style {
-      // TODO: Adjust origin_pos & bounds_size based on styles (padding).
+      if let Some(margin) = style.margin {
+        style_adjusted_origin_pos += margin;
+        style_adjusted_bounds_size -= margin * 2;
+      };
     }
 
     LayoutBuilder::new()
