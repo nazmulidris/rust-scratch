@@ -22,12 +22,11 @@
         ✔ update test_style.rs to use `Add` trait @done(22-05-25 14:59)
         ✔ update test_canvas.rs to use cascading styles @done(22-05-26 13:07)
   layout & position w/ styling support:
-    ☐ impl positioning of layouts w/ margin 
-      ☐ in canvas.rs, 
-        ☐ add_layout()
-      ☐ in layout.rs
-        ☐ make_layout()
-    ☐ update tests to match above
+    ✔ impl positioning of layouts w/ margin @done(22-05-29 11:13)
+      ✔ in test_canvas.rs, @done(22-05-29 11:13)
+      ✔ in layout.rs @done(22-05-29 11:13)
+    ✔ update tests to match above @done(22-05-29 11:13)
+  figure out how to use crossterm:
     ☐ generate `output_commands` (in `Canvas`) for crossterm
   figure out how to accomodate focus management:
     ☐ extend canvas to have a focus field (current id w/ focus)
