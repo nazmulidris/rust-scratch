@@ -15,19 +15,11 @@
  *   limitations under the License.
 */
 
-use r3bl_rs_utils::CommonResult;
+use r3bl_rs_utils::{init_file_logger_once, log, CommonResult};
 
-// Attach source files.
-mod log_mod;
-mod crossterm_mod;
-
-// Import everything from attached source files.
-use crossterm_mod::*;
-use log_mod::*;
-
-#[tokio::main]
-async fn main() -> CommonResult<()> {
-  emit_log_entries().await?;
-  emit_crossterm_commands().await?;
+pub async fn emit_log_entries() -> CommonResult<()> {
+  log!(INFO, "This is a info message");
+  log!(WARN, "This is a warning message");
+  log!(ERROR, "This is a error message");
   Ok(())
 }

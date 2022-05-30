@@ -17,17 +17,7 @@
 
 use r3bl_rs_utils::CommonResult;
 
-// Attach source files.
-mod log_mod;
-mod crossterm_mod;
-
-// Import everything from attached source files.
-use crossterm_mod::*;
-use log_mod::*;
-
-#[tokio::main]
-async fn main() -> CommonResult<()> {
-  emit_log_entries().await?;
-  emit_crossterm_commands().await?;
+pub async fn emit_crossterm_commands() -> CommonResult<()> {
+  println!("TODO: crossterm Hello, world!");
   Ok(())
 }
