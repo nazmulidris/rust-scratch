@@ -18,6 +18,6 @@
 use r3bl_rs_utils::CommonResult;
 
 pub async fn emit_crossterm_commands() -> CommonResult<()> {
-  println!("TODO: crossterm Hello, world!");
+  println!("TODO: crossterm Hello, world2!");
   Ok(())
 }
