@@ -28,9 +28,12 @@
 //! - ANSI (8-bit) vs ASCII (7-bit): http://www.differencebetween.net/technology/web-applications/difference-between-ansi-and-ascii/
 //! - Windows Terminal (bash): https://www.makeuseof.com/windows-terminal-vs-powershell/
 
-use crossterm::terminal;
+use crossterm::{
+  event::{read, Event::Key, KeyCode},
+  terminal,
+};
 use r3bl_rs_utils::CommonResult;
-use tokio::io::{stdin, AsyncReadExt, Stdin};
+use tokio::io::{stdin, AsyncReadExt};
 
 pub async fn emit_crossterm_commands() -> CommonResult<()> {
   println!("TODO: crossterm: Hello, world!");
@@ -64,17 +67,50 @@ impl Drop for RawMode {
 }
 
 pub async fn repl_raw_mode() -> CommonResult<()> {
+  // This will automatically disable raw mode when this instance falls out of scope.
   let _raw_mode = RawMode::start();
   repl().await?;
   return Ok(());
 
-  enum StdinState {
-    NoInput,
-    InputControlChar(u8),
-    InputNormalChar(char),
+  async fn repl() -> CommonResult<()> {
+    println_raw!("Type x to exit repl.");
+    loop {
+      let state = StdinState::crossterm_get_event().await?;
+      match state {
+        StdinState::NoInput => break,
+        StdinState::InputNormalChar('x') => break,
+        StdinState::InputControlChar(number) => {
+          let msg = format!("CONTROL {}", number);
+          println_raw!(msg);
+        }
+        StdinState::InputNormalChar(character) => {
+          println_raw!(character);
+        }
+      }
+    }
+    Ok(())
+  }
+}
+
+enum StdinState {
+  NoInput,
+  InputControlChar(u8),
+  InputNormalChar(char),
+}
+
+impl StdinState {
+  async fn crossterm_get_event() -> CommonResult<StdinState> {
+    match read()? {
+      Key(key_event) => match key_event.code {
+        KeyCode::Char(character) => return Ok(StdinState::InputNormalChar(character)),
+        _ => todo!(),
+      },
+      crossterm::event::Event::Mouse(_) => todo!(),
+      crossterm::event::Event::Resize(_, _) => todo!(),
+    }
   }
 
-  async fn read_stdin_to_state() -> CommonResult<StdinState> {
+  async fn read_stdin_raw_to_state() -> CommonResult<StdinState> {
     let mut read_buffer = [0; 1];
     let bytes_read_into_read_buffer = stdin().read(&mut read_buffer).await?;
 
@@ -92,67 +128,39 @@ pub async fn repl_raw_mode() -> CommonResult<()> {
       Ok(StdinState::InputNormalChar(character))
     }
   }
-
-  async fn repl() -> CommonResult<()> {
-    println_raw!("Type x to exit repl.");
-    loop {
-      let state = read_stdin_to_state().await?;
-      match state {
-        StdinState::NoInput => break,
-        StdinState::InputNormalChar('x') => break,
-        StdinState::InputControlChar(number) => {
-          let msg = format!("CONTROL {}", number);
-          println_raw!(msg);
-        }
-        StdinState::InputNormalChar(character) => {
-          println_raw!(character);
-        }
-      }
-    }
-    Ok(())
-  }
 }
 
-pub async fn repl_canonical_mode() -> CommonResult<()> {
+pub async fn repl_stdin_canonical_mode_to_state() -> CommonResult<()> {
   println!("REPL: canonical mode");
   println!("- To quit: [Ctrl+D (EOL)] or [x + 👇]");
   println!("- To print: Type, then press 👇");
 
-  let mut stdin = stdin();
   loop {
-    match read_stdin_to_state(&mut stdin).await? {
-      StdinState::EOL => {
+    match read_stdin_to_state().await? {
+      StdinState::NoInput => {
         println!("REPL: EOL");
         break;
       }
-      StdinState::QUIT => {
-        println!("REPL: QUIT");
-        break;
-      }
-      StdinState::INPUT(char_read) => {
+      StdinState::InputNormalChar(char_read) => {
+        if char_read == 'x' {
+          println!("REPL: x");
+          break;
+        };
         println!("REPL: INPUT: {}", char_read);
       }
+      _ => todo!(),
     }
   }
 
   return Ok(());
 
-  enum StdinState {
-    EOL,
-    QUIT,
-    INPUT(char),
-  }
-
-  async fn read_stdin_to_state(stdin: &mut Stdin) -> CommonResult<StdinState> {
+  async fn read_stdin_to_state() -> CommonResult<StdinState> {
     let mut read_buffer = [0u8; 1];
-    let bytes_read_into_read_buffer = stdin.read(&mut read_buffer).await?;
+    let bytes_read_into_read_buffer = stdin().read(&mut read_buffer).await?;
     if bytes_read_into_read_buffer == 0 {
-      return Ok(StdinState::EOL);
+      return Ok(StdinState::NoInput);
     }
     let char_read = read_buffer[0] as char;
-    return match char_read {
-      'x' => Ok(StdinState::QUIT),
-      _ => Ok(StdinState::INPUT(char_read)),
-    };
+    Ok(StdinState::InputNormalChar(char_read))
   }
 }
