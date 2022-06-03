@@ -20,6 +20,8 @@ extern crate bitflags;
 
 // Attach source files.
 pub mod layout;
+pub mod crossterm_helpers;
 
 // Re-export.
+pub use crossterm_helpers::*;
 pub use layout::*;
