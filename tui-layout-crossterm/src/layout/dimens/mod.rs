@@ -16,19 +16,9 @@
 */
 
 // Attach source files.
-pub mod layout_error;
-pub mod dimens;
-pub mod layout;
-pub mod canvas;
-pub mod style;
-pub mod stylesheet;
-pub mod layout_management;
+pub mod pair;
+pub mod base_units;
 
-// Re-export the public items.
-pub use canvas::*;
-pub use dimens::*;
-pub use layout::*;
-pub use layout_error::*;
-pub use layout_management::*;
-pub use style::*;
-pub use stylesheet::*;
+// Re-export attached source files.
+pub use pair::*;
+pub use base_units::*;

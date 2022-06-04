@@ -32,8 +32,7 @@
 //!    y
 //! ```
 
-use crate::LayoutError;
-use crate::LayoutErrorType;
+use crate::*;
 use r3bl_rs_utils::unwrap_option_or_run_fn_returning_err;
 use r3bl_rs_utils::CommonResult;
 use std::ops::AddAssign;
@@ -45,59 +44,6 @@ use std::{
 
 /// Maps to whatever base units `crossterm` uses.
 pub type UnitType = u16;
-
-/// Pair, defined as [left, right].
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
-pub struct Pair {
-  pub first: UnitType,
-  pub second: UnitType,
-}
-
-impl Debug for Pair {
-  fn fmt(
-    &self,
-    f: &mut fmt::Formatter<'_>,
-  ) -> fmt::Result {
-    write!(f, "Pair [first:{}, second:{}]", self.first, self.second)
-  }
-}
-
-impl From<(UnitType, UnitType)> for Pair {
-  fn from(pair: (UnitType, UnitType)) -> Self {
-    Self {
-      first: pair.0,
-      second: pair.1,
-    }
-  }
-}
-
-impl From<(u8, u8)> for Pair {
-  fn from(pair: (u8, u8)) -> Self {
-    Self {
-      first: pair.0.into(),
-      second: pair.1.into(),
-    }
-  }
-}
-
-impl From<(i32, i32)> for Pair {
-  fn from(pair: (i32, i32)) -> Self {
-    Self {
-      first: pair.0.try_into().unwrap_or(pair.0 as UnitType),
-      second: pair.1.try_into().unwrap_or(pair.1 as UnitType),
-    }
-  }
-}
-
-/// https://stackoverflow.com/a/28280042/2085356
-impl From<(usize, usize)> for Pair {
-  fn from(pair: (usize, usize)) -> Self {
-    Self {
-      first: pair.0.try_into().unwrap_or(pair.0 as UnitType),
-      second: pair.1.try_into().unwrap_or(pair.1 as UnitType),
-    }
-  }
-}
 
 /// Position, defined as [x, y].
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
