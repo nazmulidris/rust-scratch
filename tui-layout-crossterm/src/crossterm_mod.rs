@@ -33,8 +33,7 @@ pub async fn emit_crossterm_commands() -> CommonResult<()> {
 async fn repl() -> CommonResult<()> {
   println_raw!("Type Ctrl+q to exit repl.");
   loop {
-    let state = InputEvent::read_crossterm_event_to_state().await?;
-    match state {
+    match read()?.into() {
       InputEvent::Exit => break,
 
       InputEvent::InputKeyEvent(key_event) => {
@@ -68,39 +67,33 @@ enum InputEvent {
   InputMouseEvent(MouseEvent),
 }
 
-impl InputEvent {
-  async fn read_crossterm_event_to_state() -> CommonResult<InputEvent> {
-    match read()? {
-      Key(key_event) => InputEvent::handle_key_event(key_event),
-      Mouse(mouse_event) => InputEvent::handle_mouse_event(mouse_event),
-      Resize(cols, rows) => InputEvent::handle_resize_event(rows, cols),
-    }
-  }
-
-  fn handle_key_event(key_event: KeyEvent) -> CommonResult<InputEvent> {
+/// Typecast / convert [KeyEvent] to [InputEvent].
+impl From<KeyEvent> for InputEvent {
+  fn from(key_event: KeyEvent) -> Self {
+    // InputEvent::InputKeyEvent(key_event)
     match key_event {
       KeyEvent {
         code: KeyCode::Char(character),
         modifiers: KeyModifiers::NONE,
-      } => Ok(InputEvent::InputNormalChar(character)),
+      } => InputEvent::InputNormalChar(character),
 
       KeyEvent {
         code: KeyCode::Char(character),
         modifiers: KeyModifiers::CONTROL,
-      } if character == 'q' => Ok(InputEvent::Exit),
+      } if character == 'q' => InputEvent::Exit,
 
-      _ => Ok(InputEvent::InputKeyEvent(key_event)),
+      _ => InputEvent::InputKeyEvent(key_event),
     }
   }
+}
 
-  fn handle_resize_event(
-    rows: u16,
-    cols: u16,
-  ) -> CommonResult<InputEvent> {
-    Ok(InputEvent::Resize(rows, cols))
-  }
-
-  fn handle_mouse_event(mouse_event: MouseEvent) -> CommonResult<InputEvent> {
-    Ok(InputEvent::InputMouseEvent(mouse_event))
+/// Typecast / convert [Event] to [InputEvent].
+impl From<crossterm::event::Event> for InputEvent {
+  fn from(event: crossterm::event::Event) -> Self {
+    match event {
+      Key(key_event) => key_event.into(),
+      Mouse(mouse_event) => InputEvent::InputMouseEvent(mouse_event),
+      Resize(cols, rows) => InputEvent::Resize(rows, cols),
+    }
   }
 }
