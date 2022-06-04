@@ -83,7 +83,6 @@ impl From<Event> for InputEvent {
 /// Typecast / convert [KeyEvent] to [InputEvent].
 impl From<KeyEvent> for InputEvent {
   fn from(key_event: KeyEvent) -> Self {
-    // InputEvent::InputKeyEvent(key_event)
     match key_event {
       KeyEvent {
         code: KeyCode::Char(character),
