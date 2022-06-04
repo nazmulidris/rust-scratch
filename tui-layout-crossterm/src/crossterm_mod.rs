@@ -39,7 +39,7 @@ async fn repl() -> CommonResult<()> {
 
       InputEvent::InputKeyEvent(key_event) => {
         let KeyEvent { modifiers, code } = key_event;
-        let msg = format!("{:?} + {:?}", modifiers, code);
+        let msg = format!("InputKeyEvent: {:?} + {:?}", modifiers, code);
         println_raw!(msg);
       }
 
@@ -60,18 +60,17 @@ async fn repl() -> CommonResult<()> {
   Ok(())
 }
 
-enum InputEvent {
+pub enum InputEvent {
   Exit,
   InputNormalChar(char),
   InputKeyEvent(KeyEvent),
-  /// first: rows, second: cols
   Resize(TerminalSize),
   InputMouseEvent(MouseEvent),
 }
 
-struct TerminalSize {
-  rows: u16,
-  cols: u16,
+pub struct TerminalSize {
+  pub rows: u16,
+  pub cols: u16,
 }
 
 /// Typecast / convert [Event] to [InputEvent].
@@ -79,9 +78,26 @@ impl From<Event> for InputEvent {
   fn from(event: Event) -> Self {
     match event {
       Key(key_event) => key_event.into(),
-      Mouse(mouse_event) => InputEvent::InputMouseEvent(mouse_event),
-      Resize(cols, rows) => InputEvent::Resize(TerminalSize { rows, cols }),
+      Mouse(mouse_event) => mouse_event.into(),
+      Resize(cols, rows) => (rows, cols).into(),
     }
+  }
+}
+
+/// Typecast / convert [(u16, u16)] to [InputEvent::TerminalSize].
+impl From<(/* rows: */ u16, /* cols: */ u16)> for InputEvent {
+  fn from(size: (u16, u16)) -> Self {
+    InputEvent::Resize(TerminalSize {
+      cols: size.1,
+      rows: size.0,
+    })
+  }
+}
+
+/// Typecast / convert [MouseEvent] to [InputEvent].
+impl From<MouseEvent> for InputEvent {
+  fn from(mouse_event: MouseEvent) -> Self {
+    InputEvent::InputMouseEvent(mouse_event)
   }
 }
 
@@ -89,16 +105,19 @@ impl From<Event> for InputEvent {
 impl From<KeyEvent> for InputEvent {
   fn from(key_event: KeyEvent) -> Self {
     match key_event {
-      KeyEvent {
-        code: KeyCode::Char(character),
-        modifiers: KeyModifiers::NONE,
-      } => InputEvent::InputNormalChar(character),
-
+      // Check for `Ctrl + q` to exit.
       KeyEvent {
         code: KeyCode::Char(character),
         modifiers: KeyModifiers::CONTROL,
       } if character == 'q' => InputEvent::Exit,
 
+      // Check if "normal character" is pressed.
+      KeyEvent {
+        code: KeyCode::Char(character),
+        modifiers: KeyModifiers::NONE,
+      } => InputEvent::InputNormalChar(character),
+
+      // All other key presses.
       _ => InputEvent::InputKeyEvent(key_event),
     }
   }

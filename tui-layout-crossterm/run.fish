@@ -2,4 +2,4 @@
 clear
 # cargo update
 # cargo build --release
-RUST_BACKTRACE=1 cargo run --release -q
+RUST_BACKTRACE=1 cargo run --release
