@@ -17,7 +17,7 @@
 
 use crossterm::event::{
   read,
-  Event::{Key, Mouse, Resize},
+  Event::{self, Key, Mouse, Resize},
   KeyCode, KeyEvent, KeyModifiers, MouseEvent,
 };
 use r3bl_rs_utils::{debug, CommonResult};
@@ -32,6 +32,7 @@ pub async fn emit_crossterm_commands() -> CommonResult<()> {
 
 async fn repl() -> CommonResult<()> {
   println_raw!("Type Ctrl+q to exit repl.");
+
   loop {
     match read()?.into() {
       InputEvent::Exit => break,
@@ -55,6 +56,7 @@ async fn repl() -> CommonResult<()> {
       }
     }
   }
+
   Ok(())
 }
 
@@ -65,6 +67,17 @@ enum InputEvent {
   /// first: rows, second: cols
   Resize(u16, u16),
   InputMouseEvent(MouseEvent),
+}
+
+/// Typecast / convert [Event] to [InputEvent].
+impl From<Event> for InputEvent {
+  fn from(event: Event) -> Self {
+    match event {
+      Key(key_event) => key_event.into(),
+      Mouse(mouse_event) => InputEvent::InputMouseEvent(mouse_event),
+      Resize(cols, rows) => InputEvent::Resize(rows, cols),
+    }
+  }
 }
 
 /// Typecast / convert [KeyEvent] to [InputEvent].
@@ -83,17 +96,6 @@ impl From<KeyEvent> for InputEvent {
       } if character == 'q' => InputEvent::Exit,
 
       _ => InputEvent::InputKeyEvent(key_event),
-    }
-  }
-}
-
-/// Typecast / convert [Event] to [InputEvent].
-impl From<crossterm::event::Event> for InputEvent {
-  fn from(event: crossterm::event::Event) -> Self {
-    match event {
-      Key(key_event) => key_event.into(),
-      Mouse(mouse_event) => InputEvent::InputMouseEvent(mouse_event),
-      Resize(cols, rows) => InputEvent::Resize(rows, cols),
     }
   }
 }
