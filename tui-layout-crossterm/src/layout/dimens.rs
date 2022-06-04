@@ -53,22 +53,49 @@ pub struct Pair {
   pub second: UnitType,
 }
 
-impl Pair {
-  // Wrap given values as `Pair`.
-  pub fn new(
-    first: UnitType,
-    second: UnitType,
-  ) -> Self {
-    Self { first, second }
-  }
-}
-
 impl Debug for Pair {
   fn fmt(
     &self,
     f: &mut fmt::Formatter<'_>,
   ) -> fmt::Result {
     write!(f, "Pair [first:{}, second:{}]", self.first, self.second)
+  }
+}
+
+impl From<(UnitType, UnitType)> for Pair {
+  fn from(pair: (UnitType, UnitType)) -> Self {
+    Self {
+      first: pair.0,
+      second: pair.1,
+    }
+  }
+}
+
+impl From<(u8, u8)> for Pair {
+  fn from(pair: (u8, u8)) -> Self {
+    Self {
+      first: pair.0.into(),
+      second: pair.1.into(),
+    }
+  }
+}
+
+impl From<(i32, i32)> for Pair {
+  fn from(pair: (i32, i32)) -> Self {
+    Self {
+      first: pair.0.try_into().unwrap_or(pair.0 as UnitType),
+      second: pair.1.try_into().unwrap_or(pair.1 as UnitType),
+    }
+  }
+}
+
+/// https://stackoverflow.com/a/28280042/2085356
+impl From<(usize, usize)> for Pair {
+  fn from(pair: (usize, usize)) -> Self {
+    Self {
+      first: pair.0.try_into().unwrap_or(pair.0 as UnitType),
+      second: pair.1.try_into().unwrap_or(pair.1 as UnitType),
+    }
   }
 }
 

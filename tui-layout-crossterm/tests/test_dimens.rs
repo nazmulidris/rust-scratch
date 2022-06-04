@@ -32,7 +32,7 @@ async fn test_mul_box_pos_to_pair() {
   // [30, 10] * [1, 0] = [30, 0]
   {
     let pos = Position::new(30, 10);
-    let pair_cancel_y = Pair::new(1, 0);
+    let pair_cancel_y = (1, 0).into();
     let new_pair = pos * pair_cancel_y;
     assert_eq!(new_pair.x, 30);
     assert_eq!(new_pair.y, 0);
@@ -41,7 +41,7 @@ async fn test_mul_box_pos_to_pair() {
   // [30, 10] * [0, 1] = [0, 10]
   {
     let pos = Position::new(30, 10);
-    let pair_cancel_x = Pair::new(0, 1);
+    let pair_cancel_x = (0, 1).into();
     let new_pair = pos * pair_cancel_x;
     assert_eq!(new_pair.x, 0);
     assert_eq!(new_pair.y, 10);

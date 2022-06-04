@@ -1,3 +1,3 @@
-03:45 PM [INFO] This is a info message
-03:45 PM [WARN] This is a warning message
-03:45 PM [ERROR] This is a error message
+04:03 PM [INFO] This is a info message
+04:03 PM [WARN] This is a warning message
+04:03 PM [ERROR] This is a error message

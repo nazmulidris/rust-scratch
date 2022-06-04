@@ -74,10 +74,7 @@ impl LayoutManager for Canvas {
     if self.layout_stack.is_empty() {
       LayoutError::new_err_with_msg(
         LayoutErrorType::MismatchedLayoutEnd,
-        LayoutError::format_msg_with_stack_len(
-          &self.layout_stack,
-          "Layout stack should not be empty",
-        ),
+        LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should not be empty"),
       )?
     }
     self.layout_stack.pop();
@@ -187,8 +184,8 @@ impl PerformPositioningAndSizing for Canvas {
 
     // Adjust `new_pos` using Direction.
     let new_pos: Position = match current_layout.dir {
-      Direction::Vertical => new_pos * Pair::new(0, 1),
-      Direction::Horizontal => new_pos * Pair::new(1, 0),
+      Direction::Vertical => new_pos * (0, 1).into(),
+      Direction::Horizontal => new_pos * (1, 0).into(),
     };
 
     // Update the layout_cursor_pos of the current layout.
