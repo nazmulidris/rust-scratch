@@ -47,7 +47,7 @@ async fn repl() -> CommonResult<()> {
         println_raw!(character);
       }
 
-      InputEvent::Resize(rows, cols) => {
+      InputEvent::Resize(TerminalSize { rows, cols }) => {
         debug!(rows, cols);
       }
 
@@ -65,8 +65,13 @@ enum InputEvent {
   InputNormalChar(char),
   InputKeyEvent(KeyEvent),
   /// first: rows, second: cols
-  Resize(u16, u16),
+  Resize(TerminalSize),
   InputMouseEvent(MouseEvent),
+}
+
+struct TerminalSize {
+  rows: u16,
+  cols: u16,
 }
 
 /// Typecast / convert [Event] to [InputEvent].
@@ -75,7 +80,7 @@ impl From<Event> for InputEvent {
     match event {
       Key(key_event) => key_event.into(),
       Mouse(mouse_event) => InputEvent::InputMouseEvent(mouse_event),
-      Resize(cols, rows) => InputEvent::Resize(rows, cols),
+      Resize(cols, rows) => InputEvent::Resize(TerminalSize { rows, cols }),
     }
   }
 }
