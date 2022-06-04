@@ -56,10 +56,7 @@ fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(layout_item.dir, Direction::Horizontal);
     assert_eq!(layout_item.origin_pos, Some(Position::new(0, 0)));
     assert_eq!(layout_item.bounds_size, Some(Size::new(500, 500)));
-    assert_eq!(
-      layout_item.req_size_percent,
-      Some(RequestedSizePercent::parse_pair(Pair::new(100, 100))?)
-    );
+    assert_eq!(layout_item.req_size_percent, Some(RequestedSizePercent::parse_pair(Pair::new(100, 100))?));
     assert_eq!(layout_item.layout_cursor_pos, Some(Position::new(0, 0)));
     assert_eq!(layout_item.content_cursor_pos, None);
     assert_eq!(layout_item.styles, None);
@@ -91,10 +88,7 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(layout_item.dir, Direction::Vertical);
     assert_eq!(layout_item.origin_pos, Some(Position::new(2, 2))); // Take margin into account.
     assert_eq!(layout_item.bounds_size, Some(Size::new(246, 496))); // Take margin into account.
-    assert_eq!(
-      layout_item.req_size_percent,
-      Some(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
-    );
+    assert_eq!(layout_item.req_size_percent, Some(RequestedSizePercent::parse_pair(Pair::new(50, 100))?));
     assert_eq!(layout_item.layout_cursor_pos, None);
     assert_eq!(layout_item.content_cursor_pos, Some(Position::new(0, 2)));
     assert_eq!(
@@ -129,10 +123,7 @@ fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(layout_item.dir, Direction::Vertical);
     assert_eq!(layout_item.origin_pos, Some(Position::new(252, 2))); // Take margin into account.
     assert_eq!(layout_item.bounds_size, Some(Size::new(246, 496))); // Take margin into account.
-    assert_eq!(
-      layout_item.req_size_percent,
-      Some(RequestedSizePercent::parse_pair(Pair::new(50, 100))?)
-    );
+    assert_eq!(layout_item.req_size_percent, Some(RequestedSizePercent::parse_pair(Pair::new(50, 100))?));
     assert_eq!(layout_item.layout_cursor_pos, None);
     assert_eq!(layout_item.content_cursor_pos, Some(Position::new(0, 2)));
     assert_eq!(
