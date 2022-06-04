@@ -21,7 +21,7 @@ use crossterm::event::{
   KeyCode, KeyEvent, KeyModifiers, MouseEvent,
 };
 use r3bl_rs_utils::{debug, CommonResult};
-use tui_layout_crossterm::{println_raw, raw_mode};
+use tui_layout_crossterm::{println_raw, raw_mode, Size};
 
 pub async fn emit_crossterm_commands() -> CommonResult<()> {
   return raw_mode!({
@@ -37,21 +37,21 @@ async fn repl() -> CommonResult<()> {
     match read()?.into() {
       InputEvent::Exit => break,
 
-      InputEvent::InputKeyEvent(key_event) => {
+      InputEvent::NonDisplayableKeypress(key_event) => {
         let KeyEvent { modifiers, code } = key_event;
         let msg = format!("InputKeyEvent: {:?} + {:?}", modifiers, code);
         println_raw!(msg);
       }
 
-      InputEvent::InputNormalChar(character) => {
+      InputEvent::DisplayableKeypress(character) => {
         println_raw!(character);
       }
 
-      InputEvent::Resize(TerminalSize { rows, cols }) => {
-        debug!(rows, cols);
+      InputEvent::Resize(Size { height, width }) => {
+        debug!(height, width);
       }
 
-      InputEvent::InputMouseEvent(mouse_event) => {
+      InputEvent::Mouse(mouse_event) => {
         debug!(mouse_event);
       }
     }
@@ -62,15 +62,10 @@ async fn repl() -> CommonResult<()> {
 
 pub enum InputEvent {
   Exit,
-  InputNormalChar(char),
-  InputKeyEvent(KeyEvent),
-  Resize(TerminalSize),
-  InputMouseEvent(MouseEvent),
-}
-
-pub struct TerminalSize {
-  pub rows: u16,
-  pub cols: u16,
+  DisplayableKeypress(char),
+  NonDisplayableKeypress(KeyEvent),
+  Resize(Size),
+  Mouse(MouseEvent),
 }
 
 /// Typecast / convert [Event] to [InputEvent].
@@ -87,21 +82,19 @@ impl From<Event> for InputEvent {
 /// Typecast / convert [(u16, u16)] to [InputEvent::TerminalSize].
 impl From<(/* rows: */ u16, /* cols: */ u16)> for InputEvent {
   fn from(size: (u16, u16)) -> Self {
-    InputEvent::Resize(TerminalSize {
-      cols: size.1,
-      rows: size.0,
-    })
+    let (rows, cols) = size;
+    InputEvent::Resize(Size { width: cols, height: rows })
   }
 }
 
-/// Typecast / convert [MouseEvent] to [InputEvent].
+/// Typecast / convert [MouseEvent] to [InputEvent::InputMouseEvent].
 impl From<MouseEvent> for InputEvent {
   fn from(mouse_event: MouseEvent) -> Self {
-    InputEvent::InputMouseEvent(mouse_event)
+    InputEvent::Mouse(mouse_event)
   }
 }
 
-/// Typecast / convert [KeyEvent] to [InputEvent].
+/// Typecast / convert [KeyEvent] to [InputEvent::].
 impl From<KeyEvent> for InputEvent {
   fn from(key_event: KeyEvent) -> Self {
     match key_event {
@@ -115,10 +108,10 @@ impl From<KeyEvent> for InputEvent {
       KeyEvent {
         code: KeyCode::Char(character),
         modifiers: KeyModifiers::NONE,
-      } => InputEvent::InputNormalChar(character),
+      } => InputEvent::DisplayableKeypress(character),
 
       // All other key presses.
-      _ => InputEvent::InputKeyEvent(key_event),
+      _ => InputEvent::NonDisplayableKeypress(key_event),
     }
   }
 }
