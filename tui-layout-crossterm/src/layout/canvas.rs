@@ -203,7 +203,7 @@ impl PerformPositioningAndSizing for Canvas {
 
     let pos = unwrap_option_or_compute_if_none! {
       current_layout.content_cursor_pos,
-      || Position::new(0, 0)
+      || (0, 0).into()
     };
     current_layout.content_cursor_pos = Some(pos + content_size);
 

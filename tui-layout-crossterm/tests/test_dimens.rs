@@ -20,7 +20,7 @@ use tui_layout_crossterm::*;
 #[tokio::test]
 async fn test_add_box_size_to_pos() {
   // [10, 10] + [30, 10] = [40, 20]
-  let pos = Position::new(10, 10);
+  let pos = Position::from((10, 10));
   let size = Size::new(30, 10);
   let new_pos = pos + size; // `size + pos` is not defined.
   assert_eq!(new_pos.x, 40);
@@ -31,7 +31,7 @@ async fn test_add_box_size_to_pos() {
 async fn test_mul_box_pos_to_pair() {
   // [30, 10] * [1, 0] = [30, 0]
   {
-    let pos = Position::new(30, 10);
+    let pos: Position = (30, 10).into();
     let pair_cancel_y = (1, 0).into();
     let new_pair = pos * pair_cancel_y;
     assert_eq!(new_pair.x, 30);
@@ -40,7 +40,7 @@ async fn test_mul_box_pos_to_pair() {
 
   // [30, 10] * [0, 1] = [0, 10]
   {
-    let pos = Position::new(30, 10);
+    let pos: Position = (30, 10).into();
     let pair_cancel_x = (0, 1).into();
     let new_pair = pos * pair_cancel_x;
     assert_eq!(new_pair.x, 0);

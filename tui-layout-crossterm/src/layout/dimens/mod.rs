@@ -17,8 +17,12 @@
 
 // Attach source files.
 pub mod pair;
+pub mod position;
+pub mod size;
 pub mod base_units;
 
 // Re-export attached source files.
 pub use pair::*;
 pub use base_units::*;
+pub use position::*;
+pub use size::*;
