@@ -16,7 +16,7 @@
 */
 
 use crate::*;
-use r3bl_rs_utils::{unwrap_option_or_run_fn_returning_err, CommonResult};
+use r3bl_rs_utils::CommonResult;
 use std::fmt::{self, Debug};
 
 /// Represents an integer value between 0 and 100 (inclusive).
@@ -43,34 +43,45 @@ impl Debug for Percent {
   }
 }
 
+/// https://doc.rust-lang.org/stable/std/convert/trait.TryFrom.html#
+impl TryFrom<UnitType> for Percent {
+  type Error = String;
+  fn try_from(arg: UnitType) -> Result<Self, Self::Error> {
+    match Percent::try_and_convert(arg.into()) {
+      Some(percent) => Ok(percent),
+      None => Err("Invalid percentage value".to_string()),
+    }
+  }
+}
+
+/// https://doc.rust-lang.org/stable/std/convert/trait.TryFrom.html#
+impl TryFrom<i32> for Percent {
+  type Error = String;
+  fn try_from(arg: i32) -> Result<Self, Self::Error> {
+    match Percent::try_and_convert(arg.into()) {
+      Some(percent) => Ok(percent),
+      None => Err("Invalid percentage value".to_string()),
+    }
+  }
+}
+
 impl Percent {
   /// Try and convert given `Pair` into a `(Percent, Percent)`. Return
   /// `InvalidLayoutSizePercentage` error if given values are not between 0 and 100.
-  pub fn parse_pair(pair: Pair) -> CommonResult<(Percent, Percent)> {
-    let first = Percent::from(pair.first.into());
-    let second = Percent::from(pair.second.into());
-
-    if first.is_none() || second.is_none() {
+  pub fn try_from_pair(pair: Pair) -> CommonResult<(Percent, Percent)> {
+    let first = pair.first.try_into();
+    let second = pair.second.try_into();
+    return if first.is_err() || second.is_err() {
       let err_msg = format!("Invalid percentage values in tuple: {:?}", pair);
-      return LayoutError::new_err_with_msg(LayoutErrorType::InvalidLayoutSizePercentage, err_msg);
-    }
-
-    return Ok((first.unwrap(), second.unwrap()));
-  }
-
-  /// Try and convert given `i32` value to `Percent`. Return `InvalidLayoutSizePercentage`
-  /// error if given value is not between 0 and 100.
-  pub fn parse(item: i32) -> CommonResult<Percent> {
-    let value = unwrap_option_or_run_fn_returning_err!(Percent::from(item), || {
-      let err_msg = format!("Invalid percentage value: {}", item);
-      return LayoutError::new_err_with_msg(LayoutErrorType::InvalidLayoutSizePercentage, err_msg);
-    });
-    return Ok(value);
+      LayoutError::new_err_with_msg(LayoutErrorType::InvalidLayoutSizePercentage, err_msg)
+    } else {
+      Ok((first.unwrap(), second.unwrap()))
+    };
   }
 
   /// Try and convert given `UnitType` value to `Percent`. Return `None` if given value is
   /// not between 0 and 100.
-  pub fn from(item: i32) -> Option<Percent> {
+  fn try_and_convert(item: i32) -> Option<Percent> {
     if item < 0 || item > 100 {
       return None;
     }
@@ -107,7 +118,7 @@ impl RequestedSizePercent {
   /// Try and convert the [Pair] as percentages (first is width, second is height).
   /// Returns error if the parsing fails.
   pub fn parse_pair(pair: Pair) -> CommonResult<RequestedSizePercent> {
-    let (width_pc, height_pc) = Percent::parse_pair(pair)?;
+    let (width_pc, height_pc) = Percent::try_from_pair(pair)?;
     Ok(Self::new(width_pc, height_pc))
   }
 

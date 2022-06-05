@@ -9,16 +9,6 @@
 					"label": ""
 				}
 			]
-		},
-		{
-			"path": "tests/test_canvas.rs",
-			"bookmarks": [
-				{
-					"line": 42,
-					"column": 2,
-					"label": ""
-				}
-			]
 		}
 	]
 }
