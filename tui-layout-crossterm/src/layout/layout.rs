@@ -66,7 +66,7 @@ impl Layout {
       .set_dir(dir)
       .set_origin_pos(origin_pos.as_some())
       .set_bounds_size(bounds_size.as_some())
-      .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some())
+      .set_req_size_percent(Some((width_pc, height_pc).into()))
       .set_layout_cursor_pos(origin_pos.as_some())
       .set_styles(style)
       .build()
@@ -100,7 +100,7 @@ impl Layout {
       .set_dir(dir)
       .set_origin_pos(style_adjusted_origin_pos.as_some())
       .set_bounds_size(style_adjusted_bounds_size.as_some())
-      .set_req_size_percent(RequestedSizePercent::new(width_pc, height_pc).as_some())
+      .set_req_size_percent(Some((width_pc, height_pc).into()))
       .set_styles(style)
       .build()
   }

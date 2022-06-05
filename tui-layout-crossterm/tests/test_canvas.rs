@@ -40,7 +40,7 @@ fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
     LayoutPropsBuilder::new()
       .set_id("container".to_string())
       .set_dir(Direction::Horizontal)
-      .set_req_size(RequestedSizePercent::parse_pair((100, 100).into())?)
+      .set_req_size((100, 100).try_into()?)
       .build(),
   )?;
   make_container_assertions(canvas)?;
@@ -56,10 +56,7 @@ fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(layout_item.dir, Direction::Horizontal);
     assert_eq!(layout_item.origin_pos, Some((0, 0).into()));
     assert_eq!(layout_item.bounds_size, Some((500, 500).into()));
-    assert_eq!(
-      layout_item.req_size_percent,
-      Some(RequestedSizePercent::parse_pair((100, 100).into())?)
-    );
+    assert_eq!(layout_item.req_size_percent, Some((100, 100).try_into()?));
     assert_eq!(layout_item.layout_cursor_pos, Some((0, 0).into()));
     assert_eq!(layout_item.content_cursor_pos, None);
     assert_eq!(layout_item.styles, None);
@@ -75,7 +72,7 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
       .set_styles(canvas.stylesheet.find_styles_by_ids(vec!["style1"]))
       .set_id("col_1".to_string())
       .set_dir(Direction::Vertical)
-      .set_req_size(RequestedSizePercent::parse_pair((50, 100).into())?)
+      .set_req_size((50, 100).try_into()?)
       .build(),
   )?;
   canvas.paint(vec!["col 1 - Hello"])?;
@@ -91,10 +88,7 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(layout_item.dir, Direction::Vertical);
     assert_eq!(layout_item.origin_pos, Some((2, 2).into())); // Take margin into account.
     assert_eq!(layout_item.bounds_size, Some((246, 496).into())); // Take margin into account.
-    assert_eq!(
-      layout_item.req_size_percent,
-      Some(RequestedSizePercent::parse_pair((50, 100).into())?)
-    );
+    assert_eq!(layout_item.req_size_percent, Some((50, 100).try_into()?));
     assert_eq!(layout_item.layout_cursor_pos, None);
     assert_eq!(layout_item.content_cursor_pos, Some((0, 2).into()));
     assert_eq!(
@@ -113,7 +107,7 @@ fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
       .set_styles(canvas.stylesheet.find_styles_by_ids(vec!["style2"]))
       .set_id("col_2".to_string())
       .set_dir(Direction::Vertical)
-      .set_req_size(RequestedSizePercent::parse_pair((50, 100).into())?)
+      .set_req_size((50, 100).try_into()?)
       .build(),
   )?;
   canvas.paint(vec!["col 2 - Hello"])?;
@@ -129,10 +123,7 @@ fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(layout_item.dir, Direction::Vertical);
     assert_eq!(layout_item.origin_pos, Some((252, 2).into())); // Take margin into account.
     assert_eq!(layout_item.bounds_size, Some((246, 496).into())); // Take margin into account.
-    assert_eq!(
-      layout_item.req_size_percent,
-      Some(RequestedSizePercent::parse_pair((50, 100).into())?)
-    );
+    assert_eq!(layout_item.req_size_percent, Some((50, 100).try_into()?));
     assert_eq!(layout_item.layout_cursor_pos, None);
     assert_eq!(layout_item.content_cursor_pos, Some((0, 2).into()));
     assert_eq!(

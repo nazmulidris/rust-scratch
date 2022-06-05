@@ -114,22 +114,31 @@ pub struct RequestedSizePercent {
   pub height: Percent,
 }
 
+impl TryFrom<(i32, i32)> for RequestedSizePercent {
+  type Error = String;
+  fn try_from(arg: (i32, i32)) -> Result<Self, Self::Error> {
+    let pair = Percent::try_from_pair(arg.into());
+    if pair.is_err() {
+      return Err("Problem converting pair to requested size percentage".to_string());
+    }
+    let pair = pair.unwrap();
+    return Ok(RequestedSizePercent {
+      width: pair.0,
+      height: pair.1,
+    });
+  }
+}
+
+impl From<(Percent, Percent)> for RequestedSizePercent {
+  fn from(pair: (Percent, Percent)) -> Self {
+    RequestedSizePercent {
+      width: pair.0,
+      height: pair.1,
+    }
+  }
+}
+
 impl RequestedSizePercent {
-  /// Try and convert the [Pair] as percentages (first is width, second is height).
-  /// Returns error if the parsing fails.
-  pub fn parse_pair(pair: Pair) -> CommonResult<RequestedSizePercent> {
-    let (width_pc, height_pc) = Percent::try_from_pair(pair)?;
-    Ok(Self::new(width_pc, height_pc))
-  }
-
-  /// Wrap given values as `RequestedSizePercent`.
-  pub fn new(
-    width: Percent,
-    height: Percent,
-  ) -> Self {
-    Self { height, width }
-  }
-
   /// Wrap `self` in `Option`.
   pub fn as_some(&self) -> Option<Self> {
     Some(*self)
