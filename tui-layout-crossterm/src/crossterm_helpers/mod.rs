@@ -19,6 +19,9 @@
 //!
 //! - crossterm docs: https://docs.rs/crossterm/latest/crossterm/index.html
 //!   - Raw mode: https://docs.rs/crossterm/0.23.2/crossterm/terminal/index.html#raw-mode
+//!   - Event Poll vs block: https://github.com/crossterm-rs/crossterm/wiki/Upgrade-from-0.13-to-0.14#115-event-polling
+//!   - Async event read eg: https://github.com/crossterm-rs/crossterm/blob/master/examples/event-stream-tokio.rs
+//!   - Async event read src: https://github.com/crossterm-rs/crossterm/blob/master/src/event/stream.rs#L23
 //! - Tutorial: https://medium.com/@otukof/build-your-text-editor-with-rust-part-2-74e03daef237
 //! - Raw mode: https://en.wikipedia.org/wiki/POSIX_terminal_interface#Non-canonical_mode_processing
 //! - Canonical mode: https://en.wikipedia.org/wiki/POSIX_terminal_interface#Canonical_mode_processing
@@ -34,5 +37,5 @@ pub mod raw_mode;
 pub mod input_event;
 
 // Re-export everything from attached source files.
-pub use raw_mode::*;
 pub use input_event::*;
+pub use raw_mode::*;

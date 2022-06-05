@@ -15,8 +15,9 @@
  *   limitations under the License.
 */
 
-use crossterm::event::{read, KeyEvent};
+use crossterm::event::{poll, read, KeyEvent};
 use r3bl_rs_utils::{debug, CommonResult};
+use std::time::Duration;
 use tui_layout_crossterm::*;
 
 pub async fn emit_crossterm_commands() -> CommonResult<()> {
@@ -25,8 +26,8 @@ pub async fn emit_crossterm_commands() -> CommonResult<()> {
 
 async fn repl() -> CommonResult<()> {
   println_raw!("Type Ctrl+q to exit repl.");
-
   loop {
+    // if poll(Duration::from_millis(500))? {
     match read()?.into() {
       InputEvent::Exit => break,
 
@@ -48,7 +49,7 @@ async fn repl() -> CommonResult<()> {
         debug!(mouse_event);
       }
     }
+    // }
   }
-
   Ok(())
 }
