@@ -16,13 +16,15 @@
 */
 
 // Attach source files.
+pub mod base_units;
 pub mod pair;
 pub mod position;
 pub mod size;
-pub mod base_units;
+pub mod percent;
 
 // Re-export attached source files.
-pub use pair::*;
 pub use base_units::*;
+pub use pair::*;
+pub use percent::*;
 pub use position::*;
 pub use size::*;

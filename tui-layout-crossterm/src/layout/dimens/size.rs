@@ -21,6 +21,23 @@ use std::{
   ops::SubAssign,
 };
 
+/// Here is a visual representation of how position and sizing works for the layout
+/// engine.
+///
+/// ```text
+///     0   4    9    1    2    2
+///                   4    0    5
+///    ┌────┴────┴────┴────┴────┴──→ x
+///  0 ┤     ╭─────────────╮
+///  1 ┤     │ origin pos: │
+///  2 ┤     │ [5, 0]      │
+///  3 ┤     │ size:       │
+///  4 ┤     │ [16, 5]     │
+///  5 ┤     ╰─────────────╯
+///    ↓
+///    y
+/// ```
+///
 /// Size, defined as [height, width].
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub struct Size {
