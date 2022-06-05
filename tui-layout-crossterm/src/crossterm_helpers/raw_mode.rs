@@ -48,7 +48,7 @@ const DEBUG: bool = false;
 #[macro_export]
 macro_rules! raw_mode {
   ($code_block: stmt) => {{
-    use crate::crossterm_mod::raw_mode::RawMode;
+    use crate::*;
     let _raw_mode = RawMode::start();
     $code_block
   }};

@@ -15,50 +15,11 @@
  *   limitations under the License.
 */
 
+use crate::*;
 use crossterm::event::{
-  read,
   Event::{self, Key, Mouse, Resize},
   KeyCode, KeyEvent, KeyModifiers, MouseEvent,
 };
-use r3bl_rs_utils::{debug, CommonResult};
-use tui_layout_crossterm::{println_raw, raw_mode, Size};
-
-pub async fn emit_crossterm_commands() -> CommonResult<()> {
-  return raw_mode!({
-    repl().await?;
-    Ok(())
-  });
-}
-
-async fn repl() -> CommonResult<()> {
-  println_raw!("Type Ctrl+q to exit repl.");
-
-  loop {
-    match read()?.into() {
-      InputEvent::Exit => break,
-
-      InputEvent::NonDisplayableKeypress(key_event) => {
-        let KeyEvent { modifiers, code } = key_event;
-        let msg = format!("InputKeyEvent: {:?} + {:?}", modifiers, code);
-        println_raw!(msg);
-      }
-
-      InputEvent::DisplayableKeypress(character) => {
-        println_raw!(character);
-      }
-
-      InputEvent::Resize(Size { height, width }) => {
-        debug!(height, width);
-      }
-
-      InputEvent::Mouse(mouse_event) => {
-        debug!(mouse_event);
-      }
-    }
-  }
-
-  Ok(())
-}
 
 pub enum InputEvent {
   Exit,
@@ -83,7 +44,10 @@ impl From<Event> for InputEvent {
 impl From<(/* rows: */ u16, /* cols: */ u16)> for InputEvent {
   fn from(size: (u16, u16)) -> Self {
     let (rows, cols) = size;
-    InputEvent::Resize(Size { width: cols, height: rows })
+    InputEvent::Resize(Size {
+      width: cols,
+      height: rows,
+    })
   }
 }
 

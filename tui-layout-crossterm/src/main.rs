@@ -18,12 +18,12 @@
 use r3bl_rs_utils::CommonResult;
 
 // Attach source files.
-mod log_mod;
-mod crossterm_mod;
+mod module_log;
+mod module_crossterm;
 
 // Import everything from attached source files.
-use crossterm_mod::*;
-use log_mod::*;
+use module_crossterm::*;
+use module_log::*;
 
 #[tokio::main]
 async fn main() -> CommonResult<()> {
