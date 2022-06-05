@@ -20,10 +20,7 @@ use r3bl_rs_utils::{debug, CommonResult};
 use tui_layout_crossterm::*;
 
 pub async fn emit_crossterm_commands() -> CommonResult<()> {
-  return raw_mode!({
-    repl().await?;
-    Ok(())
-  });
+  raw_mode! { repl().await? }
 }
 
 async fn repl() -> CommonResult<()> {

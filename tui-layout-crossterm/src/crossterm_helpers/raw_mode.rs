@@ -21,29 +21,36 @@ const DEBUG: bool = false;
 
 /// This will automatically disable [raw
 /// mode](https://docs.rs/crossterm/0.23.2/crossterm/terminal/index.html#raw-mode) when
-/// the enclosed block ends.
+/// the enclosed block ends. Note that this macro must be called from a function that
+/// returns a `Result`.
 ///
 /// Example 1:
 /// ```ignore
-/// raw_mode!(repl().await?);
+/// pub async fn emit_crossterm_commands() -> CommonResult<()> {
+///   raw_mode! { repl().await? }
+/// }
 /// ```
 ///
 /// Example 2:
 /// ```ignore
-/// return raw_mode!({
-///   repl().await?;
-///   Ok(())
-/// });
+/// pub async fn emit_crossterm_commands() -> CommonResult<()> {
+///   raw_mode!({
+///     repl().await?;
+///     Ok(())
+///   })
+/// }
 /// ```
 ///
 /// Example 3:
 /// ```ignore
-/// raw_mode!({
-///   println!("crossterm: Entering raw mode...");
-///   repl().await?;
-///   println!("crossterm: Exiting raw mode...");
-///   return Ok(());
-/// });
+/// pub async fn emit_crossterm_commands() -> CommonResult<()> {
+///   raw_mode!({
+///     println!("crossterm: Entering raw mode...");
+///     repl().await?;
+///     println!("crossterm: Exiting raw mode...");
+///     return Ok(());
+///   });
+/// }
 /// ```
 #[macro_export]
 macro_rules! raw_mode {
@@ -51,6 +58,7 @@ macro_rules! raw_mode {
     use crate::*;
     let _raw_mode = RawMode::start();
     $code_block
+    Ok(())
   }};
 }
 
