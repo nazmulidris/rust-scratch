@@ -38,33 +38,43 @@ impl SubAssign<UnitType> for Size {
   }
 }
 
-impl Size {
-  /// Convert given `Unit` tuple value to `Size` struct.
-  pub fn from_pair(pair: Pair) -> Self {
+impl From<Pair> for Size {
+  fn from(pair: Pair) -> Self {
     Self {
       width: pair.first,
       height: pair.second,
     }
   }
+}
 
-  pub fn from_usize(
-    width: usize,
-    height: usize,
-  ) -> Self {
+impl From<(UnitType, UnitType)> for Size {
+  fn from(pair: (UnitType, UnitType)) -> Self {
     Self {
-      width: width as UnitType,
-      height: height as UnitType,
+      width: pair.0,
+      height: pair.1,
     }
   }
+}
 
-  /// Wrap given values as `Size`.
-  pub fn new(
-    width: UnitType,
-    height: UnitType,
-  ) -> Self {
-    Self { height, width }
+impl From<(usize, usize)> for Size {
+  fn from(pair: (usize, usize)) -> Self {
+    Self {
+      width: pair.0.try_into().unwrap_or(pair.0 as UnitType),
+      height: pair.1.try_into().unwrap_or(pair.1 as UnitType),
+    }
   }
+}
 
+impl From<(i32, i32)> for Size {
+  fn from(pair: (i32, i32)) -> Self {
+    Self {
+      width: pair.0.try_into().unwrap_or(pair.0 as UnitType),
+      height: pair.1.try_into().unwrap_or(pair.1 as UnitType),
+    }
+  }
+}
+
+impl Size {
   /// Return an `Option` with `self`.
   pub fn as_some(&self) -> Option<Self> {
     Some(*self)

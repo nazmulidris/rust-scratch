@@ -85,7 +85,7 @@ impl LayoutManager for Canvas {
     &mut self,
     text_vec: Vec<&str>,
   ) -> CommonResult<()> {
-    self.calc_where_to_insert_new_content_in_layout(Size::from_usize(0, text_vec.len()))?;
+    self.calc_where_to_insert_new_content_in_layout((0, text_vec.len()).into())?;
     Ok(())
   }
 }
@@ -137,10 +137,10 @@ impl PerformPositioningAndSizing for Canvas {
       LayoutErrorType::ContainerBoundsNotDefined
     };
 
-    let requested_size_allocation = Size::new(
+    let requested_size_allocation = Size::from((
       calc_percentage(width_pc, container_bounds.width),
       calc_percentage(height_pc, container_bounds.height),
-    );
+    ));
 
     let old_position = unwrap_or_err! {
       current_layout.layout_cursor_pos,

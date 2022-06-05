@@ -57,10 +57,10 @@ impl Layout {
     dir: Direction,
     style: Option<Style>,
   ) -> Layout {
-    let bounds_size = Size::new(
+    let bounds_size = Size::from((
       calc_percentage(width_pc, canvas_size.width),
       calc_percentage(height_pc, canvas_size.height),
-    );
+    ));
     LayoutBuilder::new()
       .set_id(id)
       .set_dir(dir)
@@ -84,10 +84,10 @@ impl Layout {
   ) -> Self {
     // Adjust `bounds_size` & `origin_pos` based on the style's margin.
     let mut style_adjusted_origin_pos = origin_pos;
-    let mut style_adjusted_bounds_size = Size::new(
+    let mut style_adjusted_bounds_size = Size::from((
       calc_percentage(width_pc, container_bounds.width),
       calc_percentage(height_pc, container_bounds.height),
-    );
+    ));
     if let Some(ref style) = style {
       if let Some(margin) = style.margin {
         style_adjusted_origin_pos += margin;

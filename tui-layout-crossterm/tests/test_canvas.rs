@@ -26,7 +26,7 @@ fn test_simple_2_col_layout() -> CommonResult<()> {
   canvas.canvas_start(
     CanvasPropsBuilder::new()
       .set_pos((0, 0).into())
-      .set_size(Size::from_pair((500, 500).into()))
+      .set_size((500, 500).into())
       .build(),
   )?;
   layout_container(&mut canvas)?;
@@ -55,8 +55,11 @@ fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(layout_item.id, "container");
     assert_eq!(layout_item.dir, Direction::Horizontal);
     assert_eq!(layout_item.origin_pos, Some((0, 0).into()));
-    assert_eq!(layout_item.bounds_size, Some(Size::new(500, 500)));
-    assert_eq!(layout_item.req_size_percent, Some(RequestedSizePercent::parse_pair((100, 100).into())?));
+    assert_eq!(layout_item.bounds_size, Some((500, 500).into()));
+    assert_eq!(
+      layout_item.req_size_percent,
+      Some(RequestedSizePercent::parse_pair((100, 100).into())?)
+    );
     assert_eq!(layout_item.layout_cursor_pos, Some((0, 0).into()));
     assert_eq!(layout_item.content_cursor_pos, None);
     assert_eq!(layout_item.styles, None);
@@ -87,8 +90,11 @@ fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(layout_item.id, "col_1");
     assert_eq!(layout_item.dir, Direction::Vertical);
     assert_eq!(layout_item.origin_pos, Some((2, 2).into())); // Take margin into account.
-    assert_eq!(layout_item.bounds_size, Some(Size::new(246, 496))); // Take margin into account.
-    assert_eq!(layout_item.req_size_percent, Some(RequestedSizePercent::parse_pair((50, 100).into())?));
+    assert_eq!(layout_item.bounds_size, Some((246, 496).into())); // Take margin into account.
+    assert_eq!(
+      layout_item.req_size_percent,
+      Some(RequestedSizePercent::parse_pair((50, 100).into())?)
+    );
     assert_eq!(layout_item.layout_cursor_pos, None);
     assert_eq!(layout_item.content_cursor_pos, Some((0, 2).into()));
     assert_eq!(
@@ -122,8 +128,11 @@ fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
     assert_eq!(layout_item.id, "col_2");
     assert_eq!(layout_item.dir, Direction::Vertical);
     assert_eq!(layout_item.origin_pos, Some((252, 2).into())); // Take margin into account.
-    assert_eq!(layout_item.bounds_size, Some(Size::new(246, 496))); // Take margin into account.
-    assert_eq!(layout_item.req_size_percent, Some(RequestedSizePercent::parse_pair((50, 100).into())?));
+    assert_eq!(layout_item.bounds_size, Some((246, 496).into())); // Take margin into account.
+    assert_eq!(
+      layout_item.req_size_percent,
+      Some(RequestedSizePercent::parse_pair((50, 100).into())?)
+    );
     assert_eq!(layout_item.layout_cursor_pos, None);
     assert_eq!(layout_item.content_cursor_pos, Some((0, 2).into()));
     assert_eq!(

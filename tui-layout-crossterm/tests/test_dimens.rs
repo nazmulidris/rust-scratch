@@ -21,7 +21,7 @@ use tui_layout_crossterm::*;
 async fn test_add_box_size_to_pos() {
   // [10, 10] + [30, 10] = [40, 20]
   let pos = Position::from((10, 10));
-  let size = Size::new(30, 10);
+  let size = Size::from((30, 10));
   let new_pos = pos + size; // `size + pos` is not defined.
   assert_eq!(new_pos.x, 40);
   assert_eq!(new_pos.y, 20);
