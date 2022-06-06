@@ -9,37 +9,30 @@
       "request": "launch",
       "name": "Debug unit tests in library 'tui-layout-crossterm'",
       "cargo": {
-        "args": [
-          "test",
-          "--no-run",
-          "--lib",
-          "--package=tui-layout-crossterm"
-        ],
+        "args": ["test", "--no-run", "--lib", "--package=tui-layout-crossterm"],
         "filter": {
           "name": "tui-layout-crossterm",
           "kind": "lib"
         }
       },
       "args": [],
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}",
+      "sourceLanguages": ["rust"]
     },
     {
       "type": "lldb",
       "request": "launch",
       "name": "Debug executable 'tui-layout-crossterm'",
       "cargo": {
-        "args": [
-          "build",
-          "--bin=tui-layout-crossterm",
-          "--package=tui-layout-crossterm"
-        ],
+        "args": ["build", "--bin=tui-layout-crossterm", "--package=tui-layout-crossterm"],
         "filter": {
           "name": "tui-layout-crossterm",
           "kind": "bin"
         }
       },
       "args": [],
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}",
+      "sourceLanguages": ["rust"]
     },
     {
       "type": "lldb",
@@ -58,7 +51,8 @@
         }
       },
       "args": [],
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}",
+      "sourceLanguages": ["rust"]
     },
     {
       "type": "lldb",
@@ -77,7 +71,8 @@
         }
       },
       "args": [],
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}",
+      "sourceLanguages": ["rust"]
     },
     {
       "type": "lldb",
@@ -96,7 +91,8 @@
         }
       },
       "args": [],
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}",
+      "sourceLanguages": ["rust"]
     },
     {
       "type": "lldb",
@@ -115,7 +111,8 @@
         }
       },
       "args": [],
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}",
+      "sourceLanguages": ["rust"]
     }
   ]
 }
