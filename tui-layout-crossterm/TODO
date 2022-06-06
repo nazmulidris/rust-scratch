@@ -28,15 +28,16 @@
     ✔ update tests to match above @done(22-05-29 11:13)
   figure out how to use crossterm:
     ✔ rewrite dimens.rs using `From` and `TryFrom` @done(22-06-04 17:53)
-    ☐ log keypress (don't print)
-    ☐ async vs blocking
+    ✔ log keypress (don't print) @done(22-06-07 15:07)
+    ✔ async vs blocking @done(22-06-07 15:07)
       ✔ polling is inefficient and takes up tons of CPU @done(22-06-05 20:09)
-      ☐ try get async crossterm event read working w/ tokio
+      ✔ try get async crossterm event read working w/ tokio @done(22-06-07 15:07)
+         https://github.com/crossterm-rs/crossterm/blob/master/examples/event-stream-tokio.rs
     ☐ generate `output_commands` (in `Canvas`) for crossterm
+    ☐ integrate lolcat bin crate into tui project `/home/nazmul/github/lolcat`
   figure out how to accomodate focus management:
     ☐ extend canvas to have a focus field (current id w/ focus)
     ☐ how does this affect rendering of a layout (paint focus highlight?)
-
   crossterm integration:
     ☐ just crossterm: https://tinyurl.com/y5je8mvr
     ☐ w/ tui: https://tinyurl.com/y56m5jgl
@@ -44,10 +45,8 @@
     ☐ figure out how to use crossterm
     ☐ emit crossterm commands from `canvas.rs`
     ☐ write test for `canvas.rs` to ensure it emits crossterm commands correctly
-
   focus mgmt:
     ☐ key input processing & state mgmt (redux?)
-
   build app:
     ☐ create a 2 col layout TUI app using crossterm & layout engine
     ☐ write tests and add layout engine supports debug output in TUI

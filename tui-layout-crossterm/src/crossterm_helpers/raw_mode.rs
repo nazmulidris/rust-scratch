@@ -96,6 +96,12 @@ macro_rules! raw_mode {
     $code_block
     Ok(())
   }};
+  ($code_block: block) => {{
+    use crate::*;
+    let _raw_mode = RawMode::start();
+    $code_block
+    Ok(())
+  }};
 }
 
 /// To use this, you need to make sure to create an instance using `default()` (which

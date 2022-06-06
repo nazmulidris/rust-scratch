@@ -17,7 +17,7 @@
 
 use crate::layout::*;
 use crate::*;
-use r3bl_rs_utils::{unwrap_option_or_compute_if_none, CommonResult};
+use r3bl_rs_utils::*;
 
 /// Represents a rectangular area of the terminal screen, and not necessarily the full
 /// terminal screen.
@@ -35,58 +35,61 @@ impl LayoutManager for Canvas {
     &mut self,
     CanvasProps { pos, size }: CanvasProps,
   ) -> CommonResult<()> {
-    // Expect layout_stack to be empty!
-    if !self.layout_stack.is_empty() {
-      LayoutError::new_err_with_msg(
-        LayoutErrorType::MismatchedCanvasStart,
-        LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
-      )?
-    }
-    self.origin_pos = pos;
-    self.canvas_size = size;
-    Ok(())
+    throws!({
+      // Expect layout_stack to be empty!
+      if !self.layout_stack.is_empty() {
+        LayoutError::new_err_with_msg(
+          LayoutErrorType::MismatchedCanvasStart,
+          LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
+        )?
+      }
+      self.origin_pos = pos;
+      self.canvas_size = size;
+    });
   }
 
   fn canvas_end(&mut self) -> CommonResult<()> {
-    // Expect layout_stack to be empty!
-    if !self.layout_stack.is_empty() {
-      LayoutError::new_err_with_msg(
-        LayoutErrorType::MismatchedCanvasEnd,
-        LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
-      )?
-    }
-    Ok(())
+    throws!({
+      // Expect layout_stack to be empty!
+      if !self.layout_stack.is_empty() {
+        LayoutError::new_err_with_msg(
+          LayoutErrorType::MismatchedCanvasEnd,
+          LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should be empty"),
+        )?
+      }
+    });
   }
 
   fn layout_start(
     &mut self,
     layout_props: LayoutProps,
   ) -> CommonResult<()> {
-    match self.layout_stack.is_empty() {
-      true => self.add_root_layout(layout_props),
-      false => self.add_layout(layout_props),
-    }?;
-    Ok(())
+    throws!({
+      match self.layout_stack.is_empty() {
+        true => self.add_root_layout(layout_props),
+        false => self.add_layout(layout_props),
+      }?
+    });
   }
 
   fn layout_end(&mut self) -> CommonResult<()> {
-    // Expect layout_stack not to be empty!
-    if self.layout_stack.is_empty() {
-      LayoutError::new_err_with_msg(
-        LayoutErrorType::MismatchedLayoutEnd,
-        LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should not be empty"),
-      )?
-    }
-    self.layout_stack.pop();
-    Ok(())
+    throws!({
+      // Expect layout_stack not to be empty!
+      if self.layout_stack.is_empty() {
+        LayoutError::new_err_with_msg(
+          LayoutErrorType::MismatchedLayoutEnd,
+          LayoutError::format_msg_with_stack_len(&self.layout_stack, "Layout stack should not be empty"),
+        )?
+      }
+      self.layout_stack.pop();
+    });
   }
 
   fn paint(
     &mut self,
     text_vec: Vec<&str>,
   ) -> CommonResult<()> {
-    self.calc_where_to_insert_new_content_in_layout((0, text_vec.len()).into())?;
-    Ok(())
+    throws!({ self.calc_where_to_insert_new_content_in_layout((0, text_vec.len()).into())? });
   }
 }
 
@@ -104,17 +107,17 @@ impl PerformPositioningAndSizing for Canvas {
       styles,
     }: LayoutProps,
   ) -> CommonResult<()> {
-    self.layout_stack.push(Layout::make_root_layout(
-      id.to_string(),
-      self.canvas_size,
-      self.origin_pos,
-      width_pc,
-      height_pc,
-      dir,
-      Stylesheet::compute(styles),
-    ));
-
-    Ok(())
+    throws!({
+      self.layout_stack.push(Layout::make_root_layout(
+        id.to_string(),
+        self.canvas_size,
+        self.origin_pos,
+        width_pc,
+        height_pc,
+        dir,
+        Stylesheet::compute(styles),
+      ));
+    });
   }
 
   /// 🍀 Non-root: Handle layout to add to stack. [Position] and [Size] will be calculated.
@@ -130,36 +133,36 @@ impl PerformPositioningAndSizing for Canvas {
       styles,
     }: LayoutProps,
   ) -> CommonResult<()> {
-    let current_layout = self.current_layout()?;
+    throws!({
+      let current_layout = self.current_layout()?;
 
-    let container_bounds = unwrap_or_err! {
-      current_layout.bounds_size,
-      LayoutErrorType::ContainerBoundsNotDefined
-    };
+      let container_bounds = unwrap_or_err! {
+        current_layout.bounds_size,
+        LayoutErrorType::ContainerBoundsNotDefined
+      };
 
-    let requested_size_allocation = Size::from((
-      calc_percentage(width_pc, container_bounds.width),
-      calc_percentage(height_pc, container_bounds.height),
-    ));
+      let requested_size_allocation = Size::from((
+        calc_percentage(width_pc, container_bounds.width),
+        calc_percentage(height_pc, container_bounds.height),
+      ));
 
-    let old_position = unwrap_or_err! {
-      current_layout.layout_cursor_pos,
-      LayoutErrorType::LayoutCursorPositionNotDefined
-    };
+      let old_position = unwrap_or_err! {
+        current_layout.layout_cursor_pos,
+        LayoutErrorType::LayoutCursorPositionNotDefined
+      };
 
-    self.calc_where_to_insert_new_layout_in_canvas(requested_size_allocation)?;
+      self.calc_where_to_insert_new_layout_in_canvas(requested_size_allocation)?;
 
-    self.layout_stack.push(Layout::make_layout(
-      id.to_string(),
-      dir,
-      container_bounds,
-      old_position,
-      width_pc,
-      height_pc,
-      Stylesheet::compute(styles),
-    ));
-
-    Ok(())
+      self.layout_stack.push(Layout::make_layout(
+        id.to_string(),
+        dir,
+        container_bounds,
+        old_position,
+        width_pc,
+        height_pc,
+        Stylesheet::compute(styles),
+      ));
+    });
   }
 
   /// Must be called *before* the new [Layout] is added to the stack otherwise

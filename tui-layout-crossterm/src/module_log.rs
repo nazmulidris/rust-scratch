@@ -15,11 +15,12 @@
  *   limitations under the License.
 */
 
-use r3bl_rs_utils::{init_file_logger_once, log, CommonResult};
+use r3bl_rs_utils::*;
 
 pub async fn emit_log_entries() -> CommonResult<()> {
-  log!(INFO, "This is a info message");
-  log!(WARN, "This is a warning message");
-  log!(ERROR, "This is a error message");
-  Ok(())
+  throws!({
+    log!(INFO, "This is a info message");
+    log!(WARN, "This is a warning message");
+    log!(ERROR, "This is a error message");
+  });
 }

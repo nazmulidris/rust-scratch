@@ -16,7 +16,7 @@
 */
 
 use crate::*;
-use r3bl_rs_utils::{CommonError, CommonResult};
+use r3bl_rs_utils::*;
 
 #[derive(Default, Debug, Clone)]
 pub struct Stylesheet {
@@ -32,21 +32,23 @@ impl Stylesheet {
     &mut self,
     style: Style,
   ) -> CommonResult<()> {
-    if style.id.is_empty() {
-      return CommonError::new_err_with_only_msg("Style id cannot be empty");
-    }
-    self.styles.push(style);
-    Ok(())
+    throws!({
+      if style.id.is_empty() {
+        return CommonError::new_err_with_only_msg("Style id cannot be empty");
+      }
+      self.styles.push(style);
+    });
   }
 
   pub fn add_styles(
     &mut self,
     styles: Vec<Style>,
   ) -> CommonResult<()> {
-    for style in styles {
-      self.add_style(style)?;
-    }
-    Ok(())
+    throws!({
+      for style in styles {
+        self.add_style(style)?;
+      }
+    });
   }
 
   pub fn find_style_by_id(

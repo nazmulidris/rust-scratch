@@ -16,122 +16,123 @@
 */
 
 use crossterm::style::Color;
-use r3bl_rs_utils::CommonResult;
+use r3bl_rs_utils::*;
 use tui_layout_crossterm::layout::*;
 
 #[test]
 fn test_simple_2_col_layout() -> CommonResult<()> {
-  let mut canvas = Canvas::default();
-  canvas.stylesheet = create_stylesheet()?;
-  canvas.canvas_start(
-    CanvasPropsBuilder::new()
-      .set_pos((0, 0).into())
-      .set_size((500, 500).into())
-      .build(),
-  )?;
-  layout_container(&mut canvas)?;
-  canvas.canvas_end()?;
-  Ok(())
+  throws!({
+    let mut canvas = Canvas::default();
+    canvas.stylesheet = create_stylesheet()?;
+    canvas.canvas_start(
+      CanvasPropsBuilder::new()
+        .set_pos((0, 0).into())
+        .set_size((500, 500).into())
+        .build(),
+    )?;
+    layout_container(&mut canvas)?;
+    canvas.canvas_end()?;
+  });
 }
 
 /// Main container "container".
 fn layout_container(canvas: &mut Canvas) -> CommonResult<()> {
-  canvas.layout_start(
-    LayoutPropsBuilder::new()
-      .set_id("container".to_string())
-      .set_dir(Direction::Horizontal)
-      .set_req_size((100, 100).try_into()?)
-      .build(),
-  )?;
-  make_container_assertions(canvas)?;
-  layout_left_col(canvas)?;
-  layout_right_col(canvas)?;
-  canvas.layout_end()?;
-  return Ok(());
+  throws!({
+    canvas.layout_start(
+      LayoutPropsBuilder::new()
+        .set_id("container".to_string())
+        .set_dir(Direction::Horizontal)
+        .set_req_size((100, 100).try_into()?)
+        .build(),
+    )?;
+    make_container_assertions(canvas)?;
+    layout_left_col(canvas)?;
+    layout_right_col(canvas)?;
+    canvas.layout_end()?;
+  });
 
   fn make_container_assertions(canvas: &Canvas) -> CommonResult<()> {
-    let layout_item = canvas.layout_stack.first().unwrap();
-
-    assert_eq!(layout_item.id, "container");
-    assert_eq!(layout_item.dir, Direction::Horizontal);
-    assert_eq!(layout_item.origin_pos, Some((0, 0).into()));
-    assert_eq!(layout_item.bounds_size, Some((500, 500).into()));
-    assert_eq!(layout_item.req_size_percent, Some((100, 100).try_into()?));
-    assert_eq!(layout_item.layout_cursor_pos, Some((0, 0).into()));
-    assert_eq!(layout_item.content_cursor_pos, None);
-    assert_eq!(layout_item.styles, None);
-
-    Ok(())
+    throws!({
+      let layout_item = canvas.layout_stack.first().unwrap();
+      assert_eq!(layout_item.id, "container");
+      assert_eq!(layout_item.dir, Direction::Horizontal);
+      assert_eq!(layout_item.origin_pos, Some((0, 0).into()));
+      assert_eq!(layout_item.bounds_size, Some((500, 500).into()));
+      assert_eq!(layout_item.req_size_percent, Some((100, 100).try_into()?));
+      assert_eq!(layout_item.layout_cursor_pos, Some((0, 0).into()));
+      assert_eq!(layout_item.content_cursor_pos, None);
+      assert_eq!(layout_item.styles, None);
+    });
   }
 }
 
 /// Left column "col_1".
 fn layout_left_col(canvas: &mut Canvas) -> CommonResult<()> {
-  canvas.layout_start(
-    LayoutPropsBuilder::new()
-      .set_styles(canvas.stylesheet.find_styles_by_ids(vec!["style1"]))
-      .set_id("col_1".to_string())
-      .set_dir(Direction::Vertical)
-      .set_req_size((50, 100).try_into()?)
-      .build(),
-  )?;
-  canvas.paint(vec!["col 1 - Hello"])?;
-  canvas.paint(vec!["col 1 - World"])?;
-  make_left_col_assertions(canvas)?;
-  canvas.layout_end()?;
-  return Ok(());
+  throws!({
+    canvas.layout_start(
+      LayoutPropsBuilder::new()
+        .set_styles(canvas.stylesheet.find_styles_by_ids(vec!["style1"]))
+        .set_id("col_1".to_string())
+        .set_dir(Direction::Vertical)
+        .set_req_size((50, 100).try_into()?)
+        .build(),
+    )?;
+    canvas.paint(vec!["col 1 - Hello"])?;
+    canvas.paint(vec!["col 1 - World"])?;
+    make_left_col_assertions(canvas)?;
+    canvas.layout_end()?;
+  });
 
   fn make_left_col_assertions(canvas: &Canvas) -> CommonResult<()> {
-    let layout_item = canvas.layout_stack.last().unwrap();
-
-    assert_eq!(layout_item.id, "col_1");
-    assert_eq!(layout_item.dir, Direction::Vertical);
-    assert_eq!(layout_item.origin_pos, Some((2, 2).into())); // Take margin into account.
-    assert_eq!(layout_item.bounds_size, Some((246, 496).into())); // Take margin into account.
-    assert_eq!(layout_item.req_size_percent, Some((50, 100).try_into()?));
-    assert_eq!(layout_item.layout_cursor_pos, None);
-    assert_eq!(layout_item.content_cursor_pos, Some((0, 2).into()));
-    assert_eq!(
-      layout_item.styles.clone(),
-      Stylesheet::compute(canvas.stylesheet.find_styles_by_ids(vec!["style1"]))
-    );
-
-    Ok(())
+    throws!({
+      let layout_item = canvas.layout_stack.last().unwrap();
+      assert_eq!(layout_item.id, "col_1");
+      assert_eq!(layout_item.dir, Direction::Vertical);
+      assert_eq!(layout_item.origin_pos, Some((2, 2).into())); // Take margin into account.
+      assert_eq!(layout_item.bounds_size, Some((246, 496).into())); // Take margin into account.
+      assert_eq!(layout_item.req_size_percent, Some((50, 100).try_into()?));
+      assert_eq!(layout_item.layout_cursor_pos, None);
+      assert_eq!(layout_item.content_cursor_pos, Some((0, 2).into()));
+      assert_eq!(
+        layout_item.styles.clone(),
+        Stylesheet::compute(canvas.stylesheet.find_styles_by_ids(vec!["style1"]))
+      );
+    });
   }
 }
 
 /// Right column "col_2".
 fn layout_right_col(canvas: &mut Canvas) -> CommonResult<()> {
-  canvas.layout_start(
-    LayoutPropsBuilder::new()
-      .set_styles(canvas.stylesheet.find_styles_by_ids(vec!["style2"]))
-      .set_id("col_2".to_string())
-      .set_dir(Direction::Vertical)
-      .set_req_size((50, 100).try_into()?)
-      .build(),
-  )?;
-  canvas.paint(vec!["col 2 - Hello"])?;
-  canvas.paint(vec!["col 2 - World"])?;
-  make_right_col_assertions(canvas)?;
-  canvas.layout_end()?;
-  return Ok(());
+  throws!({
+    canvas.layout_start(
+      LayoutPropsBuilder::new()
+        .set_styles(canvas.stylesheet.find_styles_by_ids(vec!["style2"]))
+        .set_id("col_2".to_string())
+        .set_dir(Direction::Vertical)
+        .set_req_size((50, 100).try_into()?)
+        .build(),
+    )?;
+    canvas.paint(vec!["col 2 - Hello"])?;
+    canvas.paint(vec!["col 2 - World"])?;
+    make_right_col_assertions(canvas)?;
+    canvas.layout_end()?;
+  });
 
   fn make_right_col_assertions(canvas: &Canvas) -> CommonResult<()> {
-    let layout_item = canvas.layout_stack.last().unwrap();
-
-    assert_eq!(layout_item.id, "col_2");
-    assert_eq!(layout_item.dir, Direction::Vertical);
-    assert_eq!(layout_item.origin_pos, Some((252, 2).into())); // Take margin into account.
-    assert_eq!(layout_item.bounds_size, Some((246, 496).into())); // Take margin into account.
-    assert_eq!(layout_item.req_size_percent, Some((50, 100).try_into()?));
-    assert_eq!(layout_item.layout_cursor_pos, None);
-    assert_eq!(layout_item.content_cursor_pos, Some((0, 2).into()));
-    assert_eq!(
-      layout_item.styles.clone(),
-      Stylesheet::compute(canvas.stylesheet.find_styles_by_ids(vec!["style2"]))
-    );
-
-    Ok(())
+    throws!({
+      let layout_item = canvas.layout_stack.last().unwrap();
+      assert_eq!(layout_item.id, "col_2");
+      assert_eq!(layout_item.dir, Direction::Vertical);
+      assert_eq!(layout_item.origin_pos, Some((252, 2).into())); // Take margin into account.
+      assert_eq!(layout_item.bounds_size, Some((246, 496).into())); // Take margin into account.
+      assert_eq!(layout_item.req_size_percent, Some((50, 100).try_into()?));
+      assert_eq!(layout_item.layout_cursor_pos, None);
+      assert_eq!(layout_item.content_cursor_pos, Some((0, 2).into()));
+      assert_eq!(
+        layout_item.styles.clone(),
+        Stylesheet::compute(canvas.stylesheet.find_styles_by_ids(vec!["style2"]))
+      );
+    });
   }
 }
 

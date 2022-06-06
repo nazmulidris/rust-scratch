@@ -15,7 +15,7 @@
  *   limitations under the License.
 */
 
-use r3bl_rs_utils::CommonResult;
+use r3bl_rs_utils::*;
 
 // Attach source files.
 mod module_log;
@@ -27,7 +27,8 @@ use module_log::*;
 
 #[tokio::main]
 async fn main() -> CommonResult<()> {
-  emit_log_entries().await?;
-  emit_crossterm_commands().await?;
-  Ok(())
+  throws!({
+    emit_log_entries().await?;
+    emit_crossterm_commands().await?;
+  });
 }

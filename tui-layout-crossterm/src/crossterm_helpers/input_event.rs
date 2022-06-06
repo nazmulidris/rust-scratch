@@ -21,12 +21,20 @@ use crossterm::event::{
   KeyCode, KeyEvent, KeyModifiers, MouseEvent,
 };
 
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InputEvent {
-  Exit,
   DisplayableKeypress(char),
   NonDisplayableKeypress(KeyEvent),
   Resize(Size),
   Mouse(MouseEvent),
+  None,
+}
+
+impl Default for InputEvent {
+  fn default() -> Self {
+    InputEvent::None
+  }
 }
 
 /// Typecast / convert [Event] to [InputEvent].
@@ -62,12 +70,6 @@ impl From<MouseEvent> for InputEvent {
 impl From<KeyEvent> for InputEvent {
   fn from(key_event: KeyEvent) -> Self {
     match key_event {
-      // Check for `Ctrl + q` to exit.
-      KeyEvent {
-        code: KeyCode::Char(character),
-        modifiers: KeyModifiers::CONTROL,
-      } if character == 'q' => InputEvent::Exit,
-
       // Check if "normal character" is pressed.
       KeyEvent {
         code: KeyCode::Char(character),
