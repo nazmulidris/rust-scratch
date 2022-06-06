@@ -27,7 +27,7 @@ pub async fn emit_crossterm_commands() -> CommonResult<()> {
 async fn repl() -> CommonResult<()> {
   println_raw!("Type Ctrl+q to exit repl.");
   loop {
-    // if poll(Duration::from_millis(500))? {
+    // if poll(Duration::from_millis(500))? { // This is inefficient.
     match read()?.into() {
       InputEvent::Exit => break,
 

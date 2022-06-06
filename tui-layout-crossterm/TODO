@@ -30,7 +30,7 @@
     ✔ rewrite dimens.rs using `From` and `TryFrom` @done(22-06-04 17:53)
     ☐ log keypress (don't print)
     ☐ async vs blocking
-      ☐ what is difference between crossterm event blocking read / polling read?
+      ✔ polling is inefficient and takes up tons of CPU @done(22-06-05 20:09)
       ☐ try get async crossterm event read working w/ tokio
     ☐ generate `output_commands` (in `Canvas`) for crossterm
   figure out how to accomodate focus management:
