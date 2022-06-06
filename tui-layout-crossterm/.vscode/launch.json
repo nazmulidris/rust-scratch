@@ -1,0 +1,121 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'tui-layout-crossterm'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--lib",
+          "--package=tui-layout-crossterm"
+        ],
+        "filter": {
+          "name": "tui-layout-crossterm",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'tui-layout-crossterm'",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=tui-layout-crossterm",
+          "--package=tui-layout-crossterm"
+        ],
+        "filter": {
+          "name": "tui-layout-crossterm",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'tui-layout-crossterm'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--bin=tui-layout-crossterm",
+          "--package=tui-layout-crossterm"
+        ],
+        "filter": {
+          "name": "tui-layout-crossterm",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug integration test 'test_dimens'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--test=test_dimens",
+          "--package=tui-layout-crossterm"
+        ],
+        "filter": {
+          "name": "test_dimens",
+          "kind": "test"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug integration test 'test_canvas'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--test=test_canvas",
+          "--package=tui-layout-crossterm"
+        ],
+        "filter": {
+          "name": "test_canvas",
+          "kind": "test"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug integration test 'test_style'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--test=test_style",
+          "--package=tui-layout-crossterm"
+        ],
+        "filter": {
+          "name": "test_style",
+          "kind": "test"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

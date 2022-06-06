@@ -15,6 +15,7 @@
  *   limitations under the License.
 */
 
+use bitflags::bitflags;
 use crossterm::{
   event::{DisableMouseCapture, EnableMouseCapture},
   execute, terminal,
@@ -103,21 +104,25 @@ macro_rules! raw_mode {
 /// https://github.com/crossterm-rs/crossterm/blob/master/examples/event-poll-read.rs
 pub struct RawMode;
 
-const EMPTY: u8 = 0b0000_0000;
-const RAW_MODE_ENABLED: u8 = 0b0000_0001;
-const RAW_MODE_DISABLED: u8 = 0b1000_0000;
-const MOUSE_CAPTURE_ENABLED: u8 = 0b0000_0010;
-const MOUSE_CAPTURE_DISABLED: u8 = 0b0100_0000;
+bitflags! {
+  /// https://docs.rs/bitflags/0.8.2/bitflags/macro.bitflags.html
+  pub struct Status: u8 {
+    const RAW_MODE_ENABLED       = 0b0000_0001;
+    const RAW_MODE_DISABLED      = 0b1000_0000;
+    const MOUSE_CAPTURE_ENABLED  = 0b0000_0010;
+    const MOUSE_CAPTURE_DISABLED = 0b0100_0000;
+  }
+}
 
 impl RawMode {
   /// https://hermanradtke.com/2016/09/12/rust-using-and_then-and-map-combinators-on-result-type.html/
   pub fn start() -> Self {
-    let mut status: u8 = EMPTY;
+    let mut status = Status::empty();
 
     // Try enable raw mode.
     terminal::enable_raw_mode()
       .and_then(|_| {
-        status |= RAW_MODE_ENABLED;
+        status.insert(Status::RAW_MODE_ENABLED);
         Ok(())
       })
       .unwrap_or_else(|e| {
@@ -127,23 +132,18 @@ impl RawMode {
     // Try enable mouse capture.
     execute!(stdout(), EnableMouseCapture)
       .and_then(|_| {
-        status |= MOUSE_CAPTURE_ENABLED;
+        status.insert(Status::MOUSE_CAPTURE_ENABLED);
         Ok(())
       })
       .unwrap_or_else(|e| {
         println_raw_if_debug! {ERROR "crossterm: Failed to enable mouse capture due to {}", e};
       });
 
-    // println!("status:        {}", status);
-    // println!("both:          {}", MOUSE_CAPTURE_ENABLED | RAW_MODE_ENABLED);
-    // println!("mouse_only:    {}", MOUSE_CAPTURE_ENABLED);
-    // println!("raw_mode_only: {}", RAW_MODE_ENABLED);
-
-    if status == MOUSE_CAPTURE_ENABLED | RAW_MODE_ENABLED {
+    if status == Status::MOUSE_CAPTURE_ENABLED | Status::RAW_MODE_ENABLED {
       println_raw_if_debug!(OK "✅ Raw mode enabled & ✅ Mouse capture enabled.");
-    } else if status == MOUSE_CAPTURE_ENABLED {
+    } else if status == Status::MOUSE_CAPTURE_ENABLED {
       println_raw_if_debug!(OK "✅ Mouse capture enabled.");
-    } else if status == RAW_MODE_ENABLED {
+    } else if status == Status::RAW_MODE_ENABLED {
       println_raw_if_debug!(OK "✅ Raw mode enabled.");
     }
 
@@ -154,12 +154,12 @@ impl RawMode {
 impl Drop for RawMode {
   /// https://hermanradtke.com/2016/09/12/rust-using-and_then-and-map-combinators-on-result-type.html/
   fn drop(&mut self) {
-    let mut status: u8 = EMPTY;
+    let mut status = Status::empty();
 
     // Try disable raw mode.
     terminal::disable_raw_mode()
       .and_then(|_| {
-        status |= RAW_MODE_DISABLED;
+        status.insert(Status::RAW_MODE_DISABLED);
         Ok(())
       })
       .unwrap_or_else(|e| {
@@ -169,18 +169,18 @@ impl Drop for RawMode {
     // Try disable mouse capture.
     execute!(stdout(), DisableMouseCapture)
       .and_then(|_| {
-        status |= MOUSE_CAPTURE_DISABLED;
+        status.insert(Status::MOUSE_CAPTURE_DISABLED);
         Ok(())
       })
       .unwrap_or_else(|e| {
         println_raw_if_debug! {ERROR "crossterm: Failed to disable mouse capture due to {}", e};
       });
 
-    if status == MOUSE_CAPTURE_DISABLED | RAW_MODE_DISABLED {
+    if status == Status::MOUSE_CAPTURE_DISABLED | Status::RAW_MODE_DISABLED {
       println_raw_if_debug!(OK "✅ Raw mode disabled & ✅ Mouse capture disabled.");
-    } else if status == MOUSE_CAPTURE_DISABLED {
+    } else if status == Status::MOUSE_CAPTURE_DISABLED {
       println_raw_if_debug!(OK "✅ Mouse capture disabled.");
-    } else if status == RAW_MODE_DISABLED {
+    } else if status == Status::RAW_MODE_DISABLED {
       println_raw_if_debug!(OK "✅ Raw mode disabled.");
     }
   }

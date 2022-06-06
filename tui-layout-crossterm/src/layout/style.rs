@@ -41,13 +41,13 @@ pub struct Style {
 bitflags! {
   /// https://docs.rs/bitflags/0.8.2/bitflags/macro.bitflags.html
   pub struct StyleFlag: u8 {
-    const COLOR_FG_SET  = 0b00000001;
-    const COLOR_BG_SET  = 0b00000010;
-    const BOLD_SET      = 0b00000100;
-    const ITALIC_SET    = 0b00001000;
-    const UNDERLINE_SET = 0b00010000;
-    const MARGIN_SET   = 0b00100000;
-    const COMPUTED_SET  = 0b01000000;
+    const COLOR_FG_SET  = 0b0000_0001;
+    const COLOR_BG_SET  = 0b0000_0010;
+    const BOLD_SET      = 0b0000_0100;
+    const ITALIC_SET    = 0b0000_1000;
+    const UNDERLINE_SET = 0b0001_0000;
+    const MARGIN_SET    = 0b0010_0000;
+    const COMPUTED_SET  = 0b0100_0000;
   }
 }
 

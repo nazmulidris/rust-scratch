@@ -28,6 +28,10 @@
     ✔ update tests to match above @done(22-05-29 11:13)
   figure out how to use crossterm:
     ✔ rewrite dimens.rs using `From` and `TryFrom` @done(22-06-04 17:53)
+    ☐ log keypress (don't print)
+    ☐ async vs blocking
+      ☐ what is difference between crossterm event blocking read / polling read?
+      ☐ try get async crossterm event read working w/ tokio
     ☐ generate `output_commands` (in `Canvas`) for crossterm
   figure out how to accomodate focus management:
     ☐ extend canvas to have a focus field (current id w/ focus)
