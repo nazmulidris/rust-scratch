@@ -20,6 +20,7 @@ use crossterm::{
   execute,
   terminal::{self, *},
 };
+use paste::paste;
 use r3bl_rs_utils::*;
 use std::io::stdout;
 
@@ -114,29 +115,21 @@ pub struct RawMode;
 /// Given a crossterm command, this will run it and [log!] the [Result] that is returned.
 /// The caller must return a [CommonResult], since it uses `?`.
 macro_rules! try_to_run_crossterm_command_and_log_result {
-  ($cmd: expr, $description: expr) => {{
-    throws!({
-      if let Err(err) = $cmd {
-        log!(ERROR, "crossterm: Failed to {} due to {}", $description, err);
-      } else {
-        log!(INFO, $description);
+  ($cmd: expr, $description: expr, $name: ident) => {{
+    paste! {
+      pub fn [<_ $name>]() -> CommonResult<()> {
+        if let Err(err) = $cmd {
+          log!(ERROR, "crossterm: Failed to {} due to {}", $description, err);
+        } else {
+          log!(INFO, $description);
+        }
+        Ok(())
       }
-    })
-  }};
-}
-
-/// Given a bunch of [CrosstermCmd]s, this will run each of them and evaluate the [Result]
-/// that is returned. In case of an error (from the call to [log!] itself), this is simply
-/// printed to stderr if DEBUG is true.
-macro_rules! try_to_run_crossterm_cmds {
-  ($($cmd: expr), *) => {{
-    $(
-      let result = $cmd;
-      if let Err(err) = result {
-        let msg = format!("❌ Failed to {}", stringify!($cmd));
+      if let Err(err) = [<_ $name>]() {
+        let msg = format!("❌ Failed to {}", stringify!($name));
         println_raw_if_debug!(ERROR &msg, err);
       }
-    )*
+    }
   }};
 }
 
@@ -146,56 +139,60 @@ macro_rules! try_to_run_crossterm_cmds {
 struct CrosstermCmd;
 
 impl CrosstermCmd {
-  fn try_to_enable_raw_mode() -> CommonResult<()> {
+  fn try_to_enable_raw_mode() {
     try_to_run_crossterm_command_and_log_result! {
       terminal::enable_raw_mode(),
-      "🍣 enable raw mode"
+      "🍣 enable raw mode",
+      enable_raw_mode
     };
   }
 
-  fn try_to_enable_mouse_capture() -> CommonResult<()> {
+  fn try_to_enable_mouse_capture() {
     try_to_run_crossterm_command_and_log_result! {
       execute!(stdout(), EnableMouseCapture),
-      "🐭 enable mouse mode"
+      "🐭 enable mouse capture",
+      enable_mouse_capture
     };
   }
 
-  fn try_to_enter_alternate_screen() -> CommonResult<()> {
+  fn try_to_enter_alternate_screen() {
     try_to_run_crossterm_command_and_log_result! {
       execute!(stdout(), EnterAlternateScreen),
-      "🌒 enter alternate screen"
+      "🌒 enter alternate screen",
+      enter_alternate_screen
     };
   }
 
-  fn try_to_leave_alternate_screen() -> CommonResult<()> {
+  fn try_to_leave_alternate_screen() {
     try_to_run_crossterm_command_and_log_result! {
       execute!(stdout(), LeaveAlternateScreen),
-      "🌒 leave alternate screen"
+      "🌒 leave alternate screen",
+      leave_alternate_screen
     };
   }
 
-  fn try_to_disable_raw_mode() -> CommonResult<()> {
+  fn try_to_disable_raw_mode() {
     try_to_run_crossterm_command_and_log_result! {
       terminal::disable_raw_mode(),
-      "🍣 disable raw mode"
+      "🍣 disable raw mode",
+      disable_raw_mode
     };
   }
 
-  fn try_to_disable_mouse_mode() -> CommonResult<()> {
+  fn try_to_disable_mouse_mode() {
     try_to_run_crossterm_command_and_log_result! {
       execute!(stdout(), DisableMouseCapture) ,
-      "🐭 disable mouse mode"
+      "🐭 disable mouse mode",
+      disable_mouse_mode
     };
   }
 }
 
 impl RawMode {
   pub fn start() -> Self {
-    try_to_run_crossterm_cmds!(
-      CrosstermCmd::try_to_enable_raw_mode(),
-      CrosstermCmd::try_to_enable_mouse_capture(),
-      CrosstermCmd::try_to_enter_alternate_screen()
-    );
+    CrosstermCmd::try_to_enable_raw_mode();
+    CrosstermCmd::try_to_enable_mouse_capture();
+    CrosstermCmd::try_to_enter_alternate_screen();
 
     RawMode
   }
@@ -203,10 +200,8 @@ impl RawMode {
 
 impl Drop for RawMode {
   fn drop(&mut self) {
-    try_to_run_crossterm_cmds!(
-      CrosstermCmd::try_to_leave_alternate_screen(),
-      CrosstermCmd::try_to_disable_mouse_mode(),
-      CrosstermCmd::try_to_disable_raw_mode()
-    );
+    CrosstermCmd::try_to_leave_alternate_screen();
+    CrosstermCmd::try_to_disable_mouse_mode();
+    CrosstermCmd::try_to_disable_raw_mode();
   }
 }

@@ -9,6 +9,16 @@
 					"label": ""
 				}
 			]
+		},
+		{
+			"path": "src/crossterm_helpers/raw_mode.rs",
+			"bookmarks": [
+				{
+					"line": 116,
+					"column": 0,
+					"label": ""
+				}
+			]
 		}
 	]
 }
