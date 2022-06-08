@@ -35,7 +35,9 @@
 // Attach source files.
 pub mod raw_mode;
 pub mod input_event;
+pub mod event_stream;
 
 // Re-export everything from attached source files.
 pub use input_event::*;
 pub use raw_mode::*;
+pub use event_stream::*;

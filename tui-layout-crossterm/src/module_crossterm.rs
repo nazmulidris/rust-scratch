@@ -51,47 +51,17 @@
 //! - https://github.com/crossterm-rs/crossterm/wiki/Upgrade-from-0.13-to-0.14#111-new-event-api
 //! - https://github.com/crossterm-rs/crossterm/blob/master/examples/event-stream-tokio.rs
 
-use async_trait::async_trait;
 use crossterm::event::*;
-use futures_util::{FutureExt, StreamExt};
 use r3bl_rs_utils::*;
 use tui_layout_crossterm::*;
 
-#[async_trait]
-pub trait EventStreamExt {
-  /// Read an [Event] from the [EventStream]. This is a non-blocking call.
-  async fn get_event_from(&mut self) -> CommonResult<Option<InputEvent>>;
-}
-
-#[async_trait]
-impl EventStreamExt for EventStream {
-  async fn get_event_from(&mut self) -> CommonResult<Option<InputEvent>> {
-    let option_result_event = self.next().fuse().await;
-    match option_result_event {
-      Some(Ok(event)) => Ok(Some(event.into())),
-
-      Some(Err(e)) => {
-        log!(ERROR, "Error: {:?}", e);
-        Ok(None)
-      }
-
-      None => Ok(None),
-    }
-  }
-}
-
 pub async fn emit_crossterm_commands() -> CommonResult<()> {
-  raw_mode! { repl_nonblocking().await? }
-}
-
-async fn repl_nonblocking() -> CommonResult<()> {
-  throws!({
+  raw_mode!({
     let mut event_stream = EventStream::new();
     loop {
-      let input_event = event_stream.get_event_from().await?;
-      match input_event {
+      match event_stream.get_input_event().await? {
         Some(input_event) => {
-          if handle_input_event(input_event).await? {
+          if process_input_event(input_event).await? {
             break;
           }
         }
@@ -109,7 +79,7 @@ const EXIT_KEYS: [crossterm::event::KeyEvent; 1] = [KeyEvent {
 }];
 
 /// Returns false if user presses any of the keys in [EXIT_KEYS].
-async fn handle_input_event(input_event: InputEvent) -> CommonResult<bool> {
+async fn process_input_event(input_event: InputEvent) -> CommonResult<bool> {
   match input_event {
     // Check for REPL exit.
     InputEvent::NonDisplayableKeypress(key_event) => {
