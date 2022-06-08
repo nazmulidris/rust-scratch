@@ -57,16 +57,21 @@ use tui_layout_crossterm::*;
 
 pub async fn emit_crossterm_commands() -> CommonResult<()> {
   raw_mode!({
-    let mut event_stream = EventStream::new();
-    loop {
-      match event_stream.get_input_event().await? {
-        Some(input_event) => {
-          if process_input_event(input_event).await? {
-            break;
+    with_mut! {
+      EventStream::new(),
+      as event_stream,
+      run {
+        loop {
+          match event_stream.get_input_event().await? {
+            Some(input_event) => {
+              if process_input_event(input_event).await? {
+                break;
+              }
+            }
+
+            None => break,
           }
         }
-
-        None => break,
       }
     }
   })
