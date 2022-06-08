@@ -20,15 +20,17 @@ use crossterm::{
   event::{DisableMouseCapture, EnableMouseCapture},
   execute, terminal,
 };
+use r3bl_rs_utils::*;
 use std::io::stdout;
 
+/// If set to true, and the [log!] fails, then it will print the error to stderr.
 const DEBUG: bool = true;
 
 /// If DEBUG is set to true, then print OK or ERROR message to stdout.
 macro_rules! println_raw_if_debug {
   (ERROR $msg:expr, $err:expr) => {
     if DEBUG {
-      println!(
+      eprintln!(
         "{} {} {}\r",
         r3bl_rs_utils::style_error("▶"),
         r3bl_rs_utils::style_prompt($msg),
@@ -48,7 +50,6 @@ macro_rules! println_raw_if_debug {
 }
 
 /// Simply print message to stdout.
-#[macro_export]
 macro_rules! println_raw {
   ($arg:tt) => {
     println!("{}\r", $arg)
@@ -121,73 +122,99 @@ bitflags! {
 }
 
 impl RawMode {
-  /// https://hermanradtke.com/2016/09/12/rust-using-and_then-and-map-combinators-on-result-type.html/
   pub fn start() -> Self {
     let mut status = Status::empty();
 
-    // Try enable raw mode.
-    terminal::enable_raw_mode()
-      .and_then(|_| {
-        status.insert(Status::RAW_MODE_ENABLED);
-        Ok(())
-      })
-      .unwrap_or_else(|e| {
-        println_raw_if_debug! {ERROR "crossterm: Failed to enable raw mode mode due to {}", e};
+    /// Wrap the call to [log!] (since it uses `?`) in a function that returns a [CommonResult].
+    fn try_to_enable_raw_mode(status: &mut Status) -> CommonResult<()> {
+      throws!({
+        if let Err(err) = terminal::enable_raw_mode() {
+          log!(ERROR, "crossterm: Failed to enable raw mode mode due to {}", err);
+        } else {
+          status.insert(Status::RAW_MODE_ENABLED);
+          log!(INFO, "Enabled raw mode");
+        }
       });
+    }
+
+    /// Wrap the call to [log!] (since it uses `?`) in a function that returns a [CommonResult].
+    fn try_to_enable_mouse_capture(status: &mut Status) -> CommonResult<()> {
+      throws!({
+        if let Err(err) = execute!(stdout(), EnableMouseCapture) {
+          log!(ERROR, "crossterm: Failed to disable mouse capture due to {}", err);
+        } else {
+          status.insert(Status::MOUSE_CAPTURE_ENABLED);
+          log!(INFO, "Enabled mouse capture");
+        }
+      });
+    }
+
+    // Try enable raw mode.
+    if let Err(err) = try_to_enable_raw_mode(&mut status) {
+      println_raw_if_debug!(ERROR "Failed to enable raw mode", err);
+    }
 
     // Try enable mouse capture.
-    execute!(stdout(), EnableMouseCapture)
-      .and_then(|_| {
-        status.insert(Status::MOUSE_CAPTURE_ENABLED);
-        Ok(())
-      })
-      .unwrap_or_else(|e| {
-        println_raw_if_debug! {ERROR "crossterm: Failed to enable mouse capture due to {}", e};
-      });
-
-    if status == Status::MOUSE_CAPTURE_ENABLED | Status::RAW_MODE_ENABLED {
-      println_raw_if_debug!(OK "✅ Raw mode enabled & ✅ Mouse capture enabled.");
-    } else if status == Status::MOUSE_CAPTURE_ENABLED {
-      println_raw_if_debug!(OK "✅ Mouse capture enabled.");
-    } else if status == Status::RAW_MODE_ENABLED {
-      println_raw_if_debug!(OK "✅ Raw mode enabled.");
+    if let Err(err) = try_to_enable_mouse_capture(&mut status) {
+      println_raw_if_debug!(ERROR "Failed to enable mouse capture", err);
     }
+
+    // if status == Status::MOUSE_CAPTURE_ENABLED | Status::RAW_MODE_ENABLED {
+    //   println_raw_if_debug!(OK "✅ Raw mode enabled & ✅ Mouse capture enabled.");
+    // } else if status == Status::MOUSE_CAPTURE_ENABLED {
+    //   println_raw_if_debug!(OK "✅ Mouse capture enabled. ⚠️ Raw mode disabled.");
+    // } else if status == Status::RAW_MODE_ENABLED {
+    //   println_raw_if_debug!(OK "✅ Raw mode enabled. ⚠️ Mouse capture disabled.");
+    // }
 
     RawMode
   }
 }
 
 impl Drop for RawMode {
-  /// https://hermanradtke.com/2016/09/12/rust-using-and_then-and-map-combinators-on-result-type.html/
   fn drop(&mut self) {
     let mut status = Status::empty();
 
-    // Try disable raw mode.
-    terminal::disable_raw_mode()
-      .and_then(|_| {
-        status.insert(Status::RAW_MODE_DISABLED);
-        Ok(())
-      })
-      .unwrap_or_else(|e| {
-        println_raw_if_debug! {ERROR "crossterm: Failed to disable raw mode mode due to {}", e};
+    /// Wrap the call to [log!] (since it uses `?`) in a function that returns a [CommonResult].
+    fn try_disable_raw_mode(status: &mut Status) -> CommonResult<()> {
+      throws!({
+        if let Err(err) = terminal::disable_raw_mode() {
+          log!(ERROR, "crossterm: Failed to disable raw mode mode due to {}", err);
+        } else {
+          status.insert(Status::RAW_MODE_DISABLED);
+          log!(INFO, "Disabled raw mode");
+        }
       });
+    }
+
+    /// Wrap the call to [log!] (since it uses `?`) in a function that returns a [CommonResult].
+    fn try_disable_mouse_mode(status: &mut Status) -> CommonResult<()> {
+      throws!({
+        if let Err(err) = execute!(stdout(), DisableMouseCapture) {
+          log!(ERROR, "crossterm: Failed to disable mouse capture due to {}", err);
+        } else {
+          status.insert(Status::MOUSE_CAPTURE_DISABLED);
+          log!(INFO, "Disabled mouse capture");
+        }
+      });
+    }
+
+    // Try disable raw mode.
+    if let Err(err) = try_disable_raw_mode(&mut status) {
+      println_raw_if_debug!(ERROR "crossterm: Failed to disable raw mode mode due to {}", err);
+    };
 
     // Try disable mouse capture.
-    execute!(stdout(), DisableMouseCapture)
-      .and_then(|_| {
-        status.insert(Status::MOUSE_CAPTURE_DISABLED);
-        Ok(())
-      })
-      .unwrap_or_else(|e| {
-        println_raw_if_debug! {ERROR "crossterm: Failed to disable mouse capture due to {}", e};
-      });
+    if let Err(err) = try_disable_mouse_mode(&mut status) {
+      println_raw_if_debug!(ERROR "crossterm: Failed to disable mouse capture due to {}", err);
+    };
 
-    if status == Status::MOUSE_CAPTURE_DISABLED | Status::RAW_MODE_DISABLED {
-      println_raw_if_debug!(OK "✅ Raw mode disabled & ✅ Mouse capture disabled.");
-    } else if status == Status::MOUSE_CAPTURE_DISABLED {
-      println_raw_if_debug!(OK "✅ Mouse capture disabled.");
-    } else if status == Status::RAW_MODE_DISABLED {
-      println_raw_if_debug!(OK "✅ Raw mode disabled.");
-    }
+    // if status == Status::MOUSE_CAPTURE_DISABLED | Status::RAW_MODE_DISABLED {
+    //   println_raw_if_debug!(OK "✅ Raw mode disabled & ✅ Mouse capture disabled.");
+    // } else if status == Status::MOUSE_CAPTURE_DISABLED {
+    //   println_raw_if_debug!(OK "✅ Mouse capture disabled.");
+    // } else if status == Status::RAW_MODE_DISABLED {
+    //   println_raw_if_debug!(OK "✅ Raw mode disabled.");
+    // }
   }
 }
