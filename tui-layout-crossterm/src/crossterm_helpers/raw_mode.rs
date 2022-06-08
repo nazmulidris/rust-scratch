@@ -16,6 +16,7 @@
 */
 
 use crossterm::{
+  cursor::{self},
   event::*,
   execute,
   terminal::{self, *},
@@ -106,94 +107,18 @@ macro_rules! raw_mode {
   }};
 }
 
-/// To use this, you need to make sure to create an instance using `default()` (which
-/// enables raw mode) and then when this instance is dropped (when code_block falls out of
-/// scope) raw mode will be disabled.
-/// https://github.com/crossterm-rs/crossterm/blob/master/examples/event-poll-read.rs
+/// To use this, you need to make sure to create an instance using `start()` (which
+/// enables raw mode) and then when this instance is dropped (when the enclosing code
+/// block falls out of scope) raw mode will be disabled.
 pub struct RawMode;
-
-/// Given a crossterm command, this will run it and [log!] the [Result] that is returned.
-/// The caller must return a [CommonResult], since it uses `?`.
-macro_rules! try_to_run_crossterm_command_and_log_result {
-  ($cmd: expr, $description: expr, $name: ident) => {{
-    paste! {
-      pub fn [<_ $name>]() -> CommonResult<()> {
-        if let Err(err) = $cmd {
-          log!(ERROR, "crossterm: Failed to {} due to {}", $description, err);
-        } else {
-          log!(INFO, $description);
-        }
-        Ok(())
-      }
-      if let Err(err) = [<_ $name>]() {
-        let msg = format!("❌ Failed to {}", stringify!($name));
-        println_raw_if_debug!(ERROR &msg, err);
-      }
-    }
-  }};
-}
-
-/// Each associated method must wrap the call to
-/// [try_to_run_crossterm_command_and_log_result] which calls [log!] (since it uses `?`)
-/// in a function that returns a [CommonResult].
-struct CrosstermCmd;
-
-impl CrosstermCmd {
-  fn try_to_enable_raw_mode() {
-    try_to_run_crossterm_command_and_log_result! {
-      terminal::enable_raw_mode(),
-      "🍣 enable raw mode",
-      enable_raw_mode
-    };
-  }
-
-  fn try_to_enable_mouse_capture() {
-    try_to_run_crossterm_command_and_log_result! {
-      execute!(stdout(), EnableMouseCapture),
-      "🐭 enable mouse capture",
-      enable_mouse_capture
-    };
-  }
-
-  fn try_to_enter_alternate_screen() {
-    try_to_run_crossterm_command_and_log_result! {
-      execute!(stdout(), EnterAlternateScreen),
-      "🌒 enter alternate screen",
-      enter_alternate_screen
-    };
-  }
-
-  fn try_to_leave_alternate_screen() {
-    try_to_run_crossterm_command_and_log_result! {
-      execute!(stdout(), LeaveAlternateScreen),
-      "🌒 leave alternate screen",
-      leave_alternate_screen
-    };
-  }
-
-  fn try_to_disable_raw_mode() {
-    try_to_run_crossterm_command_and_log_result! {
-      terminal::disable_raw_mode(),
-      "🍣 disable raw mode",
-      disable_raw_mode
-    };
-  }
-
-  fn try_to_disable_mouse_mode() {
-    try_to_run_crossterm_command_and_log_result! {
-      execute!(stdout(), DisableMouseCapture) ,
-      "🐭 disable mouse mode",
-      disable_mouse_mode
-    };
-  }
-}
 
 impl RawMode {
   pub fn start() -> Self {
     CrosstermCmd::try_to_enable_raw_mode();
     CrosstermCmd::try_to_enable_mouse_capture();
     CrosstermCmd::try_to_enter_alternate_screen();
-
+    CrosstermCmd::reset_cursor_position();
+    CrosstermCmd::clear_screen();
     RawMode
   }
 }
@@ -203,5 +128,96 @@ impl Drop for RawMode {
     CrosstermCmd::try_to_leave_alternate_screen();
     CrosstermCmd::try_to_disable_mouse_mode();
     CrosstermCmd::try_to_disable_raw_mode();
+  }
+}
+
+/// Given a crossterm command, this will run it and [log!] the [Result] that is returned.
+/// If [log!] fails, then it will print a message to stderr.
+///
+/// https://github.com/dtolnay/paste
+macro_rules! try_to_run_crossterm_command_and_log_result {
+  ($cmd: expr, $name: ident) => {{
+    paste! {
+      // Generate a new function that returns [CommonResult].
+      pub fn [<_ $name>]() -> CommonResult<()> {
+        throws!({
+          if let Err(err) = $cmd {
+            log!(ERROR, "crossterm: ❌ Failed to {} due to {}", stringify!($name), err);
+          } else {
+            log!(INFO, "crossterm: ✅ {} successfully", stringify!($name));
+          }
+        })
+      }
+
+      // Call this generated function. It will fail if there are problems w/ log!().
+      // In this case, if DEBUG is true, then it will dump the error to stderr.
+      if let Err(err) = [<_ $name>]() {
+        let msg = format!("❌ Failed to {}", stringify!($name));
+        println_raw_if_debug!(ERROR &msg, err);
+      }
+    }
+  }};
+}
+
+/// Contains convenience associated functions to make it easier to create crossterm
+/// commands. All of these associated functions use the
+/// [try_to_run_crossterm_command_and_log_result!] macro.
+struct CrosstermCmd;
+
+impl CrosstermCmd {
+  fn try_to_enable_raw_mode() {
+    try_to_run_crossterm_command_and_log_result! {
+      terminal::enable_raw_mode(),
+      enable_raw_mode
+    };
+  }
+
+  fn try_to_enable_mouse_capture() {
+    try_to_run_crossterm_command_and_log_result! {
+      execute!(stdout(), EnableMouseCapture),
+      enable_mouse_capture
+    };
+  }
+
+  fn try_to_enter_alternate_screen() {
+    try_to_run_crossterm_command_and_log_result! {
+      execute!(stdout(), EnterAlternateScreen),
+      enter_alternate_screen
+    };
+  }
+
+  fn try_to_leave_alternate_screen() {
+    try_to_run_crossterm_command_and_log_result! {
+      execute!(stdout(), LeaveAlternateScreen),
+      leave_alternate_screen
+    };
+  }
+
+  fn try_to_disable_raw_mode() {
+    try_to_run_crossterm_command_and_log_result! {
+      terminal::disable_raw_mode(),
+      disable_raw_mode
+    };
+  }
+
+  fn try_to_disable_mouse_mode() {
+    try_to_run_crossterm_command_and_log_result! {
+      execute!(stdout(), DisableMouseCapture) ,
+      disable_mouse_mode
+    };
+  }
+
+  fn reset_cursor_position() {
+    try_to_run_crossterm_command_and_log_result! {
+      execute!(stdout(), cursor::MoveTo(0, 0)),
+      reset_cursor_position
+    };
+  }
+
+  fn clear_screen() {
+    try_to_run_crossterm_command_and_log_result! {
+      execute!(stdout(), terminal::Clear(ClearType::All)),
+      clear_screen
+    };
   }
 }
