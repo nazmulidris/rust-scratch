@@ -23,16 +23,17 @@ use r3bl_rs_utils::*;
 
 #[async_trait]
 pub trait EventStreamExt {
-  /// Read an [Event] from the [EventStream]. This is a non-blocking call. It returns an
-  /// [InputEvent] wrapped in a [Option]. [None] is returned if there was an error.
+  /// Try and read an [Event] from the [EventStream], and convert it into an [InputEvent].
+  /// This is a non-blocking call. It returns an [InputEvent] wrapped in a [Option].
+  /// [None] is returned if there was an error.
   async fn get_input_event(&mut self) -> CommonResult<Option<InputEvent>>;
 }
 
 #[async_trait]
 impl EventStreamExt for EventStream {
   async fn get_input_event(&mut self) -> CommonResult<Option<InputEvent>> {
-    let option_result_event = self.next().fuse().await;
-    match option_result_event {
+    let maybe_event = self.next().fuse().await;
+    match maybe_event {
       Some(Ok(event)) => Ok(Some(event.into())),
 
       Some(Err(e)) => {

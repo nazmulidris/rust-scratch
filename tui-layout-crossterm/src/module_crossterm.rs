@@ -83,7 +83,7 @@ const EXIT_KEYS: [crossterm::event::KeyEvent; 1] = [KeyEvent {
   modifiers: KeyModifiers::CONTROL,
 }];
 
-/// Returns false if user presses any of the keys in [EXIT_KEYS].
+/// Returns true if user presses any of the keys in [EXIT_KEYS].
 async fn process_input_event(input_event: InputEvent) -> CommonResult<bool> {
   match input_event {
     InputEvent::NonDisplayableKeypress(key_event) => {
