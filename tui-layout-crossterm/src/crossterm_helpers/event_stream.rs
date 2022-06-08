@@ -24,7 +24,7 @@ use r3bl_rs_utils::*;
 #[async_trait]
 pub trait EventStreamExt {
   /// Read an [Event] from the [EventStream]. This is a non-blocking call. It returns an
-  /// [InputEvent] wrapped in a [Option].
+  /// [InputEvent] wrapped in a [Option]. [None] is returned if there was an error.
   async fn get_input_event(&mut self) -> CommonResult<Option<InputEvent>>;
 }
 
