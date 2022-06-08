@@ -15,10 +15,10 @@
  *   limitations under the License.
 */
 
-use bitflags::bitflags;
 use crossterm::{
-  event::{DisableMouseCapture, EnableMouseCapture},
-  execute, terminal,
+  event::*,
+  execute,
+  terminal::{self, *},
 };
 use r3bl_rs_utils::*;
 use std::io::stdout;
@@ -111,61 +111,102 @@ macro_rules! raw_mode {
 /// https://github.com/crossterm-rs/crossterm/blob/master/examples/event-poll-read.rs
 pub struct RawMode;
 
-bitflags! {
-  /// https://docs.rs/bitflags/0.8.2/bitflags/macro.bitflags.html
-  pub struct Status: u8 {
-    const RAW_MODE_ENABLED       = 0b0000_0001;
-    const RAW_MODE_DISABLED      = 0b1000_0000;
-    const MOUSE_CAPTURE_ENABLED  = 0b0000_0010;
-    const MOUSE_CAPTURE_DISABLED = 0b0100_0000;
+macro_rules! try_to_run_crossterm_command {
+  ($cmd: expr, $description: expr) => {{
+    if let Err(err) = $cmd {
+      log!(ERROR, "crossterm: Failed to {} mode due to {}", $description, err);
+    } else {
+      log!(INFO, $description);
+    }
+  }};
+}
+
+struct CrosstermCmd;
+
+impl CrosstermCmd {
+  /// Wrap the call to [log!] (since it uses `?`) in a function that returns a
+  /// [CommonResult].
+  fn try_to_enable_raw_mode() -> CommonResult<()> {
+    throws!({
+      try_to_run_crossterm_command! {
+        terminal::enable_raw_mode(),
+        "🍣 enable raw mode"
+      };
+    });
+  }
+
+  /// Wrap the call to [log!] (since it uses `?`) in a function that returns a
+  /// [CommonResult].
+  fn try_to_enable_mouse_capture() -> CommonResult<()> {
+    throws!({
+      try_to_run_crossterm_command! {
+        execute!(stdout(), EnableMouseCapture),
+        "🐭 enable mouse mode"
+      };
+    });
+  }
+
+  /// Wrap the call to [log!] (since it uses `?`) in a function that returns a
+  /// [CommonResult].
+  fn try_to_enter_alternate_screen() -> CommonResult<()> {
+    throws!({
+      try_to_run_crossterm_command! {
+        execute!(stdout(), EnterAlternateScreen),
+        "🌒 enable alternate screen"
+      };
+    });
+  }
+
+  /// Wrap the call to [log!] (since it uses `?`) in a function that returns a
+  /// [CommonResult].
+  fn try_leave_alternate_screen() -> CommonResult<()> {
+    throws!({
+      try_to_run_crossterm_command! {
+        execute!(stdout(), LeaveAlternateScreen),
+        "🌒 leave alternate screen"
+      };
+    });
+  }
+
+  /// Wrap the call to [log!] (since it uses `?`) in a function that returns a
+  /// [CommonResult].
+  fn try_disable_raw_mode() -> CommonResult<()> {
+    throws!({
+      try_to_run_crossterm_command! {
+        terminal::disable_raw_mode(),
+        "🍣 disable raw mode"
+      };
+    });
+  }
+
+  /// Wrap the call to [log!] (since it uses `?`) in a function that returns a
+  /// [CommonResult].
+  fn try_disable_mouse_mode() -> CommonResult<()> {
+    throws!({
+      try_to_run_crossterm_command! {
+        execute!(stdout(), DisableMouseCapture) ,
+        "🐭 disable mouse mode"
+      };
+    });
   }
 }
 
 impl RawMode {
   pub fn start() -> Self {
-    let mut status = Status::empty();
-
-    /// Wrap the call to [log!] (since it uses `?`) in a function that returns a [CommonResult].
-    fn try_to_enable_raw_mode(status: &mut Status) -> CommonResult<()> {
-      throws!({
-        if let Err(err) = terminal::enable_raw_mode() {
-          log!(ERROR, "crossterm: Failed to enable raw mode mode due to {}", err);
-        } else {
-          status.insert(Status::RAW_MODE_ENABLED);
-          log!(INFO, "Enabled raw mode");
-        }
-      });
-    }
-
-    /// Wrap the call to [log!] (since it uses `?`) in a function that returns a [CommonResult].
-    fn try_to_enable_mouse_capture(status: &mut Status) -> CommonResult<()> {
-      throws!({
-        if let Err(err) = execute!(stdout(), EnableMouseCapture) {
-          log!(ERROR, "crossterm: Failed to disable mouse capture due to {}", err);
-        } else {
-          status.insert(Status::MOUSE_CAPTURE_ENABLED);
-          log!(INFO, "Enabled mouse capture");
-        }
-      });
-    }
-
     // Try enable raw mode.
-    if let Err(err) = try_to_enable_raw_mode(&mut status) {
-      println_raw_if_debug!(ERROR "Failed to enable raw mode", err);
+    if let Err(err) = CrosstermCmd::try_to_enable_raw_mode() {
+      println_raw_if_debug!(ERROR "❌ Failed to enable raw mode", err);
     }
 
     // Try enable mouse capture.
-    if let Err(err) = try_to_enable_mouse_capture(&mut status) {
-      println_raw_if_debug!(ERROR "Failed to enable mouse capture", err);
+    if let Err(err) = CrosstermCmd::try_to_enable_mouse_capture() {
+      println_raw_if_debug!(ERROR "❌ Failed to enable mouse capture", err);
     }
 
-    // if status == Status::MOUSE_CAPTURE_ENABLED | Status::RAW_MODE_ENABLED {
-    //   println_raw_if_debug!(OK "✅ Raw mode enabled & ✅ Mouse capture enabled.");
-    // } else if status == Status::MOUSE_CAPTURE_ENABLED {
-    //   println_raw_if_debug!(OK "✅ Mouse capture enabled. ⚠️ Raw mode disabled.");
-    // } else if status == Status::RAW_MODE_ENABLED {
-    //   println_raw_if_debug!(OK "✅ Raw mode enabled. ⚠️ Mouse capture disabled.");
-    // }
+    // Try to enter alternate screen.
+    if let Err(err) = CrosstermCmd::try_to_enter_alternate_screen() {
+      println_raw_if_debug!(ERROR "❌ Failed to enable alternate screen", err);
+    }
 
     RawMode
   }
@@ -173,48 +214,19 @@ impl RawMode {
 
 impl Drop for RawMode {
   fn drop(&mut self) {
-    let mut status = Status::empty();
-
-    /// Wrap the call to [log!] (since it uses `?`) in a function that returns a [CommonResult].
-    fn try_disable_raw_mode(status: &mut Status) -> CommonResult<()> {
-      throws!({
-        if let Err(err) = terminal::disable_raw_mode() {
-          log!(ERROR, "crossterm: Failed to disable raw mode mode due to {}", err);
-        } else {
-          status.insert(Status::RAW_MODE_DISABLED);
-          log!(INFO, "Disabled raw mode");
-        }
-      });
-    }
-
-    /// Wrap the call to [log!] (since it uses `?`) in a function that returns a [CommonResult].
-    fn try_disable_mouse_mode(status: &mut Status) -> CommonResult<()> {
-      throws!({
-        if let Err(err) = execute!(stdout(), DisableMouseCapture) {
-          log!(ERROR, "crossterm: Failed to disable mouse capture due to {}", err);
-        } else {
-          status.insert(Status::MOUSE_CAPTURE_DISABLED);
-          log!(INFO, "Disabled mouse capture");
-        }
-      });
-    }
+    // Try leave alternate screen.
+    if let Err(err) = CrosstermCmd::try_leave_alternate_screen() {
+      println_raw_if_debug!(ERROR "❌ crossterm: Failed to leave alternate screen due to {}", err);
+    };
 
     // Try disable raw mode.
-    if let Err(err) = try_disable_raw_mode(&mut status) {
-      println_raw_if_debug!(ERROR "crossterm: Failed to disable raw mode mode due to {}", err);
+    if let Err(err) = CrosstermCmd::try_disable_raw_mode() {
+      println_raw_if_debug!(ERROR "❌ crossterm: Failed to disable raw mode mode due to {}", err);
     };
 
     // Try disable mouse capture.
-    if let Err(err) = try_disable_mouse_mode(&mut status) {
-      println_raw_if_debug!(ERROR "crossterm: Failed to disable mouse capture due to {}", err);
+    if let Err(err) = CrosstermCmd::try_disable_mouse_mode() {
+      println_raw_if_debug!(ERROR "❌ crossterm: Failed to disable mouse capture due to {}", err);
     };
-
-    // if status == Status::MOUSE_CAPTURE_DISABLED | Status::RAW_MODE_DISABLED {
-    //   println_raw_if_debug!(OK "✅ Raw mode disabled & ✅ Mouse capture disabled.");
-    // } else if status == Status::MOUSE_CAPTURE_DISABLED {
-    //   println_raw_if_debug!(OK "✅ Mouse capture disabled.");
-    // } else if status == Status::RAW_MODE_DISABLED {
-    //   println_raw_if_debug!(OK "✅ Raw mode disabled.");
-    // }
   }
 }
