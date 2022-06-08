@@ -117,8 +117,7 @@ impl RawMode {
     CrosstermCmd::try_to_enable_raw_mode();
     CrosstermCmd::try_to_enable_mouse_capture();
     CrosstermCmd::try_to_enter_alternate_screen();
-    CrosstermCmd::reset_cursor_position();
-    CrosstermCmd::clear_screen();
+    CrosstermCmd::reset_screen();
     RawMode
   }
 }
@@ -219,5 +218,10 @@ impl CrosstermCmd {
       execute!(stdout(), terminal::Clear(ClearType::All)),
       clear_screen
     };
+  }
+
+  fn reset_screen() {
+    CrosstermCmd::reset_cursor_position();
+    CrosstermCmd::clear_screen();
   }
 }

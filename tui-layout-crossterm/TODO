@@ -34,6 +34,10 @@
       ✔ try get async crossterm event read working w/ tokio @done(22-06-07 15:07)
          https://github.com/crossterm-rs/crossterm/blob/master/examples/event-stream-tokio.rs
     ☐ generate `output_commands` (in `Canvas`) for crossterm
+      ✔ reset screen: clear & move cursor to top left @done(22-06-08 16:08)
+      ☐ draw text at various cursor positions
+      ☐ draw text w/ different colors (look at lolcat crate)
+      ☐ figure out keyboard focus management (what does input event routing look like?)
     ☐ integrate lolcat bin crate into tui project `/home/nazmul/github/lolcat`
   figure out how to accomodate focus management:
     ☐ extend canvas to have a focus field (current id w/ focus)
