@@ -86,8 +86,8 @@ const EXIT_KEYS: [crossterm::event::KeyEvent; 1] = [KeyEvent {
 /// Returns false if user presses any of the keys in [EXIT_KEYS].
 async fn process_input_event(input_event: InputEvent) -> CommonResult<bool> {
   match input_event {
-    // Check for REPL exit.
     InputEvent::NonDisplayableKeypress(key_event) => {
+      // Check for REPL exit.
       if EXIT_KEYS.contains(&key_event) {
         return Ok(true);
       }
@@ -95,21 +95,13 @@ async fn process_input_event(input_event: InputEvent) -> CommonResult<bool> {
       log!(INFO, "KeyEvent: {:?} + {:?}", modifiers, code);
     }
 
-    InputEvent::DisplayableKeypress(character) => {
-      log!(INFO, "DisplayableKeypress: {:?}", character);
-    }
+    InputEvent::DisplayableKeypress(character) => log!(INFO, "DisplayableKeypress: {:?}", character),
 
-    InputEvent::Resize(Size { height, width }) => {
-      log!(INFO, "Resize: {:?}", (height, width));
-    }
+    InputEvent::Resize(Size { height, width }) => log!(INFO, "Resize: {:?}", (height, width)),
 
-    InputEvent::Mouse(mouse_event) => {
-      log!(INFO, "Mouse: {:?}", mouse_event);
-    }
+    InputEvent::Mouse(mouse_event) => log!(INFO, "Mouse: {:?}", mouse_event),
 
-    _ => {
-      log!(INFO, "Other: {:?}", input_event);
-    }
+    _ => log!(INFO, "Other: {:?}", input_event),
   }
   Ok(false)
 }
