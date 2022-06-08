@@ -111,23 +111,24 @@ macro_rules! raw_mode {
 /// https://github.com/crossterm-rs/crossterm/blob/master/examples/event-poll-read.rs
 pub struct RawMode;
 
-/// Given a crossterm command, this will run it and log the [Result] that is returned. In
-/// case [log!] fails (since it uses `?`) the caller of this macro has to wrap the call to
-/// this macro in a block that returns a [CommonResult].
-macro_rules! try_to_run_crossterm_command {
+/// Given a crossterm command, this will run it and [log!] the [Result] that is returned.
+/// The caller must return a [CommonResult], since it uses `?`.
+macro_rules! try_to_run_crossterm_command_and_log_result {
   ($cmd: expr, $description: expr) => {{
-    if let Err(err) = $cmd {
-      log!(ERROR, "crossterm: Failed to {} due to {}", $description, err);
-    } else {
-      log!(INFO, $description);
-    }
+    throws!({
+      if let Err(err) = $cmd {
+        log!(ERROR, "crossterm: Failed to {} due to {}", $description, err);
+      } else {
+        log!(INFO, $description);
+      }
+    })
   }};
 }
 
-/// Given a bunch of crossterm commands, this will run each of them and evaluate the
-/// [Result] that is returned. In case of an error (from the call to [log!] itself), this
-/// is simply printed to stderr if DEBUG is true.
-macro_rules! try_to_run_crossterm_commands {
+/// Given a bunch of [CrosstermCmd]s, this will run each of them and evaluate the [Result]
+/// that is returned. In case of an error (from the call to [log!] itself), this is simply
+/// printed to stderr if DEBUG is true.
+macro_rules! try_to_run_crossterm_cmds {
   ($($cmd: expr), *) => {{
     $(
       let result = $cmd;
@@ -139,79 +140,58 @@ macro_rules! try_to_run_crossterm_commands {
   }};
 }
 
+/// Each associated method must wrap the call to
+/// [try_to_run_crossterm_command_and_log_result] which calls [log!] (since it uses `?`)
+/// in a function that returns a [CommonResult].
 struct CrosstermCmd;
 
 impl CrosstermCmd {
-  /// Wrap the call to [log!] (since it uses `?`) in a function that returns a
-  /// [CommonResult].
   fn try_to_enable_raw_mode() -> CommonResult<()> {
-    throws!({
-      try_to_run_crossterm_command! {
-        terminal::enable_raw_mode(),
-        "🍣 enable raw mode"
-      };
-    });
+    try_to_run_crossterm_command_and_log_result! {
+      terminal::enable_raw_mode(),
+      "🍣 enable raw mode"
+    };
   }
 
-  /// Wrap the call to [log!] (since it uses `?`) in a function that returns a
-  /// [CommonResult].
   fn try_to_enable_mouse_capture() -> CommonResult<()> {
-    throws!({
-      try_to_run_crossterm_command! {
-        execute!(stdout(), EnableMouseCapture),
-        "🐭 enable mouse mode"
-      };
-    });
+    try_to_run_crossterm_command_and_log_result! {
+      execute!(stdout(), EnableMouseCapture),
+      "🐭 enable mouse mode"
+    };
   }
 
-  /// Wrap the call to [log!] (since it uses `?`) in a function that returns a
-  /// [CommonResult].
   fn try_to_enter_alternate_screen() -> CommonResult<()> {
-    throws!({
-      try_to_run_crossterm_command! {
-        execute!(stdout(), EnterAlternateScreen),
-        "🌒 enter alternate screen"
-      };
-    });
+    try_to_run_crossterm_command_and_log_result! {
+      execute!(stdout(), EnterAlternateScreen),
+      "🌒 enter alternate screen"
+    };
   }
 
-  /// Wrap the call to [log!] (since it uses `?`) in a function that returns a
-  /// [CommonResult].
   fn try_to_leave_alternate_screen() -> CommonResult<()> {
-    throws!({
-      try_to_run_crossterm_command! {
-        execute!(stdout(), LeaveAlternateScreen),
-        "🌒 leave alternate screen"
-      };
-    });
+    try_to_run_crossterm_command_and_log_result! {
+      execute!(stdout(), LeaveAlternateScreen),
+      "🌒 leave alternate screen"
+    };
   }
 
-  /// Wrap the call to [log!] (since it uses `?`) in a function that returns a
-  /// [CommonResult].
   fn try_to_disable_raw_mode() -> CommonResult<()> {
-    throws!({
-      try_to_run_crossterm_command! {
-        terminal::disable_raw_mode(),
-        "🍣 disable raw mode"
-      };
-    });
+    try_to_run_crossterm_command_and_log_result! {
+      terminal::disable_raw_mode(),
+      "🍣 disable raw mode"
+    };
   }
 
-  /// Wrap the call to [log!] (since it uses `?`) in a function that returns a
-  /// [CommonResult].
   fn try_to_disable_mouse_mode() -> CommonResult<()> {
-    throws!({
-      try_to_run_crossterm_command! {
-        execute!(stdout(), DisableMouseCapture) ,
-        "🐭 disable mouse mode"
-      };
-    });
+    try_to_run_crossterm_command_and_log_result! {
+      execute!(stdout(), DisableMouseCapture) ,
+      "🐭 disable mouse mode"
+    };
   }
 }
 
 impl RawMode {
   pub fn start() -> Self {
-    try_to_run_crossterm_commands!(
+    try_to_run_crossterm_cmds!(
       CrosstermCmd::try_to_enable_raw_mode(),
       CrosstermCmd::try_to_enable_mouse_capture(),
       CrosstermCmd::try_to_enter_alternate_screen()
@@ -223,7 +203,7 @@ impl RawMode {
 
 impl Drop for RawMode {
   fn drop(&mut self) {
-    try_to_run_crossterm_commands!(
+    try_to_run_crossterm_cmds!(
       CrosstermCmd::try_to_leave_alternate_screen(),
       CrosstermCmd::try_to_disable_mouse_mode(),
       CrosstermCmd::try_to_disable_raw_mode()
