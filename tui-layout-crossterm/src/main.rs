@@ -18,17 +18,14 @@
 use r3bl_rs_utils::*;
 
 // Attach source files.
-mod module_log;
 mod module_crossterm;
 
 // Import everything from attached source files.
 use module_crossterm::*;
-use module_log::*;
 
 #[tokio::main]
 async fn main() -> CommonResult<()> {
   throws!({
-    emit_log_entries().await?;
     emit_crossterm_commands().await?;
   });
 }
