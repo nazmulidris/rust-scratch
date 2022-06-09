@@ -37,9 +37,11 @@
       ✔ reset screen: clear & move cursor to top left @done(22-06-08 16:08)
       ✔ support queueing commands vs immediate execution w/ macro @done(22-06-08 23:26)
       ☐ draw text at various cursor positions
-      ☐ draw text w/ different colors (look at lolcat crate)
+    ☐ focus mgmt
       ☐ figure out keyboard focus management (what does input event routing look like?)
-    ☐ integrate lolcat bin crate into tui project `/home/nazmul/github/lolcat`
+    ☐ colors
+      ☐ draw text w/ different colors (look at lolcat crate)
+      ☐ integrate lolcat bin crate into tui project `/home/nazmul/github/lolcat`
   figure out how to accomodate focus management:
     ☐ extend canvas to have a focus field (current id w/ focus)
     ☐ how does this affect rendering of a layout (paint focus highlight?)

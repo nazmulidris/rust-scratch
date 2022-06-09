@@ -28,36 +28,6 @@ use std::io::{stdout, Write};
 /// If set to true, and the [log!] fails, then it will print the error to stderr.
 const DEBUG: bool = true;
 
-/// If DEBUG is set to true, then print OK or ERROR message to stdout.
-macro_rules! println_raw_if_debug {
-  (ERROR $msg:expr, $err:expr) => {
-    if DEBUG {
-      eprintln!(
-        "{} {} {}\r",
-        r3bl_rs_utils::style_error("▶"),
-        r3bl_rs_utils::style_prompt($msg),
-        r3bl_rs_utils::style_dimmed(&format!("{:#?}", $err))
-      );
-    }
-  };
-  (OK $msg:expr) => {
-    if DEBUG {
-      println!(
-        "{} {}\r",
-        r3bl_rs_utils::style_error("▶"),
-        r3bl_rs_utils::style_prompt($msg),
-      );
-    }
-  };
-}
-
-/// Simply print message to stdout.
-macro_rules! println_raw {
-  ($arg:tt) => {
-    println!("{}\r", $arg)
-  };
-}
-
 /// This will automatically disable [raw
 /// mode](https://docs.rs/crossterm/0.23.2/crossterm/terminal/index.html#raw-mode) when
 /// the enclosed block ends. Note that this macro must be called from a function that
@@ -165,7 +135,10 @@ macro_rules! try_to_run_crossterm_command_and_log_result {
       // In this case, if DEBUG is true, then it will dump the error to stderr.
       if let Err(err) = [<_ $name>]() {
         let msg = format!("❌ Failed to {}", stringify!($name));
-        println_raw_if_debug!(ERROR &msg, err);
+        call_if_true!(DEBUG,
+          debug!(ERROR_RAW &msg, err)
+        );
+
       }
     }
   }};
