@@ -79,6 +79,7 @@ macro_rules! raw_mode {
 
 /// This works together w/ [CrosstermCmd] to enqueue commands, and then flush them at the
 /// end.
+#[macro_export]
 macro_rules! enqueue_and_flush {
   ($it: block) => {{
     $it
@@ -117,6 +118,7 @@ impl Drop for RawMode {
 /// If [log!] fails, then it will print a message to stderr.
 ///
 /// https://github.com/dtolnay/paste
+#[macro_export]
 macro_rules! try_to_run_crossterm_command_and_log_result {
   ($cmd: expr, $name: ident) => {{
     paste! {
@@ -148,7 +150,7 @@ macro_rules! try_to_run_crossterm_command_and_log_result {
 /// commands. All of these associated functions use the
 /// [try_to_run_crossterm_command_and_log_result!] macro. And they also enqueue commands
 /// so make sure to flush them at the end or just use this macro [enqueue_and_flush!].
-struct CrosstermCmd;
+pub struct CrosstermCmd;
 
 impl CrosstermCmd {
   fn try_to_enable_raw_mode() {
