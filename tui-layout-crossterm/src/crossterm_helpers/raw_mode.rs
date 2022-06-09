@@ -18,12 +18,12 @@
 use crossterm::{
   cursor::{self},
   event::*,
-  execute,
+  queue,
   terminal::{self, *},
 };
 use paste::paste;
 use r3bl_rs_utils::*;
-use std::io::stdout;
+use std::io::{stdout, Write};
 
 /// If set to true, and the [log!] fails, then it will print the error to stderr.
 const DEBUG: bool = true;
@@ -107,6 +107,15 @@ macro_rules! raw_mode {
   }};
 }
 
+/// This works together w/ [CrosstermCmd] to enqueue commands, and then flush them at the
+/// end.
+macro_rules! enqueue_and_flush {
+  ($it: block) => {{
+    $it
+    CrosstermCmd::flush()
+  }};
+}
+
 /// To use this, you need to make sure to create an instance using `start()` (which
 /// enables raw mode) and then when this instance is dropped (when the enclosing code
 /// block falls out of scope) raw mode will be disabled.
@@ -114,19 +123,23 @@ pub struct RawMode;
 
 impl RawMode {
   pub fn start() -> Self {
-    CrosstermCmd::try_to_enable_raw_mode();
-    CrosstermCmd::try_to_enable_mouse_capture();
-    CrosstermCmd::try_to_enter_alternate_screen();
-    CrosstermCmd::reset_screen();
+    enqueue_and_flush!({
+      CrosstermCmd::try_to_enable_raw_mode();
+      CrosstermCmd::try_to_enable_mouse_capture();
+      CrosstermCmd::try_to_enter_alternate_screen();
+      CrosstermCmd::reset_screen();
+    });
     RawMode
   }
 }
 
 impl Drop for RawMode {
   fn drop(&mut self) {
-    CrosstermCmd::try_to_leave_alternate_screen();
-    CrosstermCmd::try_to_disable_mouse_mode();
-    CrosstermCmd::try_to_disable_raw_mode();
+    enqueue_and_flush!({
+      CrosstermCmd::try_to_leave_alternate_screen();
+      CrosstermCmd::try_to_disable_mouse_mode();
+      CrosstermCmd::try_to_disable_raw_mode();
+    });
   }
 }
 
@@ -160,7 +173,8 @@ macro_rules! try_to_run_crossterm_command_and_log_result {
 
 /// Contains convenience associated functions to make it easier to create crossterm
 /// commands. All of these associated functions use the
-/// [try_to_run_crossterm_command_and_log_result!] macro.
+/// [try_to_run_crossterm_command_and_log_result!] macro. And they also enqueue commands
+/// so make sure to flush them at the end or just use this macro [enqueue_and_flush!].
 struct CrosstermCmd;
 
 impl CrosstermCmd {
@@ -173,21 +187,21 @@ impl CrosstermCmd {
 
   fn try_to_enable_mouse_capture() {
     try_to_run_crossterm_command_and_log_result! {
-      execute!(stdout(), EnableMouseCapture),
+      queue!(stdout(), EnableMouseCapture),
       enable_mouse_capture
     };
   }
 
   fn try_to_enter_alternate_screen() {
     try_to_run_crossterm_command_and_log_result! {
-      execute!(stdout(), EnterAlternateScreen),
+      queue!(stdout(), EnterAlternateScreen),
       enter_alternate_screen
     };
   }
 
   fn try_to_leave_alternate_screen() {
     try_to_run_crossterm_command_and_log_result! {
-      execute!(stdout(), LeaveAlternateScreen),
+      queue!(stdout(), LeaveAlternateScreen),
       leave_alternate_screen
     };
   }
@@ -201,21 +215,21 @@ impl CrosstermCmd {
 
   fn try_to_disable_mouse_mode() {
     try_to_run_crossterm_command_and_log_result! {
-      execute!(stdout(), DisableMouseCapture) ,
+      queue!(stdout(), DisableMouseCapture) ,
       disable_mouse_mode
     };
   }
 
   fn reset_cursor_position() {
     try_to_run_crossterm_command_and_log_result! {
-      execute!(stdout(), cursor::MoveTo(0, 0)),
+      queue!(stdout(), cursor::MoveTo(0, 0)),
       reset_cursor_position
     };
   }
 
   fn clear_screen() {
     try_to_run_crossterm_command_and_log_result! {
-      execute!(stdout(), terminal::Clear(ClearType::All)),
+      queue!(stdout(), terminal::Clear(ClearType::All)),
       clear_screen
     };
   }
@@ -223,5 +237,12 @@ impl CrosstermCmd {
   fn reset_screen() {
     CrosstermCmd::reset_cursor_position();
     CrosstermCmd::clear_screen();
+  }
+
+  fn flush() {
+    try_to_run_crossterm_command_and_log_result! {
+      stdout().flush(),
+      flush
+    };
   }
 }
