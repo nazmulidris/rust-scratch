@@ -27,19 +27,20 @@
       ✔ in layout.rs @done(22-05-29 11:13)
     ✔ update tests to match above @done(22-05-29 11:13)
   figure out how to use crossterm:
-    ✔ rewrite dimens.rs using `From` and `TryFrom` @done(22-06-04 17:53)
-    ✔ log keypress (don't print) @done(22-06-07 15:07)
-    ✔ async vs blocking @done(22-06-07 15:07)
+    clean up:
+      ✔ rewrite dimens.rs using `From` and `TryFrom` @done(22-06-04 17:53)
+      ✔ log keypress (don't print) @done(22-06-07 15:07)
+    async vs blocking vs polling:
       ✔ polling is inefficient and takes up tons of CPU @done(22-06-05 20:09)
       ✔ try get async crossterm event read working w/ tokio @done(22-06-07 15:07)
          https://github.com/crossterm-rs/crossterm/blob/master/examples/event-stream-tokio.rs
-    ☐ generate `output_commands` (in `Canvas`) for crossterm
+    generate `output_commands` (in `Canvas`) for crossterm:
       ✔ reset screen: clear & move cursor to top left @done(22-06-08 16:08)
       ✔ support queueing commands vs immediate execution w/ macro @done(22-06-08 23:26)
       ☐ draw text at various cursor positions
-    ☐ focus mgmt
+    focus mgmt:
       ☐ figure out keyboard focus management (what does input event routing look like?)
-    ☐ colors
+    colors:
       ☐ draw text w/ different colors (look at lolcat crate)
       ☐ integrate lolcat bin crate into tui project `/home/nazmul/github/lolcat`
   figure out how to accomodate focus management:
