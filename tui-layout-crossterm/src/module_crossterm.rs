@@ -23,8 +23,9 @@ pub async fn emit_crossterm_commands() -> CommonResult<()> {
   raw_mode!({
     let mut event_stream = EventStream::new();
     loop {
-      if let Some(input_event) = event_stream.get_input_event().await? {
-        let should_exit = process_input_event(input_event).await?;
+      let maybe_input_event = event_stream.get_input_event().await;
+      if let Some(input_event) = maybe_input_event {
+        let should_exit = process_input_event(input_event).await;
         if should_exit {
           break;
         }
@@ -40,25 +41,25 @@ const EXIT_KEYS: [crossterm::event::KeyEvent; 1] = [KeyEvent {
 }];
 
 /// Returns true if user presses any of the keys in [EXIT_KEYS].
-async fn process_input_event(input_event: InputEvent) -> CommonResult<bool> {
+async fn process_input_event(input_event: InputEvent) -> bool {
   match input_event {
     InputEvent::NonDisplayableKeypress(key_event) => {
       // Check for REPL exit.
       if EXIT_KEYS.contains(&key_event) {
-        return Ok(true);
+        return true;
       }
       let KeyEvent { modifiers, code } = key_event;
-      log!(INFO, "KeyEvent: {:?} + {:?}", modifiers, code);
+      log_no_err!(INFO, "KeyEvent: {:?} + {:?}", modifiers, code);
     }
 
-    InputEvent::DisplayableKeypress(character) => log!(INFO, "DisplayableKeypress: {:?}", character),
+    InputEvent::DisplayableKeypress(character) => log_no_err!(INFO, "DisplayableKeypress: {:?}", character),
 
-    InputEvent::Resize(Size { height, width }) => log!(INFO, "Resize: {:?}", (height, width)),
+    InputEvent::Resize(Size { height, width }) => log_no_err!(INFO, "Resize: {:?}", (height, width)),
 
-    InputEvent::Mouse(mouse_event) => log!(INFO, "Mouse: {:?}", mouse_event),
+    InputEvent::Mouse(mouse_event) => log_no_err!(INFO, "Mouse: {:?}", mouse_event),
 
-    _ => log!(INFO, "Other: {:?}", input_event),
+    _ => log_no_err!(INFO, "Other: {:?}", input_event),
   }
 
-  Ok(false)
+  false
 }

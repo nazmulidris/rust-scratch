@@ -29,7 +29,7 @@
 //! }
 //! ```
 //!
-//! The following code blocks the thread that its running on.
+//[! The following code blocks the thread that its running on.
 //!
 //! ```ignore
 //! async fn repl_blocking() -> CommonResult<()> {
@@ -62,22 +62,22 @@ pub trait EventStreamExt {
   /// Try and read an [Event] from the [EventStream], and convert it into an [InputEvent].
   /// This is a non-blocking call. It returns an [InputEvent] wrapped in a [Option].
   /// [None] is returned if there was an error.
-  async fn get_input_event(&mut self) -> CommonResult<Option<InputEvent>>;
+  async fn get_input_event(&mut self) -> Option<InputEvent>;
 }
 
 #[async_trait]
 impl EventStreamExt for EventStream {
-  async fn get_input_event(&mut self) -> CommonResult<Option<InputEvent>> {
+  async fn get_input_event(&mut self) -> Option<InputEvent> {
     let maybe_event = self.next().fuse().await;
     match maybe_event {
-      Some(Ok(event)) => Ok(Some(event.into())),
+      Some(Ok(event)) => Some(event.into()),
 
       Some(Err(e)) => {
-        log!(ERROR, "Error: {:?}", e);
-        Ok(None)
+        log_no_err!(ERROR, "Error: {:?}", e);
+        None
       }
 
-      None => Ok(None),
+      _ => None,
     }
   }
 }

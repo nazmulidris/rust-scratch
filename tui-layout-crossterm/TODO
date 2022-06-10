@@ -38,6 +38,8 @@
       ✔ reset screen: clear & move cursor to top left @done(22-06-08 16:08)
       ✔ support queueing commands vs immediate execution w/ macro @done(22-06-08 23:26)
       ☐ draw text at various cursor positions
+    logging:
+      ✔ fix it @done(22-06-11 12:24)
     focus mgmt:
       ☐ figure out keyboard focus management 
       ☐ what does input event routing look like?
