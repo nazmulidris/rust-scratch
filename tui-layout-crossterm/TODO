@@ -39,10 +39,11 @@
       ✔ support queueing commands vs immediate execution w/ macro @done(22-06-08 23:26)
       ☐ draw text at various cursor positions
     focus mgmt:
-      ☐ figure out keyboard focus management (what does input event routing look like?)
+      ☐ figure out keyboard focus management 
+      ☐ what does input event routing look like?
     colors:
       ☐ draw text w/ different colors (look at lolcat crate)
-      ☐ integrate lolcat bin crate into tui project `/home/nazmul/github/lolcat`
+      ☐ integrate `~/github/lolcat` crate into tui project
   figure out how to accomodate focus management:
     ☐ extend canvas to have a focus field (current id w/ focus)
     ☐ how does this affect rendering of a layout (paint focus highlight?)
@@ -52,7 +53,7 @@
     ☐ emit crossterm commands from `canvas.rs`
     ☐ figure out how to use crossterm
     ☐ emit crossterm commands from `canvas.rs`
-    ☐ write test for `canvas.rs` to ensure it emits crossterm commands correctly
+    ☐ write test for `canvas.rs` to ensure it emits correct crossterm commands
   focus mgmt:
     ☐ key input processing & state mgmt (redux?)
   build app:

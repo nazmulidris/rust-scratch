@@ -15,62 +15,18 @@
  *   limitations under the License.
 */
 
-//! Using `poll()` is inefficient. The following code will generate some CPU utilization
-//! while idling.
-//!
-//! ```ignore
-//! loop {
-//!   if poll(Duration::from_millis(500))? { // This is inefficient.
-//!     let input_event: InputEvent = read()?.into();
-//!     if handle_input_event(input_event).await.is_err() {
-//!       break;
-//!     };
-//!   }
-//! }
-//! ```
-//!
-//! The following code blocks the thread that its running on.
-//!
-//! ```ignore
-//! async fn repl_blocking() -> CommonResult<()> {
-//!   throws!({
-//!     println_raw!("Type Ctrl+q to exit repl.");
-//!     loop {
-//!       let input_event: InputEvent = read()?.into();
-//!       let result = handle_input_event(input_event).await;
-//!       if result.is_err() {
-//!         break;
-//!       };
-//!     }
-//!   });
-//! }
-//! ```
-//!
-//! Docs:
-//! - https://github.com/crossterm-rs/crossterm/wiki/Upgrade-from-0.13-to-0.14#115-event-polling
-//! - https://github.com/crossterm-rs/crossterm/wiki/Upgrade-from-0.13-to-0.14#111-new-event-api
-//! - https://github.com/crossterm-rs/crossterm/blob/master/examples/event-stream-tokio.rs
-
 use crossterm::event::*;
 use r3bl_rs_utils::*;
-use tui_layout_crossterm::*;
+use tui_layout_crossterm::{EventStreamExt, *};
 
 pub async fn emit_crossterm_commands() -> CommonResult<()> {
   raw_mode!({
-    with_mut! {
-      EventStream::new(),
-      as event_stream,
-      run {
-        loop {
-          match event_stream.get_input_event().await? {
-            Some(input_event) => {
-              if process_input_event(input_event).await? {
-                break;
-              }
-            }
-
-            None => break,
-          }
+    let mut event_stream = EventStream::new();
+    loop {
+      if let Some(input_event) = event_stream.get_input_event().await? {
+        let should_exit = process_input_event(input_event).await?;
+        if should_exit {
+          break;
         }
       }
     }
@@ -103,5 +59,6 @@ async fn process_input_event(input_event: InputEvent) -> CommonResult<bool> {
 
     _ => log!(INFO, "Other: {:?}", input_event),
   }
+
   Ok(false)
 }
