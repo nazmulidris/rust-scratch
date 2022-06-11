@@ -15,17 +15,22 @@
  *   limitations under the License.
 */
 
+use crate::*;
 use crossterm::event::*;
-use r3bl_rs_utils::*;
 use tui_layout_crossterm::{EventStreamExt, *};
 
-pub async fn emit_crossterm_commands() -> CommonResult<()> {
+const DEBUG: bool = true;
+
+pub async fn run() -> CommonResult<()> {
   raw_mode!({
-    let mut event_stream = EventStream::new();
+    // Global variables for the app.
+    let mut state = State::new()?;
+    call_if_true!(DEBUG, state.dump_to_log("Startup"));
+
     loop {
-      let maybe_input_event = event_stream.get_input_event().await;
+      let maybe_input_event = state.event_stream.get_input_event().await;
       if let Some(input_event) = maybe_input_event {
-        let should_exit = process_input_event(input_event).await;
+        let should_exit = process_input_event(input_event, &mut state).await;
         if should_exit {
           break;
         }
@@ -41,12 +46,15 @@ const EXIT_KEYS: [crossterm::event::KeyEvent; 1] = [KeyEvent {
 }];
 
 /// Returns true if user presses any of the keys in [EXIT_KEYS].
-async fn process_input_event(input_event: InputEvent) -> bool {
+async fn process_input_event(
+  input_event: InputEvent,
+  state: &mut State,
+) -> bool {
   match input_event {
     InputEvent::NonDisplayableKeypress(key_event) => {
       // Check for REPL exit.
       if EXIT_KEYS.contains(&key_event) {
-        return true;
+        return true; // Exit loop.
       }
       let KeyEvent { modifiers, code } = key_event;
       log_no_err!(INFO, "KeyEvent: {:?} + {:?}", modifiers, code);
@@ -54,12 +62,16 @@ async fn process_input_event(input_event: InputEvent) -> bool {
 
     InputEvent::DisplayableKeypress(character) => log_no_err!(INFO, "DisplayableKeypress: {:?}", character),
 
-    InputEvent::Resize(Size { height, width }) => log_no_err!(INFO, "Resize: {:?}", (height, width)),
+    InputEvent::Resize(size) => {
+      state.terminal_size = size;
+      log_no_err!(INFO, "Resize: {:?}", (size.height, size.width));
+      call_if_true!(DEBUG, state.dump_to_log("Resize"));
+    }
 
     InputEvent::Mouse(mouse_event) => log_no_err!(INFO, "Mouse: {:?}", mouse_event),
 
     _ => log_no_err!(INFO, "Other: {:?}", input_event),
   }
 
-  false
+  false // Continue loop.
 }

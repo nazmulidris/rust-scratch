@@ -18,6 +18,7 @@
     "qself",
     "repr",
     "reqwest",
+    "retval",
     "rustc",
     "rustup",
     "simplelog",

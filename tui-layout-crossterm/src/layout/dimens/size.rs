@@ -16,6 +16,8 @@
 */
 
 use crate::*;
+use crossterm::terminal::*;
+use r3bl_rs_utils::*;
 use std::{
   fmt::{self, Debug},
   ops::SubAssign,
@@ -65,6 +67,8 @@ impl From<Pair> for Size {
 }
 
 impl From<(UnitType, UnitType)> for Size {
+  /// 1. First (pair.0) is width or cols.
+  /// 2. Second (pair.1) is height or rows.
   fn from(pair: (UnitType, UnitType)) -> Self {
     Self {
       width: pair.0,
@@ -92,6 +96,12 @@ impl From<(i32, i32)> for Size {
 }
 
 impl Size {
+  /// Create a new [Size] from [crossterm::terminal::size()].
+  pub fn try_to_get_from_crossterm_terminal() -> CommonResult<Self> {
+    let size: Self = size()?.into();
+    Ok(size)
+  }
+
   /// Return an `Option` with `self`.
   pub fn as_some(&self) -> Option<Self> {
     Some(*self)

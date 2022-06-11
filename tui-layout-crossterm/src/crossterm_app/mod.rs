@@ -15,15 +15,10 @@
  *   limitations under the License.
 */
 
-use r3bl_rs_utils::*;
+// Attach files.
+mod app;
+mod state;
 
-// Attach source files.
-mod crossterm_app;
-
-// Import everything from attached source files.
-use crossterm_app::*;
-
-#[tokio::main]
-async fn main() -> CommonResult<()> {
-  throws!(run().await?);
-}
+// Re-export.
+pub use app::*;
+pub use state::*;
