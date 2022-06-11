@@ -15,9 +15,9 @@
  *   limitations under the License.
 */
 
-use crossterm::{event::*, terminal::*};
+use crossterm::{event::*};
 use r3bl_rs_utils::*;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Formatter};
 use tui_layout_crossterm::*;
 
 pub struct State {
@@ -27,19 +27,10 @@ pub struct State {
 
 impl State {
   pub fn new() -> CommonResult<Self> {
-    let mut retval = Self {
+    Ok(Self {
       event_stream: EventStream::new(),
       terminal_size: Size::try_to_get_from_crossterm_terminal()?,
-    };
-    retval.set_size(size()?);
-    Ok(retval)
-  }
-
-  pub fn set_size(
-    &mut self,
-    size: (u16, u16),
-  ) {
-    self.terminal_size = Size::from(size);
+    })
   }
 
   pub fn dump_to_log(
@@ -47,15 +38,6 @@ impl State {
     msg: &str,
   ) {
     log_no_err!(INFO, "{} -> {:?}", msg, self);
-  }
-}
-
-impl Display for State {
-  fn fmt(
-    &self,
-    f: &mut Formatter<'_>,
-  ) -> std::fmt::Result {
-    write!(f, "{:?}", self)
   }
 }
 

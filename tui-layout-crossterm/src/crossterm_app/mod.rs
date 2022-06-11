@@ -18,7 +18,9 @@
 // Attach files.
 mod app;
 mod state;
+mod handle_input_event;
 
 // Re-export.
 pub use app::*;
 pub use state::*;
+pub use handle_input_event::*;
