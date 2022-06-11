@@ -65,8 +65,24 @@ impl Debug for State {
     f: &mut Formatter<'_>,
   ) -> std::fmt::Result {
     f.debug_struct("State")
-      .field("event_stream", &"✔")
+      .field("event_stream", &DebugDisplay::Ok)
       .field("terminal_size", &self.terminal_size)
       .finish()
+  }
+}
+
+/// This is just for pretty printing the impl of [Debug] trait for [State].
+enum DebugDisplay {
+  Ok,
+}
+
+impl Debug for DebugDisplay {
+  fn fmt(
+    &self,
+    f: &mut Formatter<'_>,
+  ) -> std::fmt::Result {
+    match self {
+      Self::Ok => write!(f, "✅"),
+    }
   }
 }
