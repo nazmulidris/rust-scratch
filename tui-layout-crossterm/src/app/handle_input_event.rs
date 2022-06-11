@@ -19,13 +19,12 @@ use crate::*;
 use crossterm::event::*;
 use tui_layout_crossterm::*;
 
-/// Returns `true` if user presses any of the keys in [EXIT_KEYS]. Otherwise, returns `false`.
 pub async fn handle_input_event(
   input_event: InputEvent,
   state: &mut State,
 ) -> LoopContinuation {
   match input_event {
-    InputEvent::NonDisplayableKeypress(key_event) => match should_exit(&key_event) {
+    InputEvent::NonDisplayableKeypress(key_event) => match EXIT_KEYS.contains(&key_event) {
       true => return LoopContinuation::Exit,
       _ => {
         let KeyEvent { modifiers, code } = key_event;
@@ -52,10 +51,6 @@ fn on_resize(
   state.terminal_size = size;
   log_no_err!(INFO, "Resize: {:?}", (size.height, size.width));
   call_if_true!(DEBUG, state.dump_to_log("Resize"));
-}
-
-fn should_exit(key_event: &KeyEvent) -> bool {
-  EXIT_KEYS.contains(&key_event)
 }
 
 pub enum LoopContinuation {

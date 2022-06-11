@@ -73,6 +73,16 @@ macro_rules! enqueue_and_flush {
 /// [try_to_run_crossterm_command_and_log_result!] macro. And they also enqueue commands
 /// so make sure to flush them at the end or just use this macro [enqueue_and_flush!].
 pub struct CrosstermCmd;
+// pub enum CrosstermCmd {
+//   enable_raw_mode,
+//   enable_mouse_capture,
+//   enter_alternate_screen,
+//   leave_alternate_screen,
+//   disable_raw_mode,
+//   disable_mouse_mode,
+//   reset_cursor_position,
+//   clear_screen
+// }
 
 impl CrosstermCmd {
   pub fn try_to_enable_raw_mode() {

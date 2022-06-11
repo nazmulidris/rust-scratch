@@ -15,15 +15,14 @@
  *   limitations under the License.
 */
 
-use r3bl_rs_utils::*;
+// Attach files.
+mod event_loop;
+mod render;
+mod state;
+mod handle_input_event;
 
-// Attach source files.
-mod app;
-
-// Import everything from attached source files.
-use app::*;
-
-#[tokio::main]
-async fn main() -> CommonResult<()> {
-  throws!(start_event_loop().await?);
-}
+// Re-export.
+pub use event_loop::*;
+pub use state::*;
+pub use handle_input_event::*;
+pub use render::*;
