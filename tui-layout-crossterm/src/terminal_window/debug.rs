@@ -15,56 +15,34 @@
  *   limitations under the License.
 */
 
-use crossterm::{event::*};
-use r3bl_rs_utils::*;
-use std::fmt::{Debug, Formatter};
-use tui_layout_crossterm::*;
+use crate::*;
+use std::fmt::{Debug, Display, Formatter};
 
-pub struct State {
-  pub terminal_size: Size,
-  pub event_stream: EventStream,
-}
-
-impl State {
-  pub fn new() -> CommonResult<Self> {
-    Ok(Self {
-      event_stream: EventStream::new(),
-      terminal_size: Size::try_to_get_from_crossterm_terminal()?,
-    })
-  }
-
-  pub fn dump_to_log(
-    &self,
-    msg: &str,
-  ) {
-    log_no_err!(INFO, "{} -> {:?}", msg, self);
-  }
-}
-
-impl Debug for State {
-  fn fmt(
-    &self,
-    f: &mut Formatter<'_>,
-  ) -> std::fmt::Result {
-    f.debug_struct("State")
+impl Debug for TerminalWindow {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("TerminalWindow")
       .field("event_stream", &DebugDisplay::Ok)
       .field("terminal_size", &self.terminal_size)
       .finish()
   }
 }
 
-/// This is just for pretty printing the impl of [Debug] trait for [State].
+/// Pretty print the [DebugDisplay] (its impl of [Debug] trait), for [TerminalWindow]'s `event_stream`.
 enum DebugDisplay {
   Ok,
 }
 
 impl Debug for DebugDisplay {
-  fn fmt(
-    &self,
-    f: &mut Formatter<'_>,
-  ) -> std::fmt::Result {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
     match self {
       Self::Ok => write!(f, "✅"),
     }
+  }
+}
+
+/// For [ToString].
+impl Display for TerminalWindow {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{:?}", self)
   }
 }

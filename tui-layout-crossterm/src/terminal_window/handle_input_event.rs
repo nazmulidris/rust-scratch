@@ -17,11 +17,11 @@
 
 use crate::*;
 use crossterm::event::*;
-use tui_layout_crossterm::*;
+use r3bl_rs_utils::*;
 
 pub async fn handle_input_event(
   input_event: InputEvent,
-  state: &mut State,
+  terminal_window: &mut TerminalWindow,
 ) -> LoopContinuation {
   match input_event {
     InputEvent::NonDisplayableKeypress(key_event) => match EXIT_KEYS.contains(&key_event) {
@@ -34,7 +34,7 @@ pub async fn handle_input_event(
 
     InputEvent::DisplayableKeypress(character) => log_no_err!(INFO, "DisplayableKeypress: {:?}", character),
 
-    InputEvent::Resize(size) => on_resize(size, state),
+    InputEvent::Resize(size) => on_resize(size, terminal_window),
 
     InputEvent::Mouse(mouse_event) => log_no_err!(INFO, "Mouse: {:?}", mouse_event),
 
@@ -44,13 +44,10 @@ pub async fn handle_input_event(
   return LoopContinuation::Continue;
 }
 
-fn on_resize(
-  size: Size,
-  state: &mut State,
-) {
-  state.terminal_size = size;
+fn on_resize(size: Size, terminal_window_data: &mut TerminalWindow) {
+  terminal_window_data.terminal_size = size;
   log_no_err!(INFO, "Resize: {:?}", (size.height, size.width));
-  call_if_true!(DEBUG, state.dump_to_log("Resize"));
+  call_if_true!(DEBUG, terminal_window_data.dump_to_log("Resize"));
 }
 
 pub enum LoopContinuation {

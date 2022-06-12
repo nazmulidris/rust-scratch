@@ -73,6 +73,8 @@ macro_rules! enqueue_and_flush {
 /// [try_to_run_crossterm_command_and_log_result!] macro. And they also enqueue commands
 /// so make sure to flush them at the end or just use this macro [enqueue_and_flush!].
 pub struct CrosstermCmd;
+
+// TODO: think about being able to pass cmds around in a Vec rather than making direct calls.
 // pub enum CrosstermCmd {
 //   enable_raw_mode,
 //   enable_mouse_capture,

@@ -15,8 +15,3 @@
  *   limitations under the License.
 */
 
-use crate::*;
-
-pub fn render(state: &mut State) {
-  println!("hello world!\r");
-}

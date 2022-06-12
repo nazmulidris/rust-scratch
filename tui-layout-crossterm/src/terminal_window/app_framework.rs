@@ -15,14 +15,7 @@
  *   limitations under the License.
 */
 
-// Attach files.
-mod event_loop;
-mod render;
-mod state;
-mod handle_input_event;
+use async_trait::async_trait;
 
-// Re-export.
-pub use event_loop::*;
-pub use state::*;
-pub use handle_input_event::*;
-pub use render::*;
+#[async_trait]
+pub trait AppFramework {}

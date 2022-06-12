@@ -40,6 +40,10 @@
       ☐ draw text at various cursor positions
     logging:
       ✔ fix it @done(22-06-11 12:24)
+    lifecyle & organization:
+      ☐ use electron architecture & terminology as baseline
+      ☐ figure out how to bootstrap the entire tui framework
+      ☐ separate concerns (terminal window, app, state, etc)
     focus mgmt:
       ☐ figure out keyboard focus management 
       ☐ what does input event routing look like?

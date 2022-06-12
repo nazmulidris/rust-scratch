@@ -31,10 +31,7 @@ pub struct Canvas {
 }
 
 impl LayoutManager for Canvas {
-  fn canvas_start(
-    &mut self,
-    CanvasProps { pos, size }: CanvasProps,
-  ) -> CommonResult<()> {
+  fn canvas_start(&mut self, CanvasProps { pos, size }: CanvasProps) -> CommonResult<()> {
     throws!({
       // Expect layout_stack to be empty!
       if !self.layout_stack.is_empty() {
@@ -60,10 +57,7 @@ impl LayoutManager for Canvas {
     });
   }
 
-  fn layout_start(
-    &mut self,
-    layout_props: LayoutProps,
-  ) -> CommonResult<()> {
+  fn layout_start(&mut self, layout_props: LayoutProps) -> CommonResult<()> {
     throws!({
       match self.layout_stack.is_empty() {
         true => self.add_root_layout(layout_props),
@@ -85,10 +79,7 @@ impl LayoutManager for Canvas {
     });
   }
 
-  fn paint(
-    &mut self,
-    text_vec: Vec<&str>,
-  ) -> CommonResult<()> {
+  fn paint(&mut self, text_vec: Vec<&str>) -> CommonResult<()> {
     throws!({ self.calc_where_to_insert_new_content_in_layout((0, text_vec.len()).into())? });
   }
 }
@@ -171,10 +162,7 @@ impl PerformPositioningAndSizing for Canvas {
   /// This updates the `layout_cursor_pos` of the current [Layout].
   ///
   /// Returns the [Position] where the next [Layout] can be added to the stack.
-  fn calc_where_to_insert_new_layout_in_canvas(
-    &mut self,
-    allocated_size: Size,
-  ) -> CommonResult<Position> {
+  fn calc_where_to_insert_new_layout_in_canvas(&mut self, allocated_size: Size) -> CommonResult<Position> {
     let current_layout = self.current_layout()?;
     let layout_cursor_pos = current_layout.layout_cursor_pos;
 
@@ -198,10 +186,7 @@ impl PerformPositioningAndSizing for Canvas {
   }
 
   /// This updates the `content_cursor_pos` of the current [Layout].
-  fn calc_where_to_insert_new_content_in_layout(
-    &mut self,
-    content_size: Size,
-  ) -> CommonResult<()> {
+  fn calc_where_to_insert_new_content_in_layout(&mut self, content_size: Size) -> CommonResult<()> {
     let current_layout = self.current_layout()?;
 
     let pos = unwrap_option_or_compute_if_none! {

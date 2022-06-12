@@ -15,17 +15,16 @@
  *   limitations under the License.
 */
 
-use crossterm::terminal;
-use r3bl_rs_utils::*;
-use tui_layout_crossterm::*;
+// Attach files.
+mod main_container;
+mod debug;
+mod draw_canvas;
+mod handle_input_event;
+mod app_framework;
 
-// Attach sources.
-mod sample_app;
-
-// Use things from sources.
-use sample_app::*;
-
-#[tokio::main]
-async fn main() -> CommonResult<()> {
-  throws!( TerminalWindow::start_event_loop().await? );
-}
+// Re-export.
+pub use app_framework::*;
+pub use main_container::*;
+pub use debug::*;
+pub use draw_canvas::*;
+pub use handle_input_event::*;
