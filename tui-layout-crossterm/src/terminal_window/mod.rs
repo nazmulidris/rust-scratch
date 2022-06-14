@@ -18,13 +18,11 @@
 // Attach files.
 mod main_container;
 mod debug;
-mod draw_canvas;
 mod handle_input_event;
-mod app_framework;
+mod draw;
 
 // Re-export.
-pub use app_framework::*;
-pub use main_container::*;
 pub use debug::*;
-pub use draw_canvas::*;
+pub use draw::*;
 pub use handle_input_event::*;
+pub use main_container::*;

@@ -1,5 +1,5 @@
 /*
- *   Copyright (c) 2022 Nazmul Idris
+ *   Copyright (c) 2022 Nazmul &mut Idris
  *   All rights reserved.
 
  *   Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,17 +15,22 @@
  *   limitations under the License.
 */
 
-use crossterm::terminal;
 use r3bl_rs_utils::*;
 use tui_layout_crossterm::*;
 
 // Attach sources.
-mod sample_app;
+pub mod sample_app;
 
 // Use things from sources.
-use sample_app::*;
+pub use sample_app::*;
 
 #[tokio::main]
 async fn main() -> CommonResult<()> {
-  throws!( TerminalWindow::start_event_loop().await? );
+  let mut app = AppState {
+    focused: "".to_string(),
+    msg1: "".to_string(),
+    msg2: "".to_string(),
+  };
+  let box_draw = Box::new(AppStateDraw);
+  throws!(TerminalWindow::start_event_loop(&mut app, box_draw).await?);
 }

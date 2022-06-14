@@ -16,6 +16,23 @@
 */
 
 use async_trait::async_trait;
+use tui_layout_crossterm::*;
+
+/// Representation of the application state data.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct AppState {
+  pub focused: String,
+  pub msg1: String,
+  pub msg2: String,
+}
+
+/// Async trait object that implements the [Draw] trait.
+pub struct AppStateDraw;
 
 #[async_trait]
-pub trait AppFramework {}
+impl<S> Draw<S> for AppStateDraw
+where
+  S: Send + Sync,
+{
+  async fn draw(&self, _state: &S, _input_event: &InputEvent) {}
+}

@@ -32,7 +32,10 @@ impl TerminalWindow {
     })
   }
 
-  pub async fn start_event_loop() -> CommonResult<()> {
+  pub async fn start_event_loop<S>(mut_state: &mut S, box_draw: Box<dyn Draw<S>>) -> CommonResult<()>
+  where
+    S: Send + Sync,
+  {
     raw_mode!({
       let mut terminal_window = TerminalWindow::new_instance()?;
       call_if_true!(DEBUG, terminal_window.dump_to_log("Startup"));
@@ -44,7 +47,8 @@ impl TerminalWindow {
           if let LoopContinuation::Exit = loop_continuation {
             break;
           } else {
-            draw_canvas(&mut terminal_window);
+            // TODO: replace this w/ something more meaningful.
+            println!("hello world\r");
           }
         }
       }

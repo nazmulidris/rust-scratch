@@ -19,10 +19,7 @@ use crate::*;
 use crossterm::event::*;
 use r3bl_rs_utils::*;
 
-pub async fn handle_input_event(
-  input_event: InputEvent,
-  terminal_window: &mut TerminalWindow,
-) -> LoopContinuation {
+pub async fn handle_input_event(input_event: InputEvent, terminal_window: &mut TerminalWindow) -> LoopContinuation {
   match input_event {
     InputEvent::NonDisplayableKeypress(key_event) => match EXIT_KEYS.contains(&key_event) {
       true => return LoopContinuation::Exit,

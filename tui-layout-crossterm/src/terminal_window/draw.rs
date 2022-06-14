@@ -16,7 +16,12 @@
 */
 
 use crate::*;
+use async_trait::async_trait;
 
-pub fn draw_canvas(_terminal_window: &mut TerminalWindow) {
-  println!("hello world!\r");
+#[async_trait]
+pub trait Draw<S>
+where
+  S: Send + Sync,
+{
+  async fn draw(&self, state: &S, input_event: &InputEvent);
 }
