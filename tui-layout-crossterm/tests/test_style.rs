@@ -19,7 +19,7 @@
 
 use crossterm::style::Color;
 use r3bl_rs_utils::{debug, with_mut};
-use tui_layout_crossterm::{Style, StyleBuilder, StyleFlag, Stylesheet};
+use r3bl_cmdr::{Style, StyleBuilder, StyleFlag, Stylesheet};
 
 #[test]
 fn test_bitflags() {

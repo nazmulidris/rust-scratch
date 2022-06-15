@@ -1,7 +1,23 @@
 [package]
-name = "tui-layout-crossterm"
-version = "0.1.0"
+name = "r3bl-cmdr"
+version = "0.0.1" # remember to update README
+readme = "README.md"
 edition = "2021"
+homepage = "https://r3bl.com"
+license = "Apache-2.0"
+
+description = """
+Placeholder & WIP: a TUI layout manager for the Rust programming language.
+"""
+
+# TODO: Replace the following commented lines w/ real values
+# categories = ["development-tools::procedural-macro-helpers"] # https://doc.rust-lang.org/cargo/reference/manifest.html#the-categories-field
+# keywords = ["macros"] # https://doc.rust-lang.org/cargo/reference/manifest.html#the-keywords-field
+
+# TODO: Replace the following lines w/ real values
+repository = "https://github.com/nazmulidris/rust_scratch/tree/main/tui-layout-crossterm"
+authors = ["Nazmul Idris <idris@developerlife.com>"]
+documentation = "https://developerlife.com"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

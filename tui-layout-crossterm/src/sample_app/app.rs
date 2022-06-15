@@ -16,7 +16,7 @@
 */
 
 use async_trait::async_trait;
-use tui_layout_crossterm::*;
+use r3bl_cmdr::*;
 
 /// Representation of the application state data.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

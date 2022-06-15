@@ -681,6 +681,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "r3bl-cmdr"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "bitflags",
+ "crossterm",
+ "futures-util",
+ "log",
+ "paste",
+ "r3bl_rs_utils",
+ "r3bl_rs_utils_core",
+ "readonly",
+ "serde",
+ "serde_json",
+ "simplelog",
+ "time 0.3.9",
+ "tokio",
+]
+
+[[package]]
 name = "r3bl_rs_utils"
 version = "0.7.38"
 dependencies = [
@@ -1127,26 +1147,6 @@ name = "try-lock"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
-
-[[package]]
-name = "tui-layout-crossterm"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "bitflags",
- "crossterm",
- "futures-util",
- "log",
- "paste",
- "r3bl_rs_utils",
- "r3bl_rs_utils_core",
- "readonly",
- "serde",
- "serde_json",
- "simplelog",
- "time 0.3.9",
- "tokio",
-]
 
 [[package]]
 name = "unicode-bidi"

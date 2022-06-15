@@ -15,7 +15,7 @@
  *   limitations under the License.
 */
 
-use tui_layout_crossterm::*;
+use r3bl_cmdr::*;
 
 #[tokio::test]
 async fn test_add_box_size_to_pos() {

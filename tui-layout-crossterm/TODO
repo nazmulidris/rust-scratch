@@ -40,6 +40,8 @@
       ☐ draw text at various cursor positions
     logging:
       ✔ fix it @done(22-06-11 12:24)
+    publish placeholder on crates.io:
+      ☐ publish r3bl-cmdr crate as placeholder
     lifecyle & organization:
       ☐ use electron architecture & terminology as baseline
       ☐ figure out how to bootstrap the entire tui framework

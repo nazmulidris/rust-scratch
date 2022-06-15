@@ -17,7 +17,7 @@
 
 use crossterm::style::Color;
 use r3bl_rs_utils::*;
-use tui_layout_crossterm::layout::*;
+use r3bl_cmdr::layout::*;
 
 #[test]
 fn test_simple_2_col_layout() -> CommonResult<()> {
