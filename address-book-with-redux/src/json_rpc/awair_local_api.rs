@@ -21,7 +21,7 @@ use chrono::{DateTime, FixedOffset};
 use r3bl_rs_utils::make_api_call_for;
 use serde::{Deserialize, Deserializer, Serialize};
 
-const ENDPOINT: &str = "http://192.168.1.101/air-data/latest";
+const ENDPOINT: &str = "http://192.168.1.3/air-data/latest";
 
 make_api_call_for! {
   AwairDataResponse at ENDPOINT
