@@ -1,0 +1,5 @@
+reedline:
+  ✔ how does it handle grapheme clusters? @done(22-07-22 17:37)
+
+crossterm:
+  ✔ is there a way to use crossterm (at startup) to a list of grapheme cluster sizes for that terminal @done(22-07-22 17:37)
