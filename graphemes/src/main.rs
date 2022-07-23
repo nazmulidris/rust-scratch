@@ -24,15 +24,85 @@
 //! - Grapheme clusters: https://medium.com/flutter-community/working-with-unicode-and-grapheme-clusters-in-dart-b054faab5705
 //! - UTF-8 String: https://doc.rust-lang.org/book/ch08-02-strings.html
 
+use std::{collections::HashMap, io::stdout};
+
+use crossterm::{cursor::{self, *},
+                event::*,
+                execute,
+                style::*,
+                terminal::{self, *},
+                Result};
 use seshat::unicode::{Segmentation, Ucd};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-fn main() {
+fn main() -> Result<()> {
   print_graphemes();
   print_cluster_breaks_using_seshat_and_unicode_width();
   print_graphemes_using_unicode_segmentation_and_unicode_width();
   print_grapheme_indices_using_unicode_segmentation_and_unicode_width();
+  test_crossterm_grapheme_cluster_width_calc()?;
+  Ok(())
+}
+
+const S: &str = "Hi 📦 🙏🏽 👨🏾‍🤝‍👨🏿.";
+
+pub fn test_crossterm_grapheme_cluster_width_calc() -> Result<()> {
+  // Enter raw mode, clear screen.
+  enable_raw_mode()?;
+  execute!(stdout(), EnterAlternateScreen)?;
+  execute!(stdout(), Clear(ClearType::All))?;
+  execute!(stdout(), MoveTo(0, 0))?;
+
+  // Perform test of grapheme cluster width.
+  #[derive(Default, Debug, Clone, Copy)]
+  struct Positions {
+    orig_pos: (u16, u16),
+    new_pos: (u16, u16),
+    col_width: u16,
+  }
+
+  let mut map = HashMap::<&str, Positions>::new();
+  map.insert("Hi", Positions::default());
+  map.insert(" ", Positions::default());
+  map.insert("😃", Positions::default());
+  map.insert("📦", Positions::default());
+  map.insert("🙏🏽", Positions::default());
+  map.insert("👨🏾‍🤝‍👨🏿", Positions::default());
+  map.insert(".", Positions::default());
+
+  fn process_map(map: &mut HashMap<&str, Positions>) -> Result<()> {
+    for (index, (key, value)) in map.iter_mut().enumerate() {
+      let orig_pos: (u16, u16) = (/* col: */ 0, /* row: */ index as u16);
+      execute!(stdout(), MoveTo(orig_pos.0, orig_pos.1))?;
+      execute!(stdout(), Print(key))?;
+      let new_pos = cursor::position()?;
+      value.new_pos = new_pos;
+      value.orig_pos = orig_pos;
+      value.col_width = new_pos.0 - orig_pos.0;
+    }
+    Ok(())
+  }
+
+  process_map(&mut map)?;
+
+  // Just blocking on user input.
+  {
+    execute!(stdout(), Print("... Press any key to continue ..."))?;
+    if let Event::Key(_) = read()? {
+      execute!(stdout(), terminal::Clear(ClearType::All))?;
+      execute!(stdout(), cursor::MoveTo(0, 0))?;
+    }
+  }
+
+  // Exit raw mode, clear screen.
+  execute!(stdout(), terminal::Clear(ClearType::All))?;
+  execute!(stdout(), cursor::MoveTo(0, 0))?;
+  execute!(stdout(), LeaveAlternateScreen)?;
+  disable_raw_mode().expect("Unable to disable raw mode");
+  println!("map:{:#?}", map);
+
+  Ok(())
 }
 
 pub fn print_graphemes() {
@@ -44,12 +114,11 @@ pub fn print_graphemes() {
 }
 
 pub fn print_cluster_breaks_using_seshat_and_unicode_width() {
-  let s = "Hi 📦 🙏🏽 👨🏾‍🤝‍👨🏿.";
   println!(
     "\n-- print_cluster_breaks_using_seshat_and_unicode_width -- unicode_width: {}\n",
-    UnicodeWidthStr::width(s)
+    UnicodeWidthStr::width(S)
   );
-  let bg = s.break_graphemes();
+  let bg = S.break_graphemes();
   for (g_c_idx, g_c) in bg.enumerate() {
     let g_c_display_width = UnicodeWidthStr::width(g_c);
     let _g_c_idx = format_width!(2, g_c_idx);
@@ -63,8 +132,7 @@ pub fn print_cluster_breaks_using_seshat_and_unicode_width() {
 
 pub fn print_graphemes_using_unicode_segmentation_and_unicode_width() {
   println!("\n-- print_graphemes_using_unicode_segmentation --\n");
-  let s = "Hi 📦 🙏🏽 👨🏾‍🤝‍👨🏿.";
-  let g = s.graphemes(true);
+  let g = S.graphemes(true);
   for (g_c_idx, g_c) in g.enumerate() {
     let _g_c_idx = format_width!(2, g_c_idx);
     let _g_c_width = format_width!(2, UnicodeWidthStr::width(g_c));
@@ -84,8 +152,7 @@ pub fn print_grapheme_indices_using_unicode_segmentation_and_unicode_width() {
   }
 
   println!("\n-- print_grapheme_indices_using_unicode_segmentation_and_unicode_width --\n");
-  let s = "Hi 📦 🙏🏽 👨🏾‍🤝‍👨🏿.";
-  let gi = s.grapheme_indices(true);
+  let gi = S.grapheme_indices(true);
   let mut final_byte_offset = 0;
   let mut final_num_g_c = 0;
   for (g_c_idx, (byte_offset, g_c)) in gi.enumerate() {
@@ -103,11 +170,11 @@ pub fn print_grapheme_indices_using_unicode_segmentation_and_unicode_width() {
   }
 
   println!();
-  println! {"❯ unicode_width:     {} ✅ ← display size / width", format_width!(2, UnicodeWidthStr::width(s))};
+  println! {"❯ unicode_width:     {} ✅ ← display size / width", format_width!(2, UnicodeWidthStr::width(S))};
   println! {"❯ final_num_g_c:     {} ✅ ← # grapheme clusters", format_width!(2, final_num_g_c)};
   println! {"❯ final_byte_offset: {} ❌ ← byte size - 1", format_width!(2, final_byte_offset)};
-  println! {"❯ s.len():           {} ❌ ← byte size", format_width!(2, s.len())};
-  println! {"❯ s.chars().count(): {} ❌ ← UTF-8 chars (not grapheme clusters)", format_width!(2, s.chars().count())};
+  println! {"❯ s.len():           {} ❌ ← byte size", format_width!(2, S.len())};
+  println! {"❯ s.chars().count(): {} ❌ ← UTF-8 chars (not grapheme clusters)", format_width!(2, S.chars().count())};
 }
 
 #[macro_export]
