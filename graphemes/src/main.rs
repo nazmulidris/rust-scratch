@@ -45,7 +45,7 @@ fn main() -> Result<()> {
   Ok(())
 }
 
-const S: &str = "Hi 📦 🙏🏽 👨🏾‍🤝‍👨🏿.";
+const TEST_STRING: &str = "Hi 😃 📦 🙏🏽 👨🏾‍🤝‍👨🏿.";
 
 pub fn test_crossterm_grapheme_cluster_width_calc() -> Result<()> {
   // Enter raw mode, clear screen.
@@ -116,9 +116,9 @@ pub fn print_graphemes() {
 pub fn print_cluster_breaks_using_seshat_and_unicode_width() {
   println!(
     "\n-- print_cluster_breaks_using_seshat_and_unicode_width -- unicode_width: {}\n",
-    UnicodeWidthStr::width(S)
+    UnicodeWidthStr::width(TEST_STRING)
   );
-  let bg = S.break_graphemes();
+  let bg = TEST_STRING.break_graphemes();
   for (g_c_idx, g_c) in bg.enumerate() {
     let g_c_display_width = UnicodeWidthStr::width(g_c);
     let _g_c_idx = format_width!(2, g_c_idx);
@@ -132,7 +132,7 @@ pub fn print_cluster_breaks_using_seshat_and_unicode_width() {
 
 pub fn print_graphemes_using_unicode_segmentation_and_unicode_width() {
   println!("\n-- print_graphemes_using_unicode_segmentation --\n");
-  let g = S.graphemes(true);
+  let g = TEST_STRING.graphemes(true);
   for (g_c_idx, g_c) in g.enumerate() {
     let _g_c_idx = format_width!(2, g_c_idx);
     let _g_c_width = format_width!(2, UnicodeWidthStr::width(g_c));
@@ -152,7 +152,7 @@ pub fn print_grapheme_indices_using_unicode_segmentation_and_unicode_width() {
   }
 
   println!("\n-- print_grapheme_indices_using_unicode_segmentation_and_unicode_width --\n");
-  let gi = S.grapheme_indices(true);
+  let gi = TEST_STRING.grapheme_indices(true);
   let mut final_byte_offset = 0;
   let mut final_num_g_c = 0;
   for (g_c_idx, (byte_offset, g_c)) in gi.enumerate() {
@@ -170,11 +170,11 @@ pub fn print_grapheme_indices_using_unicode_segmentation_and_unicode_width() {
   }
 
   println!();
-  println! {"❯ unicode_width:     {} ✅ ← display size / width", format_width!(2, UnicodeWidthStr::width(S))};
+  println! {"❯ unicode_width:     {} ✅ ← display size / width", format_width!(2, UnicodeWidthStr::width(TEST_STRING))};
   println! {"❯ final_num_g_c:     {} ✅ ← # grapheme clusters", format_width!(2, final_num_g_c)};
   println! {"❯ final_byte_offset: {} ❌ ← byte size - 1", format_width!(2, final_byte_offset)};
-  println! {"❯ s.len():           {} ❌ ← byte size", format_width!(2, S.len())};
-  println! {"❯ s.chars().count(): {} ❌ ← UTF-8 chars (not grapheme clusters)", format_width!(2, S.chars().count())};
+  println! {"❯ s.len():           {} ❌ ← byte size", format_width!(2, TEST_STRING.len())};
+  println! {"❯ s.chars().count(): {} ❌ ← UTF-8 chars (not grapheme clusters)", format_width!(2, TEST_STRING.chars().count())};
 }
 
 #[macro_export]

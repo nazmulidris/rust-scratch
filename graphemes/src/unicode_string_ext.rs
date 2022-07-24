@@ -15,10 +15,17 @@
  *   limitations under the License.
  */
 
-pub trait UnicodeStringExt {
+pub trait UnicodeStringExt {}
 
+impl UnicodeStringExt for String {}
+
+pub struct UnicodeString {
+  pub string: String,
+  pub grapheme_clusters: Vec<String>,
+  pub physical_byte_offsets: Vec<usize>,
 }
 
-impl UnicodeStringExt for String {
-  
+/// Convert `String` to `UnicodeString`.
+impl From<String> for UnicodeString {
+  fn from(_other: String) -> Self { todo!() }
 }
