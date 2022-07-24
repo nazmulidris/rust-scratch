@@ -29,7 +29,7 @@ bytes or 2 or 3, etc.
 
 Docs:
 
-- [Grapheme clusters](https://medium.com/flutter-community/working-with-unicode-and-grapheme-clusters-in-dart-b054faab5705):
+- [Grapheme clusters](https://medium.com/flutter-community/working-with-unicode-and-grapheme-clusters-in-dart-b054faab5705)
 - [UTF-8 String](https://doc.rust-lang.org/book/ch08-02-strings.html)
 
 There is a discrepancy between how a `String` that contains grapheme clusters is represented in
@@ -59,16 +59,77 @@ Here are examples of compound grapheme clusters.
 🏾‍ + 👨 + 🤝‍ + 👨 +  🏿 = 👨🏾‍🤝‍👨🏿
 ```
 
-The UTF-8 string in a Rust source file is rendered by VSCode correctly. But this is not how it looks
-in a terminal. And the size of the string in memory isn't clear either from looking at the string in
-VSCode. It isn't apparent that you can't just index into the string at byte boundaries.
+Let's say you're browsing this source file in VSCode. The UTF-8 string this Rust source file is
+rendered by VSCode correctly. But this is not how it looks in a terminal. And the size of the string
+in memory isn't clear either from looking at the string in VSCode. It isn't apparent that you can't
+just index into the string at byte boundaries.
 
-To further complicate things, the output looks different on different terminals & OSes. In `main.rs`
-there's a function `test_crossterm_grapheme_cluster_width_calc` that uses crossterm commands to try
-and figure out what the width of a grapheme cluster is. When you run this in an SSH session to a
-macOS machine from Linux, it will work the same way it would locally on Linux. However, if you run
-the same program in locally via Terminal.app on macOS it works differently! So there are some
-serious issues.
+To further complicate things, the output looks different on different terminals & OSes. The function
+`test_crossterm_grapheme_cluster_width_calc()` (shown below) uses crossterm commands to try and
+figure out what the width of a grapheme cluster is. When you run this in an SSH session to a macOS
+machine from Linux, it will work the same way it would locally on Linux. However, if you run the
+same program in locally via Terminal.app on macOS it works differently! So there are some serious
+issues.
+
+```rust
+pub fn test_crossterm_grapheme_cluster_width_calc() -> Result<()> {
+  // Enter raw mode, clear screen.
+  enable_raw_mode()?;
+  execute!(stdout(), EnterAlternateScreen)?;
+  execute!(stdout(), Clear(ClearType::All))?;
+  execute!(stdout(), MoveTo(0, 0))?;
+
+  // Perform test of grapheme cluster width.
+  #[derive(Default, Debug, Clone, Copy)]
+  struct Positions {
+    orig_pos: (u16, u16),
+    new_pos: (u16, u16),
+    col_width: u16,
+  }
+
+  let mut map = HashMap::<&str, Positions>::new();
+  map.insert("Hi", Positions::default());
+  map.insert(" ", Positions::default());
+  map.insert("😃", Positions::default());
+  map.insert("📦", Positions::default());
+  map.insert("🙏🏽", Positions::default());
+  map.insert("👨🏾‍🤝‍👨🏿", Positions::default());
+  map.insert(".", Positions::default());
+
+  fn process_map(map: &mut HashMap<&str, Positions>) -> Result<()> {
+    for (index, (key, value)) in map.iter_mut().enumerate() {
+      let orig_pos: (u16, u16) = (/* col: */ 0, /* row: */ index as u16);
+      execute!(stdout(), MoveTo(orig_pos.0, orig_pos.1))?;
+      execute!(stdout(), Print(key))?;
+      let new_pos = cursor::position()?;
+      value.new_pos = new_pos;
+      value.orig_pos = orig_pos;
+      value.col_width = new_pos.0 - orig_pos.0;
+    }
+    Ok(())
+  }
+
+  process_map(&mut map)?;
+
+  // Just blocking on user input.
+  {
+    execute!(stdout(), Print("... Press any key to continue ..."))?;
+    if let Event::Key(_) = read()? {
+      execute!(stdout(), terminal::Clear(ClearType::All))?;
+      execute!(stdout(), cursor::MoveTo(0, 0))?;
+    }
+  }
+
+  // Exit raw mode, clear screen.
+  execute!(stdout(), terminal::Clear(ClearType::All))?;
+  execute!(stdout(), cursor::MoveTo(0, 0))?;
+  execute!(stdout(), LeaveAlternateScreen)?;
+  disable_raw_mode().expect("Unable to disable raw mode");
+  println!("map:{:#?}", map);
+
+  Ok(())
+}
+```
 
 The basic problem arises from the fact that it isn't possible to treat the "logical" index into the
 string (which isn't byte boundary based) as a "physical" index into the rendered output of the

@@ -1,5 +1,5 @@
 /*
- *   Copyright (c) 2022 Nazmul
+ *   Copyright (c) 2022 Nazmul Idris
  *   All rights reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
@@ -152,10 +152,10 @@ pub fn print_grapheme_indices_using_unicode_segmentation_and_unicode_width() {
   }
 
   println!("\n-- print_grapheme_indices_using_unicode_segmentation_and_unicode_width --\n");
-  let gi = TEST_STRING.grapheme_indices(true);
+  let g_i = TEST_STRING.grapheme_indices(true);
   let mut final_byte_offset = 0;
   let mut final_num_g_c = 0;
-  for (g_c_idx, (byte_offset, g_c)) in gi.enumerate() {
+  for (g_c_idx, (byte_offset, g_c)) in g_i.enumerate() {
     let _g_c_idx = format_width!(2, g_c_idx);
     let _byte_offset = format_width!(2, byte_offset);
     let _g_c_len = format_width!(2, g_c.len());
