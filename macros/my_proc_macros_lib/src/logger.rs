@@ -23,7 +23,7 @@ use core::panic;
 use std::{collections::HashSet as Set, path::Path};
 
 use quote::quote;
-use r3bl_rs_utils::utils::{print_header, style_primary, style_prompt};
+use r3bl_rs_utils::{print_header, style_primary, style_prompt};
 use syn::{parse::{Parse, ParseStream, Result},
           parse_macro_input,
           punctuated::Punctuated,

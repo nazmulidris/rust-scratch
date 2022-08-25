@@ -17,7 +17,7 @@
 
 use proc_macro::TokenStream;
 use quote::ToTokens;
-use r3bl_rs_utils::utils::{style_primary, style_prompt};
+use r3bl_rs_utils::{style_primary, style_prompt};
 use syn::{parse_str, ItemFn};
 
 /// https://docs.rs/syn/latest/syn/macro.parse_macro_input.html
