@@ -1,0 +1,14 @@
+mock data generator:
+  ✔ generate mock MD content w/out frontmatter @done(22-11-10 09:36)
+  ✔ generate mock MD content w/ frontmatter @done(22-11-11 13:33)
+
+frontmatter (MD -> frontmatter data):
+  ✔ try https://docs.rs/extract-frontmatter/latest/extract_frontmatter/ @done(22-11-11 13:33)
+  ✔ parse yaml @done(22-11-11 13:33)
+  ✔ parse json @done(22-11-11 13:33)
+
+markdown parsing (MD -> AST):
+  ✔ try https://docs.rs/pulldown-cmark/latest/pulldown_cmark/ @done(22-11-11 14:29)
+
+syntax highlighting (src file -> Vec<Vec<String, Style>>):
+  ☐ try syntect https://docs.rs/syntect/latest/syntect/
