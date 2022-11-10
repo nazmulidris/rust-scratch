@@ -24,14 +24,16 @@ mod md_to_ast {
   use crate::common::*;
 
   #[test]
-  fn parse_md_content() {
+  fn parse_md_content_with_json_frontmatter() {
     let md_content = get_md_file_with_json_frontmatter();
-    let result: FrontmatterExtractionResponse = md_content.as_ref().into();
 
+    // Strip all the frontmatter out of the markdown content.
+    let result: FrontmatterExtractionResponse = md_content.as_ref().into();
     let FrontmatterExtractionResponse::ValidFrontmatter(_frontmatter, content) = result else {
       panic!();
     };
 
+    // No frontmatter in content. Otherwise it will be parsed as well as the markdown content.
     let parser = pulldown_cmark::Parser::new(&content);
 
     let mut h1_count = 0;

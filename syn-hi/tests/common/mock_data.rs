@@ -32,47 +32,12 @@ pub fn get_md_file_invalid_frontmatter<'caller>() -> Cow<'caller, str> {
 }
 
 pub fn get_md_file_no_frontmatter<'caller>() -> Cow<'caller, str> {
-  let markdown_input = r#"
-# My Heading
-
-My paragraph.
-
-* a
-* b
-* c
-
-1. d
-2. e
-3. f
-
-> my block quote
-
-```
-my code block
-```
-
-*emphasis*
-**strong**
-~~strikethrough~~
-[My Link](http://example.com)
-![My Image](http://example.com/image.jpg)
-
-| a | b |
-| - | - |
-| c | d |
-
-hello[^1]
-[^1]: my footnote
-"#;
+  let markdown_input = include_str!("assets/valid-content.md");
   Cow::Borrowed(markdown_input)
 }
 
 pub fn get_md_file_with_yaml_frontmatter<'caller>() -> Cow<'caller, str> {
-  let frontmatter_yaml = r#"
-Title: My Title,
-Description: My Description,
-Date: 2021-06-30
-"#;
+  let frontmatter_yaml = include_str!("assets/valid-frontmatter.yaml");
 
   let markdown = get_md_file_no_frontmatter();
 
@@ -84,14 +49,7 @@ Date: 2021-06-30
 }
 
 pub fn get_md_file_with_json_frontmatter<'caller>() -> Cow<'caller, str> {
-  let frontmatter_json = r#"
-  {
-    "title": "My Title",
-    "description": "My Description",
-    "date": "2021-06-30",
-    "tags": ["tag1", "tag2"]
-  }
-  "#;
+  let frontmatter_json = include_str!("assets/valid-frontmatter.json");
 
   let markdown = get_md_file_no_frontmatter();
 

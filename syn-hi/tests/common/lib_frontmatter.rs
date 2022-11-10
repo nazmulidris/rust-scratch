@@ -62,6 +62,7 @@ pub enum FrontmatterExtractionResponse<'caller> {
   ),
 }
 
+/// Convenience trait implementation to convert &[str] to [FrontmatterExtractionResponse].
 impl<'caller> From<&'caller str> for FrontmatterExtractionResponse<'caller> {
   fn from(markdown_input: &'caller str) -> Self { try_extract_front_matter(markdown_input) }
 }

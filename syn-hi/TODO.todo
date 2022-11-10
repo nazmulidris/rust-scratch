@@ -11,4 +11,10 @@ markdown parsing (MD -> AST):
   ✔ try https://docs.rs/pulldown-cmark/latest/pulldown_cmark/ @done(22-11-11 14:29)
 
 syntax highlighting (src file -> Vec<Vec<String, Style>>):
-  ☐ try syntect https://docs.rs/syntect/latest/syntect/
+  ✔ try syntect https://docs.rs/syntect/latest/syntect/ @done(22-11-12 16:12)
+  ✔ make r3bl theme @done(22-11-12 19:01)
+
+integrate code into r3bl_rs_utils:
+  ✔ move the lib_frontmatter.rs file and tests @done(22-11-13 13:49)
+  ✔ move test_md_parse.rs @done(22-11-13 15:01)
+  ☐ move the lib_syntect.rs, tmTheme file and tests

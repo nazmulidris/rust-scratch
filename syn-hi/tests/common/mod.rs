@@ -15,8 +15,10 @@
  *   limitations under the License.
  */
 
-pub mod lib;
+pub mod lib_frontmatter;
+pub mod lib_syntect;
 pub mod mock_data;
 
-pub use lib::*;
+pub use lib_frontmatter::*;
 pub use mock_data::*;
+pub use lib_syntect::*;
