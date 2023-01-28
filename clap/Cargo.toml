@@ -1,0 +1,22 @@
+[package]
+name = "clap"
+authors = ["Nazmul Idris"]
+version = "0.1.0"
+edition = "2021"
+description = "An exploration of clap"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+# Tokio.
+tokio = { version = "1.24.1", features = ["full"] }
+
+# Latest r3bl_rs_utils.
+r3bl_rs_utils = { version = "0.9.3" , path = "../../r3bl_rs_utils" }
+
+# CLI argument parser.
+clap = { version = "4.1.1", features = ["derive"] }
+
+# serde-json
+serde_json = "1.0.91"
