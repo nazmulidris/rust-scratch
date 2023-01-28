@@ -1,0 +1,14 @@
+simple parsing:
+  ✔ build hex code parser from string @done(23-01-30 09:46)
+  ☐ parse CSS like style w/ hex code [alpha, no alpha] and properties [color, background]
+  ☐ parse natural language text for name, age, preference (https://gist.github.com/lmammino/0c3e7e6dbaf41303d1059c6a279c59d1)
+
+intermediate parsing:
+  ☐ parse Vec<string> & extract key-value pairs for form input in rc
+
+complex parsing:
+  ☐ parse Vec<string> containing MD content w/ some special syntax for tags, title for notes in rc
+
+complex parsing & highlighting:
+  ☐ parse Vec<string> containing MD content w/ some special syntax for tags, title for notes in rc
+  ☐ highlight syntax in rc
