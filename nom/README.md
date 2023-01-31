@@ -95,8 +95,8 @@ mod tests {
     fn hex_color_no_alpha(input: &str) -> IResult<&str, Color> {
         // This tuple contains 3 ways to do the same thing.
         let it = (
+            helper_fns::parse_hex_seg, // This is preferred.
             intermediate_parsers::gen_hex_seg_parser_fn(),
-            helper_fns::parse_hex_seg,
             map_res(
                 take_while_m_n(2, 2, helper_fns::match_is_hex_digit),
                 helper_fns::parse_str_to_hex_num,
@@ -173,6 +173,7 @@ How does this code work?
       - [Deep dive, Part 1](https://youtu.be/zHF6j1LvngA)
       - [Deep dive, Part 2](https://youtu.be/9GLFJcSO08Y)
   - Docs:
+    - [Write a parser from scratch](https://github.com/rust-bakery/nom/blob/main/doc/making_a_new_parser_from_scratch.md)
     - [What combinator or parser to use?](https://github.com/rust-bakery/nom/blob/main/doc/choosing_a_combinator.md)
     - [docs.rs](https://docs.rs/nom/7.1.3/nom/)
     - [Make a parser from scratch](https://github.com/rust-bakery/nom/blob/main/doc/making_a_new_parser_from_scratch.md)
