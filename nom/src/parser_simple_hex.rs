@@ -15,20 +15,19 @@
  *   limitations under the License.
  */
 
+//! This module contains a parser that parses a hex color string into a [Color] struct.
+//! The hex color string can be in the following format: `#RRGGBB`, eg: `#FF0000` for red.
+
 #[cfg(test)]
 mod tests {
     use std::num::ParseIntError;
 
     use nom::{
-        error::{FromExternalError, ParseError},
-        sequence::tuple,
-        Parser,
-    };
-
-    use nom::{
         bytes::complete::{tag, take_while_m_n},
         combinator::map_res,
-        IResult,
+        error::{FromExternalError, ParseError},
+        sequence::tuple,
+        IResult, Parser,
     };
 
     #[derive(Debug, PartialEq)]

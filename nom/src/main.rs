@@ -15,6 +15,7 @@
  *   limitations under the License.
  */
 
+mod parser_simple_css;
 mod parser_simple_hex;
 
 fn main() {
