@@ -36,15 +36,17 @@ mod tests {
         branch::alt,
         bytes::complete::{tag, take_while_m_n},
         character::complete::multispace0,
-        combinator::{map_res, opt},
+        combinator::map_res,
+        multi::many0,
         sequence::tuple,
         IResult,
     };
+
     use std::collections::HashMap;
 
     /// Output structs to hold color w/ and w/out alpha.
     mod output_structs {
-        #[derive(Debug, Eq, Hash, PartialEq)]
+        #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
         pub enum ColorKind {
             FgColor,
             BgColor,
@@ -71,13 +73,13 @@ mod tests {
             }
         }
 
-        #[derive(Debug)]
+        #[derive(Debug, Copy, Clone)]
         pub enum Color {
             NoAlpha(ColorNoAlpha),
             WithAlpha(ColorWithAlpha),
         }
 
-        #[derive(Debug)]
+        #[derive(Debug, Copy, Clone)]
         pub struct ColorNoAlpha {
             pub r: u8,
             pub g: u8,
@@ -94,7 +96,7 @@ mod tests {
             }
         }
 
-        #[derive(Debug)]
+        #[derive(Debug, Copy, Clone)]
         pub struct ColorWithAlpha {
             pub r: u8,
             pub g: u8,
@@ -158,36 +160,42 @@ mod tests {
 
         /// Parse `style = { bg_color: .. , fg_color: .. }` parser.
         pub fn parse_style(input: &str) -> IResult<&str, Option<HashMap<ColorKind, Color>>> {
+            // Parse `style = {`.
             let (input, _) = tuple((
                 tag("style"),
                 multispace0,
-                tag("="),
+                nom::character::complete::char('='),
                 multispace0,
                 tag("{"),
                 multispace0,
             ))(input)?;
-            let (input, color_1) = opt(parse_color_key_value)(input)?;
-            let (input, color_2) = opt(parse_color_key_value)(input)?;
+
+            // Parse `bg_color: ..` or `fg_color: ..`.
+            let (input, output) = many0(parse_color_key_value)(input)?;
+
+            // Parse `}`.
             let (input, _) = tuple((multispace0, tag("}"), multispace0))(input)?;
 
-            match (color_1, color_2) {
-                (None, None) => Ok((input, None)),
-                (None, Some(color)) => Ok((input, Some(color))),
-                (Some(color), None) => Ok((input, Some(color))),
-                (Some(color_1), Some(color_2)) => {
-                    let mut it = color_1;
-                    it.extend(color_2);
-                    Ok((input, Some(it)))
+            let output = {
+                let mut it: HashMap<ColorKind, Color> = HashMap::new();
+                for (color_kind, color) in output.iter() {
+                    it.insert(*color_kind, *color);
                 }
-            }
+                it
+            };
+
+            Ok((input, Some(output)))
         }
 
         /// Parse `<key>: #<val>`, where:
         /// 1. `<key>` can be `fg_color` or `bg_color`.
         /// 2. `<val>` can be `#RRGGBB` or `#RRGGBBAA`.
-        pub fn parse_color_key_value(input: &str) -> IResult<&str, HashMap<ColorKind, Color>> {
-            let (input, key) = alt((tag("fg_color"), tag("bg_color")))(input)?;
-            let (input, (_, _, _, color, _, _, _)) = tuple((
+        pub fn parse_color_key_value(input: &str) -> IResult<&str, (ColorKind, Color)> {
+            // Parse `fg_color` or `bg_color`.
+            let (input, key_str) = alt((tag("fg_color"), tag("bg_color")))(input)?;
+
+            // Parse `: #RRGGBBAA;` or `: #RRGGBB;`.
+            let (input, (_, _, _, output, _, _, _)) = tuple((
                 multispace0,
                 tag(":"),
                 multispace0,
@@ -198,14 +206,45 @@ mod tests {
                 tag(";"),
                 multispace0,
             ))(input)?;
-            Ok((input, {
-                let mut map: HashMap<ColorKind, Color> = HashMap::new();
-                map.insert(ColorKind::from(key), color);
-                map
-            }))
+
+            Ok((input, (ColorKind::from(key_str), output)))
         }
     }
     pub use style_parser_helper_fns::*;
+
+    /// The input here is a Vec<String> and not &str. This is similar to getting input from the TUI
+    /// editor component (which holds an editor buffer in a Vec<String>, where each String is a
+    /// separate line).
+    #[test]
+    fn parse_vec_string() {
+        let input_vec: Vec<String> = vec![
+            "style = {",
+            "    fg_color: #FF0000;",
+            "    bg_color: #00FF00FF;",
+            "}",
+        ]
+        .iter()
+        .map(|it| it.to_string())
+        .collect();
+
+        let input_vec_converted: String = input_vec.join("\n");
+
+        let actual = parse_style(&input_vec_converted).unwrap().1.unwrap();
+
+        assert!(matches!(
+            actual.get(&ColorKind::from("fg_color")).unwrap(),
+            Color::NoAlpha(ColorNoAlpha { r: 255, g: 0, b: 0 })
+        ));
+        assert!(matches!(
+            actual.get(&ColorKind::from("bg_color")).unwrap(),
+            Color::WithAlpha(ColorWithAlpha {
+                r: 0,
+                g: 255,
+                b: 0,
+                a: 255
+            })
+        ));
+    }
 
     #[test]
     fn test_parse_valid_hex_color_string_no_alpha() {
@@ -239,8 +278,9 @@ mod tests {
         {
             let input = "fg_color: #FF0000;";
             let actual = parse_color_key_value(input).unwrap().1;
+            assert!(matches!(actual.0, ColorKind::FgColor));
             assert!(matches!(
-                actual.get(&ColorKind::from("fg_color")).unwrap(),
+                actual.1,
                 Color::NoAlpha(ColorNoAlpha { r: 255, g: 0, b: 0 })
             ));
         }
@@ -249,8 +289,9 @@ mod tests {
         {
             let input = "bg_color: #FF0000;";
             let actual = parse_color_key_value(input).unwrap().1;
+            assert!(matches!(actual.0, ColorKind::BgColor));
             assert!(matches!(
-                actual.get(&ColorKind::from("bg_color")).unwrap(),
+                actual.1,
                 Color::NoAlpha(ColorNoAlpha { r: 255, g: 0, b: 0 })
             ));
         }
@@ -259,8 +300,9 @@ mod tests {
         {
             let input = "fg_color: #FFFFFFFF;";
             let actual = parse_color_key_value(input).unwrap().1;
+            assert!(matches!(actual.0, ColorKind::FgColor));
             assert!(matches!(
-                actual.get(&ColorKind::from("fg_color")).unwrap(),
+                actual.1,
                 Color::WithAlpha(ColorWithAlpha {
                     r: 255,
                     g: 255,
@@ -274,8 +316,9 @@ mod tests {
         {
             let input = "bg_color: #FFFFFFFF;";
             let actual = parse_color_key_value(input).unwrap().1;
+            assert!(matches!(actual.0, ColorKind::BgColor));
             assert!(matches!(
-                actual.get(&ColorKind::from("bg_color")).unwrap(),
+                actual.1,
                 Color::WithAlpha(ColorWithAlpha {
                     r: 255,
                     g: 255,
@@ -288,8 +331,7 @@ mod tests {
 
     #[test]
     fn test_parse_valid_style_string() {
-        let input = r#"style =
-{
+        let input = r#"style = {
     fg_color: #FF0000;
     bg_color: #00FF00FF;
 }"#;

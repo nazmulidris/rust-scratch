@@ -1,15 +1,12 @@
-simple parsing:
+key-value parsing:
   ✔ build hex code parser from string @done(23-01-30 09:46)
   ✔ parse CSS like style w/ hex code [alpha, no alpha] and properties [color, background] @done(23-02-01 16:56)
-  ☐ parse CSS like style (above) but w/ `Vec<String>` as input and not `&str`
+  ✔ parse CSS like style (above) but w/ `Vec<String>` as input and not `&str` @done(23-02-02 11:39)
+
+natural language parsing:
   ☐ parse natural language text for name, age, preference (https://gist.github.com/lmammino/0c3e7e6dbaf41303d1059c6a279c59d1)
 
-intermediate parsing:
-  ☐ parse Vec<string> & extract key-value pairs for form input in rc
-
-complex parsing:
-  ☐ parse Vec<string> containing MD content w/ some special syntax for tags, title for notes in rc
-
-complex parsing & highlighting:
-  ☐ parse Vec<string> containing MD content w/ some special syntax for tags, title for notes in rc
-  ☐ highlight syntax in rc
+syn hi parsing for rc notes:
+  ☐ parse `Vec<String>` containing MD content w/ some special syntax for tags, title for notes in rc
+  ☐ parse `Vec<String>` containing MD content and highlight syntax (output `Vec<StyledTexts>>`)in rc
+    - use `join(<delimiter>)` where `delimiter` is not a naturally byte sequence typed by a person

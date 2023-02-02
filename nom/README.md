@@ -181,11 +181,12 @@ They are all written as tests. So if you run `cargo test -- --nocapture` you wil
     - Nom 6 videos (deep dive into how nom combinators themselves are constructed):
       - [Deep dive, Part 1](https://youtu.be/zHF6j1LvngA)
       - [Deep dive, Part 2](https://youtu.be/9GLFJcSO08Y)
-  - Docs:
+  - Tutorials:
+    - [Excellent beginner to advanced](https://github.com/benkay86/nom-tutorial)
     - [Write a parser from scratch](https://github.com/rust-bakery/nom/blob/main/doc/making_a_new_parser_from_scratch.md)
+  - Reference docs:
     - [What combinator or parser to use?](https://github.com/rust-bakery/nom/blob/main/doc/choosing_a_combinator.md)
     - [docs.rs](https://docs.rs/nom/7.1.3/nom/)
-    - [Make a parser from scratch](https://github.com/rust-bakery/nom/blob/main/doc/making_a_new_parser_from_scratch.md)
     - [Upgrading to nom 5.0](https://github.com/rust-bakery/nom/blob/main/doc/upgrading_to_nom_5.md)
 - Less useful:
   - [README](https://github.com/rust-bakery/nom)

@@ -17,6 +17,7 @@
 
 mod parser_simple_css;
 mod parser_simple_hex;
+mod convert_vec_string_for_parsing;
 
 fn main() {
     println!("Please run the tests to see this in action: `cargo test -- --nocapture`");
