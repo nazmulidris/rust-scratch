@@ -22,13 +22,7 @@
 mod tests {
     use std::num::ParseIntError;
 
-    use nom::{
-        bytes::complete::{tag, take_while_m_n},
-        combinator::map_res,
-        error::{FromExternalError, ParseError},
-        sequence::tuple,
-        IResult, Parser,
-    };
+    use nom::{bytes::complete::*, combinator::*, error::*, sequence::*, IResult, Parser};
 
     #[derive(Debug, PartialEq)]
     pub struct Color {
@@ -68,6 +62,7 @@ mod tests {
 
     /// These are [Parser] implementations that are used by [hex_color_no_alpha].
     mod intermediate_parsers {
+
         use super::*;
 
         /// Call this to return function that implements the [Parser] trait.

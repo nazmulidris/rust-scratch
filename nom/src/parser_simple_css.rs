@@ -33,13 +33,8 @@
 #[cfg(test)]
 mod tests {
     use nom::{
-        branch::alt,
-        bytes::complete::{tag, take_while_m_n},
-        character::complete::multispace0,
-        combinator::map_res,
-        multi::many0,
-        sequence::tuple,
-        IResult,
+        branch::*, bytes::complete::*, character::complete::*, combinator::*, multi::*,
+        sequence::*, IResult,
     };
 
     use std::collections::HashMap;

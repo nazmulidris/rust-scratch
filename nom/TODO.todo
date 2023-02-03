@@ -4,7 +4,7 @@ key-value parsing:
   ✔ parse CSS like style (above) but w/ `Vec<String>` as input and not `&str` @done(23-02-02 11:39)
 
 natural language parsing:
-  ☐ parse natural language text for name, age, preference (https://gist.github.com/lmammino/0c3e7e6dbaf41303d1059c6a279c59d1)
+  ✔ parse natural language text for name, age, preference @done(23-02-04 12:04)
 
 syn hi parsing for rc notes:
   ☐ parse `Vec<String>` containing MD content w/ some special syntax for tags, title for notes in rc
