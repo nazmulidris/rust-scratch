@@ -175,6 +175,7 @@ They are all written as tests. So if you run `cargo test -- --nocapture` you wil
       - [Deep dive, Part 1](https://youtu.be/zHF6j1LvngA)
       - [Deep dive, Part 2](https://youtu.be/9GLFJcSO08Y)
   - Tutorials:
+    - [Build a JSON parser using nom7](https://codeandbitters.com/lets-build-a-parser/)
     - [Excellent beginner to advanced](https://github.com/benkay86/nom-tutorial)
     - [Write a parser from scratch](https://github.com/rust-bakery/nom/blob/main/doc/making_a_new_parser_from_scratch.md)
   - Reference docs:

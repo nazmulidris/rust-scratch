@@ -16,6 +16,7 @@
  */
 
 mod convert_vec_string_for_parsing;
+mod parse_multiline_md_text;
 mod parse_natural_lang;
 mod parser_simple_css;
 mod parser_simple_hex;
