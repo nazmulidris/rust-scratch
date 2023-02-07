@@ -1,17 +1,4 @@
 **This is bold text
 that spans
 three lines.**
-
-@title[untitled]
-@tag[tag1, tag2]
-
-**Single line of bold**
-
-# Heading 1
-
 This is a paragraph.
-
-- This is a list item.
-
-**Two lines
-of bold**

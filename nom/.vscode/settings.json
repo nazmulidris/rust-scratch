@@ -1,11 +1,14 @@
 {
   "cSpell.words": [
+    "anychar",
+    "bitalic",
     "combinators",
     "hexdigit",
     "multispace",
     "nocapture",
     "RRGGBB",
     "RRGGBBAA",
+    "rustfmt",
     "stylesheet",
     "Tommaso"
   ]

@@ -34,10 +34,13 @@
 
 #[cfg(test)]
 mod tests {
+    use std::ops::{RangeFrom, RangeTo};
+
     use nom::{
         branch::*, bytes::complete::*, character::complete::*, combinator::*, multi::*,
-        sequence::*, IResult,
+        sequence::*, IResult, *,
     };
+    use nom::{error::*, *};
 
     mod output_structs {
         use super::*;
@@ -45,58 +48,87 @@ mod tests {
         // TODO: define Token enum, and other structs
         #[derive(Debug)]
         pub enum Token {
+            Plain,
             Bold,
-            Heading,
-            List,
+            Italic,
+            /// Bold and Italic, eg: `_**bitalic**_` & `**_bitalic_**`
+            Bitalic,
+            Heading1,
+            Heading2,
+            Heading3,
+            Heading4,
+            Heading5,
+            Heading6,
+            UnorderedList,
+            NumberedList,
             Title,
             Tag,
         }
     }
     use output_structs::*;
 
+    /// Skip rustfmt for this module: <https://stackoverflow.com/a/67289474/2085356>. It is cleaner
+    /// to write parsers w/out rustfmt reformatting them.
+    #[rustfmt::skip]
     mod parsers {
         use super::*;
 
+        pub const ITALIC: &str = "_";
         pub const BOLD: &str = "**";
         pub const NEW_LINE: &str = "\n";
+        pub const EOL: &str = "\r";
 
         // TODO: define parsers for bold, meta, heading, etc
-        pub fn parse_vec_lines(input: &str) -> IResult<&str, Vec<Vec<(Token, &str)>>> {
-            let mut it = vec![];
+        /// Sample input: `**This is bold text\nthat spans\nthree lines.**\nThis is a paragraph.\r`
+        pub fn parse_vec_lines(input: &str) -> IResult<&str, Vec<(Token, &str)>> {
+            println!("input: {input:?}");
 
-            let (input, bold_vec) = parse_bold(input)?;
-            it.push(bold_vec);
+            let (input, it) = many0(alt((
+                parse_bold,
+                parse_line,
+            )))(input)?;
 
-            // FIXME: this breaks it ... parser only works if bold is at start of the input
-            let (input, bold_vec) = parse_bold(input)?;
-            it.push(bold_vec);
+            // Flatten the Vec<Vec<(Token, &str)>> into a Vec<(Token, &str)>.
+            let mut acc: Vec<(Token, &str)> = vec![];
+            for item in it {
+                acc.extend(item);
+            }
 
-            Ok((input, it))
+            Ok((input, acc))
         }
+
+        pub fn parse_line(input: &str) -> IResult<&str, Vec<(Token, &str)>> {
+            let (input, (_, output, _)) =
+                alt((
+                    tuple(
+                        (opt(tag(NEW_LINE)), take_until(NEW_LINE), tag(NEW_LINE))
+                    ),
+                    tuple(
+                        (opt(tag(NEW_LINE)), take_until(EOL), tag(EOL))
+                    ),
+                ))(input)?;
+            Ok((input, vec![(Token::Plain, output)]))
+        }
+
 
         /// More info: <https://stackoverflow.com/questions/67275710/iterating-over-multiple-lines-using-the-rust-nom-parsing-library>
         pub fn parse_bold(input: &str) -> IResult<&str, Vec<(Token, &str)>> {
             // Parse multiple lines of bold text. `bold_str` does not include `**`.
             let (input, bold_str) =
-                delimited(tag_no_case(BOLD), take_until(BOLD), tag_no_case(BOLD))(input)?;
+                delimited(
+                    tag_no_case(BOLD),
+                    take_until(BOLD),
+                    tag_no_case(BOLD)
+                )(input)?;
 
             if bold_str.contains(NEW_LINE) {
-                // Split by newline. But leaves the newline in.
-                let split_by_newlines = separated_list0(tag(NEW_LINE), take_until(NEW_LINE));
-                // Terminated by newline, remove it.
-                let terminator = tag(NEW_LINE);
-                let (remainder, mut vec_bold_str) =
-                    terminated(split_by_newlines, terminator)(bold_str)?;
-
-                // Fold the remainder (if any) into the `Vec<&str>`.
-                if !remainder.is_empty() {
-                    vec_bold_str.push(remainder);
-                }
-
                 // Turn the `Vec<&str>` into a `Vec<(Token::Bold, &str)>`.
                 Ok((
                     input,
-                    vec_bold_str.iter().map(|it| (Token::Bold, *it)).collect(),
+                    bold_str
+                        .split(NEW_LINE)
+                        .map(|it| (Token::Bold, it))
+                        .collect(),
                 ))
             } else {
                 // Just return the single line of bold text.
@@ -120,11 +152,14 @@ mod tests {
     #[test]
     fn test_parse_input_md() {
         let input_vec_lines = get_input_md_lines();
-        println!("{input_vec_lines:#?}");
 
-        let binding = input_vec_lines.join(NEW_LINE);
+        let binding = {
+            let mut it = input_vec_lines.join(NEW_LINE);
+            it.push_str(EOL);
+            it
+        };
         let result = parse_vec_lines(&binding);
-        println!("{result:#?}");
+        println!("\nresult: \n{result:?}");
 
         // TODO: parse the `input_md.txt` file into a `Vec<Vec<(Token, String)>>` & make assertions
     }
