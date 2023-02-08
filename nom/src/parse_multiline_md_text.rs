@@ -34,35 +34,13 @@
 
 #[cfg(test)]
 mod tests {
-    use std::ops::{RangeFrom, RangeTo};
-
-    use nom::{
-        branch::*, bytes::complete::*, character::complete::*, combinator::*, multi::*,
-        sequence::*, IResult, *,
-    };
-    use nom::{error::*, *};
+    use nom::{branch::*, bytes::complete::*, combinator::*, multi::*, sequence::*, IResult};
 
     mod output_structs {
-        use super::*;
-
-        // TODO: define Token enum, and other structs
         #[derive(Debug)]
         pub enum Token {
             Plain,
             Bold,
-            Italic,
-            /// Bold and Italic, eg: `_**bitalic**_` & `**_bitalic_**`
-            Bitalic,
-            Heading1,
-            Heading2,
-            Heading3,
-            Heading4,
-            Heading5,
-            Heading6,
-            UnorderedList,
-            NumberedList,
-            Title,
-            Tag,
         }
     }
     use output_structs::*;
@@ -73,12 +51,10 @@ mod tests {
     mod parsers {
         use super::*;
 
-        pub const ITALIC: &str = "_";
         pub const BOLD: &str = "**";
         pub const NEW_LINE: &str = "\n";
         pub const EOL: &str = "\r";
 
-        // TODO: define parsers for bold, meta, heading, etc
         /// Sample input: `**This is bold text\nthat spans\nthree lines.**\nThis is a paragraph.\r`
         pub fn parse_vec_lines(input: &str) -> IResult<&str, Vec<(Token, &str)>> {
             println!("input: {input:?}");
@@ -160,7 +136,5 @@ mod tests {
         };
         let result = parse_vec_lines(&binding);
         println!("\nresult: \n{result:?}");
-
-        // TODO: parse the `input_md.txt` file into a `Vec<Vec<(Token, String)>>` & make assertions
     }
 }

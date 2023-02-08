@@ -6,6 +6,7 @@
     "hexdigit",
     "multispace",
     "nocapture",
+    "repr",
     "RRGGBB",
     "RRGGBBAA",
     "rustfmt",

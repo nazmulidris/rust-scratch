@@ -7,6 +7,7 @@
 - [Introduction w/ simple example](#introduction-w-simple-example)
 - [Learn by doing](#learn-by-doing)
 - [Documentation](#documentation)
+- [Recipes](#recipes)
 
 <!-- /TOC -->
 
@@ -157,8 +158,10 @@ How does this code work?
 <a id="markdown-learn-by-doing" name="learn-by-doing"></a>
 
 
-There are lots of great examples of varying levels of complexity in the `src` folder in this repo.
-They are all written as tests. So if you run `cargo test -- --nocapture` you will see them all run.
+- There are lots of great examples of varying levels of complexity in the `src` folder in this repo.
+- They are all written as tests. So if you run `cargo test -- --nocapture` you will see them all
+  run.
+- The `md_parser` folder contains a fully functional Markdown parser.
 
 ## Documentation
 <a id="markdown-documentation" name="documentation"></a>
@@ -185,3 +188,31 @@ They are all written as tests. So if you run `cargo test -- --nocapture` you wil
 - Less useful:
   - [README](https://github.com/rust-bakery/nom)
   - [nom crate](https://crates.io/crates/nom)
+
+## Recipes
+<a id="markdown-recipes" name="recipes"></a>
+
+
+These are both snippets to parse a line of text:
+
+```rust
+let NEW_LINE = "$$$";
+let EOL = "&&&";
+let (input, output) =
+    delimited(
+        tag(NEW_LINE),
+        recognize(many0(anychar)),
+        tag(EOL)
+    )(input)?;
+```
+
+```rust
+let NEW_LINE = "$$$";
+let EOL = "&&&";
+let (input, (_, output, _)) =
+    tuple((
+        opt(tag(NEW_LINE)),
+        take_until(EOL),
+        tag(EOL)
+    ))(input)?;
+```
