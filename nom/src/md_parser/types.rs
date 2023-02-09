@@ -16,7 +16,7 @@
  */
 
 /// This corresponds to a single Markdown document, which is produced after a successful parse
-/// operation [crate::parser_impl::parse_markdown].
+/// operation [crate::parse_markdown].
 pub type MarkdownDocument<'a> = Vec<MarkdownBlockElement<'a>>;
 
 /// These are blocks of Markdown. Blocks are the top-level elements of a Markdown document. A
@@ -70,4 +70,28 @@ impl From<usize> for HeadingLevel {
             _ => HeadingLevel::Heading6,
         }
     }
+}
+
+/// All the Markdown literals that are used to perform parsing.
+pub mod constants {
+    pub const HEADING_CHAR: char = '#';
+    pub const UNKNOWN_LANGUAGE: &str = "__UNKNOWN_LANGUAGE__";
+    pub const SPACE: &str = " ";
+    pub const PERIOD: &str = ".";
+    pub const UNORDERED_LIST: &str = "-";
+    pub const BITALIC_1: &str = "***";
+    pub const BITALIC_2: &str = "___";
+    pub const BOLD_1: &str = "**";
+    pub const BOLD_2: &str = "__";
+    pub const ITALIC_1: &str = "*";
+    pub const ITALIC_2: &str = "_";
+    pub const BACKTICK: &str = "`";
+    pub const LEFT_BRACKET: &str = "[";
+    pub const RIGHT_BRACKET: &str = "]";
+    pub const LEFT_PAREN: &str = "(";
+    pub const RIGHT_PAREN: &str = ")";
+    pub const LEFT_IMG: &str = "![";
+    pub const RIGHT_IMG: &str = "]";
+    pub const NEW_LINE: &str = "\n";
+    pub const CODE_BLOCK: &str = "```";
 }

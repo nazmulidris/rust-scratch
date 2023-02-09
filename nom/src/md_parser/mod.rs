@@ -15,6 +15,9 @@
  *   limitations under the License.
  */
 
+//! The main entry point (function) for this Markdown parsing module is [parser#parse_markdown]. It
+//! takes a string slice and returns a vector of [MarkdownBlockElement]s.
+
 pub mod parser;
 pub mod translator;
 pub mod types;
@@ -22,3 +25,9 @@ pub mod types;
 pub use parser::*;
 pub use translator::*;
 pub use types::*;
+
+pub(crate) mod parser_impl_block;
+pub(crate) mod parser_impl_element;
+
+pub(crate) use parser_impl_block::*;
+pub(crate) use parser_impl_element::*;

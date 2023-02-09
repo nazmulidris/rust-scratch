@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="MarkdownSettings">
+    <option name="autoScrollEnabled" value="false" />
+    <option name="customStylesheetText" value="body {&#10;  font-family: &quot;Fira Sans&quot;, &quot;Noto Color Emoji&quot;, sans-serif;&#10;  font-size: 8pt;&#10;}&#10;" />
+    <enabledExtensions>
+      <entry key="MermaidLanguageExtension" value="false" />
+      <entry key="PlantUMLLanguageExtension" value="false" />
+    </enabledExtensions>
+    <option name="fontFamily" value="JetBrains Mono" />
+    <option name="fontSize" value="23" />
+    <option name="splitLayout" value="SHOW_EDITOR" />
+  </component>
+</project>
