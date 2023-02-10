@@ -26,7 +26,7 @@ pub mod no_rustfmt_block {
     };
 
     /// Parse a single line of markdown text [MarkdownLineOfText].
-pub fn parse_block_markdown_text_until_eol(input: &str) -> IResult<&str, MarkdownLineOfText> {
+pub fn parse_block_markdown_text_until_eol(input: &str) -> IResult<&str, Fragments> {
     terminated(
         /* output */ many0(parse_element_markdown_inline),
         /* ends with (discarded) */ tag(NEW_LINE),
@@ -34,19 +34,19 @@ pub fn parse_block_markdown_text_until_eol(input: &str) -> IResult<&str, Markdow
 }
 
 /// Matches one or more `#` chars, consumes it, and outputs [HeadingLevel].
-pub fn parse_heading_tag(input: &str) -> IResult<&str, HeadingLevel> {
+pub fn parse_heading_tag(input: &str) -> IResult<&str, Level> {
     map(
         terminated(
             /* output `#`+ */ take_while1(|it| it == constants::HEADING_CHAR),
             /* ends with (discarded) */ tag(constants::SPACE),
         ),
-        |it: &str| HeadingLevel::from(it.len()),
+        |it: &str| Level::from(it.len()),
     )(input)
 }
 
 /// This matches the heading tag and text until EOL. Outputs a tuple of [HeadingLevel] and
 /// [MarkdownLineOfText].
-pub fn parse_block_heading(input: &str) -> IResult<&str, (HeadingLevel, MarkdownLineOfText)> {
+pub fn parse_block_heading(input: &str) -> IResult<&str, (Level, Fragments)> {
     tuple(
         (parse_heading_tag, parse_block_markdown_text_until_eol)
     )(input)
@@ -60,14 +60,14 @@ pub fn parse_unordered_list_tag(input: &str) -> IResult<&str, &str> {
     )(input)
 }
 
-pub fn parse_unordered_list_element(input: &str) -> IResult<&str, MarkdownLineOfText> {
+pub fn parse_unordered_list_element(input: &str) -> IResult<&str, Fragments> {
     preceded(
         /* prefix (discarded) */ parse_unordered_list_tag,
         /* output */ parse_block_markdown_text_until_eol,
     )(input)
 }
 
-pub fn parse_block_unordered_list(input: &str) -> IResult<&str, Vec<MarkdownLineOfText>> {
+pub fn parse_block_unordered_list(input: &str) -> IResult<&str, Vec<Fragments>> {
     many1(
         parse_unordered_list_element
     )(input)
@@ -84,23 +84,24 @@ pub fn parse_ordered_list_tag(input: &str) -> IResult<&str, &str> {
     )(input)
 }
 
-pub fn parse_ordered_list_element(input: &str) -> IResult<&str, MarkdownLineOfText> {
+pub fn parse_ordered_list_element(input: &str) -> IResult<&str, Fragments> {
     preceded(
         /* prefix (discarded) */ parse_ordered_list_tag,
         /* output */ parse_block_markdown_text_until_eol,
     )(input)
 }
 
-pub fn parse_block_ordered_list(input: &str) -> IResult<&str, Vec<MarkdownLineOfText>> {
+pub fn parse_block_ordered_list(input: &str) -> IResult<&str, Vec<Fragments>> {
     many1(
         parse_ordered_list_element
     )(input)
 }
 
-pub fn parse_block_code(input: &str) -> IResult<&str, (/* lang */ &str, /* body */ &str)> {
-    tuple(
+pub fn parse_block_code(input: &str) -> IResult<&str, CodeBlock> {
+    let (input, output) = tuple(
         (parse_code_block_lang, parse_code_block_body)
-    )(input)
+    )(input)?;
+    Ok((input, CodeBlock::from(output)))
 }
 
 pub fn parse_code_block_body(input: &str) -> IResult<&str, &str> {
@@ -137,10 +138,7 @@ mod tests {
         assert_eq!(parse_block_markdown_text_until_eol("\n"), Ok(("", vec![])));
         assert_eq!(
             parse_block_markdown_text_until_eol("here is some plaintext\n"),
-            Ok((
-                "",
-                vec![MarkdownInlineElement::Plaintext("here is some plaintext")]
-            ))
+            Ok(("", vec![Fragment::Plain("here is some plaintext")]))
         );
         assert_eq!(
             parse_block_markdown_text_until_eol(
@@ -149,20 +147,20 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    MarkdownInlineElement::Plaintext("here is some plaintext "),
-                    MarkdownInlineElement::Italic("but what if we italicize?"),
+                    Fragment::Plain("here is some plaintext "),
+                    Fragment::Italic("but what if we italicize?"),
                 ]
             ))
         );
         assert_eq!(
             parse_block_markdown_text_until_eol("here is some plaintext *but what if we italicize?* I guess it doesn't **matter** in my `code`\n"),
             Ok(("", vec![
-                MarkdownInlineElement::Plaintext("here is some plaintext "),
-                MarkdownInlineElement::Italic("but what if we italicize?"),
-                MarkdownInlineElement::Plaintext(" I guess it doesn't "),
-                MarkdownInlineElement::Bold("matter"),
-                MarkdownInlineElement::Plaintext(" in my "),
-                MarkdownInlineElement::InlineCode("code"),
+                Fragment::Plain("here is some plaintext "),
+                Fragment::Italic("but what if we italicize?"),
+                Fragment::Plain(" I guess it doesn't "),
+                Fragment::Bold("matter"),
+                Fragment::Plain(" in my "),
+                Fragment::InlineCode("code"),
             ]))
         );
         assert_eq!(
@@ -172,8 +170,8 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    MarkdownInlineElement::Plaintext("here is some plaintext "),
-                    MarkdownInlineElement::Italic("but what if we italicize?"),
+                    Fragment::Plain("here is some plaintext "),
+                    Fragment::Italic("but what if we italicize?"),
                 ]
             ))
         );
@@ -214,18 +212,15 @@ mod tests {
     fn test_parse_header() {
         assert_eq!(
             parse_block_heading("# h1\n"),
-            Ok(("", (1.into(), vec![MarkdownInlineElement::Plaintext("h1")])))
+            Ok(("", (1.into(), vec![Fragment::Plain("h1")])))
         );
         assert_eq!(
             parse_block_heading("## h2\n"),
-            Ok(("", (2.into(), vec![MarkdownInlineElement::Plaintext("h2")])))
+            Ok(("", (2.into(), vec![Fragment::Plain("h2")])))
         );
         assert_eq!(
             parse_block_heading("###  h3\n"),
-            Ok((
-                "",
-                (3.into(), vec![MarkdownInlineElement::Plaintext(" h3")])
-            ))
+            Ok(("", (3.into(), vec![Fragment::Plain(" h3")])))
         );
         assert_eq!(
             parse_block_heading("###h3"),
@@ -306,10 +301,7 @@ mod tests {
     fn test_parse_unordered_list_element() {
         assert_eq!(
             parse_unordered_list_element("- this is an element\n"),
-            Ok((
-                "",
-                vec![MarkdownInlineElement::Plaintext("this is an element")]
-            ))
+            Ok(("", vec![Fragment::Plain("this is an element")]))
         );
         assert_eq!(
             parse_unordered_list_element(
@@ -319,7 +311,7 @@ mod tests {
             ),
             Ok((
                 "- this is another element\n",
-                vec![MarkdownInlineElement::Plaintext("this is an element")]
+                vec![Fragment::Plain("this is an element")]
             ))
         );
         assert_eq!(
@@ -364,10 +356,7 @@ mod tests {
         );
         assert_eq!(
             parse_block_unordered_list("- this is an element\n"),
-            Ok((
-                "",
-                vec![vec![MarkdownInlineElement::Plaintext("this is an element")]]
-            ))
+            Ok(("", vec![vec![Fragment::Plain("this is an element")]]))
         );
         assert_eq!(
             parse_block_unordered_list(
@@ -378,8 +367,8 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    vec![MarkdownInlineElement::Plaintext("this is an element")],
-                    vec![MarkdownInlineElement::Plaintext("here is another")]
+                    vec![Fragment::Plain("this is an element")],
+                    vec![Fragment::Plain("here is another")]
                 ]
             ))
         );
@@ -427,10 +416,7 @@ mod tests {
     fn test_parse_ordered_list_element() {
         assert_eq!(
             parse_ordered_list_element("1. this is an element\n"),
-            Ok((
-                "",
-                vec![MarkdownInlineElement::Plaintext("this is an element")]
-            ))
+            Ok(("", vec![Fragment::Plain("this is an element")]))
         );
         assert_eq!(
             parse_ordered_list_element(
@@ -440,7 +426,7 @@ mod tests {
             ),
             Ok((
                 "1. here is another\n",
-                vec![MarkdownInlineElement::Plaintext("this is an element")]
+                vec![Fragment::Plain("this is an element")]
             ))
         );
         assert_eq!(
@@ -485,10 +471,7 @@ mod tests {
     fn test_parse_ordered_list() {
         assert_eq!(
             parse_block_ordered_list("1. this is an element\n"),
-            Ok((
-                "",
-                vec![vec![MarkdownInlineElement::Plaintext("this is an element")]]
-            ))
+            Ok(("", vec![vec![Fragment::Plain("this is an element")]]))
         );
         assert_eq!(
             parse_block_ordered_list("1. test"),
@@ -506,8 +489,8 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    vec!(MarkdownInlineElement::Plaintext("this is an element")),
-                    vec![MarkdownInlineElement::Plaintext("here is another")]
+                    vec!(Fragment::Plain("this is an element")),
+                    vec![Fragment::Plain("here is another")]
                 ]
             ))
         );
@@ -523,11 +506,11 @@ pip install foobar
             ),
             Ok((
                 "",
-                (
+                CodeBlock::from((
                     "bash",
                     r#"pip install foobar
 "#
-                )
+                ))
             ))
         );
         assert_eq!(
@@ -542,7 +525,7 @@ foobar.singularize('phenomena') # returns 'phenomenon'
             ),
             Ok((
                 "",
-                (
+                CodeBlock::from((
                     "python",
                     r#"import foobar
 
@@ -550,7 +533,7 @@ foobar.pluralize('word') # returns 'words'
 foobar.pluralize('goose') # returns 'geese'
 foobar.singularize('phenomena') # returns 'phenomenon'
 "#
-                )
+                ))
             ))
         );
         // assert_eq!(
@@ -569,11 +552,11 @@ pip install foobar
             ),
             Ok((
                 "",
-                (
+                CodeBlock::from((
                     "__UNKNOWN_LANGUAGE__",
                     r#"pip install foobar
 "#
-                )
+                ))
             ))
         );
     }

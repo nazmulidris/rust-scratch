@@ -16,7 +16,7 @@
  */
 
 //! The main entry point (function) for this Markdown parsing module is [parser#parse_markdown]. It
-//! takes a string slice and returns a vector of [MarkdownBlockElement]s.
+//! takes a string slice and returns a vector of [Block]s.
 
 pub mod parser;
 pub mod translator;

@@ -17,39 +17,45 @@
 
 /// This corresponds to a single Markdown document, which is produced after a successful parse
 /// operation [crate::parse_markdown].
-pub type MarkdownDocument<'a> = Vec<MarkdownBlockElement<'a>>;
+pub type Document<'a> = Vec<Block<'a>>;
+/// Alias for [Document].
+pub type Blocks<'a> = Vec<Block<'a>>;
+
+/// This roughly corresponds to a single line of text. Each line is made up of one or more
+/// [Fragment].
+pub type Fragments<'a> = Vec<Fragment<'a>>;
+/// Alias for [Fragments].
+pub type Line<'a> = Vec<Fragment<'a>>;
+/// Alias for Vec<[Line]>.
+pub type Lines<'a> = Vec<Line<'a>>;
 
 /// These are blocks of Markdown. Blocks are the top-level elements of a Markdown document. A
 /// Markdown document once parsed is turned into a [Vec] of these.
 #[derive(Clone, Debug, PartialEq)]
-pub enum MarkdownBlockElement<'a> {
-    Heading((HeadingLevel, MarkdownLineOfText<'a>)),
-    OrderedList(Vec<MarkdownLineOfText<'a>>),
-    UnorderedList(Vec<MarkdownLineOfText<'a>>),
-    Line(MarkdownLineOfText<'a>),
-    Codeblock((&'a str, &'a str)),
+pub enum Block<'a> {
+    Heading((Level, Fragments<'a>)),
+    OrderedList(Lines<'a>),
+    UnorderedList(Lines<'a>),
+    Text(Fragments<'a>),
+    CodeBlock(CodeBlock<'a>),
 }
 
-/// This roughly corresponds to a single line of text. Each line is made up of one or more
-/// [MarkdownInlineElement].
-pub type MarkdownLineOfText<'a> = Vec<MarkdownInlineElement<'a>>;
-
-/// These are things that show up in a single line of Markdown text [MarkdownLineOfText]. They do
+/// These are things that show up in a single line of Markdown text [Fragments]. They do
 /// not include other Markdown blocks (like code blocks, lists, headings, etc).
 #[derive(Clone, Debug, PartialEq)]
-pub enum MarkdownInlineElement<'a> {
+pub enum Fragment<'a> {
     Link((&'a str, &'a str)),
     Image((&'a str, &'a str)),
     InlineCode(&'a str),
     Bold(&'a str),
     BoldItalic(&'a str),
     Italic(&'a str),
-    Plaintext(&'a str),
+    Plain(&'a str),
 }
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum HeadingLevel {
+pub enum Level {
     Heading1 = 1,
     Heading2,
     Heading3,
@@ -58,16 +64,16 @@ pub enum HeadingLevel {
     Heading6,
 }
 
-impl From<usize> for HeadingLevel {
+impl From<usize> for Level {
     fn from(size: usize) -> Self {
         match size {
-            1 => HeadingLevel::Heading1,
-            2 => HeadingLevel::Heading2,
-            3 => HeadingLevel::Heading3,
-            4 => HeadingLevel::Heading4,
-            5 => HeadingLevel::Heading5,
-            6 => HeadingLevel::Heading6,
-            _ => HeadingLevel::Heading6,
+            1 => Level::Heading1,
+            2 => Level::Heading2,
+            3 => Level::Heading3,
+            4 => Level::Heading4,
+            5 => Level::Heading5,
+            6 => Level::Heading6,
+            _ => Level::Heading6,
         }
     }
 }
@@ -94,4 +100,20 @@ pub mod constants {
     pub const RIGHT_IMG: &str = "]";
     pub const NEW_LINE: &str = "\n";
     pub const CODE_BLOCK: &str = "```";
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CodeBlock<'a> {
+    pub language: &'a str,
+    pub text: &'a str,
+}
+
+mod code_block_impl {
+    use super::*;
+
+    impl<'a> From<(&'a str, &'a str)> for CodeBlock<'a> {
+        fn from((language, text): (&'a str, &'a str)) -> Self {
+            CodeBlock { language, text }
+        }
+    }
 }

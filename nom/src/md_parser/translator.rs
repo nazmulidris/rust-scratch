@@ -17,14 +17,14 @@
 
 use crate::*;
 
-pub fn translate(md: Vec<MarkdownBlockElement>) -> String {
+pub fn translate(md: Vec<Block>) -> String {
     md.iter()
         .map(|bit| match bit {
-            MarkdownBlockElement::Heading((size, line)) => translate_header(size, line.to_vec()),
-            MarkdownBlockElement::UnorderedList(lines) => translate_unordered_list(lines.to_vec()),
-            MarkdownBlockElement::OrderedList(lines) => translate_ordered_list(lines.to_vec()),
-            MarkdownBlockElement::Codeblock((lang, code)) => translate_codeblock(lang, code),
-            MarkdownBlockElement::Line(line) => translate_line(line.to_vec()),
+            Block::Heading((size, line)) => translate_header(size, line.to_vec()),
+            Block::UnorderedList(lines) => translate_unordered_list(lines.to_vec()),
+            Block::OrderedList(lines) => translate_ordered_list(lines.to_vec()),
+            Block::CodeBlock(code_block) => translate_codeblock(code_block),
+            Block::Text(line) => translate_line(line.to_vec()),
         })
         .collect::<Vec<String>>()
         .join("")
@@ -50,7 +50,7 @@ fn translate_image(link_text: &str, url: &str) -> String {
     format!("<img src=\"{url}\" alt=\"{link_text}\" />")
 }
 
-fn translate_list_elements(lines: Vec<MarkdownLineOfText>) -> String {
+fn translate_list_elements(lines: Vec<Fragments>) -> String {
     lines
         .iter()
         .map(|line| format!("<li>{}</li>", translate_text(line.to_vec())))
@@ -58,7 +58,7 @@ fn translate_list_elements(lines: Vec<MarkdownLineOfText>) -> String {
         .join("")
 }
 
-fn translate_header(heading_level: &HeadingLevel, text: MarkdownLineOfText) -> String {
+fn translate_header(heading_level: &Level, text: Fragments) -> String {
     let heading_level_number = (*heading_level) as u8;
     format!(
         "<h{}>{}</h{}>",
@@ -68,19 +68,20 @@ fn translate_header(heading_level: &HeadingLevel, text: MarkdownLineOfText) -> S
     )
 }
 
-fn translate_unordered_list(lines: Vec<MarkdownLineOfText>) -> String {
+fn translate_unordered_list(lines: Vec<Fragments>) -> String {
     format!("<ul>{}</ul>", translate_list_elements(lines.to_vec()))
 }
 
-fn translate_ordered_list(lines: Vec<MarkdownLineOfText>) -> String {
+fn translate_ordered_list(lines: Vec<Fragments>) -> String {
     format!("<ol>{}</ol>", translate_list_elements(lines.to_vec()))
 }
 
-fn translate_codeblock(lang: &str, text: &str) -> String {
-    format!("<pre><code class=\"lang-{lang}\">{text}</code></pre>")
+fn translate_codeblock(code_block: &CodeBlock) -> String {
+    let CodeBlock { language, text } = code_block;
+    format!("<pre><code class=\"lang-{language}\">{text}</code></pre>")
 }
 
-fn translate_line(text: MarkdownLineOfText) -> String {
+fn translate_line(text: Fragments) -> String {
     let line = translate_text(text);
     if !line.is_empty() {
         format!("<p>{line}</p>")
@@ -89,16 +90,16 @@ fn translate_line(text: MarkdownLineOfText) -> String {
     }
 }
 
-fn translate_text(text: MarkdownLineOfText) -> String {
+fn translate_text(text: Fragments) -> String {
     text.iter()
         .map(|part| match part {
-            MarkdownInlineElement::Bold(text) => translate_bold(text),
-            MarkdownInlineElement::Italic(text) => translate_italic(text),
-            MarkdownInlineElement::BoldItalic(text) => translate_italic(&translate_bold(text)),
-            MarkdownInlineElement::InlineCode(code) => translate_inline_code(code),
-            MarkdownInlineElement::Link((text, url)) => translate_link(text, url),
-            MarkdownInlineElement::Image((text, url)) => translate_image(text, url),
-            MarkdownInlineElement::Plaintext(text) => text.to_string(),
+            Fragment::Bold(text) => translate_bold(text),
+            Fragment::Italic(text) => translate_italic(text),
+            Fragment::BoldItalic(text) => translate_italic(&translate_bold(text)),
+            Fragment::InlineCode(code) => translate_inline_code(code),
+            Fragment::Link((text, url)) => translate_link(text, url),
+            Fragment::Image((text, url)) => translate_image(text, url),
+            Fragment::Plain(text) => text.to_string(),
         })
         .collect::<Vec<String>>()
         .join("")
@@ -148,15 +149,13 @@ mod tests {
     #[test]
     fn test_translate_text() {
         let x = translate_text(vec![
-            MarkdownInlineElement::Plaintext(
-                "Foobar is a Python library for dealing with word pluralization.",
-            ),
-            MarkdownInlineElement::Bold("bold"),
-            MarkdownInlineElement::Italic("italic"),
-            MarkdownInlineElement::InlineCode("code"),
-            MarkdownInlineElement::Link(("tag", "https://link.com")),
-            MarkdownInlineElement::Image(("tag", "https://link.com")),
-            MarkdownInlineElement::Plaintext(". the end!"),
+            Fragment::Plain("Foobar is a Python library for dealing with word pluralization."),
+            Fragment::Bold("bold"),
+            Fragment::Italic("italic"),
+            Fragment::InlineCode("code"),
+            Fragment::Link(("tag", "https://link.com")),
+            Fragment::Image(("tag", "https://link.com")),
+            Fragment::Plain(". the end!"),
         ]);
         assert_eq!(x, String::from("Foobar is a Python library for dealing with word pluralization.<b>bold</b><i>italic</i><code>code</code><a href=\"https://link.com\">tag</a><img src=\"https://link.com\" alt=\"tag\" />. the end!"));
         let x = translate_text(vec![]);
@@ -166,10 +165,7 @@ mod tests {
     #[test]
     fn test_translate_header() {
         assert_eq!(
-            translate_header(
-                &HeadingLevel::Heading1,
-                vec![MarkdownInlineElement::Plaintext("Foobar")]
-            ),
+            translate_header(&Level::Heading1, vec![Fragment::Plain("Foobar")]),
             String::from("<h1>Foobar</h1>")
         );
     }
@@ -178,10 +174,10 @@ mod tests {
     fn test_translate_list_elements() {
         assert_eq!(
             translate_list_elements(vec![
-                vec![MarkdownInlineElement::Plaintext("Foobar")],
-                vec![MarkdownInlineElement::Plaintext("Foobar")],
-                vec![MarkdownInlineElement::Plaintext("Foobar")],
-                vec![MarkdownInlineElement::Plaintext("Foobar")],
+                vec![Fragment::Plain("Foobar")],
+                vec![Fragment::Plain("Foobar")],
+                vec![Fragment::Plain("Foobar")],
+                vec![Fragment::Plain("Foobar")],
             ]),
             String::from("<li>Foobar</li><li>Foobar</li><li>Foobar</li><li>Foobar</li>")
         );
@@ -191,10 +187,10 @@ mod tests {
     fn test_translate_unordered_list() {
         assert_eq!(
             translate_unordered_list(vec![
-                vec![MarkdownInlineElement::Plaintext("Foobar")],
-                vec![MarkdownInlineElement::Plaintext("Foobar")],
-                vec![MarkdownInlineElement::Plaintext("Foobar")],
-                vec![MarkdownInlineElement::Plaintext("Foobar")],
+                vec![Fragment::Plain("Foobar")],
+                vec![Fragment::Plain("Foobar")],
+                vec![Fragment::Plain("Foobar")],
+                vec![Fragment::Plain("Foobar")],
             ]),
             String::from("<ul><li>Foobar</li><li>Foobar</li><li>Foobar</li><li>Foobar</li></ul>")
         );
@@ -204,10 +200,10 @@ mod tests {
     fn test_translate_ordered_list() {
         assert_eq!(
             translate_ordered_list(vec![
-                vec![MarkdownInlineElement::Plaintext("Foobar")],
-                vec![MarkdownInlineElement::Plaintext("Foobar")],
-                vec![MarkdownInlineElement::Plaintext("Foobar")],
-                vec![MarkdownInlineElement::Plaintext("Foobar")],
+                vec![Fragment::Plain("Foobar")],
+                vec![Fragment::Plain("Foobar")],
+                vec![Fragment::Plain("Foobar")],
+                vec![Fragment::Plain("Foobar")],
             ]),
             String::from("<ol><li>Foobar</li><li>Foobar</li><li>Foobar</li><li>Foobar</li></ol>")
         );
@@ -216,7 +212,7 @@ mod tests {
     #[test]
     fn test_translate_codeblock() {
         assert_eq!(
-            translate_codeblock(
+            translate_codeblock(&CodeBlock::from((
                 "python",
                 r#"
 import foobar
@@ -225,7 +221,7 @@ foobar.pluralize(\'word\') # returns \'words\'
 foobar.pluralize(\'goose\') # returns \'geese\'
 foobar.singularize(\'phenomena\') # returns \'phenomenon\'
 "#
-            ),
+            ))),
             String::from(
                 r#"<pre><code class="lang-python">
 import foobar
@@ -242,10 +238,10 @@ foobar.singularize(\'phenomena\') # returns \'phenomenon\'
     fn test_translate_line() {
         assert_eq!(
             translate_line(vec![
-                MarkdownInlineElement::Plaintext("Foobar"),
-                MarkdownInlineElement::Bold("Foobar"),
-                MarkdownInlineElement::Italic("Foobar"),
-                MarkdownInlineElement::InlineCode("Foobar"),
+                Fragment::Plain("Foobar"),
+                Fragment::Bold("Foobar"),
+                Fragment::Italic("Foobar"),
+                Fragment::InlineCode("Foobar"),
             ]),
             String::from("<p>Foobar<b>Foobar</b><i>Foobar</i><code>Foobar</code></p>")
         );
