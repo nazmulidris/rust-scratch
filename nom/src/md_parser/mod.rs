@@ -28,6 +28,8 @@ pub use types::*;
 
 pub(crate) mod parser_impl_block;
 pub(crate) mod parser_impl_element;
+pub(crate) mod parser_impl_metadata;
 
 pub(crate) use parser_impl_block::*;
 pub(crate) use parser_impl_element::*;
+pub(crate) use parser_impl_metadata::*;

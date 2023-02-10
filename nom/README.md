@@ -159,9 +159,15 @@ How does this code work?
 
 
 - There are lots of great examples of varying levels of complexity in the `src` folder in this repo.
-- They are all written as tests. So if you run `cargo test -- --nocapture` you will see them all
-  run.
-- The `md_parser` folder contains a fully functional Markdown parser.
+- So if you run `cargo test -- --nocapture` you will see them all run.
+- Most of these examples are written as tests. Their files are loaded by `main.rs`.
+  - `convert_vec_string_for_parsing.rs`
+  - `parse_simple_hex.rs`
+  - `parse_simple_css.rs`
+  - `parse_natural_lang.rs`
+- The `md_parser` folder contains a fully functional Markdown parser (and isn't written as a test
+  but a real module that you can use in your projects that need a Markdown parser). This module is
+  linked via `lib.rs` (and not `main.rs`).
 
 ## Documentation
 <a id="markdown-documentation" name="documentation"></a>

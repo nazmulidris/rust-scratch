@@ -38,6 +38,8 @@ pub enum Block<'a> {
     UnorderedList(Lines<'a>),
     Text(Fragments<'a>),
     CodeBlock(CodeBlock<'a>),
+    Title(&'a str),
+    Tags(Vec<&'a str>),
 }
 
 /// These are things that show up in a single line of Markdown text [Fragments]. They do
@@ -80,6 +82,11 @@ impl From<usize> for Level {
 
 /// All the Markdown literals that are used to perform parsing.
 pub mod constants {
+    pub const TITLE: &str = "@title";
+    pub const TAGS: &str = "@tags";
+    pub const COLON: &str = ":";
+    pub const COMMA: &str = ",";
+    pub const QUOTE: &str = "\"";
     pub const HEADING_CHAR: char = '#';
     pub const UNKNOWN_LANGUAGE: &str = "__UNKNOWN_LANGUAGE__";
     pub const SPACE: &str = " ";

@@ -25,7 +25,7 @@ pub mod no_rustfmt_block {
         IResult,
     };
 
-    /// Parse a single line of markdown text [MarkdownLineOfText].
+/// Parse a single line of markdown text [MarkdownLineOfText].
 pub fn parse_block_markdown_text_until_eol(input: &str) -> IResult<&str, Fragments> {
     terminated(
         /* output */ many0(parse_element_markdown_inline),
@@ -130,7 +130,7 @@ pub use no_rustfmt_block::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::*;
+    use crate::{constants::UNKNOWN_LANGUAGE, *};
     use nom::{error::Error, error::ErrorKind, Err as NomErr};
 
     #[test]
@@ -304,11 +304,7 @@ mod tests {
             Ok(("", vec![Fragment::Plain("this is an element")]))
         );
         assert_eq!(
-            parse_unordered_list_element(
-                r#"- this is an element
-- this is another element
-"#
-            ),
+            parse_unordered_list_element(raw_strings::UNORDERED_LIST_ELEMENT),
             Ok((
                 "- this is another element\n",
                 vec![Fragment::Plain("this is an element")]
@@ -359,16 +355,12 @@ mod tests {
             Ok(("", vec![vec![Fragment::Plain("this is an element")]]))
         );
         assert_eq!(
-            parse_block_unordered_list(
-                r#"- this is an element
-- here is another
-"#
-            ),
+            parse_block_unordered_list(raw_strings::UNORDERED_LIST_ELEMENT),
             Ok((
                 "",
                 vec![
                     vec![Fragment::Plain("this is an element")],
-                    vec![Fragment::Plain("here is another")]
+                    vec![Fragment::Plain("this is another element")]
                 ]
             ))
         );
@@ -419,11 +411,7 @@ mod tests {
             Ok(("", vec![Fragment::Plain("this is an element")]))
         );
         assert_eq!(
-            parse_ordered_list_element(
-                r#"1. this is an element
-1. here is another
-"#
-            ),
+            parse_ordered_list_element(raw_strings::ORDERED_LIST_ELEMENT),
             Ok((
                 "1. here is another\n",
                 vec![Fragment::Plain("this is an element")]
@@ -481,11 +469,7 @@ mod tests {
             }))
         );
         assert_eq!(
-            parse_block_ordered_list(
-                r#"1. this is an element
-2. here is another
-"#
-            ),
+            parse_block_ordered_list(raw_strings::ORDERED_LIST_ELEMENT),
             Ok((
                 "",
                 vec![
@@ -499,65 +483,77 @@ mod tests {
     #[test]
     fn test_parse_codeblock() {
         assert_eq!(
-            parse_block_code(
-                r#"```bash
-pip install foobar
-```"#
-            ),
+            parse_block_code(raw_strings::CODE_BLOCK_3_INPUT),
             Ok((
                 "",
-                CodeBlock::from((
-                    "bash",
-                    r#"pip install foobar
-"#
-                ))
+                CodeBlock::from(("bash", raw_strings::CODE_BLOCK_3_OUTPUT))
             ))
         );
         assert_eq!(
-            parse_block_code(
-                r#"```python
-import foobar
-
-foobar.pluralize('word') # returns 'words'
-foobar.pluralize('goose') # returns 'geese'
-foobar.singularize('phenomena') # returns 'phenomenon'
-```"#
-            ),
+            parse_block_code(raw_strings::CODE_BLOCK_2_INPUT),
             Ok((
                 "",
-                CodeBlock::from((
-                    "python",
-                    r#"import foobar
-
-foobar.pluralize('word') # returns 'words'
-foobar.pluralize('goose') # returns 'geese'
-foobar.singularize('phenomena') # returns 'phenomenon'
-"#
-                ))
+                CodeBlock::from(("python", raw_strings::CODE_BLOCK_2_OUTPUT))
             ))
         );
-        // assert_eq!(
-        // 	parse_code_block("```bash\n pip `install` foobar\n```"),
-        // 	Ok(("", "bash\n pip `install` foobar\n"))
-        // );
     }
 
     #[test]
     fn test_parse_codeblock_no_language() {
         assert_eq!(
-            parse_block_code(
-                r#"```
-pip install foobar
-```"#
-            ),
+            parse_block_code(raw_strings::CODE_BLOCK_1_INPUT),
             Ok((
                 "",
-                CodeBlock::from((
-                    "__UNKNOWN_LANGUAGE__",
-                    r#"pip install foobar
-"#
-                ))
+                CodeBlock::from((UNKNOWN_LANGUAGE, raw_strings::CODE_BLOCK_1_OUTPUT))
             ))
         );
+    }
+
+    #[rustfmt::skip]
+    mod raw_strings {
+        pub const UNORDERED_LIST_ELEMENT: &str =
+r#"- this is an element
+- this is another element
+"#;
+        pub const ORDERED_LIST_ELEMENT: &str =
+r#"1. this is an element
+1. here is another
+"#;
+
+        pub const CODE_BLOCK_1_INPUT: &str =
+r#"```
+pip install foobar
+```"#;
+
+        pub const CODE_BLOCK_1_OUTPUT: &str =
+r#"pip install foobar
+"#;
+
+        pub const CODE_BLOCK_2_INPUT: &str =
+r#"```python
+import foobar
+
+foobar.pluralize('word') # returns 'words'
+foobar.pluralize('goose') # returns 'geese'
+foobar.singularize('phenomena') # returns 'phenomenon'
+```"#;
+
+        pub const CODE_BLOCK_2_OUTPUT: &str =
+r#"import foobar
+
+foobar.pluralize('word') # returns 'words'
+foobar.pluralize('goose') # returns 'geese'
+foobar.singularize('phenomena') # returns 'phenomenon'
+"#;
+
+        pub const CODE_BLOCK_3_INPUT: &str =
+r#"```bash
+pip install foobar
+```"#;
+
+        pub const CODE_BLOCK_3_OUTPUT: &str =
+r#"pip install foobar
+"#;
+
     }
 }

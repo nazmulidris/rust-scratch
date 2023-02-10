@@ -17,17 +17,19 @@
 
 use crate::*;
 
-pub fn translate(md: Vec<Block>) -> String {
-    md.iter()
-        .map(|bit| match bit {
-            Block::Heading((size, line)) => translate_header(size, line.to_vec()),
-            Block::UnorderedList(lines) => translate_unordered_list(lines.to_vec()),
-            Block::OrderedList(lines) => translate_ordered_list(lines.to_vec()),
-            Block::CodeBlock(code_block) => translate_codeblock(code_block),
-            Block::Text(line) => translate_line(line.to_vec()),
-        })
-        .collect::<Vec<String>>()
-        .join("")
+pub fn translate(doc: Document) -> String {
+    let mut acc = vec![];
+    for block in doc {
+        match block {
+            Block::Heading((level, line)) => acc.push(translate_header(&level, line.to_vec())),
+            Block::UnorderedList(lines) => acc.push(translate_unordered_list(lines.to_vec())),
+            Block::OrderedList(lines) => acc.push(translate_ordered_list(lines.to_vec())),
+            Block::CodeBlock(code_block) => acc.push(translate_codeblock(&code_block)),
+            Block::Text(line) => acc.push(translate_line(line.to_vec())),
+            _ => {}
+        }
+    }
+    acc.join("")
 }
 
 fn translate_bold(input: &str) -> String {
@@ -212,26 +214,29 @@ mod tests {
     #[test]
     fn test_translate_codeblock() {
         assert_eq!(
-            translate_codeblock(&CodeBlock::from((
-                "python",
-                r#"
-import foobar
-
-foobar.pluralize(\'word\') # returns \'words\'
-foobar.pluralize(\'goose\') # returns \'geese\'
-foobar.singularize(\'phenomena\') # returns \'phenomenon\'
-"#
-            ))),
-            String::from(
-                r#"<pre><code class="lang-python">
-import foobar
-
-foobar.pluralize(\'word\') # returns \'words\'
-foobar.pluralize(\'goose\') # returns \'geese\'
-foobar.singularize(\'phenomena\') # returns \'phenomenon\'
-</code></pre>"#
-            )
+            translate_codeblock(&CodeBlock::from(("python", raw_strings::CODE_BLOCK))),
+            String::from(raw_strings::CODE_BLOCK_HTML)
         );
+    }
+
+    #[rustfmt::skip]
+    mod raw_strings {
+        pub const CODE_BLOCK: &str =
+r#"
+import foobar
+
+foobar.pluralize(\'word\') # returns \'words\'
+foobar.pluralize(\'goose\') # returns \'geese\'
+foobar.singularize(\'phenomena\') # returns \'phenomenon\'
+"#;
+        pub const CODE_BLOCK_HTML: &str =
+r#"<pre><code class="lang-python">
+import foobar
+
+foobar.pluralize(\'word\') # returns \'words\'
+foobar.pluralize(\'goose\') # returns \'geese\'
+foobar.singularize(\'phenomena\') # returns \'phenomenon\'
+</code></pre>"#;
     }
 
     #[test]

@@ -10,9 +10,12 @@ standard markdown parser:
   ✔ implement a standard markdown parser @done(23-02-09 14:46)
 
 parse non standard markdown:
-  ☐ `md_parse` add `@<key>: ["<value1>", "<value2>", .. ]\n`, `@<key>: "<value>"\n` syntax
-    - eg `@tags: ["tag", "tag 2"]\n`; make the quotes optional if there are no spaces
-    - eg `@title: "Something"]\n`; make the quotes optional & cut to EOL
+  ✔ `md_parse` add `@<key>: ["<value1>", "<value2>", .. ]\n`, `@<key>: "<value>"\n` syntax @done(23-02-10 17:22)
+    ✔ eg `@title: "Something"]\n`; make the quotes optional & cut to EOL @done(23-02-10 13:19)
+    ✔ eg `@tags: ["tag", "tag 2"]\n`; make the quotes optional if there are no spaces @done(23-02-10 17:19)
+  ✔ integrate the above into `parser.rs` @done(23-02-12 09:53)
+  ☐ move `md_parse` into `r3bl_tui` crate
+  ☐ write developerlife article on nom using the `r3bl_tui` crate
 
 syn hi formatting for r3bl-cmdr notes app:
   ☐ parse `Vec<String>` containing MD content w/ some special syntax for tags, title for notes in rc
