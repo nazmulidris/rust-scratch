@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-pub trait ColorTransform {
+pub trait TransformColor {
     /// Returns a [RgbColor] representation of the `self` color.
     fn as_rgb(&self) -> RgbColor;
 
@@ -32,18 +32,18 @@ pub struct RgbColor {
 }
 
 mod rgb_color_impl {
-    use crate::{ansi256_from_rgb, Ansi256Color};
+    use crate::{convert_rgb_into_ansi256, Ansi256Color};
 
-    use super::ColorTransform;
     use super::RgbColor;
+    use super::TransformColor;
 
-    impl ColorTransform for RgbColor {
+    impl TransformColor for RgbColor {
         fn as_rgb(&self) -> RgbColor {
             *self
         }
 
         fn as_ansi256(&self) -> Ansi256Color {
-            ansi256_from_rgb(*self)
+            convert_rgb_into_ansi256(*self)
         }
     }
 }
@@ -54,9 +54,9 @@ pub struct Ansi256Color {
 }
 
 mod ansi_color_impl {
-    use crate::{Ansi256Color, ColorTransform, RgbColor, ANSI_COLOR_PALETTE};
+    use crate::{constants::ANSI_COLOR_PALETTE, Ansi256Color, RgbColor, TransformColor};
 
-    impl ColorTransform for Ansi256Color {
+    impl TransformColor for Ansi256Color {
         fn as_rgb(&self) -> RgbColor {
             let index = self.index as usize;
             ANSI_COLOR_PALETTE[index].into()

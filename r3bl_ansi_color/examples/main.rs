@@ -15,21 +15,32 @@
  *   limitations under the License.
  */
 
-use r3bl_ansi_color::{FormattedString, RgbColor};
+use r3bl_ansi_color::*;
 
 fn main() {
     let eg_1 = FormattedString {
-        text: "Hello".to_string(),
-        foreground_color: RgbColor {
+        text: "Hello",
+        foreground_color: &RgbColor {
             red: 0,
             green: 0,
             blue: 0,
         },
-        background_color: RgbColor {
+        background_color: &RgbColor {
             red: 1,
             green: 1,
             blue: 1,
         },
     };
-    println!("{0}", eg_1);
+    println!("eg_1: {0}", eg_1);
+
+    let eg_2 = FormattedString {
+        text: "World",
+        foreground_color: &Ansi256Color { index: 150 },
+        background_color: &RgbColor {
+            red: 1,
+            green: 1,
+            blue: 1,
+        },
+    };
+    println!("eg_2: {0}", eg_2);
 }
