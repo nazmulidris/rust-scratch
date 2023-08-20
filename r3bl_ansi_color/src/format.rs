@@ -17,6 +17,7 @@
 
 use crate::*;
 
+// TODO: remove foreground and background fields. Replace w/ a vec![] of Style
 pub struct FormattedString<'a> {
     pub text: &'a str,
     pub foreground: Color,
