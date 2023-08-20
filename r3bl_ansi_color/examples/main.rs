@@ -18,6 +18,31 @@
 use r3bl_ansi_color::*;
 
 fn main() {
+    // Print a string w/ ANSI color codes.
+    {
+        println!(
+            "fg_color_ansi256: {0}foo{1}",
+            make_sgr_code(SgrCode::ForegroundAnsi256(150)),
+            make_sgr_code(SgrCode::Reset),
+        );
+        println!(
+            "fg_color_rgb: {0}foo{1}",
+            make_sgr_code(SgrCode::ForegroundRGB(175, 215, 135)),
+            make_sgr_code(SgrCode::Reset),
+        );
+        println!(
+            "bg_color_ansi256: {0}foo{1}",
+            make_sgr_code(SgrCode::BackgroundAnsi256(150)),
+            make_sgr_code(SgrCode::Reset),
+        );
+        println!(
+            "bg_color_rgb: {0}foo{1}",
+            make_sgr_code(SgrCode::BackgroundRGB(175, 215, 135)),
+            make_sgr_code(SgrCode::Reset),
+        );
+    }
+
+    // Set the color support override to ANSI 256 color mode.
     {
         color_support_override_set(ColorSupportOverride::Ansi256);
 
@@ -36,6 +61,7 @@ fn main() {
         println!("ansi256 override: eg_2: {0}", eg_2);
     }
 
+    // Set the color support override to truecolor mode.
     {
         color_support_override_set(ColorSupportOverride::Truecolor);
 
@@ -54,6 +80,7 @@ fn main() {
         println!("truecolor override: eg_2: {0}", eg_2);
     }
 
+    // Use runtime detection to determine the color support.
     {
         color_support_override_set(ColorSupportOverride::NotSet);
 

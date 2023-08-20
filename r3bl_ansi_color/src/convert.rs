@@ -290,6 +290,15 @@ mod tests {
         );
 
         assert_eq!(
+            Ansi256Color { index: 150 }.as_rgb(),
+            RgbColor {
+                red: 175,
+                green: 215,
+                blue: 135
+            }
+        );
+
+        assert_eq!(
             Ansi256Color { index: 231 }.as_rgb(),
             RgbColor {
                 red: 255,

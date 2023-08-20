@@ -16,6 +16,11 @@ output colors to stdout:
   ☐ output ANSI escape codes to stdout
   ☐ test on macOS & linux
 
+support styles:
+  ☐ instead of fg, bg color, add a style enum (w/ bold, italic, underline, etc)
+  ☐ add a fmt_str! macro that supports styles (attributes and colors)
+  ☐ change `FormattedString` to support `vec![style]`
+
 dx review:
   ✔ make sure that all the functions and symbols are consistent and written in active tense @done(23-08-19 12:45)
   ☐ `let eg_1 = fmt_str!( txt: "hi, {foo} there", fg: rgb(0,0,0), bg: rgb(255,255,255) )`?
