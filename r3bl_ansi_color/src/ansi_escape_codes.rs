@@ -15,11 +15,9 @@
  *   limitations under the License.
  */
 
-//! More info: <https://doc.rust-lang.org/reference/tokens.html#ascii-escapes>
-
-pub const CSI: &str = "\x1b[";
-pub const SGR: &str = "m";
-pub const RESET: &str = "\x1b[0m";
+//! More info:
+//! - <https://doc.rust-lang.org/reference/tokens.html#ascii-escapes>
+//! - <https://notes.burke.libbey.me/ansi-escape-codes/>
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum SgrCode {
@@ -28,10 +26,12 @@ pub enum SgrCode {
     Dim,
     Italic,
     Underline,
-    Blink,
+    Overline,
+    SlowBlink,
+    RapidBlink,
     Invert,
     Hidden,
-    Strike,
+    Strikethrough,
     ForegroundAnsi256(u8),
     BackgroundAnsi256(u8),
     ForegroundRGB(u8, u8, u8),
@@ -48,10 +48,15 @@ pub mod sgr_code_impl {
         }
     }
 
+    pub const CSI: &str = "\x1b[";
+    pub const SGR: &str = "m";
+
     /// SGR: set graphics mode command.
     /// More info:
     /// - <https://notes.burke.libbey.me/ansi-escape-codes/>
+    /// - <https://www.asciitable.com/>
     /// - <https://commons.wikimedia.org/wiki/File:Xterm_256color_chart.svg>
+    /// - <https://en.wikipedia.org/wiki/ANSI_escape_code>
     #[rustfmt::skip]
     fn make_sgr_code(sgr_code: SgrCode) -> String {
         match sgr_code {
@@ -60,10 +65,12 @@ pub mod sgr_code_impl {
             SgrCode::Dim        => format!("{CSI}2{SGR}"),
             SgrCode::Italic     => format!("{CSI}3{SGR}"),
             SgrCode::Underline  => format!("{CSI}4{SGR}"),
-            SgrCode::Blink      => format!("{CSI}5{SGR}"),
-            SgrCode::Invert     => format!("{CSI}6{SGR}"),
-            SgrCode::Hidden     => format!("{CSI}7{SGR}"),
-            SgrCode::Strike     => format!("{CSI}8{SGR}"),
+            SgrCode::SlowBlink  => format!("{CSI}5{SGR}"),
+            SgrCode::RapidBlink => format!("{CSI}6{SGR}"),
+            SgrCode::Invert     => format!("{CSI}7{SGR}"),
+            SgrCode::Hidden     => format!("{CSI}8{SGR}"),
+            SgrCode::Strikethrough     => format!("{CSI}9{SGR}"),
+            SgrCode::Overline   => format!("{CSI}53{SGR}"),
             SgrCode::ForegroundAnsi256(index) => format!("{CSI}38;5;{index}{SGR}"),
             SgrCode::BackgroundAnsi256(index) => format!("{CSI}48;5;{index}{SGR}"),
             SgrCode::ForegroundRGB(r, g, b) => format!("{CSI}38;2;{r};{g};{b}{SGR}"),

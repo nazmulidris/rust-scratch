@@ -20,26 +20,28 @@ use r3bl_ansi_color::*;
 fn main() {
     // Print a string w/ ANSI color codes.
     {
-        println!(
-            "fg_color_ansi256: {0}foo{1}",
-            SgrCode::ForegroundAnsi256(150),
-            SgrCode::Reset,
-        );
-        println!(
-            "fg_color_rgb: {0}foo{1}",
-            (SgrCode::ForegroundRGB(175, 215, 135)),
-            (SgrCode::Reset),
-        );
-        println!(
-            "bg_color_ansi256: {0}foo{1}",
-            SgrCode::BackgroundAnsi256(150),
-            SgrCode::Reset,
-        );
-        println!(
-            "bg_color_rgb: {0}foo{1}",
-            SgrCode::BackgroundRGB(175, 215, 135),
-            SgrCode::Reset,
-        );
+        AnsiStyledText {
+            text: "Print a formatted string w/ ANSI color codes.",
+            style: &[
+                Style::Bold,
+                Style::Italic,
+                Style::Underline,
+                Style::Foreground(Color::Rgb(50, 50, 50)),
+                Style::Background(Color::Rgb(100, 200, 1)),
+            ],
+        }
+        .println();
+
+        AnsiStyledText {
+            text: "Overline and strikethrough line.",
+            style: &[
+                Style::Strikethrough,
+                Style::Overline,
+                Style::Foreground(Color::Rgb(200, 50, 50)),
+                Style::Background(Color::Rgb(200, 200, 1)),
+            ],
+        }
+        .println();
     }
 
     // Set the color support override to ANSI 256 color mode.

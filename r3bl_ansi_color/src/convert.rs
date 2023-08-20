@@ -15,6 +15,11 @@
  *   limitations under the License.
  */
 
+//! More info:
+//! - <https://tintin.mudhalla.net/info/256color/>
+//! - <https://github.com/Qix-/color-convert/>
+//! - <https://talyian.github.io/ansicolors/>
+
 use crate::{Ansi256Color, RgbColor};
 
 pub fn convert_rgb_into_ansi256(rgb_color: RgbColor) -> Ansi256Color {

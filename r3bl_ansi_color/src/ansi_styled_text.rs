@@ -17,9 +17,24 @@
 
 use crate::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AnsiStyledText<'a> {
     pub text: &'a str,
     pub style: &'a [Style],
+}
+
+mod ansi_styled_text_impl {
+    use crate::AnsiStyledText;
+
+    impl AnsiStyledText<'_> {
+        pub fn println(&self) {
+            println!("{}", self);
+        }
+
+        pub fn print(&self) {
+            print!("{}", self);
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,10 +45,12 @@ pub enum Style {
     Dim,
     Italic,
     Underline,
-    Blink,
+    Overline,
+    RapidBlink,
+    SlowBlink,
     Invert,
     Hidden,
-    Strike,
+    Strikethrough,
 }
 
 mod style_impl {
@@ -101,10 +118,12 @@ mod style_impl {
                 Style::Dim => write!(f, "{}", SgrCode::Dim),
                 Style::Italic => write!(f, "{}", SgrCode::Italic),
                 Style::Underline => write!(f, "{}", SgrCode::Underline),
-                Style::Blink => write!(f, "{}", SgrCode::Blink),
+                Style::SlowBlink => write!(f, "{}", SgrCode::SlowBlink),
+                Style::RapidBlink => write!(f, "{}", SgrCode::RapidBlink),
                 Style::Invert => write!(f, "{}", SgrCode::Invert),
                 Style::Hidden => write!(f, "{}", SgrCode::Hidden),
-                Style::Strike => write!(f, "{}", SgrCode::Strike),
+                Style::Strikethrough => write!(f, "{}", SgrCode::Strikethrough),
+                Style::Overline => write!(f, "{}", SgrCode::Overline),
             }
         }
     }

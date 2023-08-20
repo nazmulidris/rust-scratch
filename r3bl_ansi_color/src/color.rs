@@ -15,6 +15,16 @@
  *   limitations under the License.
  */
 
+//! More info:
+//! - <https://commons.wikimedia.org/wiki/File:Xterm_256color_chart.svg>
+//! - <https://www.ditig.com/256-colors-cheat-sheet>
+//! - <https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences>
+//! - <https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit>
+//! - <https://en.wikipedia.org/wiki/ANSI_escape_code#24-bit>
+//! - <https://en.wikipedia.org/wiki/ANSI_escape_code#Unix_environment_variables_relating_to_color_support>
+//! - <https://en.wikipedia.org/wiki/8-bit_color>
+//! - <https://github.com/Qix-/color-convert/>
+
 pub trait TransformColor {
     /// Returns a [RgbColor] representation of the `self` color.
     fn as_rgb(&self) -> RgbColor;

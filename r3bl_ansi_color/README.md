@@ -9,6 +9,8 @@
 # References
 
 - https://notes.burke.libbey.me/ansi-escape-codes/
+- https://www.asciitable.com/
+- https://commons.wikimedia.org/wiki/File:Xterm_256color_chart.svg
 - https://www.ditig.com/256-colors-cheat-sheet
 - https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
 - https://www.compuphase.com/cmetric.htm
