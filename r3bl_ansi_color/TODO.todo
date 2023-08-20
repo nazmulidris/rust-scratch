@@ -13,11 +13,11 @@ testing:
   ✔ add color support override for testing @done(23-08-19 20:00)
 
 output colors to stdout:
-  ☐ output ANSI escape codes to stdout
+  ✔ output ANSI escape codes to stdout @done(23-08-20 10:53)
   ☐ test on macOS & linux
 
 support styles:
-  ☐ instead of fg, bg color, add a style enum (w/ bold, italic, underline, etc)
+  ✔ instead of fg, bg color, add a style enum (w/ bold, italic, underline, etc) @done(23-08-20 10:53)
   ☐ add a fmt_str! macro that supports styles (attributes and colors)
   ☐ change `FormattedString` to support `vec![style]`
 

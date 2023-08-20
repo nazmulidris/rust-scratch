@@ -22,23 +22,23 @@ fn main() {
     {
         println!(
             "fg_color_ansi256: {0}foo{1}",
-            make_sgr_code(SgrCode::ForegroundAnsi256(150)),
-            make_sgr_code(SgrCode::Reset),
+            SgrCode::ForegroundAnsi256(150),
+            SgrCode::Reset,
         );
         println!(
             "fg_color_rgb: {0}foo{1}",
-            make_sgr_code(SgrCode::ForegroundRGB(175, 215, 135)),
-            make_sgr_code(SgrCode::Reset),
+            (SgrCode::ForegroundRGB(175, 215, 135)),
+            (SgrCode::Reset),
         );
         println!(
             "bg_color_ansi256: {0}foo{1}",
-            make_sgr_code(SgrCode::BackgroundAnsi256(150)),
-            make_sgr_code(SgrCode::Reset),
+            SgrCode::BackgroundAnsi256(150),
+            SgrCode::Reset,
         );
         println!(
             "bg_color_rgb: {0}foo{1}",
-            make_sgr_code(SgrCode::BackgroundRGB(175, 215, 135)),
-            make_sgr_code(SgrCode::Reset),
+            SgrCode::BackgroundRGB(175, 215, 135),
+            SgrCode::Reset,
         );
     }
 
@@ -46,17 +46,21 @@ fn main() {
     {
         color_support_override_set(ColorSupportOverride::Ansi256);
 
-        let eg_1 = FormattedString {
+        let eg_1 = AnsiStyledText {
             text: "Hello",
-            foreground: Color::Rgb(0, 0, 0),
-            background: Color::Rgb(1, 1, 1),
+            style: &[
+                Style::Foreground(Color::Rgb(0, 0, 0)),
+                Style::Background(Color::Rgb(1, 1, 1)),
+            ],
         };
         println!("ansi256 override: eg_1: {0}", eg_1);
 
-        let eg_2 = FormattedString {
+        let eg_2 = AnsiStyledText {
             text: "World",
-            foreground: Color::Ansi256(150),
-            background: Color::Rgb(1, 1, 1),
+            style: &[
+                Style::Foreground(Color::Ansi256(150)),
+                Style::Background(Color::Rgb(1, 1, 1)),
+            ],
         };
         println!("ansi256 override: eg_2: {0}", eg_2);
     }
@@ -65,17 +69,21 @@ fn main() {
     {
         color_support_override_set(ColorSupportOverride::Truecolor);
 
-        let eg_1 = FormattedString {
+        let eg_1 = AnsiStyledText {
             text: "Hello",
-            foreground: Color::Rgb(0, 0, 0),
-            background: Color::Rgb(1, 1, 1),
+            style: &[
+                Style::Foreground(Color::Rgb(0, 0, 0)),
+                Style::Background(Color::Rgb(1, 1, 1)),
+            ],
         };
         println!("truecolor override: eg_1: {0}", eg_1);
 
-        let eg_2 = FormattedString {
+        let eg_2 = AnsiStyledText {
             text: "World",
-            foreground: Color::Ansi256(150),
-            background: Color::Rgb(1, 1, 1),
+            style: &[
+                Style::Foreground(Color::Ansi256(150)),
+                Style::Background(Color::Rgb(1, 1, 1)),
+            ],
         };
         println!("truecolor override: eg_2: {0}", eg_2);
     }
@@ -84,17 +92,21 @@ fn main() {
     {
         color_support_override_set(ColorSupportOverride::NotSet);
 
-        let eg_1 = FormattedString {
+        let eg_1 = AnsiStyledText {
             text: "Hello",
-            foreground: Color::Rgb(0, 0, 0),
-            background: Color::Rgb(1, 1, 1),
+            style: &[
+                Style::Foreground(Color::Rgb(0, 0, 0)),
+                Style::Background(Color::Rgb(1, 1, 1)),
+            ],
         };
         println!("no override set: eg_1: {0}", eg_1);
 
-        let eg_2 = FormattedString {
+        let eg_2 = AnsiStyledText {
             text: "World",
-            foreground: Color::Ansi256(150),
-            background: Color::Rgb(1, 1, 1),
+            style: &[
+                Style::Foreground(Color::Ansi256(150)),
+                Style::Background(Color::Rgb(1, 1, 1)),
+            ],
         };
         println!("no override set: eg_2: {0}", eg_2);
     }

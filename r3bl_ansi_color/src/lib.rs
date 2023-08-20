@@ -23,13 +23,13 @@
 
 // Attach.
 pub mod ansi_escape_codes;
+pub mod ansi_styled_text;
 pub mod color;
 pub mod color_support_override;
 pub mod convert;
-pub mod format;
 
 pub use ansi_escape_codes::*;
+pub use ansi_styled_text::*;
 pub use color::*;
 pub use color_support_override::*;
 pub use convert::*;
-pub use format::*;

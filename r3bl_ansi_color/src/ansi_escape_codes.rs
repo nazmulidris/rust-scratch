@@ -38,26 +38,37 @@ pub enum SgrCode {
     BackgroundRGB(u8, u8, u8),
 }
 
-/// SGR: set graphics mode command.
-/// More info:
-/// - <https://notes.burke.libbey.me/ansi-escape-codes/>
-/// - <https://commons.wikimedia.org/wiki/File:Xterm_256color_chart.svg>
-#[rustfmt::skip]
-pub fn make_sgr_code(sgr_code: SgrCode) -> String {
-    match sgr_code {
-        SgrCode::Reset      => format!("{CSI}0{SGR}"),
-        SgrCode::Bold       => format!("{CSI}1{SGR}"),
-        SgrCode::Dim        => format!("{CSI}2{SGR}"),
-        SgrCode::Italic     => format!("{CSI}3{SGR}"),
-        SgrCode::Underline  => format!("{CSI}4{SGR}"),
-        SgrCode::Blink      => format!("{CSI}5{SGR}"),
-        SgrCode::Invert     => format!("{CSI}6{SGR}"),
-        SgrCode::Hidden     => format!("{CSI}7{SGR}"),
-        SgrCode::Strike     => format!("{CSI}8{SGR}"),
-        SgrCode::ForegroundAnsi256(index) => format!("{CSI}38;5;{index}{SGR}"),
-        SgrCode::BackgroundAnsi256(index) => format!("{CSI}48;5;{index}{SGR}"),
-        SgrCode::ForegroundRGB(r, g, b) => format!("{CSI}38;2;{r};{g};{b}{SGR}"),
-        SgrCode::BackgroundRGB(r, g, b) => format!("{CSI}48;2;{r};{g};{b}{SGR}"),
+pub mod sgr_code_impl {
+    use crate::*;
+    use std::fmt::{Display, Formatter, Result};
+
+    impl Display for SgrCode {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            write!(f, "{}", make_sgr_code(*self))
+        }
+    }
+
+    /// SGR: set graphics mode command.
+    /// More info:
+    /// - <https://notes.burke.libbey.me/ansi-escape-codes/>
+    /// - <https://commons.wikimedia.org/wiki/File:Xterm_256color_chart.svg>
+    #[rustfmt::skip]
+    fn make_sgr_code(sgr_code: SgrCode) -> String {
+        match sgr_code {
+            SgrCode::Reset      => format!("{CSI}0{SGR}"),
+            SgrCode::Bold       => format!("{CSI}1{SGR}"),
+            SgrCode::Dim        => format!("{CSI}2{SGR}"),
+            SgrCode::Italic     => format!("{CSI}3{SGR}"),
+            SgrCode::Underline  => format!("{CSI}4{SGR}"),
+            SgrCode::Blink      => format!("{CSI}5{SGR}"),
+            SgrCode::Invert     => format!("{CSI}6{SGR}"),
+            SgrCode::Hidden     => format!("{CSI}7{SGR}"),
+            SgrCode::Strike     => format!("{CSI}8{SGR}"),
+            SgrCode::ForegroundAnsi256(index) => format!("{CSI}38;5;{index}{SGR}"),
+            SgrCode::BackgroundAnsi256(index) => format!("{CSI}48;5;{index}{SGR}"),
+            SgrCode::ForegroundRGB(r, g, b) => format!("{CSI}38;2;{r};{g};{b}{SGR}"),
+            SgrCode::BackgroundRGB(r, g, b) => format!("{CSI}48;2;{r};{g};{b}{SGR}"),
+        }
     }
 }
 
@@ -65,29 +76,29 @@ pub fn make_sgr_code(sgr_code: SgrCode) -> String {
 #[cfg(test)]
 mod tests {
     use super::SgrCode;
-    use crate::ansi_escape_codes::make_sgr_code;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn fg_color_ansi256() {
         let sgr_code = SgrCode::ForegroundAnsi256(150);
-        assert_eq!(make_sgr_code(sgr_code), "\x1b[38;5;150m");
+        assert_eq!(sgr_code.to_string(), "\x1b[38;5;150m");
     }
 
     #[test]
     fn bg_color_ansi256() {
         let sgr_code = SgrCode::BackgroundAnsi256(150);
-        assert_eq!(make_sgr_code(sgr_code), "\x1b[48;5;150m");
+        assert_eq!(sgr_code.to_string(), "\x1b[48;5;150m");
     }
 
     #[test]
     fn fg_color_rgb() {
         let sgr_code = SgrCode::ForegroundRGB(175, 215, 135);
-        assert_eq!(make_sgr_code(sgr_code), "\x1b[38;2;175;215;135m");
+        assert_eq!(sgr_code.to_string(), "\x1b[38;2;175;215;135m");
     }
 
     #[test]
     fn bg_color_rgb() {
         let sgr_code = SgrCode::BackgroundRGB(175, 215, 135);
-        assert_eq!(make_sgr_code(sgr_code), "\x1b[48;2;175;215;135m");
+        assert_eq!(sgr_code.to_string(), "\x1b[48;2;175;215;135m");
     }
 }

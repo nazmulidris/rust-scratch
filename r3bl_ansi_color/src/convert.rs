@@ -268,6 +268,7 @@ pub mod constants {
 mod tests {
     use crate::TransformColor;
     use crate::{Ansi256Color, RgbColor};
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn convert_ansi265_into_rgb() {
