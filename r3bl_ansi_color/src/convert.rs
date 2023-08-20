@@ -17,7 +17,6 @@
 
 //! More info:
 //! - <https://tintin.mudhalla.net/info/256color/>
-//! - <https://github.com/Qix-/color-convert/>
 //! - <https://talyian.github.io/ansicolors/>
 
 use crate::{Ansi256Color, RgbColor};

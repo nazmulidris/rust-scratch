@@ -21,7 +21,7 @@ fn main() {
     // Print a string w/ ANSI color codes.
     {
         AnsiStyledText {
-            text: "Print a formatted string w/ ANSI color codes.",
+            text: "Print a formatted (bold, italic, underline) string w/ ANSI color codes.",
             style: &[
                 Style::Bold,
                 Style::Italic,
@@ -33,8 +33,9 @@ fn main() {
         .println();
 
         AnsiStyledText {
-            text: "Overline and strikethrough line.",
+            text: "Dim, Overline and Strikethrough line.",
             style: &[
+                Style::Dim,
                 Style::Strikethrough,
                 Style::Overline,
                 Style::Foreground(Color::Rgb(200, 50, 50)),
@@ -47,69 +48,48 @@ fn main() {
     // Set the color support override to ANSI 256 color mode.
     {
         color_support_override_set(ColorSupportOverride::Ansi256);
-
-        let eg_1 = AnsiStyledText {
-            text: "Hello",
-            style: &[
-                Style::Foreground(Color::Rgb(0, 0, 0)),
-                Style::Background(Color::Rgb(1, 1, 1)),
-            ],
-        };
-        println!("ansi256 override: eg_1: {0}", eg_1);
-
-        let eg_2 = AnsiStyledText {
-            text: "World",
-            style: &[
-                Style::Foreground(Color::Ansi256(150)),
-                Style::Background(Color::Rgb(1, 1, 1)),
-            ],
-        };
-        println!("ansi256 override: eg_2: {0}", eg_2);
+        print_text("> Force ANSI 256 color mode");
     }
 
     // Set the color support override to truecolor mode.
     {
         color_support_override_set(ColorSupportOverride::Truecolor);
-
-        let eg_1 = AnsiStyledText {
-            text: "Hello",
-            style: &[
-                Style::Foreground(Color::Rgb(0, 0, 0)),
-                Style::Background(Color::Rgb(1, 1, 1)),
-            ],
-        };
-        println!("truecolor override: eg_1: {0}", eg_1);
-
-        let eg_2 = AnsiStyledText {
-            text: "World",
-            style: &[
-                Style::Foreground(Color::Ansi256(150)),
-                Style::Background(Color::Rgb(1, 1, 1)),
-            ],
-        };
-        println!("truecolor override: eg_2: {0}", eg_2);
+        print_text("> Force truecolor mode");
     }
 
     // Use runtime detection to determine the color support.
     {
         color_support_override_set(ColorSupportOverride::NotSet);
-
-        let eg_1 = AnsiStyledText {
-            text: "Hello",
-            style: &[
-                Style::Foreground(Color::Rgb(0, 0, 0)),
-                Style::Background(Color::Rgb(1, 1, 1)),
-            ],
-        };
-        println!("no override set: eg_1: {0}", eg_1);
-
-        let eg_2 = AnsiStyledText {
-            text: "World",
-            style: &[
-                Style::Foreground(Color::Ansi256(150)),
-                Style::Background(Color::Rgb(1, 1, 1)),
-            ],
-        };
-        println!("no override set: eg_2: {0}", eg_2);
+        print_text("> Runtime detection of color support");
     }
+}
+
+fn print_text(msg: &str) {
+    AnsiStyledText {
+        text: msg,
+        style: &[
+            Style::Underline,
+            Style::Foreground(Color::Rgb(200, 200, 1)),
+            Style::Background(Color::Rgb(100, 60, 150)),
+        ],
+    }
+    .println();
+
+    let eg_1 = AnsiStyledText {
+        text: "Hello",
+        style: &[
+            Style::Foreground(Color::Rgb(100, 60, 150)),
+            Style::Background(Color::Rgb(100, 200, 50)),
+        ],
+    };
+    println!("eg_1: {0}", eg_1);
+
+    let eg_2 = AnsiStyledText {
+        text: "World",
+        style: &[
+            Style::Foreground(Color::Ansi256(150)),
+            Style::Background(Color::Rgb(50, 50, 100)),
+        ],
+    };
+    println!("eg_2: {0}", eg_2);
 }

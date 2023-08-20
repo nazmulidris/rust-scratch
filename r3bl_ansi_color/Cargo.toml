@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 pretty_assertions = "1.2.1"
 concolor-query = "0.3.3"
+
