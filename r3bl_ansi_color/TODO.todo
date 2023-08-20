@@ -9,6 +9,9 @@ convert colors to ANSI256:
   ✔ convert rgb to ansi 256 color @done(23-08-19 12:31)
   ✔ convert ansi 256 color to rgb @done(23-08-19 12:31)
 
+testing:
+  ✔ add color support override for testing @done(23-08-19 20:00)
+
 output colors to stdout:
   ☐ output ANSI escape codes to stdout
   ☐ test on macOS & linux

@@ -18,29 +18,57 @@
 use r3bl_ansi_color::*;
 
 fn main() {
-    let eg_1 = FormattedString {
-        text: "Hello",
-        foreground_color: &RgbColor {
-            red: 0,
-            green: 0,
-            blue: 0,
-        },
-        background_color: &RgbColor {
-            red: 1,
-            green: 1,
-            blue: 1,
-        },
-    };
-    println!("eg_1: {0}", eg_1);
+    {
+        color_support_override_set(ColorSupportOverride::Ansi256);
 
-    let eg_2 = FormattedString {
-        text: "World",
-        foreground_color: &Ansi256Color { index: 150 },
-        background_color: &RgbColor {
-            red: 1,
-            green: 1,
-            blue: 1,
-        },
-    };
-    println!("eg_2: {0}", eg_2);
+        let eg_1 = FormattedString {
+            text: "Hello",
+            foreground: Color::Rgb(0, 0, 0),
+            background: Color::Rgb(1, 1, 1),
+        };
+        println!("ansi256 override: eg_1: {0}", eg_1);
+
+        let eg_2 = FormattedString {
+            text: "World",
+            foreground: Color::Ansi256(150),
+            background: Color::Rgb(1, 1, 1),
+        };
+        println!("ansi256 override: eg_2: {0}", eg_2);
+    }
+
+    {
+        color_support_override_set(ColorSupportOverride::Truecolor);
+
+        let eg_1 = FormattedString {
+            text: "Hello",
+            foreground: Color::Rgb(0, 0, 0),
+            background: Color::Rgb(1, 1, 1),
+        };
+        println!("truecolor override: eg_1: {0}", eg_1);
+
+        let eg_2 = FormattedString {
+            text: "World",
+            foreground: Color::Ansi256(150),
+            background: Color::Rgb(1, 1, 1),
+        };
+        println!("truecolor override: eg_2: {0}", eg_2);
+    }
+
+    {
+        color_support_override_set(ColorSupportOverride::NotSet);
+
+        let eg_1 = FormattedString {
+            text: "Hello",
+            foreground: Color::Rgb(0, 0, 0),
+            background: Color::Rgb(1, 1, 1),
+        };
+        println!("no override set: eg_1: {0}", eg_1);
+
+        let eg_2 = FormattedString {
+            text: "World",
+            foreground: Color::Ansi256(150),
+            background: Color::Rgb(1, 1, 1),
+        };
+        println!("no override set: eg_2: {0}", eg_2);
+    }
 }

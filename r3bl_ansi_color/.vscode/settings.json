@@ -23,6 +23,7 @@
     "commonerror",
     "commonresult",
     "componentregistry",
+    "concolor",
     "consts",
     "creds",
     "csvp",

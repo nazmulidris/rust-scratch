@@ -15,73 +15,175 @@
  *   limitations under the License.
  */
 
-use std::fmt;
-
-use crate::TransformColor;
+use crate::*;
 
 pub struct FormattedString<'a> {
     pub text: &'a str,
-    pub foreground_color: &'a dyn TransformColor,
-    pub background_color: &'a dyn TransformColor,
+    pub foreground: Color,
+    pub background: Color,
 }
 
-// https://doc.rust-lang.org/std/fmt/trait.Display.html
-impl fmt::Display for FormattedString<'_> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let fg = self.foreground_color.as_rgb();
-        let bg = self.background_color.as_rgb();
-
-        // TODO: replace w/ ANSI color codes emitted to stdout
-        write!(
-            formatter,
-            "(text: {}, fg: {},{},{}, bg: {},{},{})",
-            self.text, fg.red, fg.green, fg.blue, bg.red, bg.green, bg.blue
-        )
+impl<'a> FormattedString<'a> {
+    pub fn foreground_color(&self) -> &Color {
+        &self.foreground
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::FormattedString;
+mod formatted_string_impl {
+    use crate::{
+        color_support_override_get, ColorSupportOverride, FormattedString, TransformColor,
+    };
+    use std::fmt::{Display, Formatter, Result};
 
-    #[test]
-    fn test_formatted_string_creation() -> Result<(), String> {
-        use crate::RgbColor;
+    // https://doc.rust-lang.org/std/fmt/trait.Display.html
+    impl Display for FormattedString<'_> {
+        fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
+            let color_support_override =
+                if color_support_override_get() == ColorSupportOverride::NotSet {
+                    if concolor_query::truecolor() {
+                        ColorSupportOverride::Truecolor
+                    } else {
+                        ColorSupportOverride::Ansi256
+                    }
+                } else {
+                    color_support_override_get()
+                };
 
-        let eg_1 = FormattedString {
-            text: "Hello",
-            foreground_color: &RgbColor {
-                red: 0,
-                green: 0,
-                blue: 0,
-            },
-            background_color: &RgbColor {
-                red: 1,
-                green: 1,
-                blue: 1,
-            },
-        };
+            // TODO: replace w/ ANSI color codes emitted to stdout
+            match color_support_override {
+                ColorSupportOverride::Ansi256 => {
+                    // ANSI 256 color mode.
+                    let fg = self.foreground.as_ansi256();
+                    let bg = self.background.as_ansi256();
+                    write!(
+                        formatter,
+                        "(text: {}, fg: {}, bg: {})",
+                        self.text, fg.index, bg.index
+                    )
+                }
+                _ => {
+                    // True color mode.
+                    let fg = self.foreground.as_rgb();
+                    let bg = self.background.as_rgb();
+                    write!(
+                        formatter,
+                        "(text: {}, fg: {},{},{}, bg: {},{},{})",
+                        self.text, fg.red, fg.green, fg.blue, bg.red, bg.green, bg.blue
+                    )
+                }
+            }
+        }
+    }
 
-        assert_eq!(
-            format!("{0}", eg_1),
-            "(text: Hello, fg: 0,0,0, bg: 1,1,1)".to_string()
-        );
+    #[cfg(test)]
+    mod tests {
+        use crate::*;
 
-        let eg_2 = FormattedString {
-            text: "World",
-            foreground_color: &crate::Ansi256Color { index: 150 },
-            background_color: &RgbColor {
-                red: 1,
-                green: 1,
-                blue: 1,
-            },
-        };
+        #[test]
+        fn test_formatted_string_creation_ansi256() -> Result<(), String> {
+            color_support_override_set(ColorSupportOverride::Ansi256);
+            let eg_1 = FormattedString {
+                text: "Hello",
+                foreground: Color::Rgb(0, 0, 0),
+                background: Color::Rgb(1, 1, 1),
+            };
 
-        assert_eq!(
-            format!("{0}", eg_2),
-            "(text: World, fg: 175,215,135, bg: 1,1,1)".to_string()
-        );
+            assert_eq!(
+                format!("{0}", eg_1),
+                "(text: Hello, fg: 16, bg: 16)".to_string()
+            );
 
-        Ok(())
+            let eg_2 = FormattedString {
+                text: "World",
+                foreground: Color::Ansi256(150),
+                background: Color::Rgb(1, 1, 1),
+            };
+
+            assert_eq!(
+                format!("{0}", eg_2),
+                "(text: World, fg: 150, bg: 16)".to_string()
+            );
+
+            Ok(())
+        }
+
+        #[test]
+        fn test_formatted_string_creation_truecolor() -> Result<(), String> {
+            color_support_override_set(ColorSupportOverride::Truecolor);
+            let eg_1 = FormattedString {
+                text: "Hello",
+                foreground: Color::Rgb(0, 0, 0),
+                background: Color::Rgb(1, 1, 1),
+            };
+
+            assert_eq!(
+                format!("{0}", eg_1),
+                "(text: Hello, fg: 0,0,0, bg: 1,1,1)".to_string()
+            );
+
+            let eg_2 = FormattedString {
+                text: "World",
+                foreground: Color::Ansi256(150),
+                background: Color::Rgb(1, 1, 1),
+            };
+
+            assert_eq!(
+                format!("{0}", eg_2),
+                "(text: World, fg: 175,215,135, bg: 1,1,1)".to_string()
+            );
+
+            Ok(())
+        }
+    }
+}
+
+/// More info: <https://doc.rust-lang.org/reference/tokens.html#ascii-escapes>
+pub mod ansi_escape_codes {
+    pub const CSI: &str = "\x1b[";
+    pub const SGR: &str = "m";
+    pub const RESET: &str = "\x1b[0m";
+
+    pub enum SgrCode {
+        Reset,
+        Bold,
+        Dim,
+        Italic,
+        Underline,
+        Blink,
+        Invert,
+        Hidden,
+        Strike,
+        ForegroundAnsi256(u8),
+        BackgroundAnsi256(u8),
+    }
+
+    pub fn make_sgr_code(sgr_code: SgrCode) -> String {
+        match sgr_code {
+            SgrCode::Reset => format!("{}{}{}", CSI, 0, SGR),
+            SgrCode::Bold => format!("{}{}{}", CSI, 1, SGR),
+            SgrCode::Dim => format!("{}{}{}", CSI, 2, SGR),
+            SgrCode::Italic => format!("{}{}{}", CSI, 3, SGR),
+            SgrCode::Underline => format!("{}{}{}", CSI, 4, SGR),
+            SgrCode::Blink => format!("{}{}{}", CSI, 5, SGR),
+            SgrCode::Invert => format!("{}{}{}", CSI, 6, SGR),
+            SgrCode::Hidden => format!("{}{}{}", CSI, 7, SGR),
+            SgrCode::Strike => format!("{}{}{}", CSI, 8, SGR),
+            SgrCode::ForegroundAnsi256(arg) => format!("{}{}{}{}", CSI, "38;5;", arg, SGR),
+            SgrCode::BackgroundAnsi256(arg) => format!("{}{}{}{}", CSI, "48;5;", arg, SGR),
+        }
+    }
+
+    // TODO: implement these tests
+    #[cfg(test)]
+    mod tests {
+        #[test]
+        fn ansi_fg_color() {
+            todo!()
+        }
+
+        #[test]
+        fn ansi_bg_color() {
+            todo!()
+        }
     }
 }

@@ -25,6 +25,40 @@ pub trait TransformColor {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Color {
+    Rgb(u8, u8, u8),
+    Ansi256(u8),
+}
+
+mod color_impl {
+    use crate::*;
+
+    impl TransformColor for Color {
+        fn as_rgb(&self) -> RgbColor {
+            match self {
+                Color::Rgb(r, g, b) => RgbColor {
+                    red: *r,
+                    green: *g,
+                    blue: *b,
+                },
+                Color::Ansi256(index) => Ansi256Color { index: *index }.as_rgb(),
+            }
+        }
+
+        fn as_ansi256(&self) -> Ansi256Color {
+            match self {
+                Color::Rgb(red, green, blue) => convert_rgb_into_ansi256(RgbColor {
+                    red: *red,
+                    green: *green,
+                    blue: *blue,
+                }),
+                Color::Ansi256(index) => Ansi256Color { index: *index },
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RgbColor {
     pub red: u8,
     pub green: u8,
