@@ -15,6 +15,7 @@
  *   limitations under the License.
  */
 
-fn main() {
+#[tokio::main]
+pub async fn main() {
     println!("Hello, world!");
 }
