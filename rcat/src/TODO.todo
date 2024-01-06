@@ -1,0 +1,6 @@
+basics:
+  ✔ use clap to configure CLI args @done(24-01-05 19:10)
+    ✔ IpAddr (complex type using `default_value`) @done(24-01-05 19:12)
+    ✔ u16 (primitive data type `default_value_t`) @done(24-01-05 19:12)
+  ✔ create client @done(24-01-05 19:10)
+  ✔ create server @done(24-01-06 15:29)

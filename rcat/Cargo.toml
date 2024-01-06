@@ -1,10 +1,10 @@
 [package]
 name = "rcat"
 version = "0.1.0"
-authors = ["Eliott Teissonniere <git.eliott@teissonniere.org>"]
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition = "2021"
+about = "A simple Rust netcat clone that uses only TCP"
+author = ["Nazmul Idris <idris@developerlife.com>"]
 
 [dependencies]
-clap = "2"
+clap = { version = "4.4.13", features = ["derive"] }
+crossterm = { version = "0.27.0" }
