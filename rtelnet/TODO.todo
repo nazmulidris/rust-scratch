@@ -1,0 +1,23 @@
+rtelnet:
+  ✔ use femme & log @done(24-01-07 08:50)
+  ✔ rewrite it using BufRead and BufWrite, and make loop constructs clear @done(24-01-07 08:50)
+  ☐ variant of `rcat` which is multithreaded (not async) and use `BufReader`
+
+one server, multiple clients:
+  ☐ make it async using tokio
+
+state management:
+  ☐ introduce process(arc<mutex<state>>, incoming) -> outgoing, and global mutable state in server
+  ☐ introduce local state in client
+  ☐ use mpsc channels for broadcast, sharing messages to topics
+
+json:
+  ☐ use serde to work w/ json for payloads (incoming and outgoing)
+  ☐ use file system as a prototype
+
+persistence:
+  ☐ sqlite
+  ☐ sqlx
+
+mpsc channels, broadcast, websocket:
+  ☐ connect multiple clients together in a swarm

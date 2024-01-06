@@ -1,10 +1,11 @@
 [package]
-name = "rcat"
+name = "rtelnet"
 version = "0.1.0"
 edition = "2021"
-about = "A simple Rust netcat clone that uses only TCP"
+about = "A simple Rust telnet clone that uses only TCP"
 authors = ["Nazmul Idris <idris@developerlife.com>"]
 
 [dependencies]
 clap = { version = "4.4.13", features = ["derive"] }
-crossterm = { version = "0.27.0" }
+femme = { version = "2.2.1" }
+log = { version = "0.4.20" }
