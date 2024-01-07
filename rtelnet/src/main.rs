@@ -105,8 +105,15 @@ mod server {
             log::info!("Waiting for a incoming connection...");
             let (tcp_stream, ..) = tcp_listener.accept()?; // This is a blocking call.
 
-            // Only handle 1 connection at a time on main thread.
-            let _ = handle_connection(tcp_stream)?;
+            // Spawn a new thread to handle this connection.
+            thread::spawn(|| match handle_connection(tcp_stream) {
+                Ok(_) => {
+                    log::info!("Successfully closed connection to client...");
+                }
+                Err(_) => {
+                    log::error!("Problem with client connection...");
+                }
+            });
         }
     }
 
