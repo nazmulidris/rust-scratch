@@ -1,0 +1,19 @@
+one server, multiple clients:
+  ☐ make it async using tokio
+
+state management:
+  ☐ introduce process(arc<mutex<state>>, incoming) -> outgoing, and global mutable state in server
+  ☐ introduce local state in client
+  ☐ use mpsc channels for broadcast, sharing messages to topics
+
+json:
+  ☐ use serde to work w/ json for payloads (incoming and outgoing)
+  ☐ use file system as a prototype
+
+persistence:
+  ☐ kv: <https://docs.rs/kv/latest/kv/#getting-started>
+  ☐ sqlite
+  ☐ sqlx
+
+mpsc channels, broadcast, websocket:
+  ☐ connect multiple clients together in a swarm
