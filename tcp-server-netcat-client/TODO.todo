@@ -1,9 +1,11 @@
 one server, multiple clients:
   ☐ make it async using tokio
+  ☐ use channel broadcast to handle state across multiple clients
+  ☐ https://www.youtube.com/watch?v=T2mWg91sx-o&t=1780s
 
 state management:
   ☐ introduce process(arc<mutex<state>>, incoming) -> outgoing, and global mutable state in server
-  ☐ introduce local state in client
+  ☐ introduce local state in client (using kv, below)
   ☐ use mpsc channels for broadcast, sharing messages to topics
 
 json:
