@@ -21,8 +21,8 @@ use r3bl_rs_utils_core::friendly_random_id;
 use r3bl_tui::ColorWheel;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter},
-    net::{TcpListener, TcpStream},
-    sync::broadcast::{self, Sender},
+    net::{tcp::WriteHalf, TcpListener, TcpStream},
+    sync::broadcast::{self, error::RecvError, Sender},
 };
 
 pub type IOResult<T> = std::io::Result<T>;
@@ -89,72 +89,96 @@ async fn handle_client_task(
     let mut reader = BufReader::new(reader);
     let mut writer = BufWriter::new(writer);
 
-    let welcome_msg_for_client = format!("addr: {}, id: {}\n", socket_addr, id);
-    let welcome_msg_for_client = ColorWheel::lolcat_into_string(&welcome_msg_for_client);
+    // Send welcome message to client w/ ids.
+    let welcome_msg_for_client =
+        ColorWheel::lolcat_into_string(&format!("addr: {}, id: {}\n", socket_addr, id));
     writer.write(welcome_msg_for_client.as_bytes()).await?;
     writer.flush().await?;
 
     let mut incoming = String::new();
 
     loop {
+        let tx = tx.clone();
         tokio::select! {
             // Read from broadcast channel.
             result = rx.recv() => {
-                match result {
-                    Ok(it) => {
-                        let msg: MsgType = it;
-                        log::info!("[{}]: channel: {:?}", id, msg);
-                        if msg.socket_addr != socket_addr {
-                            writer.write(msg.payload.as_bytes()).await?;
-                            writer.flush().await?;
-                        }
-                    },
-                    Err(error) => {
-                        log::error!("{:?}", error);
-                    },
-                }
+                read_from_broadcast_channel(result, socket_addr, &mut writer, &id).await?;
             }
 
             // Read from socket.
             network_read_result = reader.read_line(&mut incoming) => {
-                let num_bytes_read = network_read_result?;
-                log::info!(
-                    "[{}]: incoming: {}, size: {}",
-                    id,
-                    incoming.trim(),
-                    num_bytes_read
-                );
-
+                let num_bytes_read: usize = network_read_result?;
                 // EOF check.
                 if num_bytes_read == 0 {
                     break;
                 }
-
-                // Process incoming -> outgoing.
-                let outgoing = process(&incoming);
-
-                // outgoing -> Writer.
-                writer.write(outgoing.as_bytes()).await?;
-                writer.flush().await?;
-
-                // Broadcast outgoing to the channel.
-                let _ = tx.send(MsgType{
-                    socket_addr: socket_addr,
-                    payload: incoming.clone(),
-                    from_id: id.clone()
-                });
-
-                log::info!(
-                    "[{}]: outgoing: {}, size: {}",
-                    id,
-                    outgoing.trim(),
-                    num_bytes_read
-                );
-
+                handle_socket_read(num_bytes_read, &id, &incoming, &mut writer, tx, socket_addr).await?;
                 incoming.clear();
             }
         }
     }
+
+    Ok(())
+}
+
+async fn read_from_broadcast_channel(
+    result: Result<MsgType, RecvError>,
+    socket_addr: SocketAddr,
+    writer: &mut BufWriter<WriteHalf<'_>>,
+    id: &str,
+) -> IOResult<()> {
+    match result {
+        Ok(it) => {
+            let msg: MsgType = it;
+            log::info!("[{}]: channel: {:?}", id, msg);
+            if msg.socket_addr != socket_addr {
+                writer.write(msg.payload.as_bytes()).await?;
+                writer.flush().await?;
+            }
+        }
+        Err(error) => {
+            log::error!("{:?}", error);
+        }
+    }
+
+    Ok(())
+}
+
+async fn handle_socket_read(
+    num_bytes_read: usize,
+    id: &str,
+    incoming: &str,
+    writer: &mut BufWriter<WriteHalf<'_>>,
+    tx: Sender<MsgType>,
+    socket_addr: SocketAddr,
+) -> IOResult<()> {
+    log::info!(
+        "[{}]: incoming: {}, size: {}",
+        id,
+        incoming.trim(),
+        num_bytes_read
+    );
+
+    // Process incoming -> outgoing.
+    let outgoing = process(&incoming);
+
+    // outgoing -> Writer.
+    writer.write(outgoing.as_bytes()).await?;
+    writer.flush().await?;
+
+    // Broadcast outgoing to the channel.
+    let _ = tx.send(MsgType {
+        socket_addr,
+        payload: incoming.to_string(),
+        from_id: id.to_string(),
+    });
+
+    log::info!(
+        "[{}]: outgoing: {}, size: {}",
+        id,
+        outgoing.trim(),
+        num_bytes_read
+    );
 
     Ok(())
 }
