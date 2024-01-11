@@ -1,0 +1,11 @@
+[package]
+name = "tcp-chat-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "*", features = ["full"] }
+femme = { version = "*" }
+log = { version = "*" }
+r3bl_tui = { version = "*" }
+r3bl_rs_utils_core = { version = "*" }
