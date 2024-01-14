@@ -133,11 +133,6 @@ mod server {
                 break;
             }
 
-            // Check for Ctrl+C.
-            // if haystack_contains_needle(&incoming, &defaults::CTRL_C_SEQUENCE.to_vec()) {
-            //     break;
-            // }
-
             // Process.
             let outgoing = process(&incoming);
 
@@ -196,6 +191,11 @@ fn start_client(socket_address: String) -> IOResult<()> {
             let _ = stdin().read_line(&mut it)?;
             it.as_bytes().to_vec()
         };
+
+        // Exit if EOF (Ctrl+D pressed).
+        if outgoing.len() == 0 {
+            break;
+        }
 
         // Tx user input to writer.
         let _ = writer.write(&outgoing)?;
