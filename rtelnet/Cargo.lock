@@ -1123,9 +1123,9 @@ dependencies = [
 
 [[package]]
 name = "r3bl_tui"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78e42a662c118ebb372be53e3350e0536de8d138f146df8035972f5cdef5e375"
+checksum = "1d56b8d3fc10d48a4120a947a3a94924c48b474f78ea282c834ff2dec575fde3"
 dependencies = [
  "chrono",
  "colorgrad",
@@ -1201,7 +1201,6 @@ dependencies = [
  "femme",
  "log",
  "r3bl_ansi_color",
- "r3bl_rs_utils_core",
  "r3bl_tui",
 ]
 

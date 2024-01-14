@@ -17,8 +17,7 @@
 
 use clap::{Parser, Subcommand};
 use r3bl_ansi_color::SgrCode;
-use r3bl_rs_utils_core::UnicodeString;
-use r3bl_tui::{ColorWheel, GradientGenerationPolicy, TextColorizationPolicy};
+use r3bl_tui::ColorWheel;
 use std::thread;
 use std::{
     io::{stdin, BufRead, BufReader, BufWriter, Write},
@@ -34,7 +33,6 @@ use defaults::*;
 mod defaults {
     pub const DEFAULT_PORT: u16 = 3000;
     pub const DEFAULT_ADDRESS: &str = "127.0.0.1";
-    pub const CTRL_C_SEQUENCE: [u8; 5] = [255, 244, 255, 253, 6];
 }
 
 use clap_config::*;
@@ -136,9 +134,9 @@ mod server {
             }
 
             // Check for Ctrl+C.
-            if haystack_contains_needle(&incoming, &defaults::CTRL_C_SEQUENCE.to_vec()) {
-                break;
-            }
+            // if haystack_contains_needle(&incoming, &defaults::CTRL_C_SEQUENCE.to_vec()) {
+            //     break;
+            // }
 
             // Process.
             let outgoing = process(&incoming);
@@ -175,23 +173,13 @@ mod server {
         let outgoing = incoming.to_string();
 
         // Colorize it w/ a gradient.
-        let outgoing = ColorWheel::default().colorize_into_string(
-            &UnicodeString::from(outgoing),
-            GradientGenerationPolicy::ReuseExistingGradientAndResetIndex,
-            TextColorizationPolicy::ColorEachCharacter(None),
-        );
+        let outgoing = ColorWheel::lolcat_into_string(&outgoing);
 
         // Generate outgoing response. Add newline to the end of output (so client can process it).
         let outgoing = format!("{}\n", outgoing);
 
         // Return outgoing payload.
         outgoing.as_bytes().to_vec()
-    }
-
-    fn haystack_contains_needle(haystack: &Vec<u8>, needle: &Vec<u8>) -> bool {
-        haystack
-            .windows(needle.len())
-            .any(|window| window == needle)
     }
 }
 
@@ -220,6 +208,11 @@ fn start_client(socket_address: String) -> IOResult<()> {
             it
         };
 
+        // Check for EOF, and exit.
+        if incoming.len() == 0 {
+            break;
+        }
+
         let display_msg = String::from_utf8_lossy(&incoming);
         let display_msg = display_msg.trim();
 
@@ -241,4 +234,6 @@ fn start_client(socket_address: String) -> IOResult<()> {
             reset,
         );
     }
+
+    Ok(())
 }
