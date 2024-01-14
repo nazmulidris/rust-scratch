@@ -34,14 +34,26 @@ pub struct MsgType {
     pub from_id: String,
 }
 
-// Overview:
-// Create TcpListener and accept socket connection
-// Create a tcp stream
-// Get reader / writer from stream
-// Loop:
-//   - read incoming from reader
-//   - process(incoming) => outgoing
-//   - broadcast incoming to others connected clients
+/// We will implement the following algorithm for our server in our main function:
+/// 1. Create a broadcast channel. It will be shared by all the client tasks.
+/// 2. Create `TcpListener` and bind to an address & port.
+/// 3. Loop:
+///    - Accept socket connection, and get its `TCPStream`.
+///    - Use `tokio::spawn()` to spawn a task to handle this client connection and its
+///      `TCPStream`.
+///
+/// In the task that handles the connection:
+/// 1. Get `BufReader` & `BufWriter` from the `TCPStream`. The reader and writer allow us to
+///    read data from and write data to the client socket.
+/// 2. Loop:
+///    - Use `tokio::select!` to concurrently:
+///       - Read from broadcast channel (via `recv()`):
+///          - Send the message to the client (only if it is from a different client) over the
+///            socket (use `BufWriter` to write the message).
+///       - Read from socket (via `BufReader::read_line()`):
+///          - Read `incoming` from reader.
+///          - Call `process(incoming)` and generate `outgoing`.
+///          - Send `incoming` message to other connected clients (via the broadcast channel).
 #[tokio::main]
 pub async fn main() -> IOResult<()> {
     let addr = "127.0.0.1:3000";
