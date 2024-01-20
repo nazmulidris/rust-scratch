@@ -1,0 +1,16 @@
+# get kv working:
+  ✔ choose what format to use for serde: bincode, not: JSON, CBOR @done(24-01-20 19:41)
+  ✔ CRUD the kv @done(24-01-20 19:41)
+
+# figure out how miette works:
+  ☐ use miette
+
+# client / server api:
+  ☐ implement protocol to length-prefixing of binary data payloads
+    - send: send size (u32) as BigEndian (u32::to_be_bytes()), then payload bytes
+    - recv: get size via read_exact (u32::from_be_bytes()) as BigEndian, then get payload bytes read_exact
+    - https://users.rust-lang.org/t/reading-length-payload-from-a-tcpstream/51211
+    - https://bard.google.com/share/33740aa390af
+
+# figure out how tracing works:
+  ☐ use tokio tracing
