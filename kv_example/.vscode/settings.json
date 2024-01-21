@@ -1,6 +1,8 @@
 {
   "cSpell.words": [
     "bincode",
-    "CBOR"
+    "CBOR",
+    "LMDB",
+    "POSIX"
   ]
 }
