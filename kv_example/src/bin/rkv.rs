@@ -16,6 +16,8 @@
  */
 
 //! This sample binary uses the [rkv] crate.
+//! - More about `rkv` crate: <https://docs.rs/rkv/latest/rkv/>
+//! - More about `bincode` crate: <https://docs.rs/bincode/latest/bincode/>
 //!
 //! Create a key value store that stores keys that are type [String], and values that are
 //! type [MyValueType].
@@ -31,14 +33,36 @@
 //! The [Manager] enforces that each process opens the same environment at most once by
 //! caching a handle to each environment that it opens. Use it to retrieve the handle to
 //! an opened environment—or create one if it hasn't already been opened.
+//!
+//! The architecture of this crate is very different from [kv]. Lambda functions are used
+//! to perform operations on the database. This is due to the fact that the [Manager] is
+//! used to cache the handle to the environment, and the [Manager] is a singleton. This
+//! means that the [Manager] is a shared resource, and it is not possible to have multiple
+//! [Manager]s in the same process. This is why the [Manager] is wrapped in a
+//! [std::sync::RwLock] to allow for concurrent access to the [Manager] from multiple
+//! threads.
+//!
+//! Also [rkv::Reader]s and [rkv::Writer]s work closely with each other.
+//! - No readers or writers are allowed, once one writer is active.
+//! - Use a write transaction to mutate the store via a [rkv::Writer]. There can be only
+//!   one writer for a given environment, so opening a second one will block until the
+//!   first completes.
+//! - Use a read transaction to query the store via a [rkv::Reader]. There can be multiple
+//!   concurrent readers for a store, and readers never block on a writer nor other
+//!   readers.
+//!
+//! [bincode] is a crate for encoding and decoding using a tiny binary serialization
+//! strategy. Using it, you can easily go from having an object in memory, quickly
+//! serialize it to bytes, and then deserialize it back just as fast!
 
-use rkv::backend::{BackendEnvironment, SafeMode, SafeModeDatabase, SafeModeEnvironment};
+use crossterm::style::Stylize;
+use rkv::backend::{SafeMode, SafeModeDatabase, SafeModeEnvironment};
 use rkv::{Manager, Rkv, SingleStore, StoreOptions, Value};
 use std::{
     fs,
     io::{Error, ErrorKind},
     path::Path,
-    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    sync::RwLockReadGuard,
 };
 use std::{thread::sleep, time::Duration};
 
@@ -50,7 +74,7 @@ const MY_PAYLOAD_STORE_NAME: &str = "my_payload_bucket";
 fn main() -> MyResult<()> {
     let mut max_count = 5;
     loop {
-        sleep(Duration::from_secs(5));
+        sleep(Duration::from_secs(1));
         println!("---------------------------------");
         perform_db_operations()?;
         max_count -= 1;
@@ -61,40 +85,205 @@ fn main() -> MyResult<()> {
     Ok(())
 }
 
-// fn perform_db_operations_2() -> MyResult<()> {
-//     let db_folder_path = Path::new(MY_DB_FOLDER);
-
-//     let mut manager = Manager::<SafeModeEnvironment>::singleton().write()?;
-
-//     let arc_created = manager.get_or_create(db_folder_path, Rkv::new::<SafeMode>)?;
-
-//     let result_env = arc_created.read();
-//     match result_env {
-//         Ok(env) => {
-//             let store = env.open_single(MY_PAYLOAD_STORE_NAME, StoreOptions::create())?;
-//             Ok(())
-//         }
-//         Err(_) => Err(Box::new(Error::new(ErrorKind::NotFound, "!"))),
-//     }
-// }
-
 fn perform_db_operations() -> MyResult<()> {
-    run_functor_on_db_store(MY_DB_FOLDER, MY_PAYLOAD_STORE_NAME, my_db_functor)?;
+    {
+        let key = format!("key_{}", random_number::<u8>());
+
+        run_functor_on_db_store(
+            MY_DB_FOLDER,
+            MY_PAYLOAD_STORE_NAME,
+            |single_store, environment| {
+                let value = MyValueType {
+                    id: random_number::<f32>(),
+                    description: "first item".into(),
+                    data: vec![random_number::<u8>(), random_number::<u8>()],
+                };
+                write_op(single_store, environment, key.clone(), value.clone())?;
+                println!(
+                    "{}: key: {}, value: {}",
+                    "write_op".red(),
+                    key.clone().dark_magenta(),
+                    format!("{:?}", value).magenta()
+                );
+                Ok(())
+            },
+        )?;
+
+        run_functor_on_db_store(
+            MY_DB_FOLDER,
+            MY_PAYLOAD_STORE_NAME,
+            |single_store, environment| {
+                let maybe_value = read_op(single_store, environment, key.clone())?;
+                if let Some(value) = maybe_value {
+                    println!(
+                        "{}: key: {}, value: {}",
+                        "read_op".green(),
+                        key.clone().dark_blue(),
+                        format!("{:?}", value).blue()
+                    )
+                }
+                Ok(())
+            },
+        )?;
+
+        run_functor_on_db_store(
+            MY_DB_FOLDER,
+            MY_PAYLOAD_STORE_NAME,
+            |single_store, environment| {
+                delete_op(single_store, environment, key.clone())?;
+                println!("{}: key: {}", "delete_op".red(), key.clone().dark_blue());
+                Ok(())
+            },
+        )?;
+
+        sleep(Duration::from_secs(3));
+
+        run_functor_on_db_store(
+            MY_DB_FOLDER,
+            MY_PAYLOAD_STORE_NAME,
+            |single_store, environment| {
+                iter_op(single_store, environment, |key, value| {
+                    println!(
+                        "{}: key: {}, value: {}",
+                        "iter_op".cyan(),
+                        key.clone().dark_blue(),
+                        format!("{:?}", value).blue()
+                    );
+                    Ok(())
+                })
+            },
+        )?;
+
+        run_functor_on_db_store(
+            MY_DB_FOLDER,
+            MY_PAYLOAD_STORE_NAME,
+            |single_store, environment| {
+                clear_op(single_store, environment)?;
+                println!("{}", "clear_op".red());
+                Ok(())
+            },
+        )?;
+    }
+
     Ok(())
 }
 
-pub fn run_functor_on_db_store<'a>(
+pub fn iter_op<F>(
+    store: SingleStore<SafeModeDatabase>,
+    env: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
+    mut functor: F,
+) -> MyResult<()>
+where
+    F: FnMut(/* key */ MyKeyType, /* value */ MyValueType) -> MyResult<()>,
+{
+    let reader = env.read()?;
+    let iter = store.iter_start(&reader)?;
+    for it in iter {
+        if let Ok((key, value)) = it {
+            match (String::from_utf8(key.to_vec()), value) {
+                (Ok(key), Value::Blob(bytes)) => {
+                    let value = bincode::deserialize::<MyValueType>(&bytes)?;
+                    functor(key, value)?;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    Ok(())
+}
+
+pub fn clear_op(
+    store: SingleStore<SafeModeDatabase>,
+    env: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
+) -> MyResult<()> {
+    // Use a write transaction to mutate the store via a `Writer`. There can be only
+    // one writer for a given environment, so opening a second one will block until
+    // the first completes.
+    let mut writer = env.write()?;
+    store.clear(&mut writer)?;
+    writer.commit()?;
+
+    Ok(())
+}
+
+pub fn delete_op(
+    store: SingleStore<SafeModeDatabase>,
+    env: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
+    key: MyKeyType,
+) -> MyResult<()> {
+    // Use a write transaction to mutate the store via a `Writer`. There can be only
+    // one writer for a given environment, so opening a second one will block until
+    // the first completes.
+    let mut writer = env.write()?;
+    store.delete(&mut writer, key)?;
+    writer.commit()?;
+
+    Ok(())
+}
+
+pub fn write_op(
+    store: SingleStore<SafeModeDatabase>,
+    env: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
+    key: MyKeyType,
+    value: MyValueType,
+) -> MyResult<()> {
+    // Use a write transaction to mutate the store via a `Writer`. There can be only
+    // one writer for a given environment, so opening a second one will block until
+    // the first completes.
+    let mut writer = env.write()?;
+    let bytes: Vec<u8> = bincode::serialize(&value)?;
+    store.put(&mut writer, key, &Value::Blob(&bytes))?;
+
+    // You must commit a write transaction before the writer goes out of scope, or the
+    // transaction will abort and the data won't persist.
+    writer.commit()?;
+    Ok(())
+}
+
+pub fn read_op(
+    store: SingleStore<SafeModeDatabase>,
+    env: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
+    key: MyKeyType,
+) -> MyResult<Option<MyValueType>> {
+    // Use a read transaction to query the store via a `Reader`. There can be multiple
+    // concurrent readers for a store, and readers never block on a writer nor other
+    // readers.
+    let reader = env.read()?;
+    let maybe_blob = store.get(&reader, key)?;
+    if let Some(Value::Blob(bytes)) = maybe_blob {
+        let my_value: MyValueType = bincode::deserialize(bytes)?;
+        return Ok(Some(my_value));
+    }
+
+    // A read transaction will automatically close once the reader goes out of scope,
+    // so isn't necessary to close it explicitly, although you can do so by calling
+    // `Reader.abort()`.
+    Ok(None)
+}
+
+/// [FnMut] info: <https://g.co/bard/share/2f53e5a2e611>
+pub fn run_functor_on_db_store<'a, F>(
     db_folder_path: &'a str,
     store_name: &'a str,
-    db_functor: DbFunctor,
-) -> MyResult<()> {
+    mut functor: F,
+) -> MyResult<()>
+where
+    F: FnMut(
+        /* store */ SingleStore<SafeModeDatabase>,
+        /* env */ RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
+    ) -> MyResult<()>,
+{
     // First determine the path to the environment, which is represented on disk as a
     // directory containing two files:
-    //   * a data file containing the key/value stores
-    //   * a lock file containing metadata about current transactions
+    //   * a data file containing the key/value stores.
+    //   * a lock file containing metadata about current transactions.
     let db_folder_path = Path::new(db_folder_path);
     fs::create_dir_all(db_folder_path)?;
 
+    // The `Manager` enforces that each process opens the same environment at most once by
+    // caching a handle to each environment that it opens. Use it to retrieve the handle
+    // to an opened environment—or create one if it hasn't already been opened.
     let mut manager = Manager::<SafeModeEnvironment>::singleton().write()?;
 
     let arc_created = manager.get_or_create(db_folder_path, Rkv::new::<SafeMode>)?;
@@ -102,8 +291,9 @@ pub fn run_functor_on_db_store<'a>(
     let result_env = arc_created.read();
     match result_env {
         Ok(env) => {
+            // Then you can use the environment handle to get a handle to a datastore.
             let store = env.open_single(store_name, StoreOptions::create())?;
-            db_functor(store, env)
+            functor(store, env)
         }
         Err(_) => Err(Box::new(Error::new(
             ErrorKind::NotFound,
@@ -113,16 +303,4 @@ pub fn run_functor_on_db_store<'a>(
             ),
         ))),
     }
-}
-
-pub type DbFunctor = fn(
-    store: SingleStore<SafeModeDatabase>,
-    env: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
-) -> MyResult<()>;
-
-fn my_db_functor(
-    store: SingleStore<SafeModeDatabase>,
-    env: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
-) -> MyResult<()> {
-    Ok(())
 }

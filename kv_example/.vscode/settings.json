@@ -3,6 +3,7 @@
     "bincode",
     "CBOR",
     "LMDB",
-    "POSIX"
+    "POSIX",
+    "thiserror"
   ]
 }
