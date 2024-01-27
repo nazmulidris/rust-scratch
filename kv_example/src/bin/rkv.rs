@@ -25,14 +25,23 @@
 //! This uses a [SafeMode] store and not [LMDB](http://www.lmdb.tech/doc/starting.html),
 //! since the current support for LMDB is limited. The [SafeMode] backend performs well,
 //! with two caveats: the entire database is stored in memory, and write transactions are
-//! synchronously written to disk (only on commit). LMDB supports concurrent access by
-//! [many processes](https://g.co/bard/share/a9a5d101182f) and employs [POSIX file
-//! locking](https://g.co/bard/share/84df29aae2de) to do this. Note that SQLite also
-//! supports access from [multiple processes](https://g.co/bard/share/7b812f2aa616).
+//! synchronously written to disk (only on commit).
+//! - LMDB supports concurrent access by [many
+//!   processes](https://g.co/bard/share/a9a5d101182f) and employs [POSIX file
+//!   locking](https://g.co/bard/share/84df29aae2de) to do this. Note that SQLite also
+//!   supports access from [multiple processes](https://g.co/bard/share/7b812f2aa616).
+//! - The [rkv::backend::BackendEnvironment] is a wrapper around a variety of different
+//!   stores (like [SafeMode] and [LMDB]), and it is used to create a [rkv::Rkv] instance.
 //!
 //! The [Manager] enforces that each process opens the same environment at most once by
 //! caching a handle to each environment that it opens. Use it to retrieve the handle to
 //! an opened environment—or create one if it hasn't already been opened.
+//!
+//! In order to perform CRUD operations on the database backend, both the following are
+//! needed:
+//! 1) environment: [rkv::Rkv<<SafeModeEnvironment>>].
+//! 2) store: [SingleStore<SafeModeDatabase>]. A [SingleStore] allows key value pairs
+//!    where there may only be 1 value for a key to be stored.
 //!
 //! The architecture of this crate is very different from [kv]. Lambda functions are used
 //! to perform operations on the database. This is due to the fact that the [Manager] is
@@ -89,7 +98,7 @@ fn perform_db_operations() -> MyResult<()> {
     {
         let key = format!("key_{}", random_number::<u8>());
 
-        run_functor_on_db_store(
+        run_lambda_on_db_store(
             MY_DB_FOLDER,
             MY_PAYLOAD_STORE_NAME,
             |single_store, environment| {
@@ -109,7 +118,7 @@ fn perform_db_operations() -> MyResult<()> {
             },
         )?;
 
-        run_functor_on_db_store(
+        run_lambda_on_db_store(
             MY_DB_FOLDER,
             MY_PAYLOAD_STORE_NAME,
             |single_store, environment| {
@@ -126,7 +135,7 @@ fn perform_db_operations() -> MyResult<()> {
             },
         )?;
 
-        run_functor_on_db_store(
+        run_lambda_on_db_store(
             MY_DB_FOLDER,
             MY_PAYLOAD_STORE_NAME,
             |single_store, environment| {
@@ -136,9 +145,9 @@ fn perform_db_operations() -> MyResult<()> {
             },
         )?;
 
-        sleep(Duration::from_secs(3));
+        sleep(Duration::from_secs(1));
 
-        run_functor_on_db_store(
+        run_lambda_on_db_store(
             MY_DB_FOLDER,
             MY_PAYLOAD_STORE_NAME,
             |single_store, environment| {
@@ -154,7 +163,7 @@ fn perform_db_operations() -> MyResult<()> {
             },
         )?;
 
-        run_functor_on_db_store(
+        run_lambda_on_db_store(
             MY_DB_FOLDER,
             MY_PAYLOAD_STORE_NAME,
             |single_store, environment| {
@@ -170,13 +179,13 @@ fn perform_db_operations() -> MyResult<()> {
 
 pub fn iter_op<F>(
     store: SingleStore<SafeModeDatabase>,
-    env: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
+    environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
     mut functor: F,
 ) -> MyResult<()>
 where
     F: FnMut(/* key */ MyKeyType, /* value */ MyValueType) -> MyResult<()>,
 {
-    let reader = env.read()?;
+    let reader = environment.read()?;
     let iter = store.iter_start(&reader)?;
     for it in iter {
         if let Ok((key, value)) = it {
@@ -195,12 +204,12 @@ where
 
 pub fn clear_op(
     store: SingleStore<SafeModeDatabase>,
-    env: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
+    environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
 ) -> MyResult<()> {
     // Use a write transaction to mutate the store via a `Writer`. There can be only
     // one writer for a given environment, so opening a second one will block until
     // the first completes.
-    let mut writer = env.write()?;
+    let mut writer = environment.write()?;
     store.clear(&mut writer)?;
     writer.commit()?;
 
@@ -209,13 +218,13 @@ pub fn clear_op(
 
 pub fn delete_op(
     store: SingleStore<SafeModeDatabase>,
-    env: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
+    environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
     key: MyKeyType,
 ) -> MyResult<()> {
     // Use a write transaction to mutate the store via a `Writer`. There can be only
     // one writer for a given environment, so opening a second one will block until
     // the first completes.
-    let mut writer = env.write()?;
+    let mut writer = environment.write()?;
     store.delete(&mut writer, key)?;
     writer.commit()?;
 
@@ -224,14 +233,14 @@ pub fn delete_op(
 
 pub fn write_op(
     store: SingleStore<SafeModeDatabase>,
-    env: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
+    environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
     key: MyKeyType,
     value: MyValueType,
 ) -> MyResult<()> {
     // Use a write transaction to mutate the store via a `Writer`. There can be only
     // one writer for a given environment, so opening a second one will block until
     // the first completes.
-    let mut writer = env.write()?;
+    let mut writer = environment.write()?;
     let bytes: Vec<u8> = bincode::serialize(&value)?;
     store.put(&mut writer, key, &Value::Blob(&bytes))?;
 
@@ -243,13 +252,13 @@ pub fn write_op(
 
 pub fn read_op(
     store: SingleStore<SafeModeDatabase>,
-    env: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
+    environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
     key: MyKeyType,
 ) -> MyResult<Option<MyValueType>> {
     // Use a read transaction to query the store via a `Reader`. There can be multiple
     // concurrent readers for a store, and readers never block on a writer nor other
     // readers.
-    let reader = env.read()?;
+    let reader = environment.read()?;
     let maybe_blob = store.get(&reader, key)?;
     if let Some(Value::Blob(bytes)) = maybe_blob {
         let my_value: MyValueType = bincode::deserialize(bytes)?;
@@ -263,15 +272,15 @@ pub fn read_op(
 }
 
 /// [FnMut] info: <https://g.co/bard/share/2f53e5a2e611>
-pub fn run_functor_on_db_store<'a, F>(
+pub fn run_lambda_on_db_store<'a, F>(
     db_folder_path: &'a str,
     store_name: &'a str,
-    mut functor: F,
+    mut lambda: F,
 ) -> MyResult<()>
 where
     F: FnMut(
         /* store */ SingleStore<SafeModeDatabase>,
-        /* env */ RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
+        /* environment */ RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
     ) -> MyResult<()>,
 {
     // First determine the path to the environment, which is represented on disk as a
@@ -286,14 +295,14 @@ where
     // to an opened environment—or create one if it hasn't already been opened.
     let mut manager = Manager::<SafeModeEnvironment>::singleton().write()?;
 
-    let arc_created = manager.get_or_create(db_folder_path, Rkv::new::<SafeMode>)?;
-
-    let result_env = arc_created.read();
-    match result_env {
-        Ok(env) => {
+    match manager
+        .get_or_create(db_folder_path, Rkv::new::<SafeMode>)?
+        .read()
+    {
+        Ok(environment) => {
             // Then you can use the environment handle to get a handle to a datastore.
-            let store = env.open_single(store_name, StoreOptions::create())?;
-            functor(store, env)
+            let store = environment.open_single(store_name, StoreOptions::create())?;
+            lambda(store, environment)
         }
         Err(_) => Err(Box::new(Error::new(
             ErrorKind::NotFound,

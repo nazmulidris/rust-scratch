@@ -3,11 +3,10 @@ name = "kv_example"
 version = "0.1.0"
 edition = "2021"
 
-default-run = "kv"
+default-run = "rkv"
 
 [dependencies]
-# Crossterm.
-crossterm = { version = "0.27.0" }
+crossterm = "0.27.0"
 
 # Random numbers.
 rand = { version = "0.8.5" }
@@ -26,3 +25,8 @@ kv = { version = "0.24.0", features = ["json-value", "bincode-value"] }
 # Key Value store similar to `kv`, but written by Mozilla, and safe for use across
 # multiple processes. It also supports `bincode` just like `kv`.
 rkv = { version = "0.19.0" }
+
+# Error handling.
+thiserror = "1.0.56"
+miette = { version = "5.10.0", features = ["fancy"] }
+pretty_assertions = "0.7.2"

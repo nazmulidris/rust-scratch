@@ -15,10 +15,14 @@
  *   limitations under the License.
  */
 
-pub mod data_types;
-pub mod errors;
-pub mod utils;
+use rand::{
+    distributions::{Distribution, Standard},
+    thread_rng, Rng,
+};
 
-pub use data_types::*;
-pub use errors::*;
-pub use utils::*;
+pub fn random_number<T>() -> T
+where
+    Standard: Distribution<T>,
+{
+    thread_rng().gen::<T>()
+}
