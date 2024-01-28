@@ -30,3 +30,10 @@ rkv = { version = "0.19.0" }
 thiserror = "1.0.56"
 miette = { version = "5.10.0", features = ["fancy"] }
 pretty_assertions = "0.7.2"
+
+# Tokio / Tracing / Logging.
+# https://tokio.rs/tokio/topics/tracing
+# https://tokio.rs/tokio/topics/tracing-next-steps
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+tokio = { version = "1.35.1", features = ["full", "tracing"] }

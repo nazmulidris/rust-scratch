@@ -27,9 +27,13 @@ pub struct MyValueType {
 /// Just a sample key type. Replace this with whatever type you want to use.
 pub type MyKeyType = String;
 
+/// More info:
+/// - [what is bincode](https://docs.rs/bincode/latest/bincode/)
+/// - [what is codec](https://g.co/bard/share/cbf732b548c7)
+///
 /// [bincode] is a crate for encoding and decoding using a tiny binary serialization
-/// strategy. Using it, you can easily go from having an object in memory, quickly
-/// serialize it to bytes, and then deserialize it back just as fast!
+/// strategy. Using it, you can easily go from having an struct / object in memory,
+/// quickly serialize it to bytes, and then deserialize it back just as fast!
 #[test]
 fn bincode_serde() -> std::result::Result<(), Box<bincode::ErrorKind>> {
     let value = MyValueType {
@@ -38,12 +42,14 @@ fn bincode_serde() -> std::result::Result<(), Box<bincode::ErrorKind>> {
         data: vec![0, 1, 2],
     };
 
+    // Struct (MyValueType) -> Bytes (Vec<u8>).
     let result_struct_to_bytes: Result<Vec<u8>, Box<bincode::ErrorKind>> =
         bincode::serialize(&value);
     assert!(result_struct_to_bytes.is_ok());
     let struct_to_bytes: Vec<u8> = result_struct_to_bytes?;
     println!("{:?}", struct_to_bytes);
 
+    // Bytes (Vec<u8>) -> Struct (MyValueType).
     let result_struct_from_bytes: Result<MyValueType, Box<bincode::ErrorKind>> =
         bincode::deserialize(&struct_to_bytes);
     assert!(result_struct_from_bytes.is_ok());

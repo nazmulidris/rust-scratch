@@ -15,6 +15,19 @@
  *   limitations under the License.
  */
 
+//! This crate does not work as expected. When running on muliple processes, this is what
+//! happens:
+//! 1. Process A: creates a db and inserts "a", "b". It continues running.
+//! 2. Process B: starts 2 seconds after Process A starts. Inserts "c", "d". The iterator
+//!    output will be "a", "b", "c", "d", as expected. It continues running.
+//! 3. Process A: 2 seconds after Process B starts, it adds "e", "f". The iterator output
+//!    will be "a", "b", "e", "f". The "c", "d" are missing! So it seems as though when a
+//! process starts, it loads the DB into memory, and then keeps it around for the length
+//! of the process. It does not re-load it. However, writes to this database are additive.
+//! So if another process writes to the database, it is captured on disk, but the
+//! currently running process w/ the open db does not get the udpates! For this reason
+//! this crate isn't really usable.
+//!
 //! This sample binary uses the [rkv] crate.
 //! - More about `rkv` crate: <https://docs.rs/rkv/latest/rkv/>
 //! - More about `bincode` crate: <https://docs.rs/bincode/latest/bincode/>
@@ -76,24 +89,65 @@ use kv_example::{random_number, MyKeyType, MyValueType};
 const MY_DB_FOLDER: &str = "rkv_db_folder";
 const MY_PAYLOAD_STORE_NAME: &str = "my_payload_bucket";
 
-fn main() -> miette::Result<()> {
+#[tokio::main]
+pub async fn main() -> miette::Result<()> {
+    // Setup tracing. More info: <https://tokio.rs/tokio/topics/tracing>
+    tracing::subscriber::set_global_default(
+        // More info: <https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/index.html#configuration>
+        tracing_subscriber::fmt()
+            // .pretty() /* multi line pretty output*/
+            .compact() /* single line output */
+            .without_time() /* don't display time in output */
+            .with_thread_ids(true)
+            .with_ansi(true)
+            .with_target(false)
+            .with_file(false)
+            .with_line_number(false)
+            .finish(),
+    )
+    .into_diagnostic()?;
+
     let mut max_count = 5;
     loop {
         sleep(Duration::from_secs(1));
         println!("---------------------------------");
-        perform_db_operations()?;
+        perform_db_operations().await?;
         max_count -= 1;
         if max_count == 0 {
             break;
         }
     }
+
+    // Clean up the database.
+    run_lambda_on_db_store(
+        MY_DB_FOLDER,
+        MY_PAYLOAD_STORE_NAME,
+        |single_store, environment| {
+            clear_op(single_store, environment)?;
+            println!("{}", "clear_op".red());
+            Ok(())
+        },
+    )
+    .await?;
+
     Ok(())
 }
 
-fn perform_db_operations() -> miette::Result<()> {
+#[tracing::instrument]
+async fn perform_db_operations() -> miette::Result<()> {
     {
         let key = format!("key_{}", random_number::<u8>());
 
+        tracing::info!(
+            "📂 {}",
+            format!(
+                "{}: {}",
+                "db folder path".blue(),
+                MY_DB_FOLDER.bold().cyan()
+            )
+        );
+
+        // Write to db.
         run_lambda_on_db_store(
             MY_DB_FOLDER,
             MY_PAYLOAD_STORE_NAME,
@@ -112,8 +166,10 @@ fn perform_db_operations() -> miette::Result<()> {
                 );
                 Ok(())
             },
-        )?;
+        )
+        .await?;
 
+        // Read from db.
         run_lambda_on_db_store(
             MY_DB_FOLDER,
             MY_PAYLOAD_STORE_NAME,
@@ -129,20 +185,10 @@ fn perform_db_operations() -> miette::Result<()> {
                 }
                 Ok(())
             },
-        )?;
+        )
+        .await?;
 
-        run_lambda_on_db_store(
-            MY_DB_FOLDER,
-            MY_PAYLOAD_STORE_NAME,
-            |single_store, environment| {
-                delete_op(single_store, environment, key.clone())?;
-                println!("{}: key: {}", "delete_op".red(), key.clone().dark_blue());
-                Ok(())
-            },
-        )?;
-
-        sleep(Duration::from_secs(1));
-
+        // Iterate over db.
         run_lambda_on_db_store(
             MY_DB_FOLDER,
             MY_PAYLOAD_STORE_NAME,
@@ -157,17 +203,31 @@ fn perform_db_operations() -> miette::Result<()> {
                     Ok(())
                 })
             },
-        )?;
+        )
+        .await?;
 
-        run_lambda_on_db_store(
-            MY_DB_FOLDER,
-            MY_PAYLOAD_STORE_NAME,
-            |single_store, environment| {
-                clear_op(single_store, environment)?;
-                println!("{}", "clear_op".red());
-                Ok(())
-            },
-        )?;
+        // Sleep for random duration.
+        sleep(Duration::from_secs(match random_number::<u8>() as u64 {
+            0..=50 => 1,
+            51..=100 => 2,
+            101..=150 => 4,
+            151..=200 => 3,
+            _ => 2,
+        }));
+
+        // Random deletions of the key from the db.
+        if random_number::<bool>() {
+            run_lambda_on_db_store(
+                MY_DB_FOLDER,
+                MY_PAYLOAD_STORE_NAME,
+                |single_store, environment| {
+                    delete_op(single_store, environment, key.clone())?;
+                    println!("{}: key: {}", "delete_op".red(), key.clone().dark_blue());
+                    Ok(())
+                },
+            )
+            .await?;
+        }
     }
 
     Ok(())
@@ -176,7 +236,7 @@ fn perform_db_operations() -> miette::Result<()> {
 pub fn iter_op<F>(
     store: SingleStore<SafeModeDatabase>,
     environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
-    mut functor: F,
+    mut lambda: F,
 ) -> miette::Result<()>
 where
     F: FnMut(/* key */ MyKeyType, /* value */ MyValueType) -> miette::Result<()>,
@@ -198,7 +258,7 @@ where
                     let value = bincode::deserialize::<MyValueType>(&bytes)
                         .into_diagnostic()
                         .wrap_err(CustomError::CouldNotDeserializeValue)?;
-                    functor(key, value)?;
+                    let _ = lambda(key, value);
                 }
                 _ => {}
             }
@@ -208,6 +268,7 @@ where
     Ok(())
 }
 
+#[tracing::instrument]
 pub fn clear_op(
     store: SingleStore<SafeModeDatabase>,
     environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
@@ -231,6 +292,7 @@ pub fn clear_op(
     Ok(())
 }
 
+#[tracing::instrument]
 pub fn delete_op(
     store: SingleStore<SafeModeDatabase>,
     environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
@@ -255,6 +317,7 @@ pub fn delete_op(
     Ok(())
 }
 
+#[tracing::instrument]
 pub fn write_op(
     store: SingleStore<SafeModeDatabase>,
     environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
@@ -288,6 +351,7 @@ pub fn write_op(
     Ok(())
 }
 
+#[tracing::instrument]
 pub fn read_op(
     store: SingleStore<SafeModeDatabase>,
     environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
@@ -320,7 +384,7 @@ pub fn read_op(
 }
 
 /// [FnMut] info: <https://g.co/bard/share/2f53e5a2e611>
-pub fn run_lambda_on_db_store<'a, F>(
+pub async fn run_lambda_on_db_store<'a, F>(
     db_folder_path_str: &'a str,
     store_name: &'a str,
     mut lambda: F,
@@ -336,11 +400,37 @@ where
     //   * a data file containing the key/value stores.
     //   * a lock file containing metadata about current transactions.
     let db_folder_path = Path::new(db_folder_path_str);
-    fs::create_dir_all(db_folder_path)
-        .into_diagnostic()
-        .wrap_err(CustomError::CouldNotCreateDbFolder {
-            db_folder_path: db_folder_path_str.to_string(),
-        })?;
+
+    // No tracing. This is probably the most "real world" use case.
+    // fs::create_dir_all(db_folder_path)
+    //     .into_diagnostic()
+    //     .wrap_err(CustomError::CouldNotCreateDbFolder {
+    //         db_folder_path: db_folder_path_str.to_string(),
+    //     })?;
+
+    // With tracing w/out error output.
+    // fs::create_dir_all(db_folder_path)
+    //     .into_diagnostic()
+    //     .wrap_err_with(|| {
+    //         tracing::error!("Could not create db folder: {}", db_folder_path_str,);
+    //         CustomError::CouldNotCreateDbFolder {
+    //             db_folder_path: db_folder_path_str.to_string(),
+    //         }
+    //     })?;
+
+    // With tracing with error output.
+    if let Err(error) = fs::create_dir_all(db_folder_path) {
+        tracing::error!(
+            "Could not create db folder: {}, error: {}",
+            db_folder_path_str,
+            error
+        );
+        return Err(error)
+            .into_diagnostic()
+            .wrap_err(CustomError::CouldNotCreateDbFolder {
+                db_folder_path: db_folder_path_str.to_string(),
+            });
+    };
 
     // The `Manager` enforces that each process opens the same environment at most once by
     // caching a handle to each environment that it opens. Use it to retrieve the handle
@@ -360,10 +450,24 @@ where
                         .into_diagnostic()?;
                     let _ = lambda(store, environment);
                 }
-                _ => {}
+                _ => {
+                    tracing::error!(
+                        "Could not get environment and store to run lambda with, \
+                        for db_folder_path: {}, store_name: {}",
+                        db_folder_path_str,
+                        store_name
+                    );
+                }
             }
         }
-        Err(_) => {
+        Err(error) => {
+            tracing::error!(
+                "Could not get manager, \
+                for db_folder_path: {}, store_name: {}, error: {}",
+                db_folder_path_str,
+                store_name,
+                error
+            );
             return Err(CustomError::CouldNotGetManager).into_diagnostic();
         }
     }

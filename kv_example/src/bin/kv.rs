@@ -26,6 +26,11 @@
 //! [Bincode] is like `CBOR`, except that it isn't standards based, but it is faster. It
 //! also has full support of [serde] just like [kv] does.
 //! - [More info comparing `CBOR` with `Bincode`](https://g.co/bard/share/0684553f3d57)
+//!
+//! This crate works really well, even with multiple processes accessing the same database
+//! on disk. You can run `cargo run --bin kv` a few times, and it works as expected. Even
+//! with multiple processes writing to the kv store, the iterator can be used to read the
+//! current state of the db, as expected. This is unlike the [rkv] crate.
 
 use std::{thread::sleep, time::Duration};
 
@@ -56,9 +61,9 @@ const MY_PAYLOAD_BUCKET_NAME: &str = "my_payload_bucket";
 type MyResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 fn main() -> MyResult<()> {
-    let mut max_count = 5;
+    let mut max_count = 3;
     loop {
-        sleep(Duration::from_secs(5));
+        sleep(Duration::from_secs(3));
         println!("---------------------------------");
         perform_db_operations()?;
         max_count -= 1;
@@ -92,17 +97,6 @@ fn perform_db_operations() -> MyResult<()> {
         },
     )?;
     println!("{}", "Save to bucket: key_1".red());
-
-    save_to_bucket(
-        &my_payload_bucket,
-        format!("key_{}", random_number::<u8>()),
-        MyValueType {
-            id: random_number::<f32>(),
-            description: "second item".into(),
-            data: vec![random_number::<u8>(), random_number::<u8>()],
-        },
-    )?;
-    println!("{}", "Save to bucket: key_2".red());
 
     // Load from bucket.
     if let Some(payload) = load_from_bucket(&my_payload_bucket, "key_1".into())? {
