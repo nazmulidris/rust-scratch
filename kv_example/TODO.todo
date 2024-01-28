@@ -6,7 +6,7 @@
   ✔ CRUD the rkv @done(24-01-21 14:01)
 
 # figure out how miette works:
-  ☐ use miette & thiserror
+  ✔ use miette & thiserror @done(24-01-27 19:52)
 
 # create a new cargo project (separate folder than this one) w/ the following:
 

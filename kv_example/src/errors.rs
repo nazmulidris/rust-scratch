@@ -29,6 +29,18 @@ mod app_use_case_into_diagnostic_and_context {
     use crossterm::style::Stylize;
     use miette::{Context, IntoDiagnostic};
 
+    /// The errors are "unwrapped" / displayed in the opposite order in which they are
+    /// added / stacked.
+    ///
+    /// DISPLAY ORDER: |  STACK / CREATE ORDER:
+    /// 1. Top:        | The third ".. additional context .." error.
+    /// 2. Middle:     | The second ".. database corrupted .. " error.
+    /// 3. Bottom:     | The first "parse error".
+    ///
+    /// Here's the actual output:
+    ///   Error:   × 🎃 this is additional context about the failure
+    ///   ├─▶ database corrupted
+    ///   ╰─▶ invalid digit found in string
     #[test]
     fn test_into_diagnostic() -> miette::Result<()> {
         let result = "1.2".parse::<u32>();
@@ -49,6 +61,27 @@ mod app_use_case_into_diagnostic_and_context {
         let _ = new_result?;
 
         Ok(())
+    }
+
+    /// It is possible to convert from a [miette::Report] into an [Box]ed [std::error::Error].
+    #[test]
+    fn test_convert_report_into_error() -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let result = "1.2"
+            .parse::<u32>()
+            .into_diagnostic()
+            .wrap_err(miette::Report::msg(
+                "wrapper for the source parse int error",
+            ));
+
+        match result {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(miette_report) => {
+                let it: Box<dyn std::error::Error> = miette_report.into();
+                return Err(it);
+            }
+        }
     }
 }
 

@@ -17,9 +17,6 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Convenience type alias for [std::result::Result].
-pub type MyResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
-
 /// Just a sample value or payload type. Replace this with whatever type you want to use.
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct MyValueType {
@@ -34,7 +31,7 @@ pub type MyKeyType = String;
 /// strategy. Using it, you can easily go from having an object in memory, quickly
 /// serialize it to bytes, and then deserialize it back just as fast!
 #[test]
-fn bincode_serde() -> MyResult<()> {
+fn bincode_serde() -> std::result::Result<(), Box<bincode::ErrorKind>> {
     let value = MyValueType {
         id: 12.0,
         description: "foo bar".to_string(),

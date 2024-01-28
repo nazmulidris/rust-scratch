@@ -65,22 +65,18 @@
 //! serialize it to bytes, and then deserialize it back just as fast!
 
 use crossterm::style::Stylize;
+use miette::{Context, IntoDiagnostic};
 use rkv::backend::{SafeMode, SafeModeDatabase, SafeModeEnvironment};
 use rkv::{Manager, Rkv, SingleStore, StoreOptions, Value};
-use std::{
-    fs,
-    io::{Error, ErrorKind},
-    path::Path,
-    sync::RwLockReadGuard,
-};
+use std::{fs, path::Path, sync::RwLockReadGuard};
 use std::{thread::sleep, time::Duration};
 
-use kv_example::{random_number, MyKeyType, MyResult, MyValueType};
+use kv_example::{random_number, MyKeyType, MyValueType};
 
 const MY_DB_FOLDER: &str = "rkv_db_folder";
 const MY_PAYLOAD_STORE_NAME: &str = "my_payload_bucket";
 
-fn main() -> MyResult<()> {
+fn main() -> miette::Result<()> {
     let mut max_count = 5;
     loop {
         sleep(Duration::from_secs(1));
@@ -94,7 +90,7 @@ fn main() -> MyResult<()> {
     Ok(())
 }
 
-fn perform_db_operations() -> MyResult<()> {
+fn perform_db_operations() -> miette::Result<()> {
     {
         let key = format!("key_{}", random_number::<u8>());
 
@@ -181,17 +177,27 @@ pub fn iter_op<F>(
     store: SingleStore<SafeModeDatabase>,
     environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
     mut functor: F,
-) -> MyResult<()>
+) -> miette::Result<()>
 where
-    F: FnMut(/* key */ MyKeyType, /* value */ MyValueType) -> MyResult<()>,
+    F: FnMut(/* key */ MyKeyType, /* value */ MyValueType) -> miette::Result<()>,
 {
-    let reader = environment.read()?;
-    let iter = store.iter_start(&reader)?;
+    let reader = environment
+        .read()
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotGetReaderFromEnvironment)?;
+
+    let iter = store
+        .iter_start(&reader)
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotGetIteratorFromStore)?;
+
     for it in iter {
         if let Ok((key, value)) = it {
             match (String::from_utf8(key.to_vec()), value) {
                 (Ok(key), Value::Blob(bytes)) => {
-                    let value = bincode::deserialize::<MyValueType>(&bytes)?;
+                    let value = bincode::deserialize::<MyValueType>(&bytes)
+                        .into_diagnostic()
+                        .wrap_err(CustomError::CouldNotDeserializeValue)?;
                     functor(key, value)?;
                 }
                 _ => {}
@@ -205,13 +211,22 @@ where
 pub fn clear_op(
     store: SingleStore<SafeModeDatabase>,
     environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
-) -> MyResult<()> {
+) -> miette::Result<()> {
     // Use a write transaction to mutate the store via a `Writer`. There can be only
     // one writer for a given environment, so opening a second one will block until
     // the first completes.
-    let mut writer = environment.write()?;
-    store.clear(&mut writer)?;
-    writer.commit()?;
+    let mut writer = environment
+        .write()
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotGetWriterFromEnvironment)?;
+    store
+        .clear(&mut writer)
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotRunClearOperationWithWriter)?;
+    writer
+        .commit()
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotCommitTransaction)?;
 
     Ok(())
 }
@@ -220,13 +235,22 @@ pub fn delete_op(
     store: SingleStore<SafeModeDatabase>,
     environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
     key: MyKeyType,
-) -> MyResult<()> {
+) -> miette::Result<()> {
     // Use a write transaction to mutate the store via a `Writer`. There can be only
     // one writer for a given environment, so opening a second one will block until
     // the first completes.
-    let mut writer = environment.write()?;
-    store.delete(&mut writer, key)?;
-    writer.commit()?;
+    let mut writer = environment
+        .write()
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotGetWriterFromEnvironment)?;
+    store
+        .delete(&mut writer, key)
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotRunDeleteOperationWithWriter)?;
+    writer
+        .commit()
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotCommitTransaction)?;
 
     Ok(())
 }
@@ -236,17 +260,31 @@ pub fn write_op(
     environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
     key: MyKeyType,
     value: MyValueType,
-) -> MyResult<()> {
+) -> miette::Result<()> {
     // Use a write transaction to mutate the store via a `Writer`. There can be only
     // one writer for a given environment, so opening a second one will block until
     // the first completes.
-    let mut writer = environment.write()?;
-    let bytes: Vec<u8> = bincode::serialize(&value)?;
-    store.put(&mut writer, key, &Value::Blob(&bytes))?;
+    let mut writer = environment
+        .write()
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotGetWriterFromEnvironment)?;
+
+    let bytes: Vec<u8> = bincode::serialize(&value)
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotSerializeValue)?;
+
+    store
+        .put(&mut writer, key, &Value::Blob(&bytes))
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotRunPutOperationWithWriter)?;
 
     // You must commit a write transaction before the writer goes out of scope, or the
     // transaction will abort and the data won't persist.
-    writer.commit()?;
+    writer
+        .commit()
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotCommitTransaction)?;
+
     Ok(())
 }
 
@@ -254,14 +292,24 @@ pub fn read_op(
     store: SingleStore<SafeModeDatabase>,
     environment: RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
     key: MyKeyType,
-) -> MyResult<Option<MyValueType>> {
+) -> miette::Result<Option<MyValueType>> {
     // Use a read transaction to query the store via a `Reader`. There can be multiple
     // concurrent readers for a store, and readers never block on a writer nor other
     // readers.
-    let reader = environment.read()?;
-    let maybe_blob = store.get(&reader, key)?;
+    let reader = environment
+        .read()
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotGetReaderFromEnvironment)?;
+
+    let maybe_blob = store
+        .get(&reader, key)
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotRunGetOperationWithReader)?;
+
     if let Some(Value::Blob(bytes)) = maybe_blob {
-        let my_value: MyValueType = bincode::deserialize(bytes)?;
+        let my_value: MyValueType = bincode::deserialize(bytes)
+            .into_diagnostic()
+            .wrap_err(CustomError::CouldNotDeserializeValue)?;
         return Ok(Some(my_value));
     }
 
@@ -273,43 +321,107 @@ pub fn read_op(
 
 /// [FnMut] info: <https://g.co/bard/share/2f53e5a2e611>
 pub fn run_lambda_on_db_store<'a, F>(
-    db_folder_path: &'a str,
+    db_folder_path_str: &'a str,
     store_name: &'a str,
     mut lambda: F,
-) -> MyResult<()>
+) -> miette::Result<()>
 where
     F: FnMut(
         /* store */ SingleStore<SafeModeDatabase>,
         /* environment */ RwLockReadGuard<'_, Rkv<SafeModeEnvironment>>,
-    ) -> MyResult<()>,
+    ) -> miette::Result<()>,
 {
     // First determine the path to the environment, which is represented on disk as a
     // directory containing two files:
     //   * a data file containing the key/value stores.
     //   * a lock file containing metadata about current transactions.
-    let db_folder_path = Path::new(db_folder_path);
-    fs::create_dir_all(db_folder_path)?;
+    let db_folder_path = Path::new(db_folder_path_str);
+    fs::create_dir_all(db_folder_path)
+        .into_diagnostic()
+        .wrap_err(CustomError::CouldNotCreateDbFolder {
+            db_folder_path: db_folder_path_str.to_string(),
+        })?;
 
     // The `Manager` enforces that each process opens the same environment at most once by
     // caching a handle to each environment that it opens. Use it to retrieve the handle
     // to an opened environment—or create one if it hasn't already been opened.
-    let mut manager = Manager::<SafeModeEnvironment>::singleton().write()?;
-
-    match manager
-        .get_or_create(db_folder_path, Rkv::new::<SafeMode>)?
-        .read()
-    {
-        Ok(environment) => {
-            // Then you can use the environment handle to get a handle to a datastore.
-            let store = environment.open_single(store_name, StoreOptions::create())?;
-            lambda(store, environment)
+    match Manager::<SafeModeEnvironment>::singleton().write() {
+        Ok(mut manager) => {
+            match manager
+                .get_or_create(db_folder_path, Rkv::new::<SafeMode>)
+                .into_diagnostic()
+                .wrap_err(CustomError::CouldNotGetManager)?
+                .read()
+            {
+                Ok(environment) => {
+                    // Then you can use the environment handle to get a handle to a datastore.
+                    let store = environment
+                        .open_single(store_name, StoreOptions::create())
+                        .into_diagnostic()?;
+                    let _ = lambda(store, environment);
+                }
+                _ => {}
+            }
         }
-        Err(_) => Err(Box::new(Error::new(
-            ErrorKind::NotFound,
-            format!(
-                "Could not get or create store in path {}!",
-                db_folder_path.display()
-            ),
-        ))),
+        Err(_) => {
+            return Err(CustomError::CouldNotGetManager).into_diagnostic();
+        }
     }
+
+    Ok(())
+}
+
+#[derive(thiserror::Error, Debug, miette::Diagnostic)]
+pub enum CustomError {
+    #[diagnostic(code(rkv::DatabaseError::FileSystemError))]
+    #[error("📂 Could not create db folder: '{db_folder_path}' on disk")]
+    CouldNotCreateDbFolder { db_folder_path: String },
+
+    #[diagnostic(code(rkv::DatabaseError::StoreCreationOrAccessError))]
+    #[error("👨‍💼 Could not get a manager")]
+    CouldNotGetManager,
+
+    #[diagnostic(code(rkv::DatabaseError::StoreCreationOrAccessError))]
+    #[error("💾 Could not get or create environment, or open store")]
+    CouldNotGetOrCreateEnvironmentOrOpenStore { store_name: String },
+
+    #[diagnostic(code(rkv::DatabaseError::CouldNotGetReaderFromEnvironment))]
+    #[error("💾 Could not create a read transaction from the environment")]
+    CouldNotGetReaderFromEnvironment,
+
+    #[diagnostic(code(rkv::DatabaseError::CouldNotRunGetOperationWithReader))]
+    #[error("💾 Could perform get operation with reader transaction")]
+    CouldNotRunGetOperationWithReader,
+
+    #[diagnostic(code(rkv::DatabaseError::CouldNotDeserializeValue))]
+    #[error("💾 Could not deserialize value")]
+    CouldNotDeserializeValue,
+
+    #[diagnostic(code(rkv::DatabaseError::CouldNotGetWriterFromEnvironment))]
+    #[error("💾 Could not create a write transaction from the environment")]
+    CouldNotGetWriterFromEnvironment,
+
+    #[diagnostic(code(rkv::DatabaseError::CouldNotSerializeValue))]
+    #[error("💾 Could not serialize value")]
+    CouldNotSerializeValue,
+
+    #[diagnostic(code(rkv::DatabaseError::CouldNotRunPutOperationWithWriter))]
+    #[error("💾 Could perform put operation with writer transaction")]
+    CouldNotRunPutOperationWithWriter,
+
+    #[diagnostic(code(rkv::DatabaseError::CouldNotCommitTransaction))]
+    #[error("💾 Could not commit transaction")]
+    CouldNotCommitTransaction,
+
+    #[diagnostic(code(rkv::DatabaseError::CouldNotRunDeleteOperationWithWriter))]
+    #[error("💾 Could perform delete operation with writer transaction")]
+    CouldNotRunDeleteOperationWithWriter,
+
+    #[diagnostic(code(rkv::DatabaseError::CouldNotRunClearOperationWithWriter))]
+    #[error("💾 Could perform clear operation with writer transaction")]
+    CouldNotRunClearOperationWithWriter,
+
+    #[diagnostic(code(rkv::DatabaseError::CouldNotGetIteratorFromStore))]
+    #[error("💾 Could not get iterator from store")]
+    CouldNotGetIteratorFromStore,
 }

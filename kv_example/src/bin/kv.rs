@@ -31,7 +31,7 @@ use std::{thread::sleep, time::Duration};
 
 use crossterm::style::Stylize;
 use kv::*;
-use kv_example::{random_number, MyKeyType, MyResult, MyValueType};
+use kv_example::{random_number, MyKeyType, MyValueType};
 
 /// Convenience type alias for the [kv::Bucket] type.
 /// 1. A [Bucket] is created from a [Store].
@@ -51,6 +51,9 @@ const MY_DB_FOLDER: &str = "kv_db_folder";
 /// - [Bincode] is used to serialize/deserialize the value stored in the key/value pair.
 /// - A [Bucket] provides typed access to a section of the key/value store [kv].
 const MY_PAYLOAD_BUCKET_NAME: &str = "my_payload_bucket";
+
+/// Convenience type alias for [std::result::Result].
+type MyResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 fn main() -> MyResult<()> {
     let mut max_count = 5;
