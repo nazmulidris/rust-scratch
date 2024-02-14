@@ -15,18 +15,23 @@
  *   limitations under the License.
  */
 
-//! This crate does not work as expected. When running on muliple processes, this is what
+//! Do not use this module. Use `kv.rs` instead. I tried out both crates and created this
+//! POC to see which would work best for my use cases. [kv] works best, [rkv] does not.
+//!
+//! This crate does not work as expected. When running on multiple processes, this is what
 //! happens:
+//!
 //! 1. Process A: creates a db and inserts "a", "b". It continues running.
 //! 2. Process B: starts 2 seconds after Process A starts. Inserts "c", "d". The iterator
 //!    output will be "a", "b", "c", "d", as expected. It continues running.
 //! 3. Process A: 2 seconds after Process B starts, it adds "e", "f". The iterator output
-//!    will be "a", "b", "e", "f". The "c", "d" are missing! So it seems as though when a
-//! process starts, it loads the DB into memory, and then keeps it around for the length
-//! of the process. It does not re-load it. However, writes to this database are additive.
-//! So if another process writes to the database, it is captured on disk, but the
-//! currently running process w/ the open db does not get the udpates! For this reason
-//! this crate isn't really usable.
+//!    will be "a", "b", "e", "f". The "c", "d" are missing!
+//!
+//! So it seems as though when a process starts, it loads the DB into memory, and then
+//! keeps it around for the length of the process. It does not re-load it. However, writes
+//! to this database are additive. So if another process writes to the database, it is
+//! captured on disk, but the currently running process w/ the open db does not get the
+//! updates! For this reason this crate isn't really usable.
 //!
 //! This sample binary uses the [rkv] crate.
 //! - More about `rkv` crate: <https://docs.rs/rkv/latest/rkv/>

@@ -15,6 +15,8 @@
  *   limitations under the License.
  */
 
+//! This module is shared between all the binary targets in the workspace.
+
 use serde::{Deserialize, Serialize};
 
 /// Just a sample value or payload type. Replace this with whatever type you want to use.

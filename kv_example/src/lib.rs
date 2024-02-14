@@ -15,10 +15,11 @@
  *   limitations under the License.
  */
 
-pub mod data_types;
-pub mod errors;
+pub mod data;
 pub mod utils;
 
-pub use data_types::*;
-pub use errors::*;
+pub use data::*;
 pub use utils::*;
+
+#[cfg(test)]
+pub mod miette_error_test_cases;

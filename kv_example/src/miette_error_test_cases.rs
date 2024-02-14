@@ -15,6 +15,9 @@
  *   limitations under the License.
  */
 
+//! This module contains all the test cases for the [miette] crate. This isn't used by any
+//! other module in the project, and is only used for testing purposes.
+
 /// USE CASE 1: Lazy, don't want to make my own [miette::Diagnostic] trait implementation
 /// along with custom error types (using [thiserror]).
 ///
