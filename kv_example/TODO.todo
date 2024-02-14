@@ -7,19 +7,3 @@
 
 # figure out how miette works:
   ✔ use miette & thiserror @done(24-01-27 19:52)
-
-# create a new cargo project (separate folder than this one) w/ the following:
-
-  # client / server api:
-    ☐ implement protocol to length-prefixing of binary data payloads
-      - send: send size (u32) as BigEndian (u32::to_be_bytes()), then payload bytes
-      - recv: get size via read_exact (u32::from_be_bytes()) as BigEndian, then get payload bytes read_exact
-      - https://users.rust-lang.org/t/reading-length-payload-from-a-tcpstream/51211
-      - https://bard.google.com/share/33740aa390af
-
-  # figure out how tracing works:
-    ☐ use tokio tracing
-
-  # create a tpc server which implements a CRUD api (json-rpc-like interface):
-
-  # create a client that outputs to stdout & file for api operations using tuify:

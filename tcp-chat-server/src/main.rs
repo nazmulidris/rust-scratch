@@ -43,9 +43,9 @@ async fn main() -> IOResult<()> {
     let listener = TcpListener::bind(addr).await?;
 
     // Create broadcast channel.
-    let (tx, _) = broadcast::channel::<Message>(10);
+    let (sender_broadcast_channel, _) = broadcast::channel::<Message>(10);
 
-    // Server loop.
+    // Server infinite loop.
     loop {
         info!("Listening for new connections");
 
@@ -53,9 +53,9 @@ async fn main() -> IOResult<()> {
         let (client_tcp_stream, _) = listener.accept().await?;
 
         // Start task to handle a connection.
-        let tx_clone = tx.clone();
+        let sender_clone = sender_broadcast_channel.clone();
         tokio::spawn(async move {
-            match handle_client_task(client_tcp_stream, tx_clone).await {
+            match handle_client_task(client_tcp_stream, sender_clone).await {
                 Ok(_) => info!("Successfully ended client task"),
                 Err(error) => info!("Problem handling client task: {:?}", error),
             }
@@ -65,12 +65,15 @@ async fn main() -> IOResult<()> {
     }
 }
 
-async fn handle_client_task(mut client_tcp_stream: TcpStream, tx: Sender<Message>) -> IOResult<()> {
+async fn handle_client_task(
+    mut client_tcp_stream: TcpStream,
+    sender: Sender<Message>,
+) -> IOResult<()> {
     let id = &friendly_random_id::generate_friendly_random_id();
     info!("[{id}] handle_client: start");
 
-    // Get tx and rx ready.
-    let mut rx = tx.subscribe();
+    // Get sender and reciever ready.
+    let mut receiver = sender.subscribe();
 
     // Get reader and writer from tcp stream.
     let (read_half, write_half) = client_tcp_stream.split();
@@ -106,12 +109,12 @@ async fn handle_client_task(mut client_tcp_stream: TcpStream, tx: Sender<Message
                 writer.flush().await?;
 
                 // Broadcast to channel.
-                let _ = tx.send(Message{ sender_id: id.to_string(), payload: outgoing });
+                let _ = sender.send(Message{ sender_id: id.to_string(), payload: outgoing });
 
                 info!("[{id}] handle_client: got message from client -> send reply to client & broadcast to channel")
             }
             // 2. Channel: Read from broadcast channel -> send data to the client.
-            channel_read_result = rx.recv() => {
+            channel_read_result = receiver.recv() => {
                 if let Ok(message /* Message */) = channel_read_result {
                     // Ignore messages that are sent by myself.
                     if &message.sender_id != id {

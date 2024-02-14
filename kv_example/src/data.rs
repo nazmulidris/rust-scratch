@@ -37,7 +37,7 @@ pub type MyKeyType = String;
 /// strategy. Using it, you can easily go from having an struct / object in memory,
 /// quickly serialize it to bytes, and then deserialize it back just as fast!
 #[test]
-fn bincode_serde() -> std::result::Result<(), Box<bincode::ErrorKind>> {
+fn test_bincode_serde() -> std::result::Result<(), Box<bincode::ErrorKind>> {
     let value = MyValueType {
         id: 12.0,
         description: "foo bar".to_string(),

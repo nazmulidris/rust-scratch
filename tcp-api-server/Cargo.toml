@@ -1,0 +1,44 @@
+[package]
+name = "tcp-api-server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Terminal user interface.
+r3bl_tui = { version = "*" }
+r3bl_rs_utils_core = { version = "*" }
+crossterm = "*"
+dialoguer = "*"
+indicatif = "*"
+ctrlc = "*"
+
+# Command line argument parsing.
+clap = { version = "4.4.13", features = ["derive"] }
+
+# Random numbers.
+rand = { version = "*" }
+
+# Serde for serialization and deserialization support.
+serde = { version = "*", features = ["derive"] }
+serde_json = { version = "*" }
+
+# Convert Rust structs to and from binary representation.
+bincode = { version = "*" }
+
+# Key Value store that can be used to store JSON or bincode encoded values. `kv` is built
+# on top of `sled` which currently does not support access across multiple processes.
+kv = { version = "*", features = ["json-value", "bincode-value"] }
+
+# Error handling.
+thiserror = "*"
+miette = { version = "*", features = ["fancy"] }
+pretty_assertions = "*"
+
+# Tokio / Tracing / Logging.
+# https://tokio.rs/tokio/topics/tracing
+# https://tokio.rs/tokio/topics/tracing-next-steps
+tracing = "*"
+tracing-subscriber = "*"
+tokio = { version = "*", features = ["full", "tracing"] }

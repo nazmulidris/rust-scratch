@@ -1,0 +1,59 @@
+# setup project:
+  ✔ get context from tcp-chat-server repo, kv_example repo @done(24-02-14 11:39)
+  ✔ create tcp-api-server repo @done(24-02-14 11:39)
+  ✔ outline architecture in README.md @done(24-02-14 11:39)
+
+# client / server api:
+  ✔ define enum w/ all the operations & args that are part of the API @done(24-02-14 13:43)
+  ✔ implement helpers for length-prefixing binary data payloads @done(24-02-14 19:41)
+    - `fn serialize_helper(op: &impl Serialize) -> miette::Result<(u64, Vec<u8>)> { ... }`
+  ✔ add clap args @done(24-02-14 20:13)
+  ☐ implement protocol to length-prefix binary data payloads.
+    - *send*:
+      - send size (u64) as `BigEndian` (`u64::to_be_bytes()`), then payload bytes
+    - *recv*:
+      - get size via `read_exact` (`u64::from_be_bytes()`) as `BigEndian`,
+      - then get payload bytes `read_exact`
+    - https://users.rust-lang.org/t/reading-length-payload-from-a-tcpstream/51211
+    - https://bard.google.com/share/33740aa390af
+
+# client task:
+  ✔ separate user input thread from tokio thread @done(24-02-16 11:22)
+    - https://docs.rs/tokio/latest/tokio/io/struct.Stdin.html
+    - https://users.rust-lang.org/t/stopping-a-thread/6328/7
+    - https://internals.rust-lang.org/t/thread-cancel-support/3056/16
+  ✔ connect to server using api @done(24-02-17 10:37)
+
+# server task:
+  ✔ bind & listen on a socket, accept connections @done(24-02-17 10:37)
+  ✔ read from socket, deserialize into enum @done(24-02-17 10:37)
+  ✔ match on enum, perform operation, serialize response, send back to client @done(24-02-17 13:54)
+  ☐ add broadcast channel
+
+# client api:
+  ☐ take raw operations in monitor_tcp_connection_task and generalize into a client api
+    - use callback style api (eg: JS/Java)
+    - use channel style api (eg: go lang)
+  ☐ connect to server
+  ☐ send operation to server
+  ☐ receive response from server
+  ☐ implement all the protocol messages (client & server)
+
+# general:
+  ☐ use tokio tracing
+  ☐ use miette
+    ☐ [custom error report handler](https://github.com/zkat/miette/blob/6ea86a2248854acf88df345814b6c97d31b8b4d9/tests/test_location.rs#L39)
+
+# enhance reliability:
+  ☐ use procspawn for reliability
+  ☐ use open-telemetry for tracing (https://youtu.be/8FAdY_0DpkM?si=olTqxBoVQwnVQ9_m)
+
+# connect the tcp server to kv example for persistence:
+
+# create a tpc server which implements a CRUD api (json-rpc-like interface):
+
+# create a client that outputs to stdout & file for api operations using tuify:
+
+# cli app:
+  ☐ try using r3bl-tuify to handle user input
+  ☐ rewrite the client app using r3bl-tui
