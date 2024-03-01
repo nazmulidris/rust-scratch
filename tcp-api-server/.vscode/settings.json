@@ -1,10 +1,13 @@
 {
   "cSpell.words": [
+    "appender",
     "bigendian",
     "bincode",
     "dialoguer",
     "indicatif",
     "oneshot",
-    "procspawn"
+    "opentelemetry",
+    "procspawn",
+    "sqlx"
   ]
 }

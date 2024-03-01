@@ -16,6 +16,7 @@ ctrlc = "*"
 
 # Command line argument parsing.
 clap = { version = "4.4.13", features = ["derive"] }
+color-print = "*"
 
 # Random numbers.
 rand = { version = "*" }
@@ -40,5 +41,6 @@ pretty_assertions = "*"
 # https://tokio.rs/tokio/topics/tracing
 # https://tokio.rs/tokio/topics/tracing-next-steps
 tracing = "*"
+tracing-appender = "*"
 tracing-subscriber = "*"
 tokio = { version = "*", features = ["full", "tracing"] }

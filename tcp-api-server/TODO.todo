@@ -8,7 +8,7 @@
   ✔ implement helpers for length-prefixing binary data payloads @done(24-02-14 19:41)
     - `fn serialize_helper(op: &impl Serialize) -> miette::Result<(u64, Vec<u8>)> { ... }`
   ✔ add clap args @done(24-02-14 20:13)
-  ☐ implement protocol to length-prefix binary data payloads.
+  ✔ implement protocol to length-prefix binary data payloads. @done(24-03-03 17:23)
     - *send*:
       - send size (u64) as `BigEndian` (`u64::to_be_bytes()`), then payload bytes
     - *recv*:
@@ -16,6 +16,10 @@
       - then get payload bytes `read_exact`
     - https://users.rust-lang.org/t/reading-length-payload-from-a-tcpstream/51211
     - https://bard.google.com/share/33740aa390af
+
+# colorize clap args in the cli using color-print, inspired by cargo itself:
+  ✔ Add https://crates.io/crates/color-print to colorize the clap output @done(24-03-01 16:05)
+    - Eg: https://github.com/nazmulidris/cargo/blob/master/src/bin/cargo/commands/run.rs#L61
 
 # client task:
   ✔ separate user input thread from tokio thread @done(24-02-16 11:22)
@@ -28,7 +32,15 @@
   ✔ bind & listen on a socket, accept connections @done(24-02-17 10:37)
   ✔ read from socket, deserialize into enum @done(24-02-17 10:37)
   ✔ match on enum, perform operation, serialize response, send back to client @done(24-02-17 13:54)
-  ☐ add broadcast channel
+  ✔ add broadcast channel @done(24-03-03 17:23)
+
+# refactor client_task.rs and server_task.rs to have better names & same module structure:
+  ✔ client_task.rs: task -> enter -> handle @done(24-03-03 10:59)
+    - main_event_loop_blocking::{enter_blocking, handle_user_input}
+    - monitor_client_lifecycle_channel_task::{enter, handle_client_lifecycle_channel_message}
+    - monitor_tcp_connection_task::{enter, handle_server_message}
+  ✔ server_task.rs: task -> enter -> handle @done(24-03-03 17:21)
+    - handle_client_task::{enter, handle_broadcast_channel_between_clients_payload, handle_client_message}
 
 # client api:
   ☐ take raw operations in monitor_tcp_connection_task and generalize into a client api
@@ -37,23 +49,39 @@
   ☐ connect to server
   ☐ send operation to server
   ☐ receive response from server
-  ☐ implement all the protocol messages (client & server)
+
+# tracing, logging, reporting, errors:
+  ✔ use tracing, and configure it to log to stdout and file @done(24-03-13 09:29)
+  ☐ configure tracing using spans and instrument across all client and server tasks
+    - https://docs.rs/tracing/latest/tracing/
+    - https://www.youtube.com/watch?v=21rtHinFA40
+  ☐ configure opentelemetry and use Jaeger to view the traces
+    - https://tokio.rs/tokio/topics/tracing-next-steps
+  ☐ use miette for error reporting, and configure global error handler
+
+# async ui:
+  ☐ design for rustyline-async
+  ☐ use notifications for any events that come in outside of the main event loop
+    - purpose of async readline is to be able to abort the async task w/out having to system exit the process
+
+implement all the protocol messages (client & server):
+  ☐ client
+  ☐ server
 
 # general:
-  ☐ use tokio tracing
   ☐ use miette
     ☐ [custom error report handler](https://github.com/zkat/miette/blob/6ea86a2248854acf88df345814b6c97d31b8b4d9/tests/test_location.rs#L39)
+      - use terminal size to format error report & text wrap
+  ☐ use open-telemetry for tracing
+    - https://youtu.be/8FAdY_0DpkM?si=olTqxBoVQwnVQ9_m
+    - https://github.com/tokio-rs/tracing-opentelemetry
 
 # enhance reliability:
   ☐ use procspawn for reliability
-  ☐ use open-telemetry for tracing (https://youtu.be/8FAdY_0DpkM?si=olTqxBoVQwnVQ9_m)
+    - [stdin, stdout redirection for spawned processes](https://stackoverflow.com/questions/34611742/how-do-i-read-the-output-of-a-child-process-without-blocking-in-rust)
 
 # connect the tcp server to kv example for persistence:
+  ☐ use kv example to persist data
 
-# create a tpc server which implements a CRUD api (json-rpc-like interface):
-
-# create a client that outputs to stdout & file for api operations using tuify:
-
-# cli app:
-  ☐ try using r3bl-tuify to handle user input
-  ☐ rewrite the client app using r3bl-tui
+# add persistence w/ sqlite:
+  ☐ replace kv w/ sqlx

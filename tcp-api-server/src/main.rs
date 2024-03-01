@@ -16,35 +16,20 @@
  */
 
 use clap::Parser;
-use crossterm::style::Stylize;
-use miette::IntoDiagnostic;
-use tcp_api_server::clap_args;
-use tracing::info;
+use tcp_api_server::{clap_args, tracing_setup, TracingConfig};
 
 #[tokio::main]
 async fn main() -> miette::Result<()> {
     let cli_args = clap_args::CLIArg::parse();
 
-    // Enable tracing if the flag is set.
-    if cli_args.enable_tracing {
-        // Setup tracing. More info: <https://tokio.rs/tokio/topics/tracing>
-        tracing::subscriber::set_global_default(
-            // More info: <https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/index.html#configuration>
-            tracing_subscriber::fmt()
-                // .pretty() /* multi line pretty output*/
-                .compact() /* single line output */
-                .without_time() /* don't display time in output */
-                .with_thread_ids(true)
-                .with_ansi(true)
-                .with_target(false)
-                .with_file(false)
-                .with_line_number(false)
-                .finish(),
-        )
-        .into_diagnostic()?;
-        info!("tracing enabled");
-        info!("{}", format!("{:?}", cli_args).cyan().bold());
-    };
+    tracing_setup::init(TracingConfig {
+        writers: cli_args.enable_tracing.clone(),
+        level: cli_args.tracing_log_level,
+        tracing_log_file_path_and_prefix: format!(
+            "{}_{}",
+            cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
+        ),
+    })?;
 
     // Start the server or client task based on the subcommand.
     match cli_args.subcommand {

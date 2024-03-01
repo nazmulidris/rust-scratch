@@ -15,20 +15,18 @@
  *   limitations under the License.
  */
 
-pub mod clap_args;
-pub mod client_task;
-pub mod progress_bar;
-pub mod protocol;
-pub mod server_task;
-pub mod tracing_setup;
-pub mod utils;
+use indicatif::{ProgressBar, ProgressStyle};
 
-pub use clap_args::*;
-pub use client_task::*;
-pub use progress_bar::*;
-pub use protocol::*;
-pub use server_task::*;
-pub use tracing_setup::*;
-pub use utils::*;
-
-pub const CHANNEL_SIZE: usize = 10;
+/// More info:
+/// - <https://docs.rs/indicatif/latest/indicatif/index.html#templates>
+/// - <https://docs.rs/console/0.7.5/src/console/utils.rs.html#148-180>
+pub fn create_progress_bar(message: &str, template: &str) -> ProgressBar {
+    let message = message.to_string();
+    if let Ok(template) = ProgressStyle::with_template(template) {
+        ProgressBar::new_spinner()
+            .with_style(template)
+            .with_message(message)
+    } else {
+        ProgressBar::new_spinner().with_message(message)
+    }
+}

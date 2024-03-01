@@ -15,30 +15,81 @@
  *   limitations under the License.
  */
 
-use std::net::IpAddr;
-
 use clap::{Parser, Subcommand};
+use std::{fmt::Display, net::IpAddr};
+
+use crate::tracing_writer_config;
 
 const DEFAULT_PORT_NUM: u16 = 3000;
 const DEFAULT_ADDRESS_STR: &str = "127.0.0.1";
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[clap(
+    author = "Nazmul Idris <idris@developerlife.com>",
+    version,
+    about,
+    long_about = None,
+    after_help = color_print::cstr!(
+        "Visit <cyan,bold>https://developerlife.com</> for more detailed information.\n"
+    ),
+    // To override the entire help_template, here's an example:
+    // https://github.com/nazmulidris/cargo/blob/master/src/bin/cargo/cli.rs#L592
+    help_template = color_print::cstr!(
+        "<green,bold>{bin}</> <yellow,bold>v{version}</> by <cyan,bold>{author}</>\n\
+        USAGE:\n  {usage}\n\n\
+        OPTIONS:\n{options}\n\n\
+        SUBCOMMANDS:\n{subcommands})"
+    )
+)]
 pub struct CLIArg {
-    /// Address to connect or listen to
-    #[clap(global = true, default_value = DEFAULT_ADDRESS_STR)]
-    #[arg(short, long)]
+    #[arg(
+        short = 'a',
+        long = "address", // Can't colorize this. Won't match when the user types it in.
+        name = color_print::cstr!("Address to <bright-green,bold>connect</> or <bright-red,bold>listen</> to"),
+        global = true,
+        default_value = DEFAULT_ADDRESS_STR
+    )]
     pub address: IpAddr,
 
-    /// Port to connect or listen to
-    #[clap(global = true, default_value_t = DEFAULT_PORT_NUM)]
-    #[arg(short, long)]
+    #[arg(
+        short = 'p',
+        long = "port", // Can't colorize this. Won't match when the user types it in.
+        name = color_print::cstr!("Port to <bright-green,bold>connect</> or <bright-red,bold>listen</> to"),
+        global = true,
+        default_value_t = DEFAULT_PORT_NUM,
+    )]
     pub port: u16,
 
-    /// Enable tracing
-    #[clap(global = true, default_value_t = false)]
-    #[arg(short = 't', long = "enable-tracing")]
-    pub enable_tracing: bool,
+    #[arg(
+        short = 't',
+        long = "enable-tracing",
+        name = color_print::cstr!("Enable tracing via \
+            <bright-yellow,bold>stdout</>, \
+            <bright-yellow,bold>file</>, \
+            <bright-yellow,bold>stdout+file</>"),
+        global = true,
+        default_values = &["file"],
+        value_delimiter = '+',
+    )]
+    pub enable_tracing: Vec<tracing_writer_config::Writer>,
+
+    #[arg(
+        short = 'f',
+        long = "tracing-log-file-path-and-prefix",
+        name = color_print::cstr!("Set log file <bright-yellow,bold>path and prefix</>"),
+        global = true,
+        default_value = "tcp_api_server",
+    )]
+    pub tracing_log_file_path_and_prefix: String,
+
+    #[arg(
+        short = 'l',
+        long = "tracing-log-level",
+        name = color_print::cstr!("Set tracing <bright-yellow,bold>log level</>"),
+        global = true,
+        default_value = "debug",
+    )]
+    pub tracing_log_level: tracing::Level,
 
     #[command(subcommand)]
     pub subcommand: CLISubcommand,
@@ -46,8 +97,25 @@ pub struct CLIArg {
 
 #[derive(Subcommand, Debug)]
 pub enum CLISubcommand {
-    /// Start a TCP server at the given address and port
+    #[command(
+        name = "server", // Can't colorize this. Won't match when the user types it in.
+        short_flag = 's',
+        long_about = color_print::cstr!("Start a TCP <bright-red,bold>server</> at the given <bright-cyan,bold>address</> and <bright-cyan,bold>port</>")
+    )]
     Server,
-    /// Start a TCP client to connect to the given address and port
+    #[command(
+        name = "client", // Can't colorize this. Won't match when the user types it in.
+        short_flag = 'c',
+        about =color_print::cstr!("Start a TCP <bright-green,bold>client</> to connect to the given <bright-cyan,bold>address</> and <bright-cyan,bold>port</>")
+    )]
     Client,
+}
+
+impl Display for CLISubcommand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CLISubcommand::Server => write!(f, "server"),
+            CLISubcommand::Client => write!(f, "client"),
+        }
+    }
 }

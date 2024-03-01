@@ -16,6 +16,7 @@
  */
 
 use crossterm::style::Stylize;
+use miette::miette;
 use miette::IntoDiagnostic;
 use r3bl_rs_utils_core::friendly_random_id;
 use tokio::{
@@ -26,19 +27,6 @@ use tokio::{
 use tracing::{error, info};
 
 use crate::{print_output, protocol, CLIArg, CHANNEL_SIZE};
-
-pub async fn setup_ctrlc_handler() -> miette::Result<()> {
-    ctrlc::set_handler(move || {
-        print_output(format!(
-            "{}",
-            "Ctrl-C event detected. Gracefully shutting down..."
-                .yellow()
-                .bold()
-        ));
-        std::process::exit(0);
-    })
-    .into_diagnostic()
-}
 
 pub async fn start_server(cli_args: CLIArg) -> miette::Result<()> {
     let address = cli_args.address;
@@ -54,7 +42,8 @@ pub async fn start_server(cli_args: CLIArg) -> miette::Result<()> {
     setup_ctrlc_handler().await?;
 
     // Create broadcast channel for sending messages to all clients.
-    let (sender_broadcast_channel, _) = broadcast::channel::<protocol::MyPayload>(CHANNEL_SIZE);
+    let (sender_for_broadcast_channel_between_client_handlers, _) =
+        broadcast::channel::<protocol::MyPayload>(CHANNEL_SIZE);
 
     // Server infinite loop - accept connections.
     loop {
@@ -64,7 +53,8 @@ pub async fn start_server(cli_args: CLIArg) -> miette::Result<()> {
         let (client_tcp_stream, _) = listener.accept().await.into_diagnostic()?;
 
         // Start task to handle a connection.
-        let sender_clone = sender_broadcast_channel.clone();
+        let sender_for_broadcast_channel_between_client_handlers =
+            sender_for_broadcast_channel_between_client_handlers.clone();
         tokio::spawn(async move {
             let client_id = friendly_random_id::generate_friendly_random_id();
             info!(
@@ -72,7 +62,13 @@ pub async fn start_server(cli_args: CLIArg) -> miette::Result<()> {
                 client_id.to_string().yellow().bold(),
                 "Handling client task"
             );
-            match handle_client_task(client_tcp_stream, sender_clone, &client_id).await {
+            match handle_client_task::enter(
+                client_tcp_stream,
+                sender_for_broadcast_channel_between_client_handlers,
+                &client_id,
+            )
+            .await
+            {
                 Ok(_) => info!(
                     "[{}]: {}",
                     client_id.to_string().yellow().bold(),
@@ -91,73 +87,109 @@ pub async fn start_server(cli_args: CLIArg) -> miette::Result<()> {
     }
 }
 
-/// Spawned task to handle a client connection.
-async fn handle_client_task(
-    client_tcp_stream: TcpStream,
-    sender: Sender<protocol::MyPayload>,
-    client_id: &String,
-) -> miette::Result<()> {
-    // Get sender and receiver ready.
-    let mut receiver = sender.subscribe();
+pub mod handle_client_task {
+    use crate::MyPayload;
 
-    // Get reader and writer from TCP stream.
-    let (read_half, write_half) = client_tcp_stream.into_split();
-    let mut buf_reader = BufReader::new(read_half);
-    let mut buf_writer = BufWriter::new(write_half);
+    use super::*;
 
-    // Send the client ID.
-    let set_client_id_message = protocol::ServerMessage::SetClientId(client_id.to_string());
-    let payload_buffer = bincode::serialize(&set_client_id_message).into_diagnostic()?;
-    protocol::write_bytes(&mut buf_writer, payload_buffer).await?;
-    info!(
-        "[{}]: Sent 'SetClientId' message to client with id: {}",
-        client_id.to_string().yellow().bold(),
-        format!("{:?}", set_client_id_message).yellow().bold()
-    );
+    pub async fn handle_client_message(
+        client_message: protocol::ClientMessage,
+        client_id: &String,
+    ) -> miette::Result<()> {
+        info!(
+            "[{}]: Received message from client {}",
+            client_id.to_string().yellow().bold(),
+            format!("{:?}", client_message).green().bold()
+        );
 
-    // Infinite server loop.
-    loop {
-        tokio::select! {
-            // branch 1: read from client.
-            result = protocol::read_bytes(&mut buf_reader) => {
-                let payload_buffer = result?;
-                let client_message: protocol::ClientMessage = bincode::deserialize(&payload_buffer).into_diagnostic()?;
+        // 00: do something meaningful w/ this payload and probably generate a response
+        match client_message {
+            protocol::ClientMessage::Exit => {
                 info!(
-                    "[{}]: Received message from client {}",
+                    "[{}]: Exiting due to client request",
                     client_id.to_string().yellow().bold(),
-                    format!("{:?}",client_message).green().bold()
                 );
-
-                // 00: do something meaningful w/ this payload and probably generate a response
-                match client_message {
-                    protocol::ClientMessage::Exit => {
-                        info!(
-                            "[{}]: Exiting due to client request",
-                            client_id.to_string().yellow().bold(),
-                        );
-                        break;
-                    }
-                    _ => {
-                        // 00: do something meaningful w/ this payload and probably generate a response
-                        todo!()
-                    }
-                }
+                Err(miette!("Client requested exit"))
             }
-
-            // branch 2: read from broadcast channel.
-            result = receiver.recv() => {
-                match result {
-                    Ok(payload) => {
-                        info!("Received payload from broadcast channel: {:?}", payload);
-                        // 00: do something meaningful w/ this payload and probably generate a response
-                    }
-                    Err(error) => {
-                        error!("Problem reading from broadcast channel: {:?}", error);
-                    }
-                }
+            _ => {
+                // 00: do something meaningful w/ this payload and probably generate a response
+                todo!()
             }
         }
     }
 
-    Ok(())
+    // 00: do something meaningful w/ this payload and probably generate a response
+    pub async fn handle_broadcast_channel_between_clients_payload(payload: MyPayload) {
+        info!(
+            "Received payload from broadcast channel (for payloads between clients): {:?}",
+            payload
+        );
+    }
+
+    /// This has an infinite loop, so you might want to call it in a spawn block.
+    pub async fn enter(
+        client_tcp_stream: TcpStream,
+        sender_for_broadcast_channel_between_client_handlers: Sender<protocol::MyPayload>,
+        client_id: &String,
+    ) -> miette::Result<()> {
+        // Get sender and receiver ready.
+        let mut receiver_for_broadcast_channel_between_client_handlers =
+            sender_for_broadcast_channel_between_client_handlers.subscribe();
+
+        // Get reader and writer from TCP stream.
+        let (read_half, write_half) = client_tcp_stream.into_split();
+        let mut buf_reader = BufReader::new(read_half);
+        let mut buf_writer = BufWriter::new(write_half);
+
+        // Send the client ID.
+        let set_client_id_message = protocol::ServerMessage::SetClientId(client_id.to_string());
+        let payload_buffer = bincode::serialize(&set_client_id_message).into_diagnostic()?;
+        protocol::write_bytes(&mut buf_writer, payload_buffer).await?;
+        info!(
+            "[{}]: Sent 'SetClientId' message to client with id: {}",
+            client_id.to_string().yellow().bold(),
+            format!("{:?}", set_client_id_message).yellow().bold()
+        );
+
+        // Infinite server loop.
+        loop {
+            tokio::select! {
+                // Branch 1: Read from client.
+                result = protocol::read_bytes(&mut buf_reader) => {
+                    let payload_buffer = result?;
+                    let client_message: protocol::ClientMessage = bincode::deserialize(&payload_buffer).into_diagnostic()?;
+                    if handle_client_message(client_message, client_id).await.is_err() {
+                        break;
+                    }
+                }
+
+                // Branch 2: Read from broadcast channel.
+                result = receiver_for_broadcast_channel_between_client_handlers.recv() => {
+                    match result {
+                        Ok(payload) => {
+                            handle_broadcast_channel_between_clients_payload(payload).await;
+                        }
+                        Err(error) => {
+                            error!("Problem reading from broadcast channel: {:?}", error);
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+pub async fn setup_ctrlc_handler() -> miette::Result<()> {
+    ctrlc::set_handler(move || {
+        print_output(format!(
+            "{}",
+            "Ctrl-C event detected. Gracefully shutting down..."
+                .yellow()
+                .bold()
+        ));
+        std::process::exit(0);
+    })
+    .into_diagnostic()
 }
