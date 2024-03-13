@@ -17,8 +17,10 @@
 
 use clap::Parser;
 use tcp_api_server::{clap_args, tracing_setup, TracingConfig};
+use tracing::{info, instrument};
 
 #[tokio::main]
+#[instrument]
 async fn main() -> miette::Result<()> {
     let cli_args = clap_args::CLIArg::parse();
 
@@ -30,6 +32,8 @@ async fn main() -> miette::Result<()> {
             cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
         ),
     })?;
+
+    info!(?cli_args);
 
     // Start the server or client task based on the subcommand.
     match cli_args.subcommand {

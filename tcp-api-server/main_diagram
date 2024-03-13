@@ -1,0 +1,70 @@
+<mxfile host="Electron" modified="2024-03-17T21:24:46.025Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/23.1.5 Chrome/120.0.6099.109 Electron/28.1.0 Safari/537.36" etag="-gVreBzlGicGgLo0R9Vm" version="23.1.5" type="device">
+  <diagram name="Page-1" id="3OzA2ykNCYab4Pa36Udh">
+    <mxGraphModel dx="758" dy="1243" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KZ6pp6LFvPI3TymnVyKR-1" target="KZ6pp6LFvPI3TymnVyKR-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KZ6pp6LFvPI3TymnVyKR-1" target="KZ6pp6LFvPI3TymnVyKR-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-1" value="main" style="whiteSpace=wrap;html=1;aspect=fixed;fontFamily=Iosevka Term;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-19" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KZ6pp6LFvPI3TymnVyKR-2" target="KZ6pp6LFvPI3TymnVyKR-18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-2" value="start_client" style="whiteSpace=wrap;html=1;fontFamily=Iosevka Term;" vertex="1" parent="1">
+          <mxGeometry x="200" y="210" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-4" value="start_server" style="whiteSpace=wrap;html=1;fontFamily=Iosevka Term;" vertex="1" parent="1">
+          <mxGeometry x="40" y="380" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-18" value="monitor_tcp_connection_task::enter" style="whiteSpace=wrap;html=1;fontFamily=Iosevka Term;" vertex="1" parent="1">
+          <mxGeometry x="400" y="210" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-22" value="monitor_client_lifecycle_channel_task::enter" style="whiteSpace=wrap;html=1;fontFamily=Iosevka Term;" vertex="1" parent="1">
+          <mxGeometry x="400" y="300" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-24" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="KZ6pp6LFvPI3TymnVyKR-2" target="KZ6pp6LFvPI3TymnVyKR-22">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="250" as="sourcePoint" />
+            <mxPoint x="410" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-25" value="main_event_loop::enter" style="whiteSpace=wrap;html=1;fontFamily=Iosevka Term;" vertex="1" parent="1">
+          <mxGeometry x="400" y="380" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-26" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="KZ6pp6LFvPI3TymnVyKR-2" target="KZ6pp6LFvPI3TymnVyKR-25">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="250" as="sourcePoint" />
+            <mxPoint x="410" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-28" value="&lt;h1&gt;Tokio runtime&lt;/h1&gt;&lt;p&gt;The program is async (mostly, except for the blocking user input in readline). The tasks that are spawned are tokio tasks.&lt;/p&gt;" style="text;html=1;spacing=5;spacingTop=-20;whiteSpace=wrap;overflow=hidden;rounded=0;fontFamily=Iosevka Term;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="190" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-31" value="" style="group" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="380" y="280" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-11" value="" style="sketch=0;html=1;aspect=fixed;strokeColor=none;shadow=0;fillColor=#3B8DF1;verticalAlign=top;labelPosition=center;verticalLabelPosition=bottom;shape=mxgraph.gcp2.play_gear" vertex="1" parent="KZ6pp6LFvPI3TymnVyKR-31">
+          <mxGeometry width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-29" value="&lt;span style=&quot;background-color: rgb(24, 60, 242);&quot;&gt;&amp;nbsp;tokio::spawn&amp;nbsp;&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Iosevka Term;labelBackgroundColor=#29b6f2;fontColor=#DEFFFC;" vertex="1" parent="KZ6pp6LFvPI3TymnVyKR-31">
+          <mxGeometry x="30" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-32" value="" style="group" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="380" y="190" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-33" value="" style="sketch=0;html=1;aspect=fixed;strokeColor=none;shadow=0;fillColor=#3B8DF1;verticalAlign=top;labelPosition=center;verticalLabelPosition=bottom;shape=mxgraph.gcp2.play_gear" vertex="1" parent="KZ6pp6LFvPI3TymnVyKR-32">
+          <mxGeometry width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="KZ6pp6LFvPI3TymnVyKR-34" value="&lt;span style=&quot;background-color: rgb(24, 60, 242);&quot;&gt;&amp;nbsp;tokio::spawn&amp;nbsp;&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Iosevka Term;labelBackgroundColor=#29b6f2;fontColor=#DEFFFC;" vertex="1" parent="KZ6pp6LFvPI3TymnVyKR-32">
+          <mxGeometry x="30" width="90" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

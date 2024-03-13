@@ -4,6 +4,7 @@
     "bigendian",
     "bincode",
     "dialoguer",
+    "geohashing",
     "indicatif",
     "oneshot",
     "opentelemetry",

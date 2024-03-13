@@ -62,13 +62,14 @@ pub struct CLIArg {
 
     #[arg(
         short = 't',
-        long = "enable-tracing",
+        long = "configure-tracing",
         name = color_print::cstr!("Enable tracing via \
+            <bright-yellow,bold>none</>, \
             <bright-yellow,bold>stdout</>, \
             <bright-yellow,bold>file</>, \
             <bright-yellow,bold>stdout+file</>"),
         global = true,
-        default_values = &["file"],
+        default_values = &["stdout+file"],
         value_delimiter = '+',
     )]
     pub enable_tracing: Vec<tracing_writer_config::Writer>,
