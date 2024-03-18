@@ -43,6 +43,8 @@ pub enum Message {
     ExitDueToError(miette::Report),
 }
 
+/// The `client_id` field is added to the span, so that it can be used in the logs by
+/// functions called by this one. See also: [crate::CLIENT_ID_TRACING_FIELD].
 #[instrument(skip_all, fields(client_id))]
 pub async fn start_client(cli_args: CLIArg) -> miette::Result<()> {
     // Connect to the server.
@@ -286,6 +288,8 @@ pub mod monitor_client_lifecycle_channel_task {
 const DEFAULT_CLIENT_ID: &str = "none";
 
 pub mod monitor_tcp_connection_task {
+    use crate::CLIENT_ID_TRACING_FIELD;
+
     use super::*;
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
@@ -303,7 +307,7 @@ pub mod monitor_tcp_connection_task {
         // This will be set by the server when the client connects.
         let mut client_id = DEFAULT_CLIENT_ID.to_string();
 
-        info!("entering loop");
+        info!("Entering loop");
 
         loop {
             // 00: listen for data from the server, can send message over channel for TCP connection drop
@@ -344,18 +348,18 @@ pub mod monitor_tcp_connection_task {
         ));
 
         // Process the message.
-        info!(?server_message, "start processing");
+        info!(?server_message, "Start processing message");
         match server_message {
             protocol::ServerMessage::SetClientId(ref id) => {
                 client_id.clone_from(id);
-                tracing::Span::current().record("client_id", &client_id);
+                tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, &client_id);
             }
             _ => {
                 // 00: do something meaningful with the server message (eg: set the client_id)
                 todo!()
             }
         };
-        info!(?server_message, "end processing");
+        info!(?server_message, "End processing message");
         Ok(())
     }
 }

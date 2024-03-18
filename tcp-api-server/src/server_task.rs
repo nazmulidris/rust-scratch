@@ -15,6 +15,7 @@
  *   limitations under the License.
  */
 
+use crate::MyPayload;
 use crossterm::style::Stylize;
 use miette::miette;
 use miette::IntoDiagnostic;
@@ -24,10 +25,11 @@ use tokio::{
     net::{TcpListener, TcpStream},
     sync::broadcast::{self, Sender},
 };
-use tracing::{error, info};
+use tracing::{error, info, instrument};
 
-use crate::{print_output, protocol, CLIArg, CHANNEL_SIZE};
+use crate::{print_output, protocol, CLIArg, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD};
 
+#[instrument(skip_all)]
 pub async fn start_server(cli_args: CLIArg) -> miette::Result<()> {
     let address = cli_args.address;
     let port = cli_args.port;
@@ -45,23 +47,19 @@ pub async fn start_server(cli_args: CLIArg) -> miette::Result<()> {
     let (sender_for_broadcast_channel_between_client_handlers, _) =
         broadcast::channel::<protocol::MyPayload>(CHANNEL_SIZE);
 
+    info!("Listening for new connections");
+
     // Server infinite loop - accept connections.
     loop {
-        info!("Listening for new connections");
-
         // Accept incoming connections (blocking).
         let (client_tcp_stream, _) = listener.accept().await.into_diagnostic()?;
 
         // Start task to handle a connection.
         let sender_for_broadcast_channel_between_client_handlers =
             sender_for_broadcast_channel_between_client_handlers.clone();
+
         tokio::spawn(async move {
             let client_id = friendly_random_id::generate_friendly_random_id();
-            info!(
-                "[{}]: {}",
-                client_id.to_string().yellow().bold(),
-                "Handling client task"
-            );
             match handle_client_task::enter(
                 client_tcp_stream,
                 sender_for_broadcast_channel_between_client_handlers,
@@ -69,46 +67,29 @@ pub async fn start_server(cli_args: CLIArg) -> miette::Result<()> {
             )
             .await
             {
-                Ok(_) => info!(
-                    "[{}]: {}",
-                    client_id.to_string().yellow().bold(),
-                    "Successfully ended client task"
-                ),
-                Err(error) => info!(
-                    "[{}]: {} {}",
-                    client_id.to_string().yellow().bold(),
-                    "Problem handling client task, it ended due to",
-                    error.to_string().red().bold()
-                ),
+                Err(error) => error!(client_id, %error, "Problem handling client task"),
+                Ok(_) => info!(client_id, "Successfully ended client task"),
             }
         });
-
-        info!("Spawned task to handle the connection");
     }
 }
 
+/// The `client_id` field is added to the span, so that it can be used in the logs by all
+/// the functions in this module. See also: [crate::CLIENT_ID_TRACING_FIELD].
 pub mod handle_client_task {
-    use crate::MyPayload;
-
     use super::*;
 
+    #[instrument(skip_all, fields(client_id))]
     pub async fn handle_client_message(
         client_message: protocol::ClientMessage,
-        client_id: &String,
+        _client_id: &str,
     ) -> miette::Result<()> {
-        info!(
-            "[{}]: Received message from client {}",
-            client_id.to_string().yellow().bold(),
-            format!("{:?}", client_message).green().bold()
-        );
+        info!(?client_message, "Received message from client");
 
         // 00: do something meaningful w/ this payload and probably generate a response
         match client_message {
             protocol::ClientMessage::Exit => {
-                info!(
-                    "[{}]: Exiting due to client request",
-                    client_id.to_string().yellow().bold(),
-                );
+                info!("Exiting due to client request");
                 Err(miette!("Client requested exit"))
             }
             _ => {
@@ -119,6 +100,7 @@ pub mod handle_client_task {
     }
 
     // 00: do something meaningful w/ this payload and probably generate a response
+    #[instrument(skip_all, fields(client_id))]
     pub async fn handle_broadcast_channel_between_clients_payload(payload: MyPayload) {
         info!(
             "Received payload from broadcast channel (for payloads between clients): {:?}",
@@ -127,11 +109,15 @@ pub mod handle_client_task {
     }
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
+    #[instrument(name = "handle_client_task:enter", skip_all, fields(client_id))]
     pub async fn enter(
         client_tcp_stream: TcpStream,
         sender_for_broadcast_channel_between_client_handlers: Sender<protocol::MyPayload>,
-        client_id: &String,
+        client_id: &str,
     ) -> miette::Result<()> {
+        tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, client_id);
+        info!("Handling client task");
+
         // Get sender and receiver ready.
         let mut receiver_for_broadcast_channel_between_client_handlers =
             sender_for_broadcast_channel_between_client_handlers.subscribe();
@@ -142,14 +128,12 @@ pub mod handle_client_task {
         let mut buf_writer = BufWriter::new(write_half);
 
         // Send the client ID.
-        let set_client_id_message = protocol::ServerMessage::SetClientId(client_id.to_string());
-        let payload_buffer = bincode::serialize(&set_client_id_message).into_diagnostic()?;
+        let server_message = protocol::ServerMessage::SetClientId(client_id.to_string());
+        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
         protocol::write_bytes(&mut buf_writer, payload_buffer).await?;
-        info!(
-            "[{}]: Sent 'SetClientId' message to client with id: {}",
-            client_id.to_string().yellow().bold(),
-            format!("{:?}", set_client_id_message).yellow().bold()
-        );
+        info!(?server_message, "Sent message to client");
+
+        info!("Entering infinite loop to handle client messages");
 
         // Infinite server loop.
         loop {
@@ -181,6 +165,7 @@ pub mod handle_client_task {
     }
 }
 
+#[instrument]
 pub async fn setup_ctrlc_handler() -> miette::Result<()> {
     ctrlc::set_handler(move || {
         print_output(format!(

@@ -57,7 +57,7 @@
     - [Any need to call `in_current_span()` if the `instrument` macro is used to spawn a task](https://gemini.google.com/app/d9473167dbd5fee7)
     - https://docs.rs/tracing/latest/tracing/
     - https://www.youtube.com/watch?v=21rtHinFA40
-  ☐ configure tracing using spans and instrument across all server tasks
+  ✔ configure tracing using spans and instrument across all server tasks @done(24-03-18 12:10)
   ☐ use tracing-tree for visualizing the tracing spans
   ☐ configure opentelemetry and use Jaeger to view the traces
     - https://tokio.rs/tokio/topics/tracing-next-steps

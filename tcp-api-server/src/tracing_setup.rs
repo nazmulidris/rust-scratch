@@ -24,7 +24,7 @@ use tracing_subscriber::fmt::writer::MakeWriterExt;
 /// Fields:
 /// - `writers`: Vec<[tracing_writer_config::Writer]> - Zero or more writers to use for
 ///   tracing.
-/// - `level`: [tracing_log_level_config::Level] - The log level to use for tracing.
+/// - `level`: [tracing::Level] - The log level to use for tracing.
 /// - `tracing_log_file_path_and_prefix`: [String] - The file path and prefix to use for
 ///   the log file. Eg: `/tmp/tcp_api_server` or `tcp_api_server`.
 #[derive(Clone, Debug, PartialEq)]
