@@ -1,9 +1,9 @@
-# setup project:
+setup project:
   ✔ get context from tcp-chat-server repo, kv_example repo @done(24-02-14 11:39)
   ✔ create tcp-api-server repo @done(24-02-14 11:39)
   ✔ outline architecture in README.md @done(24-02-14 11:39)
 
-# client / server api:
+client / server api:
   ✔ define enum w/ all the operations & args that are part of the API @done(24-02-14 13:43)
   ✔ implement helpers for length-prefixing binary data payloads @done(24-02-14 19:41)
     - `fn serialize_helper(op: &impl Serialize) -> miette::Result<(u64, Vec<u8>)> { ... }`
@@ -17,24 +17,24 @@
     - https://users.rust-lang.org/t/reading-length-payload-from-a-tcpstream/51211
     - https://bard.google.com/share/33740aa390af
 
-# colorize clap args in the cli using color-print, inspired by cargo itself:
+colorize clap args in the cli using color-print, inspired by cargo itself:
   ✔ Add https://crates.io/crates/color-print to colorize the clap output @done(24-03-01 16:05)
     - Eg: https://github.com/nazmulidris/cargo/blob/master/src/bin/cargo/commands/run.rs#L61
 
-# client task:
+client task:
   ✔ separate user input thread from tokio thread @done(24-02-16 11:22)
     - https://docs.rs/tokio/latest/tokio/io/struct.Stdin.html
     - https://users.rust-lang.org/t/stopping-a-thread/6328/7
     - https://internals.rust-lang.org/t/thread-cancel-support/3056/16
   ✔ connect to server using api @done(24-02-17 10:37)
 
-# server task:
+server task:
   ✔ bind & listen on a socket, accept connections @done(24-02-17 10:37)
   ✔ read from socket, deserialize into enum @done(24-02-17 10:37)
   ✔ match on enum, perform operation, serialize response, send back to client @done(24-02-17 13:54)
   ✔ add broadcast channel @done(24-03-03 17:23)
 
-# refactor client_task.rs and server_task.rs to have better names & same module structure:
+refactor client_task.rs and server_task.rs to have better names & same module structure:
   ✔ client_task.rs: task -> enter -> handle @done(24-03-03 10:59)
     - main_event_loop_blocking::{enter_blocking, handle_user_input}
     - monitor_client_lifecycle_channel_task::{enter, handle_client_lifecycle_channel_message}
@@ -42,7 +42,7 @@
   ✔ server_task.rs: task -> enter -> handle @done(24-03-03 17:21)
     - handle_client_task::{enter, handle_broadcast_channel_between_clients_payload, handle_client_message}
 
-# client api:
+client api:
   ☐ take raw operations in monitor_tcp_connection_task and generalize into a client api
     - use callback style api (eg: JS/Java)
     - use channel style api (eg: go lang)
@@ -50,7 +50,7 @@
   ☐ send operation to server
   ☐ receive response from server
 
-# tracing, logging, reporting, errors:
+tracing, logging, reporting, errors:
   ✔ use tracing, and configure it to log to stdout and file @done(24-03-13 09:29)
   ✔ configure tracing using spans and instrument across all client tasks @done(24-03-17 16:37)
     - https://docs.rs/tracing/latest/tracing/attr.instrument.html
@@ -58,7 +58,8 @@
     - https://docs.rs/tracing/latest/tracing/
     - https://www.youtube.com/watch?v=21rtHinFA40
   ✔ configure tracing using spans and instrument across all server tasks @done(24-03-18 12:10)
-  ☐ use tracing-tree for visualizing the tracing spans
+  ✔ use tracing-tree for visualizing the tracing spans; decided not to use this since it doesn't work well @done(24-03-18 20:24)
+    - https://github.com/davidbarsky/tracing-tree/blob/main/examples/basic.rs
   ☐ configure opentelemetry and use Jaeger to view the traces
     - https://tokio.rs/tokio/topics/tracing-next-steps
     - https://youtu.be/8FAdY_0DpkM?si=olTqxBoVQwnVQ9_m
@@ -67,8 +68,10 @@
     - [custom error report handler](https://github.com/zkat/miette/blob/6ea86a2248854acf88df345814b6c97d31b8b4d9/tests/test_location.rs#L39)
     - use terminal size to format error report & text wrap
 
-# async ui:
-  ☐ design for rustyline-async
+async ui:
+  ☐ design for rustyline-async:
+    ☐ Use: https://github.com/nazmulidris/rustyline-async
+    ☐ drop `dialoguer` from `Cargo.toml`
   ☐ use notifications for any events that come in outside of the main event loop
     - purpose of async readline is to be able to abort the async task w/out having to system exit the process
 
@@ -76,17 +79,17 @@ implement all the protocol messages (client & server):
   ☐ client
   ☐ server
 
-# geohashing support in api (bird watcher api):
+geohashing support in api (bird watcher api):
   - https://discord.com/channels/1217649458968268882/1218322335602311289/1218343183440678933
   - https://github.com/nmandery/h3ron
   - https://benfeifke.com/posts/geospatial-indexing-explained/
 
-# enhance reliability:
+enhance reliability:
   ☐ use procspawn for reliability
     - [stdin, stdout redirection for spawned processes](https://stackoverflow.com/questions/34611742/how-do-i-read-the-output-of-a-child-process-without-blocking-in-rust)
 
-# connect the tcp server to kv example for persistence:
+connect the tcp server to kv example for persistence:
   ☐ use kv example to persist data
 
-# add persistence w/ sqlite:
+add persistence w/ sqlite:
   ☐ replace kv w/ sqlx

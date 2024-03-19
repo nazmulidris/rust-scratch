@@ -90,7 +90,7 @@ pub async fn start_client(cli_args: CLIArg) -> miette::Result<()> {
     // spawned tasks don't block each other (eg: if either of them sleeps).
     arc_vec_abort_handles.lock().unwrap().push({
         let future =
-            monitor_tcp_connection_task::enter(client_lifecycle_control_sender.clone(), read_half);
+            monitor_tcp_conn_task::main_loop(client_lifecycle_control_sender.clone(), read_half);
         let join_handle = tokio::spawn(future);
         join_handle.abort_handle()
     });
@@ -98,7 +98,7 @@ pub async fn start_client(cli_args: CLIArg) -> miette::Result<()> {
     // SPAWN TASK 2: Listen to channel messages.
     // Handle messages from the channel in a separate task.
     arc_vec_abort_handles.clone().lock().unwrap().push({
-        let future = monitor_client_lifecycle_channel_task::enter(
+        let future = monitor_lifecycle_channel_task::main_loop(
             client_lifecycle_control_receiver,
             arc_vec_abort_handles.clone(),
         );
@@ -110,23 +110,24 @@ pub async fn start_client(cli_args: CLIArg) -> miette::Result<()> {
     // time to give the other tasks a chance to start.
     tokio::time::sleep(DELAY_UNIT).await;
     // No need to spawn this next line.
-    let _ = main_event_loop::enter(client_lifecycle_control_sender.clone(), write_half).await;
+    let _ = user_input::main_loop(client_lifecycle_control_sender.clone(), write_half).await;
 
     Ok(())
 }
 
-pub mod main_event_loop {
+pub mod user_input {
     use super::*;
 
     /// This has an infinite loop, so you might want to spawn a task before calling it.
     /// And it has a blocking call, so you can't exit it preemptively.
-    #[instrument(name = "main_event_loop:enter", skip_all, fields(client_id))]
-    pub async fn enter(
+    #[instrument(name = "user_input:main_loop", skip_all, fields(client_id))]
+    pub async fn main_loop(
         client_lifecycle_control_sender: Sender<Message>,
         write_half: OwnedWriteHalf,
     ) -> miette::Result<()> {
         let mut buf_writer = BufWriter::new(write_half);
         loop {
+            info!("Waiting for user input");
             // Since the get user input function is blocking and not async, wrap it in a
             // spawn_blocking.
             // More info: <https://docs.rs/tokio/latest/tokio/task/index.html#blocking-and-yielding>
@@ -156,7 +157,7 @@ pub mod main_event_loop {
 
     /// This is a blocking call, it will lock up the thread that is calling this. And
     /// there is no way to to cancel, abort, or exit this task preemptively. The
-    /// [super::monitor_client_lifecycle_channel_task::exit] function deals with this.
+    /// [super::monitor_lifecycle_channel_task::exit] function deals with this.
     pub fn get_user_input_non_async_blocking() -> Option<String> {
         let prompt = format!(
             "{}, eg: {}, etc.",
@@ -213,16 +214,16 @@ pub mod main_event_loop {
     }
 }
 
-pub mod monitor_client_lifecycle_channel_task {
+pub mod monitor_lifecycle_channel_task {
     use super::*;
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
     #[instrument(
-        name = "monitor_client_lifecycle_channel_task:enter",
+        name = "monitor_lifecycle_channel_task:main_loop",
         skip_all,
         fields(client_id)
     )]
-    pub async fn enter(
+    pub async fn main_loop(
         mut client_lifecycle_control_receiver: mpsc::Receiver<Message>,
         arc_vec_abort_handles: Arc<Mutex<Vec<AbortHandle>>>,
     ) -> miette::Result<()> {
@@ -287,18 +288,14 @@ pub mod monitor_client_lifecycle_channel_task {
 
 const DEFAULT_CLIENT_ID: &str = "none";
 
-pub mod monitor_tcp_connection_task {
+pub mod monitor_tcp_conn_task {
     use crate::CLIENT_ID_TRACING_FIELD;
 
     use super::*;
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
-    #[instrument(
-        name = "monitor_tcp_connection_task:enter",
-        fields(client_id),
-        skip_all
-    )]
-    pub async fn enter(
+    #[instrument(name = "monitor_tcp_conn_task:main_loop", fields(client_id), skip_all)]
+    pub async fn main_loop(
         sender_exit_channel: Sender<Message>,
         buf_reader: OwnedReadHalf,
     ) -> miette::Result<()> {
@@ -348,7 +345,7 @@ pub mod monitor_tcp_connection_task {
         ));
 
         // Process the message.
-        info!(?server_message, "Start processing message");
+        info!(?server_message, "Start");
         match server_message {
             protocol::ServerMessage::SetClientId(ref id) => {
                 client_id.clone_from(id);
@@ -359,7 +356,7 @@ pub mod monitor_tcp_connection_task {
                 todo!()
             }
         };
-        info!(?server_message, "End processing message");
+        info!(?server_message, "End");
         Ok(())
     }
 }

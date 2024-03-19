@@ -10,9 +10,13 @@ edition = "2021"
 r3bl_tui = { version = "*" }
 r3bl_rs_utils_core = { version = "*" }
 crossterm = "*"
-dialoguer = "*"
 indicatif = "*"
 ctrlc = "*"
+
+# Prompt user for input.
+rustyline-async = { git = "https://github.com/nazmulidris/rustyline-async" }
+# // 00: deprecate the following!
+dialoguer = "*"
 
 # Command line argument parsing.
 clap = { version = "4.4.13", features = ["derive"] }

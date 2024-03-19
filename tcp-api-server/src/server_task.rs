@@ -60,7 +60,7 @@ pub async fn start_server(cli_args: CLIArg) -> miette::Result<()> {
 
         tokio::spawn(async move {
             let client_id = friendly_random_id::generate_friendly_random_id();
-            match handle_client_task::enter(
+            match handle_client_task::main_loop(
                 client_tcp_stream,
                 sender_for_broadcast_channel_between_client_handlers,
                 &client_id,
@@ -109,8 +109,8 @@ pub mod handle_client_task {
     }
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
-    #[instrument(name = "handle_client_task:enter", skip_all, fields(client_id))]
-    pub async fn enter(
+    #[instrument(name = "handle_client_task:main_loop", skip_all, fields(client_id))]
+    pub async fn main_loop(
         client_tcp_stream: TcpStream,
         sender_for_broadcast_channel_between_client_handlers: Sender<protocol::MyPayload>,
         client_id: &str,

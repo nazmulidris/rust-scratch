@@ -34,3 +34,10 @@ where
 {
     eprintln!("{} {}", "  ▶ ".red().bold().on_dark_grey(), output);
 }
+
+pub fn print_output_raw<T>(output: T)
+where
+    T: std::fmt::Display,
+{
+    eprintln!("{}", output.to_string().cyan().dim().bold());
+}

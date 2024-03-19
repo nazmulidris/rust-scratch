@@ -16,8 +16,16 @@
  */
 
 use clap::Parser;
-use tcp_api_server::{clap_args, tracing_setup, TracingConfig};
-use tracing::{info, instrument};
+use tcp_api_server::{clap_args, print_output_raw, tracing_setup, TracingConfig};
+use tracing::instrument;
+
+const TCP_API_SERVER: &str = r#"
+░░░░░ ░░░░ ░░░░░   ░░░░░ ░░░░░ ░    ░░░░░ ░░░░ ░░░░░  ░░   ░ ░░░░ ░░░░░
+  ░   ░    ░   ░   ░   ░ ░   ░ ░    ░     ░    ░   ░  ░░   ░ ░    ░   ░
+  ░░  ░░   ░░░░░   ░░░░░ ░░░░░ ░░   ░░░░░ ░░░░ ░░░░░░ ░░  ░░ ░░░░ ░░░░░░
+  ░░  ░░   ░░      ░░  ░ ░░    ░░      ░░ ░░   ░░   ░  ░  ░  ░░   ░░   ░
+  ░░  ░░░░ ░░      ░░  ░ ░░    ░░   ░░░░░ ░░░░ ░░   ░  ░░░░  ░░░░ ░░   ░
+"#;
 
 #[tokio::main]
 #[instrument]
@@ -33,7 +41,7 @@ async fn main() -> miette::Result<()> {
         ),
     })?;
 
-    info!(?cli_args);
+    print_output_raw(TCP_API_SERVER);
 
     // Start the server or client task based on the subcommand.
     match cli_args.subcommand {

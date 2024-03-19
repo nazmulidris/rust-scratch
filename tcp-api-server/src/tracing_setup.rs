@@ -98,6 +98,7 @@ pub fn init(tracing_config: TracingConfig) -> miette::Result<()> {
         .with_max_level(level)
         .without_time()
         .with_thread_ids(true)
+        .with_thread_names(false)
         .with_target(false)
         .with_file(false)
         .with_line_number(false)
