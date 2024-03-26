@@ -27,7 +27,7 @@ use tokio::{
 };
 use tracing::{error, info, instrument};
 
-use crate::{print_output, protocol, CLIArg, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD};
+use crate::{protocol, CLIArg, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD};
 
 #[instrument(skip_all)]
 pub async fn start_server(cli_args: CLIArg) -> miette::Result<()> {
@@ -51,7 +51,7 @@ pub async fn start_server(cli_args: CLIArg) -> miette::Result<()> {
 
     // Server infinite loop - accept connections.
     loop {
-        // Accept incoming connections (blocking).
+        // Accept incoming connections ("blocking").
         let (client_tcp_stream, _) = listener.accept().await.into_diagnostic()?;
 
         // Start task to handle a connection.
@@ -131,7 +131,7 @@ pub mod handle_client_task {
         let server_message = protocol::ServerMessage::SetClientId(client_id.to_string());
         let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
         protocol::write_bytes(&mut buf_writer, payload_buffer).await?;
-        info!(?server_message, "Sent message to client");
+        info!(?server_message, "Sent to client");
 
         info!("Entering infinite loop to handle client messages");
 
@@ -165,15 +165,15 @@ pub mod handle_client_task {
     }
 }
 
-#[instrument]
+#[instrument(skip_all)]
 pub async fn setup_ctrlc_handler() -> miette::Result<()> {
     ctrlc::set_handler(move || {
-        print_output(format!(
+        eprintln!(
             "{}",
             "Ctrl-C event detected. Gracefully shutting down..."
                 .yellow()
                 .bold()
-        ));
+        );
         std::process::exit(0);
     })
     .into_diagnostic()

@@ -16,10 +16,17 @@
  */
 
 use clap::Parser;
-use tcp_api_server::{clap_args, print_output_raw, tracing_setup, TracingConfig};
+use r3bl_rs_utils_core::UnicodeString;
+use r3bl_terminal_async::{tracing_setup, TerminalAsync, TracingConfig};
+use r3bl_tui::{
+    ColorWheel, ColorWheelConfig, ColorWheelSpeed, GradientGenerationPolicy, TextColorizationPolicy,
+};
+use tcp_api_server::clap_args;
 use tracing::instrument;
 
-const TCP_API_SERVER: &str = r#"
+/// Gradients: <https://uigradients.com>
+fn colorize_header() -> String {
+    const TCP_API_SERVER: &str = r#"
 ░░░░░ ░░░░ ░░░░░   ░░░░░ ░░░░░ ░    ░░░░░ ░░░░ ░░░░░  ░░   ░ ░░░░ ░░░░░
   ░   ░    ░   ░   ░   ░ ░   ░ ░    ░     ░    ░   ░  ░░   ░ ░    ░   ░
   ░░  ░░   ░░░░░   ░░░░░ ░░░░░ ░░   ░░░░░ ░░░░ ░░░░░░ ░░  ░░ ░░░░ ░░░░░░
@@ -27,29 +34,64 @@ const TCP_API_SERVER: &str = r#"
   ░░  ░░░░ ░░      ░░  ░ ░░    ░░   ░░░░░ ░░░░ ░░   ░  ░░░░  ░░░░ ░░   ░
 "#;
 
+    let color_wheel_config = ColorWheelConfig::Rgb(
+        // Stops.
+        vec!["#4e54c8", "#9d459a"]
+            .into_iter()
+            .map(String::from)
+            .collect(),
+        // Speed.
+        ColorWheelSpeed::Medium,
+        // Steps.
+        50,
+    );
+
+    ColorWheel::new(vec![color_wheel_config]).colorize_into_string(
+        &UnicodeString::from(TCP_API_SERVER),
+        GradientGenerationPolicy::ReuseExistingGradientAndResetIndex,
+        TextColorizationPolicy::ColorEachCharacter(None),
+    )
+}
+
 #[tokio::main]
 #[instrument]
 async fn main() -> miette::Result<()> {
     let cli_args = clap_args::CLIArg::parse();
+    println!("{}", colorize_header());
 
-    tracing_setup::init(TracingConfig {
-        writers: cli_args.enable_tracing.clone(),
-        level: cli_args.tracing_log_level,
-        tracing_log_file_path_and_prefix: format!(
-            "{}_{}",
-            cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
-        ),
-    })?;
-
-    print_output_raw(TCP_API_SERVER);
-
-    // Start the server or client task based on the subcommand.
     match cli_args.subcommand {
+        // Start server (non interactive, no need for TerminalAsync. Normal stdout.
         tcp_api_server::CLISubcommand::Server => {
+            tracing_setup::init(TracingConfig {
+                writers: cli_args.enable_tracing.clone(),
+                level: cli_args.tracing_log_level,
+                tracing_log_file_path_and_prefix: format!(
+                    "{}_{}",
+                    cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
+                ),
+                stdout_override: None,
+            })?;
             tcp_api_server::server_task::start_server(cli_args).await?
         }
+        // Start client (interactive and needs TerminalAsync). Async writer for stdout.
         tcp_api_server::CLISubcommand::Client => {
-            tcp_api_server::client_task::start_client(cli_args).await?
+            let maybe_terminal_async = TerminalAsync::try_new("> ")?;
+
+            tracing_setup::init(TracingConfig {
+                writers: cli_args.enable_tracing.clone(),
+                level: cli_args.tracing_log_level,
+                tracing_log_file_path_and_prefix: format!(
+                    "{}_{}",
+                    cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
+                ),
+                stdout_override: maybe_terminal_async
+                    .as_ref()
+                    .map(|terminal_async| terminal_async.clone_stdout()),
+            })?;
+
+            if let Some(terminal_async) = maybe_terminal_async {
+                tcp_api_server::client_task::start_client(cli_args, terminal_async).await?
+            }
         }
     }
 
