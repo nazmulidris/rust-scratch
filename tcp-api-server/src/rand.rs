@@ -15,7 +15,6 @@
  *   limitations under the License.
  */
 
-use crossterm::style::Stylize;
 use rand::{
     distributions::{Distribution, Standard},
     thread_rng, Rng,
@@ -26,18 +25,4 @@ where
     Standard: Distribution<T>,
 {
     thread_rng().gen::<T>()
-}
-
-pub fn print_output<T>(output: T)
-where
-    T: std::fmt::Display,
-{
-    eprintln!("{} {}", "  ▶ ".red().bold().on_dark_grey(), output);
-}
-
-pub fn print_output_raw<T>(output: T)
-where
-    T: std::fmt::Display,
-{
-    eprintln!("{}", output.to_string().cyan().dim().bold());
 }

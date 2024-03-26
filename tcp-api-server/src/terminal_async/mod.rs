@@ -15,18 +15,10 @@
  *   limitations under the License.
  */
 
-use indicatif::{ProgressBar, ProgressStyle};
+pub mod progress_bar;
+pub mod terminal;
+pub mod tracing_setup;
 
-/// More info:
-/// - <https://docs.rs/indicatif/latest/indicatif/index.html#templates>
-/// - <https://docs.rs/console/0.7.5/src/console/utils.rs.html#148-180>
-pub fn create_progress_bar(message: &str, template: &str) -> ProgressBar {
-    let message = message.to_string();
-    if let Ok(template) = ProgressStyle::with_template(template) {
-        ProgressBar::new_spinner()
-            .with_style(template)
-            .with_message(message)
-    } else {
-        ProgressBar::new_spinner().with_message(message)
-    }
-}
+pub use progress_bar::*;
+pub use terminal::*;
+pub use tracing_setup::*;

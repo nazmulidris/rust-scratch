@@ -15,8 +15,8 @@ ctrlc = "*"
 
 # Prompt user for input.
 rustyline-async = { git = "https://github.com/nazmulidris/rustyline-async" }
-# // 00: deprecate the following!
-dialoguer = "*"
+futures-channel = "0.3"
+futures-util = { version = "0.3", features = ["io"] }
 
 # Command line argument parsing.
 clap = { version = "4.4.13", features = ["derive"] }

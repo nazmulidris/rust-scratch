@@ -15,9 +15,11 @@
  *   limitations under the License.
  */
 
-use crate::{create_progress_bar, print_output, protocol, CLIArg, ClientMessage, CHANNEL_SIZE};
+use crate::{
+    protocol, CLIArg, ClientMessage, ProgressBarAsync, TerminalAsync, CHANNEL_SIZE,
+    CLIENT_ID_TRACING_FIELD,
+};
 use crossterm::style::Stylize;
-use dialoguer::Input;
 use miette::{miette, Context, ErrReport, IntoDiagnostic};
 use std::{
     ops::ControlFlow,
@@ -27,10 +29,13 @@ use std::{
 };
 use tokio::{
     io::{BufReader, BufWriter},
-    net::{tcp::OwnedReadHalf, TcpStream},
+    net::{
+        tcp::{OwnedReadHalf, OwnedWriteHalf},
+        TcpStream,
+    },
     sync::mpsc::{self, Sender},
+    task::AbortHandle,
 };
-use tokio::{net::tcp::OwnedWriteHalf, task::AbortHandle};
 use tracing::{error, info, instrument};
 
 const DELAY_MS: u64 = 33;
@@ -46,17 +51,18 @@ pub enum Message {
 /// The `client_id` field is added to the span, so that it can be used in the logs by
 /// functions called by this one. See also: [crate::CLIENT_ID_TRACING_FIELD].
 #[instrument(skip_all, fields(client_id))]
-pub async fn start_client(cli_args: CLIArg) -> miette::Result<()> {
+pub async fn start_client(cli_args: CLIArg, terminal_async: TerminalAsync) -> miette::Result<()> {
     // Connect to the server.
     let address = format!("{}:{}", cli_args.address, cli_args.port);
 
     let message_trying_to_connect = format!("Trying to connect to server on {}", &address);
 
-    let bar = create_progress_bar(
-        message_trying_to_connect.as_str(),
-        "{spinner:.white.on_black.bold.dim} {msg}",
-    );
-    bar.enable_steady_tick(DELAY_UNIT);
+    let mut bar = ProgressBarAsync::try_new_and_start(
+        message_trying_to_connect.clone(),
+        DELAY_UNIT,
+        terminal_async.clone(),
+    )
+    .await?;
 
     // Artificial delay to see the spinner spin.
     tokio::time::sleep(ARTIFICIAL_UI_DELAY).await;
@@ -69,7 +75,7 @@ pub async fn start_client(cli_args: CLIArg) -> miette::Result<()> {
         ));
 
     // Stop progress bar.
-    bar.finish_and_clear();
+    bar.finish_with_message("Connected to server").await;
 
     info!("{}", message_trying_to_connect);
     let tcp_stream = result?;
@@ -83,34 +89,40 @@ pub async fn start_client(cli_args: CLIArg) -> miette::Result<()> {
         mpsc::channel::<Message>(CHANNEL_SIZE);
 
     // Hold the task handles in a vector, so that they can be stopped when the user exits.
-    let arc_vec_abort_handles = Arc::new(Mutex::new(Vec::<AbortHandle>::new()));
+    let task_abort_handles = Arc::new(Mutex::new(Vec::<AbortHandle>::new()));
 
     // SPAWN TASK 1: Listen to server messages.
     // Handle messages from the server in a separate task. This will ensure that both the
     // spawned tasks don't block each other (eg: if either of them sleeps).
-    arc_vec_abort_handles.lock().unwrap().push({
-        let future =
-            monitor_tcp_conn_task::main_loop(client_lifecycle_control_sender.clone(), read_half);
+    task_abort_handles.lock().unwrap().push({
+        let future = monitor_tcp_conn_task::main_loop(
+            client_lifecycle_control_sender.clone(),
+            read_half,
+            terminal_async.clone(),
+        );
         let join_handle = tokio::spawn(future);
         join_handle.abort_handle()
     });
 
     // SPAWN TASK 2: Listen to channel messages.
     // Handle messages from the channel in a separate task.
-    arc_vec_abort_handles.clone().lock().unwrap().push({
+    task_abort_handles.clone().lock().unwrap().push({
         let future = monitor_lifecycle_channel_task::main_loop(
             client_lifecycle_control_receiver,
-            arc_vec_abort_handles.clone(),
+            task_abort_handles.clone(),
+            terminal_async.clone(),
         );
         let join_handle = tokio::spawn(future);
         join_handle.abort_handle()
     });
 
-    // DON'T SPAWN TASK: User input event infinite loop. Before looping, sleep for a short
-    // time to give the other tasks a chance to start.
-    tokio::time::sleep(DELAY_UNIT).await;
-    // No need to spawn this next line.
-    let _ = user_input::main_loop(client_lifecycle_control_sender.clone(), write_half).await;
+    // DON'T SPAWN TASK: User input event infinite loop.
+    let _ = user_input::main_loop(
+        client_lifecycle_control_sender.clone(),
+        write_half,
+        terminal_async.clone(),
+    )
+    .await;
 
     Ok(())
 }
@@ -124,54 +136,52 @@ pub mod user_input {
     pub async fn main_loop(
         client_lifecycle_control_sender: Sender<Message>,
         write_half: OwnedWriteHalf,
+        mut terminal_async: TerminalAsync,
     ) -> miette::Result<()> {
-        let mut buf_writer = BufWriter::new(write_half);
-        loop {
-            info!("Waiting for user input");
-            // Since the get user input function is blocking and not async, wrap it in a
-            // spawn_blocking.
-            // More info: <https://docs.rs/tokio/latest/tokio/task/index.html#blocking-and-yielding>
-            let input = tokio::task::spawn_blocking(get_user_input_non_async_blocking)
-                .await
-                .into_diagnostic()?;
+        // Artificial delay to let all the other tasks settle.
+        tokio::time::sleep(DELAY_UNIT).await;
 
-            if let Some(input) = input {
-                // Parse the input into a ClientMessage.
-                let result_user_input_message = protocol::ClientMessage::from_str(&input); // input.parse::<protocol::ClientMessage>();
-                match result_user_input_message {
-                    Ok(user_input_message) => {
-                        handle_user_input(
-                            user_input_message,
-                            &mut buf_writer,
-                            &client_lifecycle_control_sender,
-                        )
-                        .await;
-                    }
-                    _ => {
-                        print_output(&format!("Unknown command: {}", input.red().bold()));
-                    }
-                }
-            }
-        }
-    }
-
-    /// This is a blocking call, it will lock up the thread that is calling this. And
-    /// there is no way to to cancel, abort, or exit this task preemptively. The
-    /// [super::monitor_lifecycle_channel_task::exit] function deals with this.
-    pub fn get_user_input_non_async_blocking() -> Option<String> {
         let prompt = format!(
             "{}, eg: {}, etc.",
             "Enter a message".yellow().bold(),
             "exit, get_all, clear".green().bold()
         );
-        match Input::<String>::new().with_prompt(prompt).interact() {
-            Ok(input) => {
-                print_output(format!("You entered: {}", input));
-                Some(input)
-            }
-            Err(error) => {
-                print_output(format!("Error: {}", error));
-                None
+        terminal_async.println_raw_and_flush(prompt).await;
+
+        let mut buf_writer = BufWriter::new(write_half);
+        loop {
+            match terminal_async.get_readline_event().await? {
+                rustyline_async::ReadlineEvent::Line(input) => {
+                    // Parse the input into a ClientMessage.
+                    let result_user_input_message = protocol::ClientMessage::from_str(&input); // input.parse::<protocol::ClientMessage>();
+                    match result_user_input_message {
+                        Ok(user_input_message) => {
+                            handle_user_input(
+                                user_input_message,
+                                &mut buf_writer,
+                                &client_lifecycle_control_sender,
+                                terminal_async.clone(),
+                            )
+                            .await;
+                        }
+                        Err(_) => {
+                            terminal_async
+                                .print_output_and_flush(format!(
+                                    "Unknown command: {}",
+                                    input.red().bold()
+                                ))
+                                .await;
+                        }
+                    }
+                }
+                rustyline_async::ReadlineEvent::Eof => {
+                    // 00: do something meaningful w/ the EOF event
+                    todo!()
+                }
+                rustyline_async::ReadlineEvent::Interrupted => {
+                    // 00: do something meaningful w/ the Interrupted event
+                    todo!()
+                }
             }
         }
     }
@@ -183,12 +193,16 @@ pub mod user_input {
         client_message: ClientMessage,
         buf_writer: &mut BufWriter<OwnedWriteHalf>,
         client_lifecycle_control_channel_sender: &Sender<Message>,
+        terminal_async: TerminalAsync,
     ) {
         match client_message {
             ClientMessage::Exit => {
-                let bar = create_progress_bar("Sending exit message", "{spinner:.red.bold} {msg}");
-
-                bar.enable_steady_tick(DELAY_UNIT);
+                let bar = ProgressBarAsync::try_new_and_start(
+                    "Sending exit message".to_string(),
+                    DELAY_UNIT,
+                    terminal_async,
+                )
+                .await;
 
                 // Artificial delay to see the spinner spin.
                 tokio::time::sleep(ARTIFICIAL_UI_DELAY).await;
@@ -199,7 +213,9 @@ pub mod user_input {
                 }
 
                 // Stop progress bar.
-                bar.finish_and_clear();
+                if let Ok(mut bar) = bar {
+                    bar.finish_with_message("Sent exit message").await;
+                }
 
                 // Send the exit message to the monitor_mpsc_channel_task.
                 let _ = client_lifecycle_control_channel_sender
@@ -226,12 +242,14 @@ pub mod monitor_lifecycle_channel_task {
     pub async fn main_loop(
         mut client_lifecycle_control_receiver: mpsc::Receiver<Message>,
         arc_vec_abort_handles: Arc<Mutex<Vec<AbortHandle>>>,
+        terminal_async: TerminalAsync,
     ) -> miette::Result<()> {
         loop {
             // 00: check all the exit codes to see that they are complete
             if let ControlFlow::Break(_) = handle_client_lifecycle_channel_message(
                 &mut client_lifecycle_control_receiver,
                 &arc_vec_abort_handles,
+                terminal_async.clone(),
             )
             .await
             {
@@ -246,20 +264,27 @@ pub mod monitor_lifecycle_channel_task {
     pub async fn handle_client_lifecycle_channel_message(
         receiver_mpsc_channel: &mut mpsc::Receiver<Message>,
         arc_vec_abort_handles: &Arc<Mutex<Vec<AbortHandle>>>,
+        mut terminal_async: TerminalAsync,
     ) -> ControlFlow<()> {
         match receiver_mpsc_channel.recv().await {
             Some(Message::Exit) => {
-                print_output("Exiting start_client due to user input");
+                terminal_async
+                    .print_output_and_flush("Exiting start_client due to user input")
+                    .await;
                 exit(arc_vec_abort_handles.clone(), 0);
                 return ControlFlow::Break(());
             }
             Some(Message::ExitDueToError(error)) => {
-                print_output(format!("Exiting start_client due to error: {}", error));
+                terminal_async
+                    .print_output_and_flush(format!("Exiting start_client due to error: {}", error))
+                    .await;
                 exit(arc_vec_abort_handles.clone(), 1);
                 return ControlFlow::Break(());
             }
             it => {
-                print_output(format!("Unknown message from server: {:?}", it));
+                terminal_async
+                    .print_output_and_flush(format!("Unknown message from server: {:?}", it))
+                    .await;
             }
         }
         ControlFlow::Continue(())
@@ -289,8 +314,6 @@ pub mod monitor_lifecycle_channel_task {
 const DEFAULT_CLIENT_ID: &str = "none";
 
 pub mod monitor_tcp_conn_task {
-    use crate::CLIENT_ID_TRACING_FIELD;
-
     use super::*;
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
@@ -298,6 +321,7 @@ pub mod monitor_tcp_conn_task {
     pub async fn main_loop(
         sender_exit_channel: Sender<Message>,
         buf_reader: OwnedReadHalf,
+        terminal_async: TerminalAsync,
     ) -> miette::Result<()> {
         let mut buf_reader = BufReader::new(buf_reader);
 
@@ -313,7 +337,8 @@ pub mod monitor_tcp_conn_task {
                     let server_message =
                         bincode::deserialize::<protocol::ServerMessage>(&payload_buffer)
                             .into_diagnostic()?;
-                    handle_server_message(server_message, &mut client_id)?;
+                    handle_server_message(server_message, &mut client_id, terminal_async.clone())
+                        .await?;
                 }
                 Err(error) => {
                     error!(?error);
@@ -332,17 +357,20 @@ pub mod monitor_tcp_conn_task {
     }
 
     #[instrument(skip_all, fields(server_message, client_id))]
-    fn handle_server_message(
+    async fn handle_server_message(
         server_message: protocol::ServerMessage,
         client_id: &mut String,
+        mut terminal_async: TerminalAsync,
     ) -> Result<(), ErrReport> {
         // Display the message to the console.
-        print_output(format!(
-            "[{}]: {}: {}",
-            client_id.to_string().yellow().bold(),
-            "Received message from server".green().bold(),
-            format!("{:?}", server_message).magenta().bold(),
-        ));
+        terminal_async
+            .print_output_and_flush(format!(
+                "[{}]: {}: {}",
+                client_id.to_string().yellow().bold(),
+                "Received message from server".green().bold(),
+                format!("{:?}", server_message).magenta().bold(),
+            ))
+            .await;
 
         // Process the message.
         info!(?server_message, "Start");

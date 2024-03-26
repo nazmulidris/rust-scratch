@@ -16,7 +16,7 @@
  */
 
 use clap::Parser;
-use tcp_api_server::{clap_args, print_output_raw, tracing_setup, TracingConfig};
+use tcp_api_server::{clap_args, tracing_setup, TerminalAsync, TracingConfig};
 use tracing::instrument;
 
 const TCP_API_SERVER: &str = r#"
@@ -31,25 +31,37 @@ const TCP_API_SERVER: &str = r#"
 #[instrument]
 async fn main() -> miette::Result<()> {
     let cli_args = clap_args::CLIArg::parse();
+    println!("{}", TCP_API_SERVER);
 
-    tracing_setup::init(TracingConfig {
-        writers: cli_args.enable_tracing.clone(),
-        level: cli_args.tracing_log_level,
-        tracing_log_file_path_and_prefix: format!(
-            "{}_{}",
-            cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
-        ),
-    })?;
-
-    print_output_raw(TCP_API_SERVER);
-
-    // Start the server or client task based on the subcommand.
     match cli_args.subcommand {
+        // Start server (non interactive, no need for TerminalAsync.
         tcp_api_server::CLISubcommand::Server => {
+            // Normal stdout.
+            tracing_setup::init(TracingConfig {
+                writers: cli_args.enable_tracing.clone(),
+                level: cli_args.tracing_log_level,
+                tracing_log_file_path_and_prefix: format!(
+                    "{}_{}",
+                    cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
+                ),
+                stdout_override: None,
+            })?;
             tcp_api_server::server_task::start_server(cli_args).await?
         }
+        // Start client (interactive and needs TerminalAsync).
         tcp_api_server::CLISubcommand::Client => {
-            tcp_api_server::client_task::start_client(cli_args).await?
+            // Async writer for stdout.
+            let terminal_async = TerminalAsync::try_new("> ")?;
+            tracing_setup::init(TracingConfig {
+                writers: cli_args.enable_tracing.clone(),
+                level: cli_args.tracing_log_level,
+                tracing_log_file_path_and_prefix: format!(
+                    "{}_{}",
+                    cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
+                ),
+                stdout_override: Some(terminal_async.clone_stdout()),
+            })?;
+            tcp_api_server::client_task::start_client(cli_args, terminal_async).await?
         }
     }
 

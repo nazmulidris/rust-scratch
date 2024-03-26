@@ -14,7 +14,7 @@
 ```
 ┌──────────────────┐ ┌────────────────────────────────────┐ ┌─────────────────────────────┐
 │                  │ │                                    │ │                             │
-│  CLIENT          │ │  TCP Protocol                      │ │  Server                     │
+│  Client          │ │  TCP Protocol                      │ │  Server                     │
 │  - API           │ │  - bincode to handle enum          │ │  - expose API over TCP      │
 │  - CLI (tuify)   │ │  - length first prefix (bigendian) │ │  - use kv for persistence   │
 │                  │ │                                    │ │                             │

@@ -17,19 +17,17 @@
 
 pub mod clap_args;
 pub mod client_task;
-pub mod progress_bar;
 pub mod protocol;
 pub mod server_task;
-pub mod tracing_setup;
-pub mod utils;
+pub mod terminal_async;
+pub mod rand;
 
 pub use clap_args::*;
 pub use client_task::*;
-pub use progress_bar::*;
 pub use protocol::*;
 pub use server_task::*;
-pub use tracing_setup::*;
-pub use utils::*;
+pub use terminal_async::*;
+pub use rand::*;
 
 pub const CHANNEL_SIZE: usize = 10;
 

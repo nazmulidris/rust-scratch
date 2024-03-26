@@ -17,6 +17,7 @@
 
 use crossterm::style::Stylize;
 use miette::IntoDiagnostic;
+use rustyline_async::SharedWriter;
 use std::{io::stdout, path::PathBuf, str::FromStr};
 use tracing::info;
 use tracing_subscriber::fmt::writer::MakeWriterExt;
@@ -27,18 +28,20 @@ use tracing_subscriber::fmt::writer::MakeWriterExt;
 /// - `level`: [tracing::Level] - The log level to use for tracing.
 /// - `tracing_log_file_path_and_prefix`: [String] - The file path and prefix to use for
 ///   the log file. Eg: `/tmp/tcp_api_server` or `tcp_api_server`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone)]
 pub struct TracingConfig {
     pub writers: Vec<tracing_writer_config::Writer>,
     pub level: tracing::Level,
     pub tracing_log_file_path_and_prefix: String,
+    /// If [Some], then use async writer for [tracing_writer_config::Writer::Stdout].
+    pub stdout_override: Option<SharedWriter>,
 }
 
 mod tracing_config_impl {
     use super::*;
 
-    impl Default for TracingConfig {
-        fn default() -> Self {
+    impl TracingConfig {
+        pub fn new(stdout: Option<SharedWriter>) -> Self {
             Self {
                 writers: vec![
                     tracing_writer_config::Writer::File,
@@ -46,6 +49,7 @@ mod tracing_config_impl {
                 ],
                 level: tracing::Level::DEBUG,
                 tracing_log_file_path_and_prefix: "tracing_log_file_debug".to_string(),
+                stdout_override: stdout,
             }
         }
     }
@@ -80,11 +84,13 @@ impl From<&Vec<tracing_writer_config::Writer>> for WriterConfig {
 ///   subscriber](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/index.html#configuration)
 /// - [Rolling file appender](https://docs.rs/tracing-appender/latest/tracing_appender/)
 /// - [Examples](https://github.com/tokio-rs/tracing/blob/master/examples/examples/appender-multifile.rs)
+/// - [MakeWriter](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/trait.MakeWriter.html)
 pub fn init(tracing_config: TracingConfig) -> miette::Result<()> {
     let TracingConfig {
         writers,
         level,
         tracing_log_file_path_and_prefix,
+        stdout_override,
     } = tracing_config;
 
     let writer_config = WriterConfig::from(&writers);
@@ -107,28 +113,46 @@ pub fn init(tracing_config: TracingConfig) -> miette::Result<()> {
     // Both file & stdout writer.
     match writer_config {
         WriterConfig::StdoutAndFile => {
-            let rolling_file_appender = init_impl::try_create_rolling_file_appender(
+            let writer_log = init_impl::try_create_rolling_file_appender(
                 tracing_log_file_path_and_prefix.as_str(),
-            )?;
-            let both_writers = stdout
-                .with_max_level(level)
-                .and(rolling_file_appender.with_max_level(level));
-            let subscriber = builder.with_writer(both_writers).finish();
-            tracing::subscriber::set_global_default(subscriber).into_diagnostic()?;
+            )?
+            .with_max_level(level);
+
+            match stdout_override {
+                Some(stdout_override) => {
+                    let writer_stdout =
+                        move || -> Box<dyn std::io::Write> { Box::new(stdout_override.clone()) };
+                    let both = writer_log.and(writer_stdout);
+                    let subscriber = builder.with_writer(both).finish();
+                    tracing::subscriber::set_global_default(subscriber).into_diagnostic()?;
+                }
+                None => {
+                    let both = writer_log.and(stdout);
+                    let subscriber = builder.with_writer(both).finish();
+                    tracing::subscriber::set_global_default(subscriber).into_diagnostic()?;
+                }
+            }
         }
         WriterConfig::File => {
-            let rolling_file_appender = init_impl::try_create_rolling_file_appender(
+            let writer_log = init_impl::try_create_rolling_file_appender(
                 tracing_log_file_path_and_prefix.as_str(),
-            )?;
-            let subscriber = builder
-                .with_writer(rolling_file_appender.with_max_level(level))
-                .finish();
+            )?
+            .with_max_level(level);
+            let subscriber = builder.with_writer(writer_log).finish();
             tracing::subscriber::set_global_default(subscriber).into_diagnostic()?;
         }
-        WriterConfig::Stdout => {
-            let subscriber = builder.with_writer(stdout.with_max_level(level)).finish();
-            tracing::subscriber::set_global_default(subscriber).into_diagnostic()?;
-        }
+        WriterConfig::Stdout => match stdout_override {
+            Some(stdout_override) => {
+                let writer_stdout =
+                    move || -> Box<dyn std::io::Write> { Box::new(stdout_override.clone()) };
+                let subscriber = builder.with_writer(writer_stdout).finish();
+                tracing::subscriber::set_global_default(subscriber).into_diagnostic()?;
+            }
+            None => {
+                let subscriber = builder.with_writer(stdout).finish();
+                tracing::subscriber::set_global_default(subscriber).into_diagnostic()?;
+            }
+        },
         WriterConfig::None => {
             unreachable!()
         }
