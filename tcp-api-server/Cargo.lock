@@ -1182,26 +1182,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pin-project"
-version = "1.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6bf43b791c5b9e34c3d182969b4abb522f9343702850a2e57f460d00d09b4b3"
-dependencies = [
- "pin-project-internal",
-]
-
-[[package]]
-name = "pin-project-internal"
-version = "1.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f38a4412a78282e09a2cf38d195ea5420d15ba0602cb375210efbc877243965"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.48",
-]
-
-[[package]]
 name = "pin-project-lite"
 version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1451,14 +1431,12 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "miette",
- "pin-project",
  "pretty_assertions",
  "r3bl_rs_utils_core 0.9.12",
  "r3bl_tui 0.5.2",
  "r3bl_tuify",
  "strum 0.26.2",
  "strum_macros 0.26.2",
- "thingbuf",
  "thiserror",
  "tokio",
  "tracing",
@@ -1991,16 +1969,6 @@ dependencies = [
  "smawk",
  "unicode-linebreak",
  "unicode-width",
-]
-
-[[package]]
-name = "thingbuf"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4706f1bfb859af03f099ada2de3cea3e515843c2d3e93b7893f16d94a37f9415"
-dependencies = [
- "parking_lot 0.12.1",
- "pin-project",
 ]
 
 [[package]]

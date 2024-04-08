@@ -75,7 +75,7 @@ async fn main() -> miette::Result<()> {
         }
         // Start client (interactive and needs TerminalAsync). Async writer for stdout.
         tcp_api_server::CLISubcommand::Client => {
-            let maybe_terminal_async = TerminalAsync::try_new("> ")?;
+            let maybe_terminal_async = TerminalAsync::try_new("> ").await?;
 
             tracing_setup::init(TracingConfig {
                 writers: cli_args.enable_tracing.clone(),
@@ -86,7 +86,7 @@ async fn main() -> miette::Result<()> {
                 ),
                 stdout_override: maybe_terminal_async
                     .as_ref()
-                    .map(|terminal_async| terminal_async.clone_stdout()),
+                    .map(|terminal_async| terminal_async.clone_shared_writer()),
             })?;
 
             if let Some(terminal_async) = maybe_terminal_async {
