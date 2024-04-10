@@ -18,10 +18,11 @@
 use crate::{protocol, CLIArg, ClientMessage, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD};
 use crossterm::style::Stylize;
 use miette::{miette, Context, IntoDiagnostic};
-use r3bl_terminal_async::SharedWriter;
-use r3bl_terminal_async::{ReadlineEvent, Spinner, SpinnerStyle, TerminalAsync};
-use std::io::Write;
+use r3bl_terminal_async::{
+    FuturesMutex, ReadlineEvent, SharedWriter, Spinner, SpinnerStyle, TerminalAsync,
+};
 use std::{
+    io::{stderr, stdout, Write},
     ops::ControlFlow,
     str::FromStr,
     sync::{Arc, Mutex},
@@ -70,6 +71,7 @@ pub async fn start_client(
             template: r3bl_terminal_async::SpinnerTemplate::Braille,
             ..Default::default()
         },
+        Arc::new(FuturesMutex::new(stderr())),
     )
     .await?;
 
@@ -231,6 +233,7 @@ pub mod user_input {
                         template: r3bl_terminal_async::SpinnerTemplate::Block,
                         ..Default::default()
                     },
+                    Arc::new(FuturesMutex::new(stderr())),
                 )
                 .await;
 
@@ -266,8 +269,6 @@ pub mod user_input {
 }
 
 pub mod monitor_lifecycle_channel_task {
-    use std::io::{stderr, stdout};
-
     use super::*;
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
