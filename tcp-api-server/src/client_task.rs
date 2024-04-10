@@ -22,7 +22,7 @@ use r3bl_terminal_async::{
     FuturesMutex, ReadlineEvent, SharedWriter, Spinner, SpinnerStyle, TerminalAsync,
 };
 use std::{
-    io::{stderr, stdout, Write},
+    io::{stderr, Write},
     ops::ControlFlow,
     str::FromStr,
     sync::{Arc, Mutex},
@@ -306,7 +306,6 @@ pub mod monitor_lifecycle_channel_task {
     ) -> ControlFlow<()> {
         match receiver_mpsc_channel.recv().await {
             Some(ClientLifecycleControlMessage::Exit) => {
-                let _ = writeln!(stdout(), "Exiting monitor_lifecycle_channel_task");
                 exit(arc_vec_abort_handles.clone());
                 return ControlFlow::Break(());
             }
@@ -323,6 +322,7 @@ pub mod monitor_lifecycle_channel_task {
                 let _ = writeln!(shared_writer, "Unknown message from server: {:?}", it);
             }
         }
+
         ControlFlow::Continue(())
     }
 
