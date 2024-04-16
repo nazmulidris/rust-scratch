@@ -81,6 +81,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-stream"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd56dd203fef61ac097dd65721a419ddccb106b2d2b70ba60a6b529f03961a51"
+dependencies = [
+ "async-stream-impl",
+ "futures-core",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "async-stream-impl"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16e62a023e7c117e27523144c5d2459f4397fcc3cab0085af8e2224f643a0193"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.48",
+]
+
+[[package]]
 name = "attribute-derive"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1425,15 +1447,18 @@ dependencies = [
 
 [[package]]
 name = "r3bl_terminal_async"
-version = "0.0.1"
+version = "0.3.0"
 dependencies = [
+ "async-stream",
  "crossterm",
+ "futures-core",
  "futures-util",
  "miette",
  "pretty_assertions",
  "r3bl_rs_utils_core 0.9.12",
  "r3bl_tui 0.5.2",
  "r3bl_tuify",
+ "strip-ansi-escapes",
  "strum 0.26.2",
  "strum_macros 0.26.2",
  "thiserror",

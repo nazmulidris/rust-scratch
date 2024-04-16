@@ -15,9 +15,9 @@
  *   limitations under the License.
  */
 
-use crate::{protocol, CLIArg, ClientMessage, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD};
+use crate::{protocol, CLIArg, ClientMessage, CLIENT_ID_TRACING_FIELD};
 use crossterm::style::Stylize;
-use miette::{miette, Context, IntoDiagnostic};
+use miette::{Context, IntoDiagnostic};
 use r3bl_terminal_async::{
     ReadlineEvent, SharedWriter, Spinner, SpinnerStyle, TerminalAsync, TokioMutex,
 };
@@ -25,7 +25,7 @@ use std::{
     io::{stderr, Write},
     ops::ControlFlow,
     str::FromStr,
-    sync::{Arc, Mutex},
+    sync::Arc,
     time::Duration,
 };
 use tokio::{
@@ -34,20 +34,12 @@ use tokio::{
         tcp::{OwnedReadHalf, OwnedWriteHalf},
         TcpStream,
     },
-    sync::mpsc::{self, Sender},
-    task::AbortHandle,
 };
 use tracing::{error, info, instrument};
 
 const DELAY_MS: u64 = 100;
 const DELAY_UNIT: Duration = Duration::from_millis(DELAY_MS);
 const ARTIFICIAL_UI_DELAY: Duration = Duration::from_millis(DELAY_MS * 12);
-
-#[derive(Debug)]
-pub enum ClientLifecycleControlMessage {
-    Exit,
-    ExitDueToError(miette::Report),
-}
 
 /// The `client_id` field is added to the span, so that it can be used in the logs by
 /// functions called by this one. See also: [crate::CLIENT_ID_TRACING_FIELD].
@@ -99,45 +91,20 @@ pub async fn start_client(
     // Get reader and writer from TCP stream.
     let (read_half, write_half) = tcp_stream.into_split();
 
-    // Create channel to control client lifecycle.
-    let (client_lifecycle_control_sender, client_lifecycle_control_receiver) =
-        mpsc::channel::<ClientLifecycleControlMessage>(CHANNEL_SIZE);
+    // Broadcast shutdown channel to end all tasks (cooperatively).
+    let (shutdown_sender, _) = tokio::sync::broadcast::channel::<bool>(1);
 
-    // Hold the task handles in a vector, so that they can be stopped when the user exits.
-    let task_abort_handles = Arc::new(Mutex::new(Vec::<AbortHandle>::new()));
-
-    // SPAWN TASK 1: Listen to server messages.
+    // SPAWN TASK: Listen to server messages.
     // Handle messages from the server in a separate task. This will ensure that both the
     // spawned tasks don't block each other (eg: if either of them sleeps).
-    task_abort_handles.lock().unwrap().push({
-        let future = monitor_tcp_conn_task::main_loop(
-            client_lifecycle_control_sender.clone(),
-            read_half,
-            terminal_async.clone_shared_writer(),
-        );
-        let join_handle = tokio::spawn(future);
-        join_handle.abort_handle()
-    });
-
-    // SPAWN TASK 2: Listen to channel messages.
-    // Handle messages from the channel in a separate task.
-    task_abort_handles.clone().lock().unwrap().push({
-        let future = monitor_lifecycle_channel_task::main_loop(
-            client_lifecycle_control_receiver,
-            task_abort_handles.clone(),
-            terminal_async.clone_shared_writer(),
-        );
-        let join_handle = tokio::spawn(future);
-        join_handle.abort_handle()
-    });
+    tokio::spawn(monitor_tcp_conn_task::main_loop(
+        read_half,
+        terminal_async.clone_shared_writer(),
+        shutdown_sender.clone(),
+    ));
 
     // DON'T SPAWN TASK: User input event infinite loop.
-    let _ = user_input::main_loop(
-        client_lifecycle_control_sender.clone(),
-        write_half,
-        terminal_async,
-    )
-    .await;
+    let _ = user_input::main_loop(write_half, terminal_async, shutdown_sender.clone()).await;
 
     Ok(())
 }
@@ -149,9 +116,9 @@ pub mod user_input {
     /// And it has a blocking call, so you can't exit it preemptively.
     #[instrument(name = "user_input:main_loop", skip_all, fields(client_id))]
     pub async fn main_loop(
-        client_lifecycle_control_sender: Sender<ClientLifecycleControlMessage>,
         write_half: OwnedWriteHalf,
         mut terminal_async: TerminalAsync,
+        shutdown_sender: tokio::sync::broadcast::Sender<bool>,
     ) -> miette::Result<()> {
         // Artificial delay to let all the other tasks settle.
         tokio::time::sleep(DELAY_UNIT).await;
@@ -164,52 +131,64 @@ pub mod user_input {
         terminal_async.println(welcome_message).await;
 
         let mut buf_writer = BufWriter::new(write_half);
+
+        let mut shutdown_receiver = shutdown_sender.subscribe();
+
         loop {
-            match terminal_async.get_readline_event().await? {
-                ReadlineEvent::Line(input) => {
-                    // Parse the input into a ClientMessage.
-                    let result_user_input_message = protocol::ClientMessage::from_str(&input); // input.parse::<protocol::ClientMessage>();
-                    match result_user_input_message {
-                        Ok(user_input_message) => {
-                            terminal_async.pause().await;
-                            let control_flow = handle_user_input(
-                                user_input_message,
-                                &mut buf_writer,
-                                &client_lifecycle_control_sender,
-                                terminal_async.clone_shared_writer(),
-                            )
-                            .await;
-                            terminal_async.resume().await;
-                            if let ControlFlow::Break(_) = control_flow {
-                                break;
+            tokio::select! {
+                // Poll shutdown channel.
+                _ = shutdown_receiver.recv() => {
+                    break;
+                }
+
+                // Poll user input.
+                result_readline_event = terminal_async.get_readline_event() => {
+                    let readline_event = result_readline_event?;
+                    match readline_event {
+                        ReadlineEvent::Line(input) => {
+                            // Parse the input into a ClientMessage.
+                            let result_user_input_message = protocol::ClientMessage::from_str(&input); // input.parse::<protocol::ClientMessage>();
+                            match result_user_input_message {
+                                Ok(user_input_message) => {
+                                    terminal_async.pause().await;
+                                    let control_flow = handle_user_input(
+                                        user_input_message,
+                                        &mut buf_writer,
+                                        shutdown_sender.clone(),
+                                        terminal_async.clone_shared_writer(),
+                                    )
+                                    .await;
+                                    terminal_async.resume().await;
+                                    if let ControlFlow::Break(_) = control_flow {
+                                        break;
+                                    }
+                                }
+                                Err(_) => {
+                                    terminal_async
+                                        .println_prefixed(format!(
+                                            "Unknown command: {}",
+                                            input.red().bold()
+                                        ))
+                                        .await;
+                                }
                             }
                         }
-                        Err(_) => {
-                            terminal_async
-                                .println_prefixed(format!(
-                                    "Unknown command: {}",
-                                    input.red().bold()
-                                ))
-                                .await;
+                        ReadlineEvent::Eof => {
+                            // 00: do something meaningful w/ the EOF event
+                            let _ = shutdown_sender.send(true);
+                            break;
+                        }
+                        ReadlineEvent::Interrupted => {
+                            // 00: do something meaningful w/ the Interrupted event
+                            let _ = shutdown_sender.send(true);
+                            break;
                         }
                     }
                 }
-                ReadlineEvent::Eof => {
-                    // 00: do something meaningful w/ the EOF event
-                    let _ = client_lifecycle_control_sender
-                        .send(ClientLifecycleControlMessage::Exit)
-                        .await;
-                    break;
-                }
-                ReadlineEvent::Interrupted => {
-                    // 00: do something meaningful w/ the Interrupted event
-                    let _ = client_lifecycle_control_sender
-                        .send(ClientLifecycleControlMessage::Exit)
-                        .await;
-                    break;
-                }
             }
         }
+
+        info!("Exiting loop");
 
         terminal_async.flush().await;
 
@@ -222,7 +201,7 @@ pub mod user_input {
     pub async fn handle_user_input(
         client_message: ClientMessage,
         buf_writer: &mut BufWriter<OwnedWriteHalf>,
-        client_lifecycle_control_sender: &Sender<ClientLifecycleControlMessage>,
+        shutdown_sender: tokio::sync::broadcast::Sender<bool>,
         mut shared_writer: SharedWriter,
     ) -> ControlFlow<()> {
         match client_message {
@@ -252,10 +231,8 @@ pub mod user_input {
                     let _ = spinner.stop("Sent exit message").await;
                 }
 
-                // Send the exit message to the monitor_mpsc_channel_task.
-                let _ = client_lifecycle_control_sender
-                    .send(ClientLifecycleControlMessage::Exit)
-                    .await;
+                // Send the shutdown signal to all tasks.
+                let _ = shutdown_sender.send(true);
 
                 return ControlFlow::Break(());
             }
@@ -270,84 +247,6 @@ pub mod user_input {
     }
 }
 
-pub mod monitor_lifecycle_channel_task {
-    use super::*;
-
-    /// This has an infinite loop, so you might want to call it in a spawn block.
-    #[instrument(
-        name = "monitor_lifecycle_channel_task:main_loop",
-        skip_all,
-        fields(client_id)
-    )]
-    pub async fn main_loop(
-        mut client_lifecycle_control_receiver: mpsc::Receiver<ClientLifecycleControlMessage>,
-        arc_vec_abort_handles: Arc<Mutex<Vec<AbortHandle>>>,
-        shared_writer: SharedWriter,
-    ) -> miette::Result<()> {
-        loop {
-            // 00: check all the exit codes to see that they are complete
-            if let ControlFlow::Break(_) = handle_client_lifecycle_channel_message(
-                &mut client_lifecycle_control_receiver,
-                &arc_vec_abort_handles,
-                shared_writer.clone(),
-            )
-            .await
-            {
-                break;
-            }
-        }
-
-        Ok(())
-    }
-
-    #[instrument(skip_all, fields(client_id))]
-    pub async fn handle_client_lifecycle_channel_message(
-        receiver_mpsc_channel: &mut mpsc::Receiver<ClientLifecycleControlMessage>,
-        arc_vec_abort_handles: &Arc<Mutex<Vec<AbortHandle>>>,
-        mut shared_writer: SharedWriter,
-    ) -> ControlFlow<()> {
-        match receiver_mpsc_channel.recv().await {
-            Some(ClientLifecycleControlMessage::Exit) => {
-                exit(arc_vec_abort_handles.clone());
-                return ControlFlow::Break(());
-            }
-            Some(ClientLifecycleControlMessage::ExitDueToError(error)) => {
-                let _ = writeln!(
-                    stderr(),
-                    "Exiting monitor_lifecycle_channel_task due to error: {}",
-                    error
-                );
-                exit(arc_vec_abort_handles.clone());
-                return ControlFlow::Break(());
-            }
-            it => {
-                let _ = writeln!(shared_writer, "Unknown message from server: {:?}", it);
-            }
-        }
-
-        ControlFlow::Continue(())
-    }
-
-    /// Have to exit this process since there is no way to get stdin().read_line() unblocked
-    /// once it is blocked. Even if that task is wrapped in a thread::spawn, it isn't possible
-    /// to cancel or abort that thread, without cooperatively asking it to exit.
-    ///
-    /// More info:
-    /// - <https://docs.rs/tokio/latest/tokio/io/struct.Stdin.html>
-    /// - <https://users.rust-lang.org/t/stopping-a-thread/6328/7>
-    /// - <https://internals.rust-lang.org/t/thread-cancel-support/3056/16>
-    pub fn exit(arc_vec_abort_handles: Arc<Mutex<Vec<AbortHandle>>>) {
-        // This will stop the listen_to_server_task_handle.
-        arc_vec_abort_handles
-            .lock()
-            .unwrap()
-            .iter()
-            .for_each(|task| {
-                task.abort();
-            });
-    }
-}
-
 const DEFAULT_CLIENT_ID: &str = "none";
 
 pub mod monitor_tcp_conn_task {
@@ -356,9 +255,9 @@ pub mod monitor_tcp_conn_task {
     /// This has an infinite loop, so you might want to call it in a spawn block.
     #[instrument(name = "monitor_tcp_conn_task:main_loop", fields(client_id), skip_all)]
     pub async fn main_loop(
-        sender_exit_channel: Sender<ClientLifecycleControlMessage>,
         buf_reader: OwnedReadHalf,
-        shared_writer: SharedWriter,
+        mut shared_writer: SharedWriter,
+        shutdown_sender: tokio::sync::broadcast::Sender<bool>,
     ) -> miette::Result<()> {
         let mut buf_reader = BufReader::new(buf_reader);
 
@@ -367,28 +266,40 @@ pub mod monitor_tcp_conn_task {
 
         info!("Entering loop");
 
+        let mut shutdown_receiver = shutdown_sender.subscribe();
+
+        // 00: listen for data from the server, handle it, monitor shutdown channel.
         loop {
-            // 00: listen for data from the server, can send message over channel for TCP connection drop
-            match protocol::read_bytes(&mut buf_reader).await {
-                Ok(payload_buffer) => {
-                    let server_message =
-                        bincode::deserialize::<protocol::ServerMessage>(&payload_buffer)
-                            .into_diagnostic()?;
-                    handle_server_message(server_message, &mut client_id, shared_writer.clone())
-                        .await?;
+            tokio::select! {
+                result_payload_buffer = protocol::read_bytes(&mut buf_reader) => {
+                    match result_payload_buffer {
+                        Ok(payload_buffer) => {
+                            let server_message =
+                                bincode::deserialize::<protocol::ServerMessage>(&payload_buffer)
+                                    .into_diagnostic()?;
+                            handle_server_message(server_message, &mut client_id, shared_writer.clone())
+                                .await?;
+                        }
+                        Err(error) => {
+                            let _ = writeln!(
+                                shared_writer,
+                                "Error reading from server for client task w/ 'client_id': {}",
+                                client_id.to_string().yellow().bold(),
+                            );
+                            error!(?error);
+                            let _ = shutdown_sender.send(true);
+                            break;
+                        }
+                    }
+
                 }
-                Err(error) => {
-                    error!(?error);
-                    let _ = sender_exit_channel
-                        .send(ClientLifecycleControlMessage::ExitDueToError(miette!(
-                            "Error reading from server for client task w/ 'client_id': {}",
-                            client_id.to_string().yellow().bold(),
-                        )))
-                        .await;
+                _ = shutdown_receiver.recv() => {
                     break;
                 }
             }
         }
+
+        info!("Exiting loop");
 
         Ok(())
     }
@@ -420,7 +331,9 @@ pub mod monitor_tcp_conn_task {
                 todo!()
             }
         };
+
         info!(?server_message, "End");
+
         Ok(())
     }
 }
