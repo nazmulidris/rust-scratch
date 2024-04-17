@@ -555,25 +555,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "futures-channel"
-version = "0.3.30"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eac8f7d7865dcb88bd4373ab671c8cf4508703796caa2b1985a9ca867b3fcb78"
-dependencies = [
- "futures-core",
-]
-
-[[package]]
 name = "futures-core"
 version = "0.3.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfc6580bb841c5a68e9ef15c77ccc837b40a7504914d52e47b8b0e9bbda25a1d"
-
-[[package]]
-name = "futures-io"
-version = "0.3.30"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a44623e20b9681a318efdd71c299b6b222ed6f231972bfe2f224ebad6311f0c1"
 
 [[package]]
 name = "futures-macro"
@@ -599,10 +584,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d6401deb83407ab3da39eba7e33987a73c3df0c82b4bb5813ee871c19c41d48"
 dependencies = [
  "futures-core",
- "futures-io",
  "futures-macro",
  "futures-task",
- "memchr",
  "pin-project-lite",
  "pin-utils",
  "slab",
@@ -1362,7 +1345,7 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils_core"
-version = "0.9.12"
+version = "0.9.13"
 dependencies = [
  "chrono",
  "get-size",
@@ -1380,9 +1363,9 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils_core"
-version = "0.9.12"
+version = "0.9.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c1620ed8b7f572744c3193a4f5f4191e1c06134c46c8579e7f9689e2d07b555"
+checksum = "cf01b840cefefb16da8bba15708acabe8a9266d0b84c5e0f58cef7509f84ca78"
 dependencies = [
  "chrono",
  "get-size",
@@ -1393,7 +1376,6 @@ dependencies = [
  "rand",
  "serde",
  "serde_json",
- "syntect",
  "time",
  "unicode-segmentation",
  "unicode-width",
@@ -1401,25 +1383,25 @@ dependencies = [
 
 [[package]]
 name = "r3bl_rs_utils_macro"
-version = "0.9.8"
+version = "0.9.9"
 dependencies = [
  "paste",
  "proc-macro2",
  "quote",
- "r3bl_rs_utils_core 0.9.12",
+ "r3bl_rs_utils_core 0.9.13",
  "syn 2.0.48",
 ]
 
 [[package]]
 name = "r3bl_rs_utils_macro"
-version = "0.9.8"
+version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ba7c8adc83b335440e27320b713264c6a0c1e36f140ea62555800ef8c4e0e5f"
+checksum = "ed43423359f5ba43c787e6f444a4ab3e7bde693eb7ec0b523513001cdbb83b21"
 dependencies = [
  "paste",
  "proc-macro2",
  "quote",
- "r3bl_rs_utils_core 0.9.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r3bl_rs_utils_core 0.9.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 2.0.48",
 ]
 
@@ -1447,7 +1429,7 @@ dependencies = [
 
 [[package]]
 name = "r3bl_terminal_async"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "async-stream",
  "crossterm",
@@ -1455,8 +1437,8 @@ dependencies = [
  "futures-util",
  "miette",
  "pretty_assertions",
- "r3bl_rs_utils_core 0.9.12",
- "r3bl_tui 0.5.2",
+ "r3bl_rs_utils_core 0.9.13",
+ "r3bl_tui 0.5.3",
  "r3bl_tuify",
  "strip-ansi-escapes",
  "strum 0.26.2",
@@ -1472,7 +1454,7 @@ dependencies = [
 
 [[package]]
 name = "r3bl_tui"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "chrono",
  "colorgrad",
@@ -1484,8 +1466,8 @@ dependencies = [
  "log",
  "nom",
  "r3bl_ansi_color 0.6.9",
- "r3bl_rs_utils_core 0.9.12",
- "r3bl_rs_utils_macro 0.9.8",
+ "r3bl_rs_utils_core 0.9.13",
+ "r3bl_rs_utils_macro 0.9.9",
  "rand",
  "serde",
  "serde_json",
@@ -1497,9 +1479,9 @@ dependencies = [
 
 [[package]]
 name = "r3bl_tui"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c8bb772259f5a9bbfc884d30d6bf8d0010de151ac7501e14fa3b49d31fca3b7"
+checksum = "487afbab05529635c4c2dd095fff480de1fda849945c66267143775bfc4168e7"
 dependencies = [
  "chrono",
  "colorgrad",
@@ -1511,8 +1493,8 @@ dependencies = [
  "log",
  "nom",
  "r3bl_ansi_color 0.6.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "r3bl_rs_utils_core 0.9.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "r3bl_rs_utils_macro 0.9.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r3bl_rs_utils_core 0.9.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r3bl_rs_utils_macro 0.9.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand",
  "serde",
  "serde_json",
@@ -1524,14 +1506,14 @@ dependencies = [
 
 [[package]]
 name = "r3bl_tuify"
-version = "0.1.25"
+version = "0.1.26"
 dependencies = [
  "clap",
  "crossterm",
  "is-terminal",
  "log",
  "r3bl_ansi_color 0.6.9",
- "r3bl_rs_utils_core 0.9.12",
+ "r3bl_rs_utils_core 0.9.13",
  "reedline",
  "serde",
  "serde_json",
@@ -1947,14 +1929,12 @@ dependencies = [
  "color-print",
  "crossterm",
  "ctrlc",
- "futures-channel",
- "futures-util",
  "kv",
  "miette",
  "pretty_assertions",
- "r3bl_rs_utils_core 0.9.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r3bl_rs_utils_core 0.9.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "r3bl_terminal_async",
- "r3bl_tui 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r3bl_tui 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand",
  "serde",
  "serde_json",
