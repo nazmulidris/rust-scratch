@@ -69,11 +69,11 @@ tracing, logging, reporting, errors:
     - use terminal size to format error report & text wrap
 
 async ui:
-  ☐ design for rustyline-async:
-    ☐ Use: https://github.com/nazmulidris/rustyline-async
-    ☐ drop `dialoguer` from `Cargo.toml`
-  ☐ use notifications for any events that come in outside of the main event loop
-    - purpose of async readline is to be able to abort the async task w/out having to system exit the process
+  ✔ design for rustyline-async: @done(24-04-20 15:42)
+    ✔ Use: https://github.com/nazmulidris/rustyline-async @done(24-04-20 15:42)
+    ✔ drop `dialoguer` from `Cargo.toml` @done(24-04-20 15:42)
+    ✔ publish `r3bl_terminal_async` to crates.io @done(24-04-20 15:42)
+    ✔ create YT channel @done(24-04-20 15:42)
 
 implement all the protocol messages (client & server):
   ☐ client
