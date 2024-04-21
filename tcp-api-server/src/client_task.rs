@@ -19,7 +19,7 @@ use crate::{protocol, CLIArg, ClientMessage, CLIENT_ID_TRACING_FIELD};
 use crossterm::style::Stylize;
 use miette::{Context, IntoDiagnostic};
 use r3bl_terminal_async::{
-    ReadlineEvent, SharedWriter, Spinner, SpinnerStyle, TerminalAsync, TokioMutex,
+    ReadlineEvent, SharedWriter, Spinner, SpinnerStyle, StdMutex, TerminalAsync,
 };
 use std::{
     io::{stderr, Write},
@@ -63,7 +63,7 @@ pub async fn start_client(
             template: r3bl_terminal_async::SpinnerTemplate::Braille,
             ..Default::default()
         },
-        Arc::new(TokioMutex::new(stderr())),
+        Arc::new(StdMutex::new(stderr())),
         terminal_async.clone_shared_writer(),
     )
     .await?;
@@ -213,7 +213,7 @@ pub mod user_input {
                         template: r3bl_terminal_async::SpinnerTemplate::Block,
                         ..Default::default()
                     },
-                    Arc::new(TokioMutex::new(stderr())),
+                    Arc::new(StdMutex::new(stderr())),
                     shared_writer.clone(),
                 )
                 .await;
