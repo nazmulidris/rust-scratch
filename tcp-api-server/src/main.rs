@@ -17,7 +17,7 @@
 
 use clap::Parser;
 use r3bl_rs_utils_core::UnicodeString;
-use r3bl_terminal_async::{tracing_setup, TerminalAsync, TracingConfig};
+use r3bl_terminal_async::{tracing_setup, DisplayPreference, TerminalAsync, TracingConfig};
 use r3bl_tui::{
     ColorWheel, ColorWheelConfig, ColorWheelSpeed, GradientGenerationPolicy, TextColorizationPolicy,
 };
@@ -66,10 +66,10 @@ async fn main() -> miette::Result<()> {
                 writers: cli_args.enable_tracing.clone(),
                 level: cli_args.tracing_log_level,
                 tracing_log_file_path_and_prefix: format!(
-                    "{}_{}",
+                    "{}_{}.log",
                     cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
                 ),
-                stdout_override: None,
+                preferred_display: tracing_setup::DisplayPreference::Stdout,
             })?;
             tcp_api_server::server_task::server_main(cli_args).await?
         }
@@ -81,12 +81,16 @@ async fn main() -> miette::Result<()> {
                 writers: cli_args.enable_tracing.clone(),
                 level: cli_args.tracing_log_level,
                 tracing_log_file_path_and_prefix: format!(
-                    "{}_{}",
+                    "{}_{}.log",
                     cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
                 ),
-                stdout_override: maybe_terminal_async
-                    .as_ref()
-                    .map(|terminal_async| terminal_async.clone_shared_writer()),
+                preferred_display: match &maybe_terminal_async {
+                    Some(terminal_async) => {
+                        let shared_writer = terminal_async.clone_shared_writer();
+                        DisplayPreference::SharedWriter(shared_writer)
+                    }
+                    None => DisplayPreference::Stdout,
+                },
             })?;
 
             if let Some(terminal_async) = maybe_terminal_async {
