@@ -44,7 +44,7 @@ const ARTIFICIAL_UI_DELAY: Duration = Duration::from_millis(DELAY_MS * 12);
 /// The `client_id` field is added to the span, so that it can be used in the logs by
 /// functions called by this one. See also: [crate::CLIENT_ID_TRACING_FIELD].
 #[instrument(skip_all, fields(client_id))]
-pub async fn start_client(
+pub async fn client_main(
     cli_args: CLIArg,
     mut terminal_async: TerminalAsync,
 ) -> miette::Result<()> {

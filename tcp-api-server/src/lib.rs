@@ -18,13 +18,11 @@
 pub mod clap_args;
 pub mod client_task;
 pub mod protocol;
-pub mod rand;
 pub mod server_task;
 
 pub use clap_args::*;
 pub use client_task::*;
 pub use protocol::*;
-pub use rand::*;
 pub use server_task::*;
 
 pub const CHANNEL_SIZE: usize = 10;

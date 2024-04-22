@@ -30,7 +30,7 @@ use tracing::{error, info, instrument};
 use crate::{protocol, CLIArg, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD};
 
 #[instrument(skip_all)]
-pub async fn start_server(cli_args: CLIArg) -> miette::Result<()> {
+pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
     let address = cli_args.address;
     let port = cli_args.port;
 

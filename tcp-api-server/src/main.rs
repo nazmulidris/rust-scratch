@@ -71,7 +71,7 @@ async fn main() -> miette::Result<()> {
                 ),
                 stdout_override: None,
             })?;
-            tcp_api_server::server_task::start_server(cli_args).await?
+            tcp_api_server::server_task::server_main(cli_args).await?
         }
         // Start client (interactive and needs TerminalAsync). Async writer for stdout.
         tcp_api_server::CLISubcommand::Client => {
@@ -90,7 +90,7 @@ async fn main() -> miette::Result<()> {
             })?;
 
             if let Some(terminal_async) = maybe_terminal_async {
-                tcp_api_server::client_task::start_client(cli_args, terminal_async).await?
+                tcp_api_server::client_task::client_main(cli_args, terminal_async).await?
             }
         }
     }

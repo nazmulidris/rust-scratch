@@ -1867,7 +1867,6 @@ dependencies = [
  "r3bl_rs_utils_core",
  "r3bl_terminal_async",
  "r3bl_tui",
- "rand",
  "serde",
  "serde_json",
  "thiserror",
