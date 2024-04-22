@@ -40,38 +40,57 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
         .await
         .into_diagnostic()?;
 
-    // Set up Ctrl-C handler.
-    setup_ctrlc_handler().await?;
-
     // Create broadcast channel for sending messages to all clients.
-    let (sender_for_broadcast_channel_between_client_handlers, _) =
+    let (sender_inter_client_broadcast_channel, _) =
         broadcast::channel::<protocol::MyPayload>(CHANNEL_SIZE);
+
+    // Create broadcast channel to handle shutdown.
+    let (sender_shutdown_broadcast_channel, mut receiver_shutdown_broadcast_channel) =
+        broadcast::channel::<()>(1);
+
+    // Set up Ctrl-C handler.
+    setup_ctrlc_handler(sender_shutdown_broadcast_channel.clone()).await?;
 
     info!("Listening for new connections");
 
     // Server infinite loop - accept connections.
     loop {
-        // Accept incoming connections ("blocking").
-        let (client_tcp_stream, _) = listener.accept().await.into_diagnostic()?;
+        tokio::select! {
+            // Branch 1: Accept incoming connections ("blocking").
+            result /* Result<(TcpStream, SocketAddr), Error> */ = listener.accept() => {
+                let (client_tcp_stream, _) = result.into_diagnostic()?;
 
-        // Start task to handle a connection.
-        let sender_for_broadcast_channel_between_client_handlers =
-            sender_for_broadcast_channel_between_client_handlers.clone();
+                // Clone the broadcast channel senders.
+                let sender_inter_client_broadcast_channel = sender_inter_client_broadcast_channel.clone();
+                let sender_shutdown_broadcast_channel = sender_shutdown_broadcast_channel.clone();
 
-        tokio::spawn(async move {
-            let client_id = friendly_random_id::generate_friendly_random_id();
-            match handle_client_task::main_loop(
-                client_tcp_stream,
-                sender_for_broadcast_channel_between_client_handlers,
-                &client_id,
-            )
-            .await
-            {
-                Err(error) => error!(client_id, %error, "Problem handling client task"),
-                Ok(_) => info!(client_id, "Successfully ended client task"),
+                // Start task to handle a connection.
+                tokio::spawn(async move {
+                    let client_id = friendly_random_id::generate_friendly_random_id();
+                    match handle_client_task::main_loop(
+                        &client_id,
+                        client_tcp_stream,
+                        sender_inter_client_broadcast_channel,
+                        sender_shutdown_broadcast_channel,
+                    )
+                    .await
+                    {
+                        Err(error) => error!(client_id, %error, "Problem handling client task"),
+                        Ok(_) => info!(client_id, "Successfully ended client task"),
+                    }
+                });
+
             }
-        });
+
+            // Branch 2: Monitor shutdown channel.
+            _ = receiver_shutdown_broadcast_channel.recv() => {
+                info!("Received shutdown signal");
+                break;
+            }
+        }
     }
+
+    Ok(())
 }
 
 /// The `client_id` field is added to the span, so that it can be used in the logs by all
@@ -111,16 +130,20 @@ pub mod handle_client_task {
     /// This has an infinite loop, so you might want to call it in a spawn block.
     #[instrument(name = "handle_client_task:main_loop", skip_all, fields(client_id))]
     pub async fn main_loop(
-        client_tcp_stream: TcpStream,
-        sender_for_broadcast_channel_between_client_handlers: Sender<protocol::MyPayload>,
         client_id: &str,
+        client_tcp_stream: TcpStream,
+        sender_inter_client_broadcast_channel: Sender<protocol::MyPayload>,
+        sender_shutdown_broadcast_channel: Sender<()>,
     ) -> miette::Result<()> {
         tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, client_id);
         info!("Handling client task");
 
-        // Get sender and receiver ready.
-        let mut receiver_for_broadcast_channel_between_client_handlers =
-            sender_for_broadcast_channel_between_client_handlers.subscribe();
+        // Get the receiver for the inter client channel.
+        let mut receiver_inter_client_broadcast_channel =
+            sender_inter_client_broadcast_channel.subscribe();
+
+        // Get the receiver for the shutdown channel.
+        let mut receiver_shutdown_broadcast_channel = sender_shutdown_broadcast_channel.subscribe();
 
         // Get reader and writer from TCP stream.
         let (read_half, write_half) = client_tcp_stream.into_split();
@@ -148,7 +171,7 @@ pub mod handle_client_task {
                 }
 
                 // Branch 2: Read from broadcast channel.
-                result = receiver_for_broadcast_channel_between_client_handlers.recv() => {
+                result = receiver_inter_client_broadcast_channel.recv() => {
                     match result {
                         Ok(payload) => {
                             handle_broadcast_channel_between_clients_payload(payload).await;
@@ -158,6 +181,12 @@ pub mod handle_client_task {
                         }
                     }
                 }
+
+                // Branch 3: Monitor shutdown channel.
+                _ = receiver_shutdown_broadcast_channel.recv() => {
+                    info!("Received shutdown signal");
+                    break;
+                }
             }
         }
 
@@ -166,15 +195,17 @@ pub mod handle_client_task {
 }
 
 #[instrument(skip_all)]
-pub async fn setup_ctrlc_handler() -> miette::Result<()> {
+pub async fn setup_ctrlc_handler(
+    sender_shutdown_broadcast_channel: Sender<()>,
+) -> miette::Result<()> {
     ctrlc::set_handler(move || {
-        eprintln!(
+        info!(
             "{}",
             "Ctrl-C event detected. Gracefully shutting down..."
                 .yellow()
                 .bold()
         );
-        std::process::exit(0);
+        let _ = sender_shutdown_broadcast_channel.send(());
     })
     .into_diagnostic()
 }
