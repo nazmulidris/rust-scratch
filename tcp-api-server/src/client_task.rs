@@ -110,6 +110,10 @@ pub async fn client_main(
 }
 
 pub mod user_input {
+    use std::fmt::Debug;
+
+    use crate::{byte_io, Data};
+
     use super::*;
 
     /// This has an infinite loop, so you might want to spawn a task before calling it.
@@ -147,7 +151,7 @@ pub mod user_input {
                     match readline_event {
                         ReadlineEvent::Line(input) => {
                             // Parse the input into a ClientMessage.
-                            let result_user_input_message = protocol::ClientMessage::from_str(&input); // input.parse::<protocol::ClientMessage>();
+                            let result_user_input_message = protocol::ClientMessage::<String, Data>::from_str(&input); // input.parse::<protocol::ClientMessage>();
                             match result_user_input_message {
                                 Ok(user_input_message) => {
                                     terminal_async.pause().await;
@@ -198,8 +202,8 @@ pub mod user_input {
     /// Please refer to the [ClientMessage] enum in the [protocol] module for the list of
     /// commands.
     #[instrument(skip_all, fields(client_message))]
-    pub async fn handle_user_input(
-        client_message: ClientMessage,
+    pub async fn handle_user_input<K: Debug, V: Debug>(
+        client_message: ClientMessage<K, V>,
         buf_writer: &mut BufWriter<OwnedWriteHalf>,
         shutdown_sender: tokio::sync::broadcast::Sender<bool>,
         mut shared_writer: SharedWriter,
@@ -222,8 +226,10 @@ pub mod user_input {
                 tokio::time::sleep(ARTIFICIAL_UI_DELAY).await;
 
                 // Ignore the result of the write operation, since the client is exiting.
-                if let Ok(payload_buffer) = bincode::serialize(&protocol::ClientMessage::Exit) {
-                    let _ = protocol::write_bytes(buf_writer, payload_buffer).await;
+                if let Ok(payload_buffer) =
+                    bincode::serialize(&protocol::ClientMessage::<String, Data>::Exit)
+                {
+                    let _ = byte_io::write(buf_writer, payload_buffer).await;
                 }
 
                 // Stop progress bar.
@@ -250,6 +256,10 @@ pub mod user_input {
 const DEFAULT_CLIENT_ID: &str = "none";
 
 pub mod monitor_tcp_conn_task {
+    use std::fmt::Debug;
+
+    use crate::{byte_io, Data};
+
     use super::*;
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
@@ -271,11 +281,11 @@ pub mod monitor_tcp_conn_task {
         // 00: listen for data from the server, handle it, monitor shutdown channel.
         loop {
             tokio::select! {
-                result_payload_buffer = protocol::read_bytes(&mut buf_reader) => {
+                result_payload_buffer = byte_io::read(&mut buf_reader) => {
                     match result_payload_buffer {
                         Ok(payload_buffer) => {
                             let server_message =
-                                bincode::deserialize::<protocol::ServerMessage>(&payload_buffer)
+                                bincode::deserialize::<protocol::ServerMessage<String, Data>>(&payload_buffer)
                                     .into_diagnostic()?;
                             handle_server_message(server_message, &mut client_id, shared_writer.clone())
                                 .await?;
@@ -305,8 +315,8 @@ pub mod monitor_tcp_conn_task {
     }
 
     #[instrument(skip_all, fields(server_message, client_id))]
-    async fn handle_server_message(
-        server_message: protocol::ServerMessage,
+    async fn handle_server_message<K: Debug, V: Debug>(
+        server_message: protocol::ServerMessage<K, V>,
         client_id: &mut String,
         mut shared_writer: SharedWriter,
     ) -> miette::Result<()> {
