@@ -130,8 +130,10 @@ pub mod user_input {
         let welcome_message = format!(
             "{}, eg: {}, etc.",
             "Enter a message".yellow().bold(),
-            "exit, get_all, clear".green().bold()
+            "exit, info, getall, clear".green().bold()
         );
+
+        // 00: implement info which simply collects the `ClientMessage.iter()` (just like in the test)
         terminal_async.println(welcome_message).await;
 
         let mut buf_writer = BufWriter::new(write_half);
@@ -202,7 +204,7 @@ pub mod user_input {
     /// Please refer to the [ClientMessage] enum in the [protocol] module for the list of
     /// commands.
     #[instrument(skip_all, fields(client_message))]
-    pub async fn handle_user_input<K: Debug, V: Debug>(
+    pub async fn handle_user_input<K: Debug + Default, V: Debug + Default>(
         client_message: ClientMessage<K, V>,
         buf_writer: &mut BufWriter<OwnedWriteHalf>,
         shutdown_sender: tokio::sync::broadcast::Sender<bool>,

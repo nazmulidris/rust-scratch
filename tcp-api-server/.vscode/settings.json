@@ -5,6 +5,7 @@
     "bincode",
     "dialoguer",
     "geohashing",
+    "getall",
     "indicatif",
     "oneshot",
     "opentelemetry",

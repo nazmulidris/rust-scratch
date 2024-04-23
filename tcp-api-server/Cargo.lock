@@ -1937,6 +1937,8 @@ dependencies = [
  "r3bl_tui 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde_json",
+ "strum 0.26.2",
+ "strum_macros 0.26.2",
  "thiserror",
  "tokio",
  "tracing",

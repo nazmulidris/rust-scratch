@@ -17,7 +17,6 @@
 
 use miette::IntoDiagnostic;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 
 /// Size (number of bytes) to read from the stream to get the length prefix.
 pub type LengthPrefixType = u64;
@@ -72,48 +71,61 @@ pub mod byte_io {
     }
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub enum ClientMessage<K, V> {
-    Insert(K, V),
-    Remove(K),
-    Get(K),
+/// More info:
+/// - <https://docs.rs/strum_macros/latest/strum_macros/derive.EnumString.html>
+/// - <https://docs.rs/strum_macros/latest/strum_macros/derive.Display.html>
+/// - <https://docs.rs/strum_macros/latest/strum_macros/derive.EnumIter.html>
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    strum_macros::EnumString,
+    strum_macros::EnumIter,
+    strum_macros::Display,
+)]
+pub enum ClientMessage<K: Default, V: Default> {
     #[default]
+    #[strum(ascii_case_insensitive)]
     GetAll,
+
+    #[strum(ascii_case_insensitive)]
+    Insert(K, V),
+
+    #[strum(ascii_case_insensitive)]
+    Remove(K),
+
+    #[strum(ascii_case_insensitive)]
+    Get(K),
+
+    #[strum(ascii_case_insensitive)]
     Clear,
+
+    #[strum(ascii_case_insensitive)]
     Size,
+
+    #[strum(ascii_case_insensitive)]
     ContainsKey(K),
+
+    #[strum(ascii_case_insensitive)]
     ContainsValue(V),
+
+    #[strum(ascii_case_insensitive)]
     Keys,
+
+    #[strum(ascii_case_insensitive)]
     Values,
+
+    #[strum(ascii_case_insensitive)]
     IsEmpty,
+
+    #[strum(ascii_case_insensitive)]
     Exit,
+
+    #[strum(ascii_case_insensitive)]
     BroadcastToOthers(V), /* Client A initiates this. It gets BroadcastToOthersAck(..). Other clients get HandleBroadcast(..) */
-}
-
-impl<K: Default, V: Default> FromStr for ClientMessage<K, V> {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "insert" => Ok(ClientMessage::Insert(
-                Default::default(),
-                Default::default(),
-            )),
-            "remove" => Ok(ClientMessage::Remove(Default::default())),
-            "get" => Ok(ClientMessage::Get(Default::default())),
-            "get_all" => Ok(ClientMessage::GetAll),
-            "clear" => Ok(ClientMessage::Clear),
-            "size" => Ok(ClientMessage::Size),
-            "contains_key" => Ok(ClientMessage::ContainsKey(Default::default())),
-            "contains_value" => Ok(ClientMessage::ContainsValue(Default::default())),
-            "keys" => Ok(ClientMessage::Keys),
-            "values" => Ok(ClientMessage::Values),
-            "is_empty" => Ok(ClientMessage::IsEmpty),
-            "exit" => Ok(ClientMessage::Exit),
-            "broadcast_to_others" => Ok(ClientMessage::BroadcastToOthers(Default::default())),
-            _ => Err(format!("Unknown command: {}", s)),
-        }
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -152,6 +164,35 @@ pub fn serialize_helper(value: &impl Serialize) -> miette::Result<SerializeHelpe
         size: bytes.len(),
         bytes,
     })
+}
+
+#[cfg(test)]
+mod command_to_from_string_tests {
+    use std::str::FromStr;
+    use strum::IntoEnumIterator;
+
+    use super::*;
+
+    #[test]
+    fn to_string() {
+        let commands = ClientMessage::<String, String>::iter()
+            .map(|it| it.to_string())
+            .collect::<Vec<String>>();
+        println!("{:?}", commands);
+    }
+
+    #[test]
+    fn from_string() {
+        let commands = ClientMessage::<String, String>::iter()
+            .map(|it| it.to_string().to_lowercase())
+            .collect::<Vec<String>>();
+        println!("{:?}", commands);
+
+        for command in commands {
+            let result = ClientMessage::<String, String>::from_str(&command);
+            println!("{:?}", result);
+        }
+    }
 }
 
 #[cfg(test)]

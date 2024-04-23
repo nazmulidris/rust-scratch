@@ -110,7 +110,7 @@ pub mod handle_client_task {
     use super::*;
 
     #[instrument(skip_all, fields(client_id))]
-    pub async fn handle_client_message<K: Debug, V: Debug>(
+    pub async fn handle_client_message<K: Debug + Default, V: Debug + Default>(
         client_message: protocol::ClientMessage<K, V>,
         _client_id: &str,
     ) -> miette::Result<()> {
