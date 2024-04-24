@@ -25,7 +25,7 @@
 //!
 //! [Bincode] is like `CBOR`, except that it isn't standards based, but it is faster. It
 //! also has full support of [serde] just like [kv] does.
-//! - [More info comparing `CBOR` with `Bincode`](https://g.co/bard/share/0684553f3d57)
+//! - [More info comparing `CBOR` with `Bincode`](https://gemini.google.com/share/0684553f3d57)
 //!
 //! This crate works really well, even with multiple processes accessing the same database
 //! on disk. You can run `cargo run --bin kv` a few times, and it works as expected. Even
@@ -99,7 +99,7 @@ fn perform_db_operations() -> MyResult<()> {
         load_or_create_bucket_from_store(&my_store, MY_PAYLOAD_BUCKET_NAME.to_string())?;
 
     // Save to bucket.
-    let key =format!("key_{}", random_number::<u8>());
+    let key = format!("key_{}", random_number::<u8>());
     save_to_bucket(
         &my_payload_bucket,
         key.clone(),
