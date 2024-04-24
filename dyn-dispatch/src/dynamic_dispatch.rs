@@ -43,6 +43,11 @@ mod returns {
         vec.push(&ErrorTwo {});
         return vec;
     }
+
+    pub fn mut_vec_containing_different_types_of_same_trait<'a>(mut_vec: &mut Vec<&'a dyn Error>) {
+        mut_vec.push(&ErrorOne {});
+        mut_vec.push(&ErrorTwo {});
+    }
 }
 
 mod receives {
