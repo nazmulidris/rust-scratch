@@ -15,27 +15,18 @@
  *   limitations under the License.
  */
 
+use crate::{byte_io, MessageKey};
+use crate::{protocol, CLIArg, MessageValue, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD};
 use crossterm::style::Stylize;
 use miette::miette;
 use miette::IntoDiagnostic;
 use r3bl_rs_utils_core::friendly_random_id;
-use serde::{Deserialize, Serialize};
 use tokio::{
     io::{BufReader, BufWriter},
     net::{TcpListener, TcpStream},
     sync::broadcast::{self, Sender},
 };
 use tracing::{error, info, instrument};
-
-use crate::{protocol, Buffer, CLIArg, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD};
-
-/// Just a sample value or payload type. Replace this with whatever type you want to use.
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Data {
-    pub id: f32,
-    pub description: String,
-    pub data: Buffer,
-}
 
 #[instrument(skip_all)]
 pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
@@ -49,7 +40,8 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
         .into_diagnostic()?;
 
     // Create broadcast channel for sending messages to all clients.
-    let (sender_inter_client_broadcast_channel, _) = broadcast::channel::<Data>(CHANNEL_SIZE);
+    let (sender_inter_client_broadcast_channel, _) =
+        broadcast::channel::<MessageValue>(CHANNEL_SIZE);
 
     // Create broadcast channel to handle shutdown.
     let (sender_shutdown_broadcast_channel, mut receiver_shutdown_broadcast_channel) =
@@ -74,7 +66,7 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
                 // Start task to handle a connection.
                 tokio::spawn(async move {
                     let client_id = friendly_random_id::generate_friendly_random_id();
-                    match handle_client_task::main_loop(
+                    match handle_client_task::enter_loop(
                         &client_id,
                         client_tcp_stream,
                         sender_inter_client_broadcast_channel,
@@ -103,15 +95,11 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
 /// The `client_id` field is added to the span, so that it can be used in the logs by all
 /// the functions in this module. See also: [crate::CLIENT_ID_TRACING_FIELD].
 pub mod handle_client_task {
-    use std::fmt::Debug;
-
-    use crate::byte_io;
-
     use super::*;
 
     #[instrument(skip_all, fields(client_id))]
-    pub async fn handle_client_message<K: Debug + Default, V: Debug + Default>(
-        client_message: protocol::ClientMessage<K, V>,
+    pub async fn handle_client_message(
+        client_message: protocol::ClientMessage<MessageKey, MessageValue>,
         _client_id: &str,
     ) -> miette::Result<()> {
         info!(?client_message, "Received message from client");
@@ -131,7 +119,7 @@ pub mod handle_client_task {
 
     // 00: do something meaningful w/ this payload and probably generate a response
     #[instrument(skip_all, fields(client_id))]
-    pub async fn handle_broadcast_channel_between_clients_payload(payload: Data) {
+    pub async fn handle_broadcast_channel_between_clients_payload(payload: MessageValue) {
         info!(
             "Received payload from broadcast channel (for payloads between clients): {:?}",
             payload
@@ -140,10 +128,10 @@ pub mod handle_client_task {
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
     #[instrument(name = "handle_client_task:main_loop", skip_all, fields(client_id))]
-    pub async fn main_loop(
+    pub async fn enter_loop(
         client_id: &str,
         client_tcp_stream: TcpStream,
-        sender_inter_client_broadcast_channel: Sender<Data>,
+        sender_inter_client_broadcast_channel: Sender<MessageValue>,
         sender_shutdown_broadcast_channel: Sender<()>,
     ) -> miette::Result<()> {
         tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, client_id);
@@ -163,7 +151,7 @@ pub mod handle_client_task {
 
         // Send the client ID.
         let server_message =
-            protocol::ServerMessage::<String, Data>::SetClientId(client_id.to_string());
+            protocol::ServerMessage::<MessageKey, MessageValue>::SetClientId(client_id.to_string());
         let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
         byte_io::write(&mut buf_writer, payload_buffer).await?;
         info!(?server_message, "Sent to client");
@@ -176,7 +164,7 @@ pub mod handle_client_task {
                 // Branch 1: Read from client.
                 result = byte_io::read(&mut buf_reader) => {
                     let payload_buffer = result?;
-                    let client_message: protocol::ClientMessage<String, Data> =
+                    let client_message: protocol::ClientMessage<MessageKey, MessageValue> =
                         bincode::deserialize(&payload_buffer).into_diagnostic()?;
                     if handle_client_message(client_message, client_id).await.is_err() {
                         break;

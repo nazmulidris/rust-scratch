@@ -15,12 +15,16 @@
  *   limitations under the License.
  */
 
+//! This module is standalone and can be used in any project that needs to communicate
+//! between a client and a server using a length-prefix, binary payload, protocol. The
+//! generics `K` and `V` are used to specify the exact type of the key and value used in
+//! the messages by whatever module is using this protocol.
+
 use miette::IntoDiagnostic;
 use serde::{Deserialize, Serialize};
 
 /// Size (number of bytes) to read from the stream to get the length prefix.
 pub type LengthPrefixType = u64;
-
 pub type Buffer = Vec<u8>;
 
 pub mod byte_io {
