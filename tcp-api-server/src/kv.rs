@@ -53,10 +53,8 @@
 use crossterm::style::Stylize;
 use kv::*;
 use miette::{Context, IntoDiagnostic};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
-use std::{collections::HashMap, fmt::Display};
+use std::fmt::{Debug, Display};
 use tracing::{info, instrument};
 
 /// Convenience type alias for the [kv::Bucket] type.
@@ -66,33 +64,45 @@ use tracing::{info, instrument};
 ///
 /// The [Bucket] stores the following key/value pairs.
 /// - `KeyT`: The generic type `<KeyT>`. This will not be serialized or deserialized. This
-///   also has a trait bound on [Key]. See [save_to_bucket] for an example of this.
+///   also has a trait bound on [Key]. See [insert_into_bucket] for an example of this.
 /// - `ValueT`: This type makes it concrete that [Bincode] will be used to serialize and
 ///   deserialize the data from the generic type `<ValueT>`, which has trait bounds on
-///   [Serialize], [Deserialize]. See [save_to_bucket] for an example of this.
+///   [Serialize], [Deserialize]. See [insert_into_bucket] for an example of this.
 pub type KVBucket<'a, KeyT, ValueT> = kv::Bucket<'a, KeyT, Bincode<ValueT>>;
 
-/// If no db folder path is provided to [load_or_create_store], then use this default
-/// folder path.
-const DEFAULT_DB_FOLDER_PATH: &str = "db_folder";
+mod default_settings {
+    use super::*;
 
-#[derive(Debug, strum_macros::EnumString, Hash, PartialEq, Eq, Clone, Copy)]
-pub enum KVSettingsKeys {
-    /// Your [Store] folder path name. [kv] uses this folder to save your key/value store.
-    /// It is your database persistence folder.
-    StoreFolderPath,
-    /// Your [Bucket] name that is used to store the key/value pairs.
-    /// - [Bincode] is used to serialize/deserialize the value stored in the key/value
-    ///   pair.
-    /// - A [Bucket] provides typed access to a section of the key/value store [kv].
-    BucketName,
+    #[derive(Debug, strum_macros::EnumString, Hash, PartialEq, Eq, Clone, Copy)]
+    pub enum Keys {
+        /// Your [Store] folder path name. [kv] uses this folder to save your key/value store.
+        /// It is your database persistence folder.
+        StoreFolderPath,
+        /// Your [Bucket] name that is used to store the key/value pairs.
+        /// - [Bincode] is used to serialize/deserialize the value stored in the key/value
+        ///   pair.
+        /// - A [Bucket] provides typed access to a section of the key/value store [kv].
+        BucketName,
+    }
+
+    pub fn get(key: Keys) -> String {
+        match key {
+            Keys::StoreFolderPath => "kv_db_folder".to_string(),
+            Keys::BucketName => "my_data_bucket".to_string(),
+        }
+    }
+
+    #[cfg(test)]
+    mod settings_tests {
+        use super::*;
+
+        #[test]
+        fn test_kv_settings() {
+            assert_eq!(get(Keys::StoreFolderPath), "kv_db_folder".to_string());
+            assert_eq!(get(Keys::BucketName), "my_data_bucket".to_string());
+        }
+    }
 }
-pub static KV_SETTINGS: Lazy<HashMap<KVSettingsKeys, String>> = Lazy::new(|| {
-    let mut it = HashMap::new();
-    it.insert(KVSettingsKeys::StoreFolderPath, "kv_db_folder".to_string());
-    it.insert(KVSettingsKeys::BucketName, "my_data_bucket".to_string());
-    it
-});
 
 /// Create the db folder if it doesn't exit. Otherwise load it from the folder on disk.
 /// Note there are no lifetime annotations on this function. All the other functions below
@@ -103,7 +113,7 @@ pub fn load_or_create_store(maybe_db_folder_path: Option<&String>) -> miette::Re
     // Configure the database folder location.
     let db_folder_path = maybe_db_folder_path
         .cloned()
-        .unwrap_or_else(|| DEFAULT_DB_FOLDER_PATH.to_string());
+        .unwrap_or_else(|| default_settings::get(default_settings::Keys::StoreFolderPath));
 
     let cfg = Config::new(db_folder_path.clone());
 
@@ -139,7 +149,7 @@ pub fn load_or_create_bucket_from_store<
 ) -> miette::Result<KVBucket<'a, KeyT, ValueT>> {
     let bucket_name = maybe_bucket_name
         .cloned()
-        .unwrap_or_else(|| "data_bucket".to_string());
+        .unwrap_or_else(|| default_settings::get(default_settings::Keys::BucketName));
 
     let my_payload_bucket: KVBucket<KeyT, ValueT> = store
         .bucket(Some(&bucket_name))
@@ -328,7 +338,10 @@ use kv_error::*;
 mod kv_tests {
     use super::*;
     use serial_test::serial;
-    use std::path::{Path, PathBuf};
+    use std::{
+        collections::HashMap,
+        path::{Path, PathBuf},
+    };
     use tempfile::tempdir;
     use tracing::{instrument, Level};
 

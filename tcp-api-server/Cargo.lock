@@ -2022,7 +2022,6 @@ dependencies = [
  "ctrlc",
  "kv",
  "miette",
- "once_cell",
  "pretty_assertions",
  "r3bl_rs_utils_core 0.9.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "r3bl_terminal_async",
