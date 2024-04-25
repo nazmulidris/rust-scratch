@@ -227,10 +227,23 @@ use kv_error::*;
 #[cfg(test)]
 mod kv_tests {
     use super::*;
+    use std::path::{Path, PathBuf};
     use tempfile::tempdir;
 
-    fn perform_db_operations(path: String, bucket: String) -> miette::Result<()> {
-        let my_store = load_or_create_store(Some(&path))?;
+    fn check_folder_exists(path: &Path) -> bool {
+        path.exists() && path.is_dir()
+    }
+
+    fn join_path_with_str(path: &Path, str: &str) -> PathBuf {
+        path.join(str)
+    }
+
+    fn perform_db_operations(path: &Path, bucket: String) -> miette::Result<()> {
+        let path_str = path.to_string_lossy().to_string();
+        let my_store = load_or_create_store(Some(&path_str))?;
+
+        // Check that the kv store folder exists.
+        assert!(check_folder_exists(path));
 
         // A bucket provides typed access to a section of the key/value store.
         let my_payload_bucket: KVBucket<String, String> =
@@ -278,6 +291,10 @@ mod kv_tests {
         // You can use `path` here for your operations.
         let path = dir.path();
         // Run the tests.
-        perform_db_operations(path.to_string_lossy().to_string(), "bucket".to_string()).unwrap();
+        perform_db_operations(
+            join_path_with_str(path, "db_folder").as_path(),
+            "bucket".to_string(),
+        )
+        .unwrap();
     }
 }
