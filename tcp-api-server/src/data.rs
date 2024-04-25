@@ -28,9 +28,9 @@ pub struct Data {
 }
 
 /// These type aliases are used throughout the codebase to make it easier to specify the
-/// exact type of the key used in [ServerMessage] and [ClientMessage].
+/// exact type of the key used in [crate::ServerMessage] and [crate::ClientMessage].
 pub type MessageKey = String;
 
 /// These type aliases are used throughout the codebase to make it easier to specify the
-/// exact type of the value used in [ServerMessage] and [ClientMessage].
+/// exact type of the value used in [crate::ServerMessage] and [crate::ClientMessage].
 pub type MessageValue = Data;

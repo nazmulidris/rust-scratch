@@ -15,22 +15,79 @@
  *   limitations under the License.
  */
 
-//! This sample binary uses the [kv] crate.
-//!
-//! Create a key value store that stores keys that are type [String], and values that are
-//! type [MyValueType].
+//! Use module is standalone, you can use it in any project that needs to create an
+//! embedded key/value store that stores keys that are of whatever type you choose, and
+//! values that are whatever type you choose.
+//! - It is a wrapper around the [kv] crate, to make it trivially simple to use. There are
+//!   only 4 functions that allow you access to the capabilities of the key/value embedded
+//!   store.
+//! - And provide lots of really fine grained errors, using [miette] and [thiserror] (see
+//!   [kv_error]).
 //!
 //! 1. The values are serialized to [Bincode] (from Rust struct) before they are saved.
 //! 2. The values are deserialized from [Bincode] (to Rust struct) after they are loaded.
 //!
-//! [Bincode] is like `CBOR`, except that it isn't standards based, but it is faster. It
-//! also has full support of [serde] just like [kv] does.
-//! - [More info comparing `CBOR` with `Bincode`](https://gemini.google.com/share/0684553f3d57)
+//! See the tests in this module for an example of how to use this module.
 //!
-//! This crate works really well, even with multiple processes accessing the same database
-//! on disk. You can run `cargo run --bin kv` a few times, and it works as expected. Even
-//! with multiple processes writing to the kv store, the iterator can be used to read the
-//! current state of the db, as expected. This is unlike the [rkv] crate.
+//! ```no_run
+//! let path_str = path.to_string_lossy().to_string();
+//! let store = load_or_create_store(Some(&path_str))?;
+//!
+//! // Check that the kv store folder exists.
+//! assert!(check_folder_exists(path));
+//!
+//! // A bucket provides typed access to a section of the key/value store.
+//! let bucket = load_or_create_bucket_from_store(&store, Some(&bucket))?;
+//!
+//! // Save to bucket.
+//! save_to_bucket(&bucket, "foo".to_string(), "bar".to_string())?;
+//!
+//! // Load from bucket.
+//! assert_eq!(
+//!     load_from_bucket(&bucket, "foo".to_string())?,
+//!     Some("bar".to_string())
+//! );
+//!
+//! // Enumerate contents of bucket.
+//! let mut map = HashMap::new();
+//! for result_item in bucket.iter() {
+//!     let item = result_item
+//!         .into_diagnostic()
+//!         .wrap_err(KvErrorCouldNot::GetItemFromIteratorFromBucket)?;
+//!
+//!     let key = item
+//!         .key::<String>()
+//!         .into_diagnostic()
+//!         .wrap_err(KvErrorCouldNot::GetKeyFromItemFromIteratorFromBucket)?;
+//!
+//!     // Deserialize the binary payload into a Rust struct.
+//!     let Bincode(payload) = item
+//!         .value::<Bincode<String>>()
+//!         .into_diagnostic()
+//!         .wrap_err(KvErrorCouldNot::GetValueFromItemFromIteratorFromBucket)?;
+//!
+//!     map.insert(key.to_string(), payload);
+//! }
+//!
+//! assert_eq!(map.get("foo"), Some(&"bar".to_string()));
+//!
+//! Ok(())
+//! ```
+//!
+//! [Bincode] is like [`CBOR`](https://en.wikipedia.org/wiki/CBOR), except that it isn't
+//! standards based, but it is faster. It also has full support of [serde] just like [kv]
+//! does.
+//! - [More info comparing [`CBOR`](https://en.wikipedia.org/wiki/CBOR) with
+//!   [`Bincode`](https://gemini.google.com/share/0684553f3d57)
+//!
+//! The [kv] crate works really well, even with multiple processes accessing the same
+//! database on disk. Even though [sled](https://github.com/spacejam/sled), which the [kv]
+//! crate itself wraps, is not multi-process safe.
+//!
+//! In my testing, I've run multiple processes that write to the key/value store at the
+//! same time, and it works as expected. Even with multiple processes writing to the
+//! store, the iterator [Bucket::iter] can be used to read the current state of the db, as
+//! expected.
 
 use crossterm::style::Stylize;
 use kv::*;
@@ -45,19 +102,22 @@ use std::{collections::HashMap, fmt::Display};
 /// 2. A [Bucket] is given a name, and there may be many [Bucket]s in a [Store].
 /// 3. A [Bucket] provides typed access to a section of the key/value store [kv].
 ///
-/// The [Bucket] stores the following key value pairs.
-/// - Key: The generic type `<KT>`.
-/// - Value: This type makes it concrete that [Bincode] will be used to serialized the
-///   data from the generic type `<VT>`.
+/// The [Bucket] stores the following key/value pairs.
+/// - `KeyT`: The generic type `<KeyT>`. This will not be serialized or deserialized. This
+///   also has a trait bound on [Key]. See [save_to_bucket] for an example of this.
+/// - `ValueT`: This type makes it concrete that [Bincode] will be used to serialize and
+///   deserialize the data from the generic type `<ValueT>`, which has trait bounds on
+///   [Serialize], [Deserialize]. See [save_to_bucket] for an example of this.
 pub type KVBucket<'a, KeyT, ValueT> = kv::Bucket<'a, KeyT, Bincode<ValueT>>;
 
 #[derive(Debug, strum_macros::EnumString, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum KVSettingsKeys {
-    /// Your [Store] folder path name. [kv] uses this folder to save your key/value store. It
-    /// is your database persistence folder.
+    /// Your [Store] folder path name. [kv] uses this folder to save your key/value store.
+    /// It is your database persistence folder.
     StoreFolderPath,
-    /// Your [Bucket] name that is used to store the [String], [MyValueType] pairs.
-    /// - [Bincode] is used to serialize/deserialize the value stored in the key/value pair.
+    /// Your [Bucket] name that is used to store the key/value pairs.
+    /// - [Bincode] is used to serialize/deserialize the value stored in the key/value
+    ///   pair.
     /// - A [Bucket] provides typed access to a section of the key/value store [kv].
     BucketName,
 }
@@ -69,6 +129,12 @@ pub static KV_SETTINGS: Lazy<HashMap<KVSettingsKeys, String>> = Lazy::new(|| {
 });
 
 /// Create the db folder if it doesn't exit. Otherwise load it from the folder on disk.
+/// Note there are no lifetime annotations on this function. All the other functions below
+/// do have lifetime annotations, since they are all tied to the lifetime of the returned
+/// [Store]:
+/// - [load_or_create_bucket_from_store]
+/// - [save_to_bucket]
+/// - [load_from_bucket]
 pub fn load_or_create_store(maybe_db_folder_path: Option<&String>) -> miette::Result<Store> {
     // Configure the database folder location.
     let db_folder_path = maybe_db_folder_path
@@ -96,7 +162,8 @@ pub fn load_or_create_store(maybe_db_folder_path: Option<&String>) -> miette::Re
     Ok(store)
 }
 
-/// A [Bucket] provides typed access to a section of the key/value store [kv].
+/// A [Bucket] provides typed access to a section of the key/value [Store]. It has a
+/// lifetime, since the [Bucket] is created from a [Store].
 pub fn load_or_create_bucket_from_store<
     'a,
     KT: kv::Key<'a>,
@@ -193,7 +260,7 @@ pub fn load_from_bucket<
     it
 }
 
-mod kv_error {
+pub mod kv_error {
     #[allow(dead_code)]
     #[derive(thiserror::Error, Debug, miette::Diagnostic)]
     pub enum KvErrorCouldNot {
@@ -240,27 +307,26 @@ mod kv_tests {
 
     fn perform_db_operations(path: &Path, bucket: String) -> miette::Result<()> {
         let path_str = path.to_string_lossy().to_string();
-        let my_store = load_or_create_store(Some(&path_str))?;
+        let store = load_or_create_store(Some(&path_str))?;
 
         // Check that the kv store folder exists.
         assert!(check_folder_exists(path));
 
         // A bucket provides typed access to a section of the key/value store.
-        let my_payload_bucket: KVBucket<String, String> =
-            load_or_create_bucket_from_store(&my_store, Some(&bucket))?;
+        let bucket = load_or_create_bucket_from_store(&store, Some(&bucket))?;
 
         // Save to bucket.
-        save_to_bucket(&my_payload_bucket, "foo".to_string(), "bar".to_string())?;
+        save_to_bucket(&bucket, "foo".to_string(), "bar".to_string())?;
 
         // Load from bucket.
         assert_eq!(
-            load_from_bucket(&my_payload_bucket, "foo".to_string())?,
+            load_from_bucket(&bucket, "foo".to_string())?,
             Some("bar".to_string())
         );
 
         // Enumerate contents of bucket.
         let mut map = HashMap::new();
-        for result_item in my_payload_bucket.iter() {
+        for result_item in bucket.iter() {
             let item = result_item
                 .into_diagnostic()
                 .wrap_err(KvErrorCouldNot::GetItemFromIteratorFromBucket)?;

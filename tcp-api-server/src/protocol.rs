@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-//! This module is standalone and can be used in any project that needs to communicate
+//! This module is standalone, you can use it any project that needs to communicate
 //! between a client and a server using a length-prefix, binary payload, protocol. The
 //! generics `K` and `V` are used to specify the exact type of the key and value used in
 //! the messages by whatever module is using this protocol.
