@@ -15,21 +15,10 @@
  *   limitations under the License.
  */
 
-pub mod clap_args;
-pub mod client_task;
-pub mod data;
-pub mod standalone;
-pub mod server_task;
+// Attach.
+pub mod kv;
+pub mod protocol;
 
-pub use clap_args::*;
-pub use client_task::*;
-pub use data::*;
-pub use standalone::*;
-pub use server_task::*;
-
-pub const CHANNEL_SIZE: usize = 10;
-
-/// Make sure that this is the same as the [tracing::Metadata::fields] field symbol
-/// declared in the attribute macro [tracing::instrument::Instrument]. Eg:
-/// `#[instrument(fields(client_id))]`. There is no compiler check for this unfortunately.
-pub const CLIENT_ID_TRACING_FIELD: &str = "client_id";
+// Re-export.
+pub use kv::*;
+pub use protocol::*;

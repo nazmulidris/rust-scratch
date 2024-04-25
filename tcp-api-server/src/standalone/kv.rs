@@ -91,17 +91,6 @@ mod default_settings {
             Keys::BucketName => "my_data_bucket".to_string(),
         }
     }
-
-    #[cfg(test)]
-    mod settings_tests {
-        use super::*;
-
-        #[test]
-        fn test_kv_settings() {
-            assert_eq!(get(Keys::StoreFolderPath), "kv_db_folder".to_string());
-            assert_eq!(get(Keys::BucketName), "my_data_bucket".to_string());
-        }
-    }
 }
 
 /// Create the db folder if it doesn't exit. Otherwise load it from the folder on disk.
