@@ -23,8 +23,8 @@
 //!   store.
 //!   - [load_or_create_store]
 //!   - [load_or_create_bucket_from_store]
-//!   - [save_to_bucket]
-//!   - [load_from_bucket]
+//!   - [insert_into_bucket]
+//!   - [get_from_bucket]
 //!   - [remove_from_bucket]
 //!   - [is_key_contained_in_bucket]
 //! - And provide lots of really fine grained errors, using [miette] and [thiserror] (see
@@ -57,6 +57,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::{collections::HashMap, fmt::Display};
+use tracing::{info, instrument};
 
 /// Convenience type alias for the [kv::Bucket] type.
 /// 1. A [Bucket] is created from a [Store].
@@ -70,6 +71,10 @@ use std::{collections::HashMap, fmt::Display};
 ///   deserialize the data from the generic type `<ValueT>`, which has trait bounds on
 ///   [Serialize], [Deserialize]. See [save_to_bucket] for an example of this.
 pub type KVBucket<'a, KeyT, ValueT> = kv::Bucket<'a, KeyT, Bincode<ValueT>>;
+
+/// If no db folder path is provided to [load_or_create_store], then use this default
+/// folder path.
+const DEFAULT_DB_FOLDER_PATH: &str = "db_folder";
 
 #[derive(Debug, strum_macros::EnumString, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum KVSettingsKeys {
@@ -93,11 +98,12 @@ pub static KV_SETTINGS: Lazy<HashMap<KVSettingsKeys, String>> = Lazy::new(|| {
 /// Note there are no lifetime annotations on this function. All the other functions below
 /// do have lifetime annotations, since they are all tied to the lifetime of the returned
 /// [Store].
+#[instrument]
 pub fn load_or_create_store(maybe_db_folder_path: Option<&String>) -> miette::Result<Store> {
     // Configure the database folder location.
     let db_folder_path = maybe_db_folder_path
         .cloned()
-        .unwrap_or_else(|| "db_folder".to_string());
+        .unwrap_or_else(|| DEFAULT_DB_FOLDER_PATH.to_string());
 
     let cfg = Config::new(db_folder_path.clone());
 
@@ -108,7 +114,7 @@ pub fn load_or_create_store(maybe_db_folder_path: Option<&String>) -> miette::Re
             db_folder_path: db_folder_path.clone(),
         })?;
 
-    tracing::info!(
+    info!(
         "📑 {}",
         format!(
             "{}{}",
@@ -122,26 +128,27 @@ pub fn load_or_create_store(maybe_db_folder_path: Option<&String>) -> miette::Re
 
 /// A [Bucket] provides typed access to a section of the key/value [Store]. It has a
 /// lifetime, since the [Bucket] is created from a [Store].
+#[instrument(fields(store = ?store.path(), buckets = ?store.buckets()))]
 pub fn load_or_create_bucket_from_store<
     'a,
-    KT: kv::Key<'a>,
-    VT: Serialize + for<'d> Deserialize<'d>,
+    KeyT: kv::Key<'a>,
+    ValueT: Serialize + for<'d> Deserialize<'d>,
 >(
     store: &Store,
     maybe_bucket_name: Option<&String>,
-) -> miette::Result<KVBucket<'a, KT, VT>> {
+) -> miette::Result<KVBucket<'a, KeyT, ValueT>> {
     let bucket_name = maybe_bucket_name
         .cloned()
         .unwrap_or_else(|| "data_bucket".to_string());
 
-    let my_payload_bucket: KVBucket<KT, VT> = store
+    let my_payload_bucket: KVBucket<KeyT, ValueT> = store
         .bucket(Some(&bucket_name))
         .into_diagnostic()
         .wrap_err(KvErrorCouldNot::CreateBucketFromStore {
             bucket_name: bucket_name.clone(),
         })?;
 
-    tracing::info!(
+    info!(
         "📦 {}",
         format!(
             "{}{}",
@@ -154,28 +161,29 @@ pub fn load_or_create_bucket_from_store<
 }
 
 /// The value is serialized using [Bincode] prior to saving it to the key/value store.
-pub fn save_to_bucket<
+#[instrument(skip(bucket))]
+pub fn insert_into_bucket<
     'a,
-    KT: kv::Key<'a> + Display,
-    VT: Debug + Serialize + for<'d> Deserialize<'d>,
+    KeyT: Debug + Display + kv::Key<'a>,
+    ValueT: Debug + Serialize + for<'d> Deserialize<'d>,
 >(
-    my_payload_bucket: &'a KVBucket<'a, KT, VT>,
-    key: KT,
-    value: VT,
+    bucket: &'a KVBucket<'a, KeyT, ValueT>,
+    key: KeyT,
+    value: ValueT,
 ) -> miette::Result<()> {
     let value_str = format!("{:?}", value).bold().cyan();
 
     // Serialize the Rust struct into a binary payload.
-    my_payload_bucket
+    bucket
         .set(&key, &Bincode(value))
         .into_diagnostic()
         .wrap_err(KvErrorCouldNot::SaveKeyValuePairToBucket)?;
 
-    tracing::info!(
+    info!(
         "🔽 {}",
         format!(
             "{}: {}: {}",
-            "Save key / value pair to bucket".red(),
+            "Save key / value pair to bucket".green(),
             key.to_string().bold().cyan(),
             value_str
         )
@@ -186,15 +194,16 @@ pub fn save_to_bucket<
 
 /// The value in the key/value store is serialized using [Bincode]. Upon loading that
 /// value it is deserialized and returned by this function.
-pub fn load_from_bucket<
+#[instrument(skip(bucket))]
+pub fn get_from_bucket<
     'a,
-    KeyT: kv::Key<'a> + Display,
+    KeyT: Debug + Display + kv::Key<'a>,
     ValueT: Debug + Serialize + for<'d> Deserialize<'d>,
 >(
-    my_payload_bucket: &KVBucket<'a, KeyT, ValueT>,
+    bucket: &KVBucket<'a, KeyT, ValueT>,
     key: KeyT,
 ) -> miette::Result<Option<ValueT>> {
-    let maybe_value: Option<Bincode<ValueT>> = my_payload_bucket
+    let maybe_value: Option<Bincode<ValueT>> = bucket
         .get(&key)
         .into_diagnostic()
         .wrap_err(KvErrorCouldNot::LoadKeyValuePairFromBucket)?;
@@ -205,7 +214,7 @@ pub fn load_from_bucket<
         _ => Ok(None),
     };
 
-    tracing::info!(
+    info!(
         "🔼 {}",
         format!(
             "{}: {}: {}",
@@ -218,15 +227,16 @@ pub fn load_from_bucket<
     it
 }
 
+#[instrument(skip(bucket))]
 pub fn remove_from_bucket<
     'a,
-    KeyT: kv::Key<'a> + Display,
+    KeyT: Debug + Display + kv::Key<'a>,
     ValueT: Debug + Serialize + for<'d> Deserialize<'d>,
 >(
-    my_payload_bucket: &KVBucket<'a, KeyT, ValueT>,
+    bucket: &KVBucket<'a, KeyT, ValueT>,
     key: KeyT,
 ) -> miette::Result<Option<ValueT>> {
-    let maybe_value: Option<Bincode<ValueT>> = my_payload_bucket
+    let maybe_value: Option<Bincode<ValueT>> = bucket
         .remove(&key)
         .into_diagnostic()
         .wrap_err(KvErrorCouldNot::RemoveKeyValuePairFromBucket)?;
@@ -237,7 +247,7 @@ pub fn remove_from_bucket<
         _ => Ok(None),
     };
 
-    tracing::info!(
+    info!(
         "❌ {}",
         format!(
             "{}: {}: {}",
@@ -250,20 +260,21 @@ pub fn remove_from_bucket<
     it
 }
 
+#[instrument(skip(bucket))]
 pub fn is_key_contained_in_bucket<
     'a,
-    KeyT: kv::Key<'a> + Display,
+    KeyT: Debug + Display + kv::Key<'a>,
     ValueT: Debug + Serialize + for<'d> Deserialize<'d>,
 >(
-    my_payload_bucket: &KVBucket<'a, KeyT, ValueT>,
+    bucket: &KVBucket<'a, KeyT, ValueT>,
     key: KeyT,
 ) -> miette::Result<bool> {
-    let it = my_payload_bucket
+    let it = bucket
         .contains(&key)
         .into_diagnostic()
         .wrap_err(KvErrorCouldNot::LoadKeyValuePairFromBucket)?;
 
-    tracing::info!(
+    info!(
         "🔼 {}",
         format!(
             "{}: {}: {}",
@@ -316,8 +327,10 @@ use kv_error::*;
 #[cfg(test)]
 mod kv_tests {
     use super::*;
+    use serial_test::serial;
     use std::path::{Path, PathBuf};
     use tempfile::tempdir;
+    use tracing::{instrument, Level};
 
     fn check_folder_exists(path: &Path) -> bool {
         path.exists() && path.is_dir()
@@ -329,34 +342,63 @@ mod kv_tests {
 
     fn setup_tracing() {
         let _ = tracing_subscriber::fmt()
-            .with_max_level(tracing::Level::INFO)
+            .with_max_level(Level::INFO)
+            .compact()
+            .pretty()
+            .with_ansi(true)
+            .with_line_number(false)
+            .with_file(false)
+            .without_time()
             .try_init();
     }
 
-    fn perform_db_operations(path: &Path, bucket: String) -> miette::Result<()> {
+    fn get_path(dir: &tempfile::TempDir, folder_name: &str) -> PathBuf {
+        join_path_with_str(dir.path(), folder_name)
+    }
+
+    fn create_temp_folder() -> tempfile::TempDir {
+        tempdir().expect("Failed to create temp dir")
+    }
+
+    #[instrument]
+    fn perform_db_operations() -> miette::Result<()> {
+        let bucket_name = "bucket".to_string();
+
+        // Setup temp folder.
+        let dir = create_temp_folder();
+        let path_buf = get_path(&dir, "db_folder");
+
         setup_tracing();
 
-        let path_str = path.to_string_lossy().to_string();
+        // Create the key/value store.
+        let path_str = path_buf.as_path().to_string_lossy().to_string();
         let store = load_or_create_store(Some(&path_str))?;
 
-        // Check that the kv store folder exists.
-        assert!(check_folder_exists(path));
+        // Check that the key/value store folder exists.
+        assert!(check_folder_exists(path_buf.as_path()));
 
         // A bucket provides typed access to a section of the key/value store.
-        let bucket = load_or_create_bucket_from_store(&store, Some(&bucket))?;
+        let bucket = load_or_create_bucket_from_store(&store, Some(&bucket_name))?;
 
         // Check if "foo" is contained in the bucket.
         assert!(!(is_key_contained_in_bucket(&bucket, "foo".to_string())?));
 
+        // Nothing to iterate (empty bucket).
+        let mut count = 0;
+        for _ in bucket.iter() {
+            count += 1;
+        }
+        assert_eq!(count, 0);
+
         // Save to bucket.
-        save_to_bucket(&bucket, "foo".to_string(), "bar".to_string())?;
+        insert_into_bucket(&bucket, "foo".to_string(), "bar".to_string())?;
 
         // Check if "foo" is contained in the bucket.
         assert!(is_key_contained_in_bucket(&bucket, "foo".to_string())?);
 
         // Load from bucket.
         assert_eq!(
-            load_from_bucket(&bucket, "foo".to_string())?,
+            get_from_bucket(&bucket, "foo".to_string())?,
             Some("bar".to_string())
         );
 
@@ -398,17 +440,113 @@ mod kv_tests {
         Ok(())
     }
 
+    #[instrument]
+    fn perform_db_operations_error_conditions() -> miette::Result<()> {
+        let bucket_name = "bucket".to_string();
+
+        // Setup temp folder.
+        let dir = create_temp_folder();
+        let path_buf = get_path(&dir, "db_folder");
+
+        setup_tracing();
+
+        // Create the key/value store.
+        let path_str = path_buf.as_path().to_string_lossy().to_string();
+        let store = load_or_create_store(Some(&path_str))?;
+
+        // Check that the kv store folder exists.
+        assert!(check_folder_exists(path_buf.as_path()));
+
+        // A bucket provides typed access to a section of the key/value store.
+        let bucket = load_or_create_bucket_from_store(&store, Some(&bucket_name))?;
+
+        // Insert key/value pair into bucket.
+        insert_into_bucket(&bucket, "foo".to_string(), "bar".to_string())?;
+
+        // Check for errors.
+        store.drop_bucket(bucket_name).into_diagnostic()?;
+
+        // Insert into bucket.
+        let result = insert_into_bucket(&bucket, "foo".to_string(), "bar".to_string());
+        match result {
+            Err(e) => {
+                assert_eq!(e.to_string(), "🔽 Could not save key/value pair to bucket");
+            }
+            _ => {
+                panic!("Expected an error, but got None");
+            }
+        }
+
+        // Get from bucket.
+        let result = get_from_bucket(&bucket, "foo".to_string());
+        match result {
+            Err(e) => {
+                assert_eq!(
+                    e.to_string(),
+                    "🔼 Could not load key/value pair from bucket"
+                );
+            }
+            _ => {
+                panic!("Expected an error, but got None");
+            }
+        }
+
+        // Remove from bucket.
+        let result = remove_from_bucket(&bucket, "foo".to_string());
+        match result {
+            Err(e) => {
+                assert_eq!(
+                    e.to_string(),
+                    "❌ Could not remove key/value pair from bucket"
+                );
+            }
+            _ => {
+                panic!("Expected an error, but got None");
+            }
+        }
+
+        // Check if key exists in bucket.
+        let result = is_key_contained_in_bucket(&bucket, "foo".to_string());
+        match result {
+            Err(e) => {
+                assert_eq!(
+                    e.to_string(),
+                    "🔼 Could not load key/value pair from bucket"
+                );
+            }
+            _ => {
+                panic!("Expected an error, but got None");
+            }
+        }
+
+        // Enumerate contents of bucket.
+        let result = bucket.iter().next();
+        match result {
+            Some(Err(e)) => {
+                assert!(e.to_string().contains("Error in Sled"));
+                assert!(e.to_string().contains("does not exist"));
+            }
+            _ => {
+                panic!("Expected an error, but got None");
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Run this test in serial, not parallel.
+    #[serial]
     #[test]
     fn test_kv_operations() {
-        // The `dir` will be automatically deleted when it goes out of scope.
-        let dir = tempdir().expect("Failed to create temp dir");
-        // You can use `path` here for your operations.
-        let path = dir.path();
-        // Run the tests.
-        perform_db_operations(
-            join_path_with_str(path, "db_folder").as_path(),
-            "bucket".to_string(),
-        )
-        .unwrap();
+        let result = perform_db_operations();
+        assert!(result.is_ok());
+    }
+
+    /// Run this test in serial, not parallel.
+    #[serial]
+    #[test]
+    fn test_kv_errors() {
+        let result = perform_db_operations_error_conditions();
+        assert!(result.is_ok());
     }
 }
