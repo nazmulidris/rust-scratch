@@ -20,12 +20,14 @@ pub mod client_task;
 pub mod data;
 pub mod protocol;
 pub mod server_task;
+pub mod kv;
 
 pub use clap_args::*;
 pub use client_task::*;
 pub use data::*;
 pub use protocol::*;
 pub use server_task::*;
+pub use kv::*;
 
 pub const CHANNEL_SIZE: usize = 10;
 

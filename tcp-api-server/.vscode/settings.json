@@ -3,6 +3,7 @@
     "appender",
     "bigendian",
     "bincode",
+    "CBOR",
     "dialoguer",
     "geohashing",
     "getall",
@@ -10,6 +11,8 @@
     "oneshot",
     "opentelemetry",
     "procspawn",
-    "sqlx"
+    "sqlx",
+    "tempdir",
+    "tempfile"
   ]
 }
