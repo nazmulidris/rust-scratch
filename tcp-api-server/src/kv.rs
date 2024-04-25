@@ -21,6 +21,12 @@
 //! - It is a wrapper around the [kv] crate, to make it trivially simple to use. There are
 //!   only 4 functions that allow you access to the capabilities of the key/value embedded
 //!   store.
+//!   - [load_or_create_store]
+//!   - [load_or_create_bucket_from_store]
+//!   - [save_to_bucket]
+//!   - [load_from_bucket]
+//!   - [remove_from_bucket]
+//!   - [is_key_contained_in_bucket]
 //! - And provide lots of really fine grained errors, using [miette] and [thiserror] (see
 //!   [kv_error]).
 //!
@@ -28,51 +34,6 @@
 //! 2. The values are deserialized from [Bincode] (to Rust struct) after they are loaded.
 //!
 //! See the tests in this module for an example of how to use this module.
-//!
-//! ```no_run
-//! let path_str = path.to_string_lossy().to_string();
-//! let store = load_or_create_store(Some(&path_str))?;
-//!
-//! // Check that the kv store folder exists.
-//! assert!(check_folder_exists(path));
-//!
-//! // A bucket provides typed access to a section of the key/value store.
-//! let bucket = load_or_create_bucket_from_store(&store, Some(&bucket))?;
-//!
-//! // Save to bucket.
-//! save_to_bucket(&bucket, "foo".to_string(), "bar".to_string())?;
-//!
-//! // Load from bucket.
-//! assert_eq!(
-//!     load_from_bucket(&bucket, "foo".to_string())?,
-//!     Some("bar".to_string())
-//! );
-//!
-//! // Enumerate contents of bucket.
-//! let mut map = HashMap::new();
-//! for result_item in bucket.iter() {
-//!     let item = result_item
-//!         .into_diagnostic()
-//!         .wrap_err(KvErrorCouldNot::GetItemFromIteratorFromBucket)?;
-//!
-//!     let key = item
-//!         .key::<String>()
-//!         .into_diagnostic()
-//!         .wrap_err(KvErrorCouldNot::GetKeyFromItemFromIteratorFromBucket)?;
-//!
-//!     // Deserialize the binary payload into a Rust struct.
-//!     let Bincode(payload) = item
-//!         .value::<Bincode<String>>()
-//!         .into_diagnostic()
-//!         .wrap_err(KvErrorCouldNot::GetValueFromItemFromIteratorFromBucket)?;
-//!
-//!     map.insert(key.to_string(), payload);
-//! }
-//!
-//! assert_eq!(map.get("foo"), Some(&"bar".to_string()));
-//!
-//! Ok(())
-//! ```
 //!
 //! [Bincode] is like [`CBOR`](https://en.wikipedia.org/wiki/CBOR), except that it isn't
 //! standards based, but it is faster. It also has full support of [serde] just like [kv]
@@ -131,10 +92,7 @@ pub static KV_SETTINGS: Lazy<HashMap<KVSettingsKeys, String>> = Lazy::new(|| {
 /// Create the db folder if it doesn't exit. Otherwise load it from the folder on disk.
 /// Note there are no lifetime annotations on this function. All the other functions below
 /// do have lifetime annotations, since they are all tied to the lifetime of the returned
-/// [Store]:
-/// - [load_or_create_bucket_from_store]
-/// - [save_to_bucket]
-/// - [load_from_bucket]
+/// [Store].
 pub fn load_or_create_store(maybe_db_folder_path: Option<&String>) -> miette::Result<Store> {
     // Configure the database folder location.
     let db_folder_path = maybe_db_folder_path
@@ -260,6 +218,67 @@ pub fn load_from_bucket<
     it
 }
 
+pub fn remove_from_bucket<
+    'a,
+    KeyT: kv::Key<'a> + Display,
+    ValueT: Debug + Serialize + for<'d> Deserialize<'d>,
+>(
+    my_payload_bucket: &KVBucket<'a, KeyT, ValueT>,
+    key: KeyT,
+) -> miette::Result<Option<ValueT>> {
+    let maybe_value: Option<Bincode<ValueT>> = my_payload_bucket
+        .remove(&key)
+        .into_diagnostic()
+        .wrap_err(KvErrorCouldNot::RemoveKeyValuePairFromBucket)?;
+
+    let it = match maybe_value {
+        // Deserialize the binary payload into a Rust struct.
+        Some(Bincode(payload)) => Ok(Some(payload)),
+        _ => Ok(None),
+    };
+
+    tracing::info!(
+        "❌ {}",
+        format!(
+            "{}: {}: {}",
+            "Delete key / value pair from bucket".green(),
+            key.to_string().bold().cyan(),
+            format!("{:?}", it).bold().cyan()
+        )
+    );
+
+    it
+}
+
+pub fn is_key_contained_in_bucket<
+    'a,
+    KeyT: kv::Key<'a> + Display,
+    ValueT: Debug + Serialize + for<'d> Deserialize<'d>,
+>(
+    my_payload_bucket: &KVBucket<'a, KeyT, ValueT>,
+    key: KeyT,
+) -> miette::Result<bool> {
+    let it = my_payload_bucket
+        .contains(&key)
+        .into_diagnostic()
+        .wrap_err(KvErrorCouldNot::LoadKeyValuePairFromBucket)?;
+
+    tracing::info!(
+        "🔼 {}",
+        format!(
+            "{}: {}: {}",
+            "Check if key is contained in bucket".green(),
+            key.to_string().bold().cyan(),
+            match it {
+                true => "true".to_string().green(),
+                false => "false".to_string().red(),
+            }
+        )
+    );
+
+    Ok(it)
+}
+
 pub mod kv_error {
     #[allow(dead_code)]
     #[derive(thiserror::Error, Debug, miette::Diagnostic)]
@@ -275,6 +294,9 @@ pub mod kv_error {
 
         #[error("🔼 Could not load key/value pair from bucket")]
         LoadKeyValuePairFromBucket,
+
+        #[error("❌ Could not remove key/value pair from bucket")]
+        RemoveKeyValuePairFromBucket,
 
         #[error("🔍 Could not get item from iterator from bucket")]
         GetItemFromIteratorFromBucket,
@@ -305,7 +327,15 @@ mod kv_tests {
         path.join(str)
     }
 
+    fn setup_tracing() {
+        let _ = tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::INFO)
+            .try_init();
+    }
+
     fn perform_db_operations(path: &Path, bucket: String) -> miette::Result<()> {
+        setup_tracing();
+
         let path_str = path.to_string_lossy().to_string();
         let store = load_or_create_store(Some(&path_str))?;
 
@@ -315,8 +345,14 @@ mod kv_tests {
         // A bucket provides typed access to a section of the key/value store.
         let bucket = load_or_create_bucket_from_store(&store, Some(&bucket))?;
 
+        // Check if "foo" is contained in the bucket.
+        assert!(!(is_key_contained_in_bucket(&bucket, "foo".to_string())?));
+
         // Save to bucket.
         save_to_bucket(&bucket, "foo".to_string(), "bar".to_string())?;
+
+        // Check if "foo" is contained in the bucket.
+        assert!(is_key_contained_in_bucket(&bucket, "foo".to_string())?);
 
         // Load from bucket.
         assert_eq!(
@@ -346,6 +382,18 @@ mod kv_tests {
         }
 
         assert_eq!(map.get("foo"), Some(&"bar".to_string()));
+
+        // Remove from bucket.
+        assert_eq!(
+            remove_from_bucket(&bucket, "foo".to_string())?,
+            Some("bar".to_string())
+        );
+
+        // Check if "foo" is contained in the bucket.
+        assert!(!(is_key_contained_in_bucket(&bucket, "foo".to_string())?));
+
+        // Remove from bucket.
+        assert_eq!(remove_from_bucket(&bucket, "foo".to_string())?, None);
 
         Ok(())
     }
