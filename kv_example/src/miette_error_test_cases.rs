@@ -23,7 +23,7 @@
 ///
 /// This is a sample of how to use the [miette] to auto generate error reports for
 /// existing [Result]s containing [std::error::Error] types **WHICH DO NOT** implement
-/// [miette::Diagnostic] trait (unlike the examples above, which do implement it). You can
+/// [miette::Diagnostic] trait (unlike the examples below, which do implement it). You can
 /// also add additional context information to the error report, so that it can bubble up
 /// w/ more context provided after the errors are generated, and they are getting bubbled
 /// up the call chain.
@@ -61,15 +61,36 @@ mod app_use_case_into_diagnostic_and_context {
         assert!(new_miette_result.is_err());
 
         println!(
-            "{}",
-            format!(
-                "{}:\n{:?}\n",
-                "debug output".blue().bold(),
-                new_miette_result
-            )
+            "{}:\n{:?}\n",
+            "debug output".blue().bold(),
+            new_miette_result
         );
 
-        let _ = new_miette_result?;
+        let Err(ref miette_report) = new_miette_result else {
+            panic!("This should result in an error!");
+        };
+
+        let mut iter = miette_report.chain();
+        // First.
+        assert_eq!(
+            iter.next().map(|it| it.to_string()).unwrap(),
+            "🎃 this is additional context about the failure"
+        );
+        // Second.
+        assert_eq!(
+            iter.next().map(|it| it.to_string()).unwrap(),
+            "database corrupted"
+        );
+        // Third.
+        assert_eq!(
+            iter.next().map(|it| it.to_string()).unwrap(),
+            "🍍 foo bar baz"
+        );
+        // Fourth.
+        assert_eq!(
+            iter.next().map(|it| it.to_string()).unwrap(),
+            "invalid digit found in string"
+        );
 
         Ok(())
     }
