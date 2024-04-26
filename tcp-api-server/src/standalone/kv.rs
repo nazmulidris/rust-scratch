@@ -465,7 +465,8 @@ mod kv_tests {
         // Insert key/value pair into bucket.
         insert_into_bucket(&bucket, "foo".to_string(), "bar".to_string())?;
 
-        // Check for errors.
+        // Check for errors. The following line will induce errors, since we are
+        // intentionally trying to access a bucket that doesn't exist.
         store.drop_bucket(bucket_name).into_diagnostic()?;
 
         // Insert into bucket.
@@ -479,14 +480,26 @@ mod kv_tests {
             }
         }
 
-        // Get from bucket.
+        // Get from bucket. Take a deeper look in the chain of miette errors.
         let result = get_from_bucket(&bucket, "foo".to_string());
         match result {
             Err(e) => {
+                let mut iter = e.chain();
+                // First.
                 assert_eq!(
-                    e.to_string(),
+                    iter.next().map(|it| it.to_string()).unwrap(),
                     "🔼 Could not load key/value pair from bucket"
                 );
+
+                // Second.
+                let second = iter.next().map(|it| it.to_string()).unwrap();
+                assert!(second.contains("Error in Sled: Collection"));
+                assert!(second.contains("does not exist"));
+
+                // Third.
+                let third = iter.next().map(|it| it.to_string()).unwrap();
+                assert!(third.contains("Collection"));
+                assert!(third.contains("does not exist"));
             }
             _ => {
                 panic!("Expected an error, but got None");
