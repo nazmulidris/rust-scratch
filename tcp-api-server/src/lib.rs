@@ -18,14 +18,14 @@
 pub mod clap_args;
 pub mod client_task;
 pub mod data;
-pub mod standalone;
 pub mod server_task;
+pub mod standalone;
 
 pub use clap_args::*;
 pub use client_task::*;
 pub use data::*;
-pub use standalone::*;
 pub use server_task::*;
+pub use standalone::*;
 
 pub const CHANNEL_SIZE: usize = 10;
 

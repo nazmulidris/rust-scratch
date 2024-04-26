@@ -36,6 +36,7 @@ use tokio::{
         TcpStream,
     },
 };
+use tokio_util::sync::CancellationToken;
 use tracing::{error, info, instrument};
 
 const DELAY_MS: u64 = 100;
@@ -92,8 +93,10 @@ pub async fn client_main(
     // Get reader and writer from TCP stream.
     let (read_half, write_half) = tcp_stream.into_split();
 
-    // Broadcast shutdown channel to end all tasks (cooperatively).
-    let (shutdown_sender, _) = tokio::sync::broadcast::channel::<bool>(1);
+    // Shutdown cancellation token, to cooperatively & gracefully end all awaiting running
+    // tasks. Calling `abort()` isn't reliable. Neither is dropping the task. More info:
+    // https://cybernetist.com/2024/04/19/rust-tokio-task-cancellation-patterns/
+    let shutdown_token = CancellationToken::new();
 
     // SPAWN TASK: Listen to server messages.
     // Handle messages from the server in a separate task. This will ensure that both the
@@ -101,11 +104,11 @@ pub async fn client_main(
     tokio::spawn(monitor_tcp_conn_task::enter_loop(
         read_half,
         terminal_async.clone_shared_writer(),
-        shutdown_sender.clone(),
+        shutdown_token.clone(),
     ));
 
     // DON'T SPAWN TASK: User input event infinite loop.
-    let _ = monitor_user_input::enter_loop(write_half, terminal_async, shutdown_sender).await;
+    let _ = monitor_user_input::enter_loop(write_half, terminal_async, shutdown_token).await;
 
     Ok(())
 }
@@ -119,7 +122,7 @@ pub mod monitor_user_input {
     pub async fn enter_loop(
         write_half: OwnedWriteHalf,
         mut terminal_async: TerminalAsync,
-        shutdown_sender: tokio::sync::broadcast::Sender<bool>,
+        shutdown_token: CancellationToken,
     ) -> miette::Result<()> {
         // Artificial delay to let all the other tasks settle.
         tokio::time::sleep(DELAY_UNIT).await;
@@ -130,17 +133,16 @@ pub mod monitor_user_input {
             "exit, info, getall, clear".green().bold()
         );
 
-        // 00: implement info which simply collects the `ClientMessage.iter()` (just like in the test)
+        // TODO: implement info which simply collects the `ClientMessage.iter()` (just like in the test)
         terminal_async.println(welcome_message).await;
 
         let mut buf_writer = BufWriter::new(write_half);
-
-        let mut shutdown_receiver = shutdown_sender.subscribe();
+        let shutdown_token_clone = shutdown_token.clone();
 
         loop {
             tokio::select! {
-                // Poll shutdown channel.
-                _ = shutdown_receiver.recv() => {
+                // Poll shutdown cancellation token.
+                _ = shutdown_token.cancelled() => {
                     break;
                 }
 
@@ -159,7 +161,7 @@ pub mod monitor_user_input {
                                     let control_flow = handle_user_input(
                                         user_input_message,
                                         &mut buf_writer,
-                                        shutdown_sender.clone(),
+                                        shutdown_token_clone.clone(),
                                         terminal_async.clone_shared_writer(),
                                     )
                                     .await;
@@ -180,12 +182,12 @@ pub mod monitor_user_input {
                         }
                         ReadlineEvent::Eof => {
                             // 00: do something meaningful w/ the EOF event
-                            let _ = shutdown_sender.send(true);
+                            shutdown_token.cancel();
                             break;
                         }
                         ReadlineEvent::Interrupted => {
                             // 00: do something meaningful w/ the Interrupted event
-                            let _ = shutdown_sender.send(true);
+                            shutdown_token.cancel();
                             break;
                         }
                     }
@@ -206,7 +208,7 @@ pub mod monitor_user_input {
     pub async fn handle_user_input(
         client_message: ClientMessage<MessageKey, MessageValue>,
         buf_writer: &mut BufWriter<OwnedWriteHalf>,
-        shutdown_sender: tokio::sync::broadcast::Sender<bool>,
+        shutdown_token: CancellationToken,
         mut shared_writer: SharedWriter,
     ) -> ControlFlow<()> {
         match client_message {
@@ -239,7 +241,7 @@ pub mod monitor_user_input {
                 }
 
                 // Send the shutdown signal to all tasks.
-                let _ = shutdown_sender.send(true);
+                shutdown_token.cancel();
 
                 return ControlFlow::Break(());
             }
@@ -264,7 +266,7 @@ pub mod monitor_tcp_conn_task {
     pub async fn enter_loop(
         buf_reader: OwnedReadHalf,
         mut shared_writer: SharedWriter,
-        shutdown_sender: tokio::sync::broadcast::Sender<bool>,
+        shutdown_token: CancellationToken,
     ) -> miette::Result<()> {
         let mut buf_reader = BufReader::new(buf_reader);
 
@@ -273,11 +275,10 @@ pub mod monitor_tcp_conn_task {
 
         info!("Entering loop");
 
-        let mut shutdown_receiver = shutdown_sender.subscribe();
-
         // 00: listen for data from the server, handle it, monitor shutdown channel.
         loop {
             tokio::select! {
+                // Poll the TCP stream for data.
                 result_payload_buffer = byte_io::read(&mut buf_reader) => {
                     match result_payload_buffer {
                         Ok(payload_buffer) => {
@@ -294,13 +295,15 @@ pub mod monitor_tcp_conn_task {
                                 client_id.to_string().yellow().bold(),
                             );
                             error!(?error);
-                            let _ = shutdown_sender.send(true);
+                            shutdown_token.cancel();
                             break;
                         }
                     }
 
                 }
-                _ = shutdown_receiver.recv() => {
+
+                // Poll the shutdown cancellation token.
+                _ = shutdown_token.cancelled() => {
                     break;
                 }
             }

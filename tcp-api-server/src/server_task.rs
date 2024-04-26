@@ -15,17 +15,18 @@
  *   limitations under the License.
  */
 
-use crate::{byte_io, MessageKey};
+use crate::{byte_io, load_or_create_store, MessageKey};
 use crate::{protocol, CLIArg, MessageValue, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD};
 use crossterm::style::Stylize;
-use miette::miette;
-use miette::IntoDiagnostic;
+use kv::Store;
+use miette::{miette, IntoDiagnostic};
 use r3bl_rs_utils_core::friendly_random_id;
 use tokio::{
     io::{BufReader, BufWriter},
     net::{TcpListener, TcpStream},
     sync::broadcast::{self, Sender},
 };
+use tokio_util::sync::CancellationToken;
 use tracing::{error, info, instrument};
 
 #[instrument(skip_all)]
@@ -43,17 +44,19 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
     let (sender_inter_client_broadcast_channel, _) =
         broadcast::channel::<MessageValue>(CHANNEL_SIZE);
 
-    // Create broadcast channel to handle shutdown.
-    let (sender_shutdown_broadcast_channel, mut receiver_shutdown_broadcast_channel) =
-        broadcast::channel::<()>(1);
+    // Shutdown cancellation token, to cooperatively & gracefully end all awaiting running
+    // tasks. Calling `abort()` isn't reliable. Neither is dropping the task. More info:
+    // https://cybernetist.com/2024/04/19/rust-tokio-task-cancellation-patterns/
+    let shutdown_token = CancellationToken::new();
 
     // Set up Ctrl-C handler.
-    setup_ctrlc_handler(sender_shutdown_broadcast_channel.clone()).await?;
+    setup_ctrlc_handler(shutdown_token.clone()).await?;
 
     info!("Listening for new connections");
 
     // Server infinite loop - accept connections.
     loop {
+        let shutdown_token_clone = shutdown_token.clone();
         tokio::select! {
             // Branch 1: Accept incoming connections ("blocking").
             result /* Result<(TcpStream, SocketAddr), Error> */ = listener.accept() => {
@@ -61,7 +64,6 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
 
                 // Clone the broadcast channel senders.
                 let sender_inter_client_broadcast_channel = sender_inter_client_broadcast_channel.clone();
-                let sender_shutdown_broadcast_channel = sender_shutdown_broadcast_channel.clone();
 
                 // Start task to handle a connection.
                 tokio::spawn(async move {
@@ -70,7 +72,7 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
                         &client_id,
                         client_tcp_stream,
                         sender_inter_client_broadcast_channel,
-                        sender_shutdown_broadcast_channel,
+                        shutdown_token_clone.clone(),
                     )
                     .await
                     {
@@ -81,8 +83,8 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
 
             }
 
-            // Branch 2: Monitor shutdown channel.
-            _ = receiver_shutdown_broadcast_channel.recv() => {
+            // Branch 2: Monitor shutdown cancellation token.
+            _ = shutdown_token.cancelled() => {
                 info!("Received shutdown signal");
                 break;
             }
@@ -101,23 +103,23 @@ pub mod handle_client_task {
     pub async fn handle_client_message(
         client_message: protocol::ClientMessage<MessageKey, MessageValue>,
         _client_id: &str,
+        _store: &Store,
     ) -> miette::Result<()> {
         info!(?client_message, "Received message from client");
 
-        // 00: do something meaningful w/ this payload and probably generate a response
         match client_message {
             protocol::ClientMessage::Exit => {
                 info!("Exiting due to client request");
                 Err(miette!("Client requested exit"))
             }
             _ => {
-                // 00: do something meaningful w/ this payload and probably generate a response
+                // TODO: do something meaningful w/ this payload & _store
                 todo!()
             }
         }
     }
 
-    // 00: do something meaningful w/ this payload and probably generate a response
+    // TODO: do something meaningful w/ this payload and probably generate a response
     #[instrument(skip_all, fields(client_id))]
     pub async fn handle_broadcast_channel_between_clients_payload(payload: MessageValue) {
         info!(
@@ -132,7 +134,7 @@ pub mod handle_client_task {
         client_id: &str,
         client_tcp_stream: TcpStream,
         sender_inter_client_broadcast_channel: Sender<MessageValue>,
-        sender_shutdown_broadcast_channel: Sender<()>,
+        shutdown_token: CancellationToken,
     ) -> miette::Result<()> {
         tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, client_id);
         info!("Handling client task");
@@ -140,9 +142,6 @@ pub mod handle_client_task {
         // Get the receiver for the inter client channel.
         let mut receiver_inter_client_broadcast_channel =
             sender_inter_client_broadcast_channel.subscribe();
-
-        // Get the receiver for the shutdown channel.
-        let mut receiver_shutdown_broadcast_channel = sender_shutdown_broadcast_channel.subscribe();
 
         // Get reader and writer from TCP stream.
         let (read_half, write_half) = client_tcp_stream.into_split();
@@ -160,13 +159,15 @@ pub mod handle_client_task {
 
         // Infinite server loop.
         loop {
+            let store = load_or_create_store(None)?;
+
             tokio::select! {
                 // Branch 1: Read from client.
                 result = byte_io::read(&mut buf_reader) => {
                     let payload_buffer = result?;
                     let client_message: protocol::ClientMessage<MessageKey, MessageValue> =
                         bincode::deserialize(&payload_buffer).into_diagnostic()?;
-                    if handle_client_message(client_message, client_id).await.is_err() {
+                    if handle_client_message(client_message, client_id, &store).await.is_err() {
                         break;
                     }
                 }
@@ -183,8 +184,8 @@ pub mod handle_client_task {
                     }
                 }
 
-                // Branch 3: Monitor shutdown channel.
-                _ = receiver_shutdown_broadcast_channel.recv() => {
+                // Branch 3: Monitor shutdown cancellation token.
+                _ = shutdown_token.cancelled() => {
                     info!("Received shutdown signal");
                     break;
                 }
@@ -196,9 +197,7 @@ pub mod handle_client_task {
 }
 
 #[instrument(skip_all)]
-pub async fn setup_ctrlc_handler(
-    sender_shutdown_broadcast_channel: Sender<()>,
-) -> miette::Result<()> {
+pub async fn setup_ctrlc_handler(shutdown_token: CancellationToken) -> miette::Result<()> {
     ctrlc::set_handler(move || {
         info!(
             "{}",
@@ -206,7 +205,7 @@ pub async fn setup_ctrlc_handler(
                 .yellow()
                 .bold()
         );
-        let _ = sender_shutdown_broadcast_channel.send(());
+        shutdown_token.cancel();
     })
     .into_diagnostic()
 }

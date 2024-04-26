@@ -87,8 +87,8 @@ mod default_settings {
 
     pub fn get(key: Keys) -> String {
         match key {
-            Keys::StoreFolderPath => "kv_db_folder".to_string(),
-            Keys::BucketName => "my_data_bucket".to_string(),
+            Keys::StoreFolderPath => "kv_folder".to_string(),
+            Keys::BucketName => "my_bucket".to_string(),
         }
     }
 }
