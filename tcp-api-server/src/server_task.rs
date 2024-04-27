@@ -15,15 +15,15 @@
  *   limitations under the License.
  */
 
-use crate::iterate_bucket;
 use crate::{
-    byte_io, load_or_create_bucket_from_store, load_or_create_store, protocol, CLIArg, MessageKey,
-    MessageValue, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD,
+    byte_io, iterate_bucket, load_or_create_bucket_from_store, load_or_create_store, protocol,
+    CLIArg, KVBucket, MessageKey, MessageValue, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD,
 };
 use crossterm::style::Stylize;
-use kv::{Bincode, Store};
+use kv::Store;
 use miette::{miette, IntoDiagnostic};
 use r3bl_rs_utils_core::friendly_random_id;
+use tokio::io::AsyncWrite;
 use tokio::{
     io::{BufReader, BufWriter},
     net::{TcpListener, TcpStream},
@@ -103,11 +103,24 @@ pub mod handle_client_task {
     use super::*;
 
     #[instrument(skip_all, fields(client_id))]
-    pub async fn handle_client_message(
+    pub(super) fn get_all_items_from_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+    ) -> miette::Result<Vec<u8>> {
+        let mut item_vec: Vec<(MessageKey, MessageValue)> = vec![];
+        iterate_bucket(bucket, |key: MessageKey, value: MessageValue| {
+            item_vec.push((key, value));
+        });
+        let server_message = protocol::ServerMessage::<MessageKey, MessageValue>::GetAll(item_vec);
+        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
+        Ok(payload_buffer)
+    }
+
+    #[instrument(skip_all, fields(client_id))]
+    pub async fn handle_client_message<Writer: AsyncWrite + Unpin>(
         client_message: protocol::ClientMessage<MessageKey, MessageValue>,
         _client_id: &str,
         store: &Store,
-        buf_writer: &mut BufWriter<tokio::net::tcp::OwnedWriteHalf>,
+        buf_writer: &mut BufWriter<Writer>,
     ) -> miette::Result<()> {
         info!(?client_message, "Received message from client");
         let bucket = load_or_create_bucket_from_store::<MessageKey, MessageValue>(store, None)?;
@@ -118,13 +131,7 @@ pub mod handle_client_task {
                 return Err(miette!("Client requested exit"));
             }
             crate::ClientMessage::GetAll => {
-                let mut item_vec: Vec<(MessageKey, MessageValue)> = vec![];
-                iterate_bucket(&bucket, |key: MessageKey, value: MessageValue| {
-                    item_vec.push((key, value))
-                });
-                let server_message =
-                    protocol::ServerMessage::<MessageKey, MessageValue>::GetAll(item_vec);
-                let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
+                let payload_buffer = get_all_items_from_bucket(&bucket)?;
                 byte_io::write(buf_writer, payload_buffer).await?;
             }
             // TODO: do something meaningful w/ this payload & _store
@@ -138,7 +145,6 @@ pub mod handle_client_task {
             crate::ClientMessage::Keys => todo!(),
             crate::ClientMessage::Values => todo!(),
             crate::ClientMessage::IsEmpty => todo!(),
-            crate::ClientMessage::Exit => todo!(),
             crate::ClientMessage::BroadcastToOthers(_) => todo!(),
         }
 
@@ -237,11 +243,84 @@ pub async fn setup_ctrlc_handler(shutdown_token: CancellationToken) -> miette::R
 }
 
 #[cfg(test)]
-mod test_handle_client_task {
+pub mod test_fixtures {
+    use std::io::Result;
+    use std::pin::Pin;
+    use std::task::{Context, Poll};
+    use tokio::io::AsyncWrite;
+
+    /// A mock struct for the [tokio::net::TcpStream].
+    /// - Alternative to [tokio_test::io::Builder::new()].
+    /// - The difference is that [MockTcpStreamWrite] allows access to the expected write
+    ///   buffer.
+    pub struct MockTcpStreamWrite {
+        pub expected_write: Vec<u8>,
+    }
+
+    /// Implement the [AsyncWrite] trait for the mock struct.
+    impl AsyncWrite for MockTcpStreamWrite {
+        fn poll_write(
+            mut self: Pin<&mut Self>,
+            _cx: &mut Context<'_>,
+            buf: &[u8],
+        ) -> Poll<Result<usize>> {
+            self.expected_write.extend_from_slice(buf);
+            Poll::Ready(Ok(buf.len()))
+        }
+
+        fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<()>> {
+            Poll::Ready(Ok(()))
+        }
+
+        fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<()>> {
+            Poll::Ready(Ok(()))
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod test_handle_client_task {
+    use crate::{
+        handle_client_task::{get_all_items_from_bucket, handle_client_message},
+        insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store,
+        test_fixtures::MockTcpStreamWrite,
+        ClientMessage, Data,
+    };
+    use miette::IntoDiagnostic;
+    use tempfile::tempdir;
+    use tokio::io::{AsyncWriteExt, BufWriter};
+
     /// More info: <https://tokio.rs/tokio/topics/testing>
     #[tokio::test]
-    async fn test_handle_client_message_get_all() {
-        // TODO: read the docs and implement this test, by mocking TCP stream, create a temp store
-        todo!()
+    async fn test_handle_client_message_get_all() -> miette::Result<()> {
+        let dir = tempdir().expect("Failed to create temp dir");
+        let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
+        let bucket = load_or_create_bucket_from_store::<crate::MessageKey, crate::MessageValue>(
+            &store, None,
+        )?;
+        insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
+        let payload_bytes = get_all_items_from_bucket(&bucket)?;
+
+        let writer = MockTcpStreamWrite {
+            expected_write: Vec::new(),
+        };
+        let mut buf_writer = BufWriter::new(writer);
+
+        // Prepare the actual payload, with length-prefix from [byte_io::write].
+        buf_writer
+            .write_u64(payload_bytes.len() as u64)
+            .await
+            .into_diagnostic()?;
+        handle_client_message(
+            ClientMessage::GetAll,
+            "test_client_id",
+            &store,
+            &mut buf_writer,
+        )
+        .await?;
+
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+
+        Ok(())
     }
 }

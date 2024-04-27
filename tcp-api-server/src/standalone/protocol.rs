@@ -29,10 +29,7 @@ pub type Buffer = Vec<u8>;
 
 pub mod byte_io {
     use super::*;
-    use tokio::{
-        io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader, BufWriter},
-        net::tcp::{OwnedReadHalf, OwnedWriteHalf},
-    };
+    use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader, BufWriter};
 
     /// Write the payload to the client. Use the length-prefix, binary payload, protocol.
     /// - The trait bounds on this function are so that this function can be tested w/ a
