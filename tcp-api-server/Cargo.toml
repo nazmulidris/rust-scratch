@@ -38,14 +38,15 @@ thiserror = "1.0.59"
 miette = { version = "7.2.0", features = ["fancy"] }
 pretty_assertions = "1.4.0"
 
-# Tokio / Tracing / Logging.
+# Tokio / Tracing / Logging / Testing / Utils.
 # https://tokio.rs/tokio/topics/tracing
 # https://tokio.rs/tokio/topics/tracing-next-steps
 tracing = "0.1.40"
 tracing-appender = "0.2.3"
 tracing-subscriber = "0.3.18"
 tokio = { version = "1.37.0", features = ["full", "tracing"] }
-tokio-util = "0.7.10"
+tokio-util = "0.7.10"                                          # For `CancellationToken`.
+tokio-test = "0.4.4"                                           # For mock `TcpStream` (`Builder`)
 
 [dev-dependencies]
 tempfile = "3.2.0"

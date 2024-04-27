@@ -101,14 +101,14 @@ pub async fn client_main(
     // SPAWN TASK: Listen to server messages.
     // Handle messages from the server in a separate task. This will ensure that both the
     // spawned tasks don't block each other (eg: if either of them sleeps).
-    tokio::spawn(monitor_tcp_conn_task::enter_loop(
+    tokio::spawn(monitor_tcp_conn_task::event_loop(
         read_half,
         terminal_async.clone_shared_writer(),
         shutdown_token.clone(),
     ));
 
     // DON'T SPAWN TASK: User input event infinite loop.
-    let _ = monitor_user_input::enter_loop(write_half, terminal_async, shutdown_token).await;
+    let _ = monitor_user_input::event_loop(write_half, terminal_async, shutdown_token).await;
 
     Ok(())
 }
@@ -119,7 +119,7 @@ pub mod monitor_user_input {
     /// This has an infinite loop, so you might want to spawn a task before calling it.
     /// And it has a blocking call, so you can't exit it preemptively.
     #[instrument(name = "user_input:main_loop", skip_all, fields(client_id))]
-    pub async fn enter_loop(
+    pub async fn event_loop(
         write_half: OwnedWriteHalf,
         mut terminal_async: TerminalAsync,
         shutdown_token: CancellationToken,
@@ -158,7 +158,7 @@ pub mod monitor_user_input {
                             match result_user_input_message {
                                 Ok(user_input_message) => {
                                     terminal_async.pause().await;
-                                    let control_flow = handle_user_input(
+                                    let control_flow = send_client_message(
                                         user_input_message,
                                         &mut buf_writer,
                                         shutdown_token_clone.clone(),
@@ -205,7 +205,7 @@ pub mod monitor_user_input {
     /// Please refer to the [ClientMessage] enum in the [protocol] module for the list of
     /// commands.
     #[instrument(skip_all, fields(client_message))]
-    pub async fn handle_user_input(
+    pub async fn send_client_message(
         client_message: ClientMessage<MessageKey, MessageValue>,
         buf_writer: &mut BufWriter<OwnedWriteHalf>,
         shutdown_token: CancellationToken,
@@ -263,7 +263,7 @@ pub mod monitor_tcp_conn_task {
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
     #[instrument(name = "monitor_tcp_conn_task:main_loop", fields(client_id), skip_all)]
-    pub async fn enter_loop(
+    pub async fn event_loop(
         buf_reader: OwnedReadHalf,
         mut shared_writer: SharedWriter,
         shutdown_token: CancellationToken,

@@ -30,13 +30,16 @@ pub type Buffer = Vec<u8>;
 pub mod byte_io {
     use super::*;
     use tokio::{
-        io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter},
+        io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader, BufWriter},
         net::tcp::{OwnedReadHalf, OwnedWriteHalf},
     };
 
     /// Write the payload to the client. Use the length-prefix, binary payload, protocol.
-    pub async fn write(
-        buf_writer: &mut BufWriter<OwnedWriteHalf>,
+    /// - The trait bounds on this function are so that this function can be tested w/ a
+    ///   mock from [tokio_test::io::Builder].
+    /// - More info: <https://tokio.rs/tokio/topics/testing>
+    pub async fn write<Writer: AsyncWrite + Unpin>(
+        buf_writer: &mut BufWriter<Writer>,
         payload_buffer: Buffer,
     ) -> miette::Result<()> {
         let payload_size = payload_buffer.len();
@@ -59,8 +62,14 @@ pub mod byte_io {
         Ok(())
     }
 
-    /// Ready the payload from the client. Use the length-prefix, binary payload, protocol.
-    pub async fn read(buf_reader: &mut BufReader<OwnedReadHalf>) -> miette::Result<Buffer> {
+    /// Ready the payload from the client. Use the length-prefix [LengthPrefixType],
+    /// binary payload, protocol.
+    /// - The trait bounds on this function are so that this function can be tested w/ a
+    ///   mock from [tokio_test::io::Builder].
+    /// - More info: <https://tokio.rs/tokio/topics/testing>
+    pub async fn read<Reader: AsyncRead + Unpin>(
+        buf_reader: &mut BufReader<Reader>,
+    ) -> miette::Result<Buffer> {
         // Read the length prefix number of bytes.
         let size_of_payload = buf_reader.read_u64().await.into_diagnostic()?;
 

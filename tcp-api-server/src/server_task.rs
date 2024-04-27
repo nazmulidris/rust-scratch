@@ -15,10 +15,13 @@
  *   limitations under the License.
  */
 
-use crate::{byte_io, load_or_create_store, MessageKey};
-use crate::{protocol, CLIArg, MessageValue, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD};
+use crate::iterate_bucket;
+use crate::{
+    byte_io, load_or_create_bucket_from_store, load_or_create_store, protocol, CLIArg, MessageKey,
+    MessageValue, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD,
+};
 use crossterm::style::Stylize;
-use kv::Store;
+use kv::{Bincode, Store};
 use miette::{miette, IntoDiagnostic};
 use r3bl_rs_utils_core::friendly_random_id;
 use tokio::{
@@ -68,7 +71,7 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
                 // Start task to handle a connection.
                 tokio::spawn(async move {
                     let client_id = friendly_random_id::generate_friendly_random_id();
-                    match handle_client_task::enter_loop(
+                    match handle_client_task::event_loop(
                         &client_id,
                         client_tcp_stream,
                         sender_inter_client_broadcast_channel,
@@ -103,20 +106,43 @@ pub mod handle_client_task {
     pub async fn handle_client_message(
         client_message: protocol::ClientMessage<MessageKey, MessageValue>,
         _client_id: &str,
-        _store: &Store,
+        store: &Store,
+        buf_writer: &mut BufWriter<tokio::net::tcp::OwnedWriteHalf>,
     ) -> miette::Result<()> {
         info!(?client_message, "Received message from client");
+        let bucket = load_or_create_bucket_from_store::<MessageKey, MessageValue>(store, None)?;
 
         match client_message {
             protocol::ClientMessage::Exit => {
                 info!("Exiting due to client request");
-                Err(miette!("Client requested exit"))
+                return Err(miette!("Client requested exit"));
             }
-            _ => {
-                // TODO: do something meaningful w/ this payload & _store
-                todo!()
+            crate::ClientMessage::GetAll => {
+                let mut item_vec: Vec<(MessageKey, MessageValue)> = vec![];
+                iterate_bucket(&bucket, |key: MessageKey, value: MessageValue| {
+                    item_vec.push((key, value))
+                });
+                let server_message =
+                    protocol::ServerMessage::<MessageKey, MessageValue>::GetAll(item_vec);
+                let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
+                byte_io::write(buf_writer, payload_buffer).await?;
             }
+            // TODO: do something meaningful w/ this payload & _store
+            crate::ClientMessage::Insert(_, _) => todo!(),
+            crate::ClientMessage::Remove(_) => todo!(),
+            crate::ClientMessage::Get(_) => todo!(),
+            crate::ClientMessage::Clear => todo!(),
+            crate::ClientMessage::Size => todo!(),
+            crate::ClientMessage::ContainsKey(_) => todo!(),
+            crate::ClientMessage::ContainsValue(_) => todo!(),
+            crate::ClientMessage::Keys => todo!(),
+            crate::ClientMessage::Values => todo!(),
+            crate::ClientMessage::IsEmpty => todo!(),
+            crate::ClientMessage::Exit => todo!(),
+            crate::ClientMessage::BroadcastToOthers(_) => todo!(),
         }
+
+        Ok(())
     }
 
     // TODO: do something meaningful w/ this payload and probably generate a response
@@ -130,7 +156,7 @@ pub mod handle_client_task {
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
     #[instrument(name = "handle_client_task:main_loop", skip_all, fields(client_id))]
-    pub async fn enter_loop(
+    pub async fn event_loop(
         client_id: &str,
         client_tcp_stream: TcpStream,
         sender_inter_client_broadcast_channel: Sender<MessageValue>,
@@ -167,7 +193,7 @@ pub mod handle_client_task {
                     let payload_buffer = result?;
                     let client_message: protocol::ClientMessage<MessageKey, MessageValue> =
                         bincode::deserialize(&payload_buffer).into_diagnostic()?;
-                    if handle_client_message(client_message, client_id, &store).await.is_err() {
+                    if handle_client_message(client_message, client_id, &store, &mut buf_writer).await.is_err() {
                         break;
                     }
                 }
@@ -208,4 +234,14 @@ pub async fn setup_ctrlc_handler(shutdown_token: CancellationToken) -> miette::R
         shutdown_token.cancel();
     })
     .into_diagnostic()
+}
+
+#[cfg(test)]
+mod test_handle_client_task {
+    /// More info: <https://tokio.rs/tokio/topics/testing>
+    #[tokio::test]
+    async fn test_handle_client_message_get_all() {
+        // TODO: read the docs and implement this test, by mocking TCP stream, create a temp store
+        todo!()
+    }
 }

@@ -130,7 +130,7 @@ pub fn load_or_create_store(maybe_db_folder_path: Option<&String>) -> miette::Re
 #[instrument(fields(store = ?store.path(), buckets = ?store.buckets()))]
 pub fn load_or_create_bucket_from_store<
     'a,
-    KeyT: kv::Key<'a>,
+    KeyT: for<'k> kv::Key<'k>,
     ValueT: Serialize + for<'d> Deserialize<'d>,
 >(
     store: &Store,
@@ -163,7 +163,7 @@ pub fn load_or_create_bucket_from_store<
 #[instrument(skip(bucket))]
 pub fn insert_into_bucket<
     'a,
-    KeyT: Debug + Display + kv::Key<'a>,
+    KeyT: Debug + Display + for<'k> kv::Key<'k>,
     ValueT: Debug + Serialize + for<'d> Deserialize<'d>,
 >(
     bucket: &'a KVBucket<'a, KeyT, ValueT>,
@@ -196,7 +196,7 @@ pub fn insert_into_bucket<
 #[instrument(skip(bucket))]
 pub fn get_from_bucket<
     'a,
-    KeyT: Debug + Display + kv::Key<'a>,
+    KeyT: Debug + Display + for<'k> kv::Key<'k>,
     ValueT: Debug + Serialize + for<'d> Deserialize<'d>,
 >(
     bucket: &KVBucket<'a, KeyT, ValueT>,
@@ -229,7 +229,7 @@ pub fn get_from_bucket<
 #[instrument(skip(bucket))]
 pub fn remove_from_bucket<
     'a,
-    KeyT: Debug + Display + kv::Key<'a>,
+    KeyT: Debug + Display + for<'k> kv::Key<'k>,
     ValueT: Debug + Serialize + for<'d> Deserialize<'d>,
 >(
     bucket: &KVBucket<'a, KeyT, ValueT>,
@@ -262,7 +262,7 @@ pub fn remove_from_bucket<
 #[instrument(skip(bucket))]
 pub fn is_key_contained_in_bucket<
     'a,
-    KeyT: Debug + Display + kv::Key<'a>,
+    KeyT: Debug + Display + for<'k> kv::Key<'k>,
     ValueT: Debug + Serialize + for<'d> Deserialize<'d>,
 >(
     bucket: &KVBucket<'a, KeyT, ValueT>,
@@ -287,6 +287,26 @@ pub fn is_key_contained_in_bucket<
     );
 
     Ok(it)
+}
+
+pub fn iterate_bucket<
+    'a,
+    KeyT: Debug + Display + for<'k> kv::Key<'k>,
+    ValueT: Debug + Serialize + for<'d> Deserialize<'d>,
+>(
+    bucket: &KVBucket<'a, KeyT, ValueT>,
+    mut fn_to_apply: impl FnMut(KeyT, ValueT),
+) {
+    for item in /* keep only the Ok variants */ bucket.iter().flatten() {
+        let Ok(key) = item.key::<KeyT>().into_diagnostic() else {
+            continue;
+        };
+        let Ok(encoded_value) = item.value::<Bincode<ValueT>>().into_diagnostic() else {
+            continue;
+        };
+        let Bincode(value) = encoded_value; /* decode the value */
+        fn_to_apply(key, value);
+    }
 }
 
 pub mod kv_error {
