@@ -97,10 +97,14 @@ pub mod byte_io {
     strum_macros::Display,
 )]
 pub enum ClientMessage<K: Default, V: Default> {
+    #[strum(ascii_case_insensitive)]
+    Exit,
+
     #[default]
     #[strum(ascii_case_insensitive)]
     GetAll,
 
+    // TODO: impl the messages below
     #[strum(ascii_case_insensitive)]
     Insert(K, V),
 
@@ -120,19 +124,7 @@ pub enum ClientMessage<K: Default, V: Default> {
     ContainsKey(K),
 
     #[strum(ascii_case_insensitive)]
-    ContainsValue(V),
-
-    #[strum(ascii_case_insensitive)]
-    Keys,
-
-    #[strum(ascii_case_insensitive)]
-    Values,
-
-    #[strum(ascii_case_insensitive)]
     IsEmpty,
-
-    #[strum(ascii_case_insensitive)]
-    Exit,
 
     #[strum(ascii_case_insensitive)]
     BroadcastToOthers(V), /* Client A initiates this. It gets BroadcastToOthersAck(..). Other clients get HandleBroadcast(..) */
@@ -140,19 +132,17 @@ pub enum ClientMessage<K: Default, V: Default> {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum ServerMessage<K, V> {
+    Exit,
+    GetAll(Vec<(K, V)>),
+    // TODO: impl the messages below
     SetClientId(String),
     Insert(bool),
     Remove(bool),
     Get(Option<V>),
-    GetAll(Vec<(K, V)>),
     Clear,
     Size(usize),
     ContainsKey(bool),
-    ContainsValue(bool),
-    Keys(Vec<K>),
-    Values(Vec<V>),
     IsEmpty(bool),
-    Exit,
     HandleBroadcast(V), /* Client A initiates BroadcastToOthers(..). Client B, C get this. */
     BroadcastToOthersAck(Vec<(String, bool)>), /* Client A initiates BroadcastToOthers(..). Client A gets this. */
 }

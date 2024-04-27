@@ -15,8 +15,11 @@
  *   limitations under the License.
  */
 
-use crate::{byte_io, MessageKey, MessageValue};
-use crate::{protocol, CLIArg, ClientMessage, CLIENT_ID_TRACING_FIELD};
+use crate::{
+    byte_io,
+    protocol::{self, ClientMessage, ServerMessage},
+    CLIArg, MessageKey, MessageValue, CLIENT_ID_TRACING_FIELD,
+};
 use crossterm::style::Stylize;
 use miette::{Context, IntoDiagnostic};
 use r3bl_terminal_async::{
@@ -39,9 +42,10 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, instrument};
 
-const DELAY_MS: u64 = 100;
+// Constants.
+const DELAY_MS: u64 = 75;
 const DELAY_UNIT: Duration = Duration::from_millis(DELAY_MS);
-const ARTIFICIAL_UI_DELAY: Duration = Duration::from_millis(DELAY_MS * 12);
+const ARTIFICIAL_UI_DELAY: Duration = Duration::from_millis(DELAY_MS * 10);
 
 /// The `client_id` field is added to the span, so that it can be used in the logs by
 /// functions called by this one. See also: [crate::CLIENT_ID_TRACING_FIELD].
@@ -134,6 +138,7 @@ pub mod monitor_user_input {
         );
 
         // TODO: implement info which simply collects the `ClientMessage.iter()` (just like in the test)
+        // TODO: add history support to the terminal using the same `ClientMessage.iter()`
         terminal_async.println(welcome_message).await;
 
         let mut buf_writer = BufWriter::new(write_half);
@@ -212,6 +217,35 @@ pub mod monitor_user_input {
         mut shared_writer: SharedWriter,
     ) -> ControlFlow<()> {
         match client_message {
+            ClientMessage::GetAll => {
+                let result_maybe_spinner = Spinner::try_start(
+                    "Sending getall message".to_string(),
+                    DELAY_UNIT,
+                    SpinnerStyle {
+                        template: r3bl_terminal_async::SpinnerTemplate::Block,
+                        ..Default::default()
+                    },
+                    Arc::new(StdMutex::new(stderr())),
+                    shared_writer.clone(),
+                )
+                .await;
+
+                // Artificial delay to see the spinner spin.
+                tokio::time::sleep(ARTIFICIAL_UI_DELAY).await;
+
+                if let Ok(payload_buffer) =
+                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::GetAll)
+                {
+                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
+                        return ControlFlow::Break(());
+                    }
+                }
+
+                // Stop progress bar.
+                if let Ok(Some(mut spinner)) = result_maybe_spinner {
+                    let _ = spinner.stop("Sent getall message").await;
+                }
+            }
             ClientMessage::Exit => {
                 let result_maybe_spinner = Spinner::try_start(
                     "Sending exit message".to_string(),
@@ -230,7 +264,7 @@ pub mod monitor_user_input {
 
                 // Ignore the result of the write operation, since the client is exiting.
                 if let Ok(payload_buffer) =
-                    bincode::serialize(&protocol::ClientMessage::<MessageKey, MessageValue>::Exit)
+                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Exit)
                 {
                     let _ = byte_io::write(buf_writer, payload_buffer).await;
                 }
@@ -316,29 +350,36 @@ pub mod monitor_tcp_conn_task {
 
     #[instrument(skip_all, fields(server_message, client_id))]
     async fn handle_server_message(
-        server_message: protocol::ServerMessage<MessageKey, MessageValue>,
+        server_message: ServerMessage<MessageKey, MessageValue>,
         client_id: &mut String,
         mut shared_writer: SharedWriter,
     ) -> miette::Result<()> {
-        // Display the message to the console.
-        let msg = format!(
-            "[{}]: {}: {}",
-            client_id.to_string().yellow().bold(),
-            "Received message from server".green().bold(),
-            format!("{:?}", server_message).magenta().bold(),
-        );
-        let _ = writeln!(shared_writer, "{}", msg);
-
-        // Process the message.
         info!(?server_message, "Start");
+
         match server_message {
-            protocol::ServerMessage::SetClientId(ref id) => {
+            ServerMessage::SetClientId(ref id) => {
                 client_id.clone_from(id);
                 tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, &client_id);
             }
+            ServerMessage::GetAll(ref data) => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.to_string().yellow().bold(),
+                    "Received getall message from server".green().bold(),
+                    format!("{:?}", data).magenta().bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+            }
+            // TODO: override behavior for any other server messages
             _ => {
-                // 00: do something meaningful with the server message (eg: set the client_id)
-                todo!()
+                // Display the message to the console.
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.to_string().yellow().bold(),
+                    "Received message from server".green().bold(),
+                    format!("{:?}", server_message).magenta().bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
             }
         };
 

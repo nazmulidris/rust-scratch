@@ -16,16 +16,17 @@
  */
 
 use crate::{
-    byte_io, iterate_bucket, load_or_create_bucket_from_store, load_or_create_store, protocol,
-    CLIArg, KVBucket, MessageKey, MessageValue, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD,
+    byte_io, iterate_bucket, load_or_create_bucket_from_store, load_or_create_store,
+    protocol::{self, ServerMessage},
+    CLIArg, ClientMessage, KVBucket, MessageKey, MessageValue, CHANNEL_SIZE,
+    CLIENT_ID_TRACING_FIELD,
 };
 use crossterm::style::Stylize;
 use kv::Store;
 use miette::{miette, IntoDiagnostic};
 use r3bl_rs_utils_core::friendly_random_id;
-use tokio::io::AsyncWrite;
 use tokio::{
-    io::{BufReader, BufWriter},
+    io::{AsyncWrite, BufReader, BufWriter},
     net::{TcpListener, TcpStream},
     sync::broadcast::{self, Sender},
 };
@@ -110,14 +111,14 @@ pub mod handle_client_task {
         iterate_bucket(bucket, |key: MessageKey, value: MessageValue| {
             item_vec.push((key, value));
         });
-        let server_message = protocol::ServerMessage::<MessageKey, MessageValue>::GetAll(item_vec);
+        let server_message = ServerMessage::<MessageKey, MessageValue>::GetAll(item_vec);
         let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
         Ok(payload_buffer)
     }
 
     #[instrument(skip_all, fields(client_id))]
     pub async fn handle_client_message<Writer: AsyncWrite + Unpin>(
-        client_message: protocol::ClientMessage<MessageKey, MessageValue>,
+        client_message: ClientMessage<MessageKey, MessageValue>,
         _client_id: &str,
         store: &Store,
         buf_writer: &mut BufWriter<Writer>,
@@ -126,26 +127,23 @@ pub mod handle_client_task {
         let bucket = load_or_create_bucket_from_store::<MessageKey, MessageValue>(store, None)?;
 
         match client_message {
-            protocol::ClientMessage::Exit => {
+            ClientMessage::Exit => {
                 info!("Exiting due to client request");
                 return Err(miette!("Client requested exit"));
             }
-            crate::ClientMessage::GetAll => {
+            ClientMessage::GetAll => {
                 let payload_buffer = get_all_items_from_bucket(&bucket)?;
                 byte_io::write(buf_writer, payload_buffer).await?;
             }
             // TODO: do something meaningful w/ this payload & _store
-            crate::ClientMessage::Insert(_, _) => todo!(),
-            crate::ClientMessage::Remove(_) => todo!(),
-            crate::ClientMessage::Get(_) => todo!(),
-            crate::ClientMessage::Clear => todo!(),
-            crate::ClientMessage::Size => todo!(),
-            crate::ClientMessage::ContainsKey(_) => todo!(),
-            crate::ClientMessage::ContainsValue(_) => todo!(),
-            crate::ClientMessage::Keys => todo!(),
-            crate::ClientMessage::Values => todo!(),
-            crate::ClientMessage::IsEmpty => todo!(),
-            crate::ClientMessage::BroadcastToOthers(_) => todo!(),
+            ClientMessage::Insert(_, _) => todo!(),
+            ClientMessage::Remove(_) => todo!(),
+            ClientMessage::Get(_) => todo!(),
+            ClientMessage::Clear => todo!(),
+            ClientMessage::Size => todo!(),
+            ClientMessage::ContainsKey(_) => todo!(),
+            ClientMessage::IsEmpty => todo!(),
+            ClientMessage::BroadcastToOthers(_) => todo!(),
         }
 
         Ok(())
@@ -182,7 +180,7 @@ pub mod handle_client_task {
 
         // Send the client ID.
         let server_message =
-            protocol::ServerMessage::<MessageKey, MessageValue>::SetClientId(client_id.to_string());
+            ServerMessage::<MessageKey, MessageValue>::SetClientId(client_id.to_string());
         let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
         byte_io::write(&mut buf_writer, payload_buffer).await?;
         info!(?server_message, "Sent to client");
