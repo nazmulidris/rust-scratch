@@ -195,6 +195,9 @@ pub mod monitor_user_input {
                             shutdown_token.cancel();
                             break;
                         }
+                        ReadlineEvent::Resized => {
+                            // 00: do something meaningful w/ the Resize event
+                        }
                     }
                 }
             }
