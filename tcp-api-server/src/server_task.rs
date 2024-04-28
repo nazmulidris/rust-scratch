@@ -284,9 +284,8 @@ pub mod test_handle_client_task {
         test_fixtures::MockTcpStreamWrite,
         ClientMessage, Data,
     };
-    use miette::IntoDiagnostic;
     use tempfile::tempdir;
-    use tokio::io::{AsyncWriteExt, BufWriter};
+    use tokio::io::BufWriter;
 
     /// More info: <https://tokio.rs/tokio/topics/testing>
     #[tokio::test]
@@ -297,18 +296,19 @@ pub mod test_handle_client_task {
             &store, None,
         )?;
         insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
+
+        // Get the bytes that are expected to be sent to the client (not including the
+        // length prefix).
         let payload_bytes = get_all_items_from_bucket(&bucket)?;
 
+        // Create a mock writer (for the write half of the TcpStream).
         let writer = MockTcpStreamWrite {
             expected_write: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
 
-        // Prepare the actual payload, with length-prefix from [byte_io::write].
-        buf_writer
-            .write_u64(payload_bytes.len() as u64)
-            .await
-            .into_diagnostic()?;
+        // Prepare the actual payload, with length-prefix from [byte_io::write]. This will
+        // be accumulated in the buf_writer.
         handle_client_message(
             ClientMessage::GetAll,
             "test_client_id",
@@ -318,6 +318,15 @@ pub mod test_handle_client_task {
         .await?;
 
         // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+
+        // Assert the actual bytes w/ the expected bytes.
+        let mut result_vec: Vec<u8> = vec![];
+        let length_prefix = payload_bytes.len() as u64;
+        let length_prefix_bytes = length_prefix.to_be_bytes();
+        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+        result_vec.extend(payload_bytes);
+
+        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
 
         Ok(())
     }
