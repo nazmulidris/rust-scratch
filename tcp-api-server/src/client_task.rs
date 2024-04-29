@@ -18,10 +18,11 @@
 use crate::{
     byte_io,
     protocol::{self, ClientMessage, ServerMessage},
-    CLIArg, MessageKey, MessageValue, CLIENT_ID_TRACING_FIELD,
+    Buffer, CLIArg, MessageKey, MessageValue, CLIENT_ID_TRACING_FIELD,
 };
 use crossterm::style::Stylize;
 use miette::{Context, IntoDiagnostic};
+use r3bl_rs_utils_core::generate_friendly_random_id;
 use r3bl_terminal_async::{
     ReadlineEvent, SharedWriter, Spinner, SpinnerStyle, StdMutex, TerminalAsync,
 };
@@ -219,77 +220,78 @@ pub mod monitor_user_input {
         shutdown_token: CancellationToken,
         mut shared_writer: SharedWriter,
     ) -> ControlFlow<()> {
+        let result_maybe_spinner = Spinner::try_start(
+            format!("Sending {} message", client_message),
+            DELAY_UNIT,
+            SpinnerStyle {
+                template: r3bl_terminal_async::SpinnerTemplate::Block,
+                ..Default::default()
+            },
+            Arc::new(StdMutex::new(stderr())),
+            shared_writer.clone(),
+        )
+        .await;
+
+        // Artificial delay to see the spinner spin.
+        tokio::time::sleep(ARTIFICIAL_UI_DELAY).await;
+
+        // Default control flow. Set to break if there is an error.
+        let mut control_flow = ControlFlow::Continue(());
+
         match client_message {
+            ClientMessage::Insert(_, _) => {
+                let key = generate_friendly_random_id();
+                let value = MessageValue {
+                    id: rand::random(),
+                    description: "value".to_string(),
+                    data: Buffer::from("data"),
+                };
+
+                if let Ok(payload_buffer) =
+                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Insert(
+                        key, value,
+                    ))
+                {
+                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
+                        control_flow = ControlFlow::Break(());
+                    }
+                }
+            }
             ClientMessage::GetAll => {
-                let result_maybe_spinner = Spinner::try_start(
-                    "Sending getall message".to_string(),
-                    DELAY_UNIT,
-                    SpinnerStyle {
-                        template: r3bl_terminal_async::SpinnerTemplate::Block,
-                        ..Default::default()
-                    },
-                    Arc::new(StdMutex::new(stderr())),
-                    shared_writer.clone(),
-                )
-                .await;
-
-                // Artificial delay to see the spinner spin.
-                tokio::time::sleep(ARTIFICIAL_UI_DELAY).await;
-
                 if let Ok(payload_buffer) =
                     bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::GetAll)
                 {
                     if byte_io::write(buf_writer, payload_buffer).await.is_err() {
-                        return ControlFlow::Break(());
+                        control_flow = ControlFlow::Break(());
                     }
-                }
-
-                // Stop progress bar.
-                if let Ok(Some(mut spinner)) = result_maybe_spinner {
-                    let _ = spinner.stop("Sent getall message").await;
                 }
             }
             ClientMessage::Exit => {
-                let result_maybe_spinner = Spinner::try_start(
-                    "Sending exit message".to_string(),
-                    DELAY_UNIT,
-                    SpinnerStyle {
-                        template: r3bl_terminal_async::SpinnerTemplate::Block,
-                        ..Default::default()
-                    },
-                    Arc::new(StdMutex::new(stderr())),
-                    shared_writer.clone(),
-                )
-                .await;
-
-                // Artificial delay to see the spinner spin.
-                tokio::time::sleep(ARTIFICIAL_UI_DELAY).await;
-
                 // Ignore the result of the write operation, since the client is exiting.
                 if let Ok(payload_buffer) =
                     bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Exit)
                 {
                     let _ = byte_io::write(buf_writer, payload_buffer).await;
                 }
-
-                // Stop progress bar.
-                if let Ok(Some(mut spinner)) = result_maybe_spinner {
-                    let _ = spinner.stop("Sent exit message").await;
-                }
-
                 // Send the shutdown signal to all tasks.
                 shutdown_token.cancel();
-
-                return ControlFlow::Break(());
+                control_flow = ControlFlow::Break(());
             }
             _ => {
                 // 00: do something meaningful w/ the other client messages
                 let msg = format!("TODO! implement: {:?}", client_message);
                 let _ = writeln!(shared_writer, "{}", msg);
             }
+        };
+
+        // Stop progress bar.
+        if let Ok(Some(mut spinner)) = result_maybe_spinner {
+            let _ = spinner
+                .stop(format!("Sent {} message", client_message).as_str())
+                .await;
         }
 
-        ControlFlow::Continue(())
+        control_flow
     }
 }
 

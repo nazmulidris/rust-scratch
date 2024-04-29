@@ -1,0 +1,34 @@
+{
+	"files": [
+		{
+			"path": "src/client_task.rs",
+			"bookmarks": [
+				{
+					"line": 216,
+					"column": 17,
+					"label": "client::send_client_message"
+				},
+				{
+					"line": 356,
+					"column": 29,
+					"label": "client::handle_server_message"
+				}
+			]
+		},
+		{
+			"path": "src/server_task.rs",
+			"bookmarks": [
+				{
+					"line": 119,
+					"column": 17,
+					"label": "server::handle_client_message"
+				},
+				{
+					"line": 279,
+					"column": 12,
+					"label": "server::test"
+				}
+			]
+		}
+	]
+}

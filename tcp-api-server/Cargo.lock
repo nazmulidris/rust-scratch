@@ -2026,6 +2026,7 @@ dependencies = [
  "r3bl_rs_utils_core 0.9.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "r3bl_terminal_async",
  "r3bl_tui 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand",
  "serde",
  "serde_json",
  "serial_test",

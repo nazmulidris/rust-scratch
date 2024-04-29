@@ -38,6 +38,9 @@ thiserror = "1.0.59"
 miette = { version = "7.2.0", features = ["fancy"] }
 pretty_assertions = "1.4.0"
 
+# Random numbers.
+rand = "0.8.5"
+
 # Tokio / Tracing / Logging / Testing / Utils.
 # https://tokio.rs/tokio/topics/tracing
 # https://tokio.rs/tokio/topics/tracing-next-steps
