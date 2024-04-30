@@ -28,8 +28,14 @@ https://asciiflow.com/#/share/eJzFk8FqwkAQhl9lmJOCuRQkNDeRHoQigXrcS0wmunSdDZuNJI
 The following diagram illustrates what the "threading" mental model for the client and
 server programs (in the same binary) look like:
 
-![image](./main_diagram.drawio.svg)
+![image](./main_diagram.drawio_1.svg)
 
+Here's a further breakdown of the interactions between the client and the server. Unlike
+HTTP, this protocol is not purely request and response. The client can send a message and
+the server can send another message as a reply, but the server can also send messages to
+the client at any time. Comparing this to the web, it would be akin to a websocket.
+
+![image](./main_diagram.drawio_2.svg)
 
 # Usage
 
