@@ -19,8 +19,8 @@ use crate::{
     byte_io, insert_into_bucket, iterate_bucket, load_or_create_bucket_from_store,
     load_or_create_store,
     protocol::{self, ServerMessage},
-    Buffer, CLIArg, ClientMessage, KVBucket, MessageKey, MessageValue, CHANNEL_SIZE,
-    CLIENT_ID_TRACING_FIELD,
+    remove_from_bucket, Buffer, CLIArg, ClientMessage, KVBucket, MessageKey, MessageValue,
+    CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD,
 };
 use crossterm::style::Stylize;
 use kv::Store;
@@ -104,37 +104,7 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
 pub mod handle_client_task {
     use super::*;
 
-    #[instrument(skip_all, fields(client_id))]
-    pub(super) fn try_get_all_items_from_bucket<'a>(
-        bucket: &KVBucket<'a, MessageKey, MessageValue>,
-    ) -> miette::Result<Buffer> {
-        let mut item_vec: Vec<(MessageKey, MessageValue)> = vec![];
-        iterate_bucket(bucket, |key: MessageKey, value: MessageValue| {
-            item_vec.push((key, value));
-        });
-        let server_message = ServerMessage::<MessageKey, MessageValue>::GetAll(item_vec);
-        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
-        Ok(payload_buffer)
-    }
-
-    #[instrument(skip_all, fields(client_id))]
-    pub(super) fn try_insert_into_bucket<'a>(
-        bucket: &KVBucket<'a, MessageKey, MessageValue>,
-        key: MessageKey,
-        value: MessageValue,
-    ) -> miette::Result<Buffer> {
-        let it = match insert_into_bucket(bucket, key, value) {
-            Ok(_) => true,
-            Err(error) => {
-                error!(%error, "Problem inserting into bucket");
-                false
-            }
-        };
-        let server_message = ServerMessage::<MessageKey, MessageValue>::Insert(it);
-        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
-        Ok(payload_buffer)
-    }
-
+    // BOOKM: 2) handle_client_message
     #[instrument(skip_all, fields(client_id))]
     pub async fn handle_client_message<Writer: AsyncWrite + Unpin>(
         client_message: ClientMessage<MessageKey, MessageValue>,
@@ -154,12 +124,15 @@ pub mod handle_client_task {
                 let payload_buffer = try_get_all_items_from_bucket(&bucket)?;
                 byte_io::write(buf_writer, payload_buffer).await?;
             }
-            // TODO: do something meaningful w/ this payload & _store
             ClientMessage::Insert(key, value) => {
                 let payload_buffer = try_insert_into_bucket(&bucket, key, value)?;
                 byte_io::write(buf_writer, payload_buffer).await?;
             }
-            ClientMessage::Remove(_) => todo!(),
+            ClientMessage::Remove(key) => {
+                let payload_buffer = try_remove_from_bucket(&bucket, key)?;
+                byte_io::write(buf_writer, payload_buffer).await?;
+            }
+            // TODO: implement the following cases
             ClientMessage::Get(_) => todo!(),
             ClientMessage::Clear => todo!(),
             ClientMessage::Size => todo!(),
@@ -169,6 +142,54 @@ pub mod handle_client_task {
         }
 
         Ok(())
+    }
+
+    #[instrument(skip(bucket), fields(client_id))]
+    pub(super) fn try_get_all_items_from_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+    ) -> miette::Result<Buffer> {
+        let mut item_vec: Vec<(MessageKey, MessageValue)> = vec![];
+        iterate_bucket(bucket, |key: MessageKey, value: MessageValue| {
+            item_vec.push((key, value));
+        });
+        let server_message = ServerMessage::<MessageKey, MessageValue>::GetAll(item_vec);
+        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
+        Ok(payload_buffer)
+    }
+
+    #[instrument(skip(bucket), fields(client_id))]
+    pub(super) fn try_insert_into_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+        key: MessageKey,
+        value: MessageValue,
+    ) -> miette::Result<Buffer> {
+        let it = match insert_into_bucket(bucket, key, value) {
+            Ok(_) => true,
+            Err(error) => {
+                error!(%error, "Problem inserting into bucket");
+                false
+            }
+        };
+        let server_message = ServerMessage::<MessageKey, MessageValue>::Insert(it);
+        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
+        Ok(payload_buffer)
+    }
+
+    #[instrument(skip(bucket), fields(client_id))]
+    pub(super) fn try_remove_from_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+        key: MessageKey,
+    ) -> miette::Result<Buffer> {
+        let it = match remove_from_bucket(bucket, key) {
+            Ok(_) => true,
+            Err(error) => {
+                error!(%error, "Problem removing from bucket");
+                false
+            }
+        };
+        let server_message = ServerMessage::<MessageKey, MessageValue>::Remove(it);
+        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
+        Ok(payload_buffer)
     }
 
     // TODO: do something meaningful w/ this payload and probably generate a response
@@ -309,7 +330,10 @@ pub mod test_fixtures {
 #[cfg(test)]
 pub mod test_handle_client_task {
     use crate::{
-        handle_client_task::{handle_client_message, try_get_all_items_from_bucket},
+        handle_client_task::{
+            handle_client_message, try_get_all_items_from_bucket, try_insert_into_bucket,
+            try_remove_from_bucket,
+        },
         insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store,
         test_fixtures::MockTcpStreamWrite,
         Buffer, ClientMessage, Data,
@@ -341,6 +365,92 @@ pub mod test_handle_client_task {
         // be accumulated in the buf_writer.
         handle_client_message(
             ClientMessage::GetAll,
+            "test_client_id",
+            &store,
+            &mut buf_writer,
+        )
+        .await?;
+
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+
+        // Assert the actual bytes w/ the expected bytes.
+        let mut result_vec: Buffer = vec![];
+        let length_prefix = payload_bytes.len() as u64;
+        let length_prefix_bytes = length_prefix.to_be_bytes();
+        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+        result_vec.extend(payload_bytes);
+
+        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+
+        Ok(())
+    }
+
+    // BOOKM: 4) add tests for each handle_client_message variant
+    #[tokio::test]
+    async fn test_handle_client_message_insert() -> miette::Result<()> {
+        let dir = tempdir().expect("Failed to create temp dir");
+        let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
+        let bucket = load_or_create_bucket_from_store::<crate::MessageKey, crate::MessageValue>(
+            &store, None,
+        )?;
+
+        // Get the bytes that are expected to be sent to the client (not including the
+        // length prefix).
+        let payload_bytes = try_insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
+
+        // Create a mock writer (for the write half of the TcpStream).
+        let writer = MockTcpStreamWrite {
+            expected_write: Vec::new(),
+        };
+        let mut buf_writer = BufWriter::new(writer);
+
+        // Prepare the actual payload, with length-prefix from [byte_io::write]. This will
+        // be accumulated in the buf_writer.
+        handle_client_message(
+            ClientMessage::Insert("foo".to_string(), Data::default()),
+            "test_client_id",
+            &store,
+            &mut buf_writer,
+        )
+        .await?;
+
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+
+        // Assert the actual bytes w/ the expected bytes.
+        let mut result_vec: Buffer = vec![];
+        let length_prefix = payload_bytes.len() as u64;
+        let length_prefix_bytes = length_prefix.to_be_bytes();
+        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+        result_vec.extend(payload_bytes);
+
+        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_handle_client_message_remove() -> miette::Result<()> {
+        let dir = tempdir().expect("Failed to create temp dir");
+        let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
+        let bucket = load_or_create_bucket_from_store::<crate::MessageKey, crate::MessageValue>(
+            &store, None,
+        )?;
+        insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
+
+        // Get the bytes that are expected to be sent to the client (not including the
+        // length prefix).
+        let payload_bytes = try_remove_from_bucket(&bucket, "foo".to_string())?;
+
+        // Create a mock writer (for the write half of the TcpStream).
+        let writer = MockTcpStreamWrite {
+            expected_write: Vec::new(),
+        };
+        let mut buf_writer = BufWriter::new(writer);
+
+        // Prepare the actual payload, with length-prefix from [byte_io::write]. This will
+        // be accumulated in the buf_writer.
+        handle_client_message(
+            ClientMessage::Remove("foo".to_string()),
             "test_client_id",
             &store,
             &mut buf_writer,

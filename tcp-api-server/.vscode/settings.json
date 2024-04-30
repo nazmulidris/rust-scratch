@@ -3,6 +3,7 @@
     "appender",
     "bigendian",
     "bincode",
+    "BOOKM",
     "CBOR",
     "dialoguer",
     "geohashing",

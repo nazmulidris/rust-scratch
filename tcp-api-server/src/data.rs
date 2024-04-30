@@ -14,17 +14,33 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-use serde::{Deserialize, Serialize};
 
 use crate::Buffer;
+use core::fmt;
+use crossterm::style::Stylize;
+use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
+use std::fmt::Formatter;
 
 /// This is the data structure that is used to send messages between the client and the
 /// server.
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct Data {
     pub id: f32,
     pub description: String,
     pub data: Buffer,
+}
+
+impl Debug for Data {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Data {{ id: {}, description: {}, data.size: {} }}",
+            self.id.to_string().yellow(),
+            self.description.to_string().green(),
+            self.data.len().to_string().blue(),
+        )
+    }
 }
 
 /// These type aliases are used throughout the codebase to make it easier to specify the

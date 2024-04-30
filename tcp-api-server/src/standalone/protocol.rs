@@ -20,16 +20,18 @@
 //! generics `K` and `V` are used to specify the exact type of the key and value used in
 //! the messages by whatever module is using this protocol.
 
+use std::str::FromStr;
+
 use miette::IntoDiagnostic;
 use serde::{Deserialize, Serialize};
 
 /// Size (number of bytes) to read from the stream to get the length prefix.
 pub type LengthPrefixType = u64;
 pub type Buffer = Vec<u8>;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader, BufWriter};
 
 pub mod byte_io {
     use super::*;
-    use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader, BufWriter};
 
     /// Write the payload to the client. Use the length-prefix, binary payload, protocol.
     /// - The trait bounds on this function are so that this function can be tested w/ a
@@ -130,6 +132,27 @@ pub enum ClientMessage<K: Default, V: Default> {
     BroadcastToOthers(V), /* Client A initiates this. It gets BroadcastToOthersAck(..). Other clients get HandleBroadcast(..) */
 }
 
+impl<K: Default, V: Default> ClientMessage<K, V> {
+    pub fn parse_input(input: &str) -> Result<(Self, String), strum::ParseError> {
+        // If input is empty, then return the default command.
+        if input.is_empty() {
+            return Ok((ClientMessage::default(), "".to_string()));
+        }
+
+        // If input has a space, then split it and use the first part as the command.
+        let parts: Vec<&str> = input.split_whitespace().collect();
+        // Same as: input.parse::<protocol::ClientMessage>();
+        let client_message = ClientMessage::<K, V>::from_str(parts[0])?;
+        let rest = if parts.len() > 1 {
+            parts[1..].join(" ")
+        } else {
+            "".to_string()
+        };
+
+        Ok((client_message, rest))
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum ServerMessage<K, V> {
     SetClientId(String),
@@ -167,11 +190,19 @@ pub fn serialize_helper(value: &impl Serialize) -> miette::Result<SerializeHelpe
 }
 
 #[cfg(test)]
-mod command_to_from_string_tests {
+mod tests_command_to_from_string {
+    use super::*;
     use std::str::FromStr;
     use strum::IntoEnumIterator;
 
-    use super::*;
+    #[test]
+    fn parse_input() {
+        let input = "remove foo";
+        let result = ClientMessage::<String, String>::parse_input(input);
+        let (command, rest) = result.unwrap();
+        assert!(matches!(command, ClientMessage::Remove(_)));
+        assert_eq!(rest, "foo");
+    }
 
     #[test]
     fn to_string() {
@@ -196,7 +227,7 @@ mod command_to_from_string_tests {
 }
 
 #[cfg(test)]
-mod fixtures {
+mod test_fixtures {
     use super::*;
 
     #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
@@ -208,8 +239,8 @@ mod fixtures {
 }
 
 #[cfg(test)]
-mod serialize_helper_tests {
-    use super::fixtures::*;
+mod tests_serialize_helper {
+    use super::test_fixtures::*;
     use super::*;
     use pretty_assertions::assert_eq;
 
@@ -241,8 +272,8 @@ mod serialize_helper_tests {
 /// strategy. Using it, you can easily go from having an struct / object in memory,
 /// quickly serialize it to bytes, and then deserialize it back just as fast!
 #[cfg(test)]
-mod bincode_serde_tests {
-    use super::fixtures::*;
+mod tests_bincode_serde {
+    use super::test_fixtures::*;
     use super::*;
     use pretty_assertions::assert_eq;
 

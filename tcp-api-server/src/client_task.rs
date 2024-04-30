@@ -29,7 +29,6 @@ use r3bl_terminal_async::{
 use std::{
     io::{stderr, Write},
     ops::ControlFlow,
-    str::FromStr,
     sync::Arc,
     time::Duration,
 };
@@ -126,6 +125,42 @@ pub async fn client_main(
 pub mod monitor_user_input {
     use super::*;
 
+    mod spinner_support {
+        use super::*;
+
+        pub async fn create(
+            message: String,
+            shared_writer: SharedWriter,
+        ) -> miette::Result<Option<Spinner>> {
+            let result_maybe_spinner = Spinner::try_start(
+                message,
+                DELAY_UNIT,
+                SpinnerStyle {
+                    template: r3bl_terminal_async::SpinnerTemplate::Block,
+                    ..Default::default()
+                },
+                Arc::new(StdMutex::new(stderr())),
+                shared_writer.clone(),
+            )
+            .await;
+
+            // Artificial delay to see the spinner spin.
+            tokio::time::sleep(ARTIFICIAL_UI_DELAY).await;
+
+            result_maybe_spinner
+        }
+
+        pub async fn stop(
+            message: String,
+            result_maybe_spinner: miette::Result<Option<Spinner>>,
+        ) -> miette::Result<()> {
+            if let Ok(Some(mut spinner)) = result_maybe_spinner {
+                let _ = spinner.stop(&message).await;
+            }
+            Ok(())
+        }
+    }
+
     /// This has an infinite loop, so you might want to spawn a task before calling it.
     /// And it has a blocking call, so you can't exit it preemptively.
     #[instrument(name = "user_input:main_loop", skip_all, fields(client_id))]
@@ -164,14 +199,13 @@ pub mod monitor_user_input {
                     match readline_event {
                         ReadlineEvent::Line(input) => {
                             // Parse the input into a ClientMessage.
-                            let result_user_input_message =
-                                protocol::ClientMessage::<MessageKey, MessageValue>::from_str(&input);
-                                // Same as: input.parse::<protocol::ClientMessage>();
-                            match result_user_input_message {
-                                Ok(user_input_message) => {
+                            let result = ClientMessage::<MessageKey, MessageValue>::parse_input(&input);
+                            match result {
+                                Ok((client_message, rest)) => {
                                     terminal_async.pause().await;
                                     let control_flow = send_client_message(
-                                        user_input_message,
+                                        client_message,
+                                        rest,
                                         &mut buf_writer,
                                         shutdown_token_clone.clone(),
                                         terminal_async.clone_shared_writer(),
@@ -218,36 +252,62 @@ pub mod monitor_user_input {
         Ok(())
     }
 
+    // BOOKM: 1) send_client_message
     /// Please refer to the [ClientMessage] enum in the [protocol] module for the list of
     /// commands.
     #[instrument(skip_all, fields(client_message))]
     pub async fn send_client_message(
         client_message: ClientMessage<MessageKey, MessageValue>,
+        rest: String,
         buf_writer: &mut BufWriter<OwnedWriteHalf>,
         shutdown_token: CancellationToken,
         mut shared_writer: SharedWriter,
         client_id: Arc<StdMutex<String>>,
     ) -> ControlFlow<()> {
-        let result_maybe_spinner = Spinner::try_start(
-            format!("Sending {} message", client_message),
-            DELAY_UNIT,
-            SpinnerStyle {
-                template: r3bl_terminal_async::SpinnerTemplate::Block,
-                ..Default::default()
-            },
-            Arc::new(StdMutex::new(stderr())),
-            shared_writer.clone(),
-        )
-        .await;
-
-        // Artificial delay to see the spinner spin.
-        tokio::time::sleep(ARTIFICIAL_UI_DELAY).await;
-
         // Default control flow. Set to break if there is an error.
         let mut control_flow = ControlFlow::Continue(());
 
         match client_message {
+            ClientMessage::Remove(_) => {
+                // No key provided.
+                if rest.is_empty() {
+                    let msg = format!(
+                        "Please provide a key to remove, eg: {} {}",
+                        "remove".green(),
+                        "<key>".yellow().bold()
+                    );
+                    let _ = writeln!(shared_writer, "{}", msg);
+                    return control_flow;
+                }
+
+                // Start spinner.
+                let spinner = spinner_support::create(
+                    format!("Sending {} message", client_message),
+                    shared_writer,
+                )
+                .await;
+
+                // Get the key from `rest` param.
+                if let Ok(payload_buffer) =
+                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Remove(rest))
+                {
+                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
+                        control_flow = ControlFlow::Break(());
+                    }
+                }
+
+                // Stop spinner.
+                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await;
+            }
             ClientMessage::Insert(_, _) => {
+                // Start spinner.
+                let spinner = spinner_support::create(
+                    format!("Sending {} message", client_message),
+                    shared_writer,
+                )
+                .await;
+
                 let key = generate_friendly_random_id();
                 let value = MessageValue {
                     id: rand::random(),
@@ -264,8 +324,19 @@ pub mod monitor_user_input {
                         control_flow = ControlFlow::Break(());
                     }
                 }
+
+                // Stop spinner.
+                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await;
             }
             ClientMessage::GetAll => {
+                // Start spinner.
+                let spinner = spinner_support::create(
+                    format!("Sending {} message", client_message),
+                    shared_writer,
+                )
+                .await;
+
                 if let Ok(payload_buffer) =
                     bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::GetAll)
                 {
@@ -273,8 +344,19 @@ pub mod monitor_user_input {
                         control_flow = ControlFlow::Break(());
                     }
                 }
+
+                // Stop spinner.
+                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await;
             }
             ClientMessage::Exit => {
+                // Start spinner.
+                let spinner = spinner_support::create(
+                    format!("Sending {} message", client_message),
+                    shared_writer,
+                )
+                .await;
+
                 // Ignore the result of the write operation, since the client is exiting.
                 if let Ok(payload_buffer) =
                     bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Exit)
@@ -284,20 +366,17 @@ pub mod monitor_user_input {
                 // Send the shutdown signal to all tasks.
                 shutdown_token.cancel();
                 control_flow = ControlFlow::Break(());
+
+                // Stop spinner.
+                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await;
             }
+            // TODO: remove this when all the cases above are handled
             _ => {
-                // 00: do something meaningful w/ the other client messages
                 let msg = format!("TODO! implement: {:?}", client_message);
                 let _ = writeln!(shared_writer, "{}", msg);
             }
         };
-
-        // Stop progress bar.
-        if let Ok(Some(mut spinner)) = result_maybe_spinner {
-            let _ = spinner
-                .stop(format!("Sent {} message", client_message).as_str())
-                .await;
-        }
 
         control_flow
     }
@@ -320,7 +399,6 @@ pub mod monitor_tcp_conn_task {
 
         info!("Entering loop");
 
-        // 00: listen for data from the server, handle it, monitor shutdown channel.
         loop {
             tokio::select! {
                 // Poll the TCP stream for data.
@@ -360,6 +438,7 @@ pub mod monitor_tcp_conn_task {
         Ok(())
     }
 
+    // BOOKM: 3) handle_server_message
     #[instrument(skip_all, fields(server_message, client_id))]
     async fn handle_server_message(
         server_message: ServerMessage<MessageKey, MessageValue>,
@@ -401,6 +480,18 @@ pub mod monitor_tcp_conn_task {
                     "[{}]: {}: {}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received insert message from server".green().bold(),
+                    match success_flag {
+                        true => "✅ Success".green().bold(),
+                        false => "❌ Failure".red().bold(),
+                    }
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+            }
+            ServerMessage::Remove(success_flag) => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received remove message from server".green().bold(),
                     match success_flag {
                         true => "✅ Success".green().bold(),
                         false => "❌ Failure".red().bold(),
