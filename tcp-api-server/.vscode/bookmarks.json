@@ -4,13 +4,13 @@
 			"path": "src/client_task.rs",
 			"bookmarks": [
 				{
-					"line": 216,
-					"column": 17,
+					"line": 223,
+					"column": 4,
 					"label": "client::send_client_message"
 				},
 				{
-					"line": 356,
-					"column": 13,
+					"line": 398,
+					"column": 12,
 					"label": "client::handle_server_message"
 				}
 			]

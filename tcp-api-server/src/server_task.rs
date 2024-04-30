@@ -16,9 +16,10 @@
  */
 
 use crate::{
-    byte_io, iterate_bucket, load_or_create_bucket_from_store, load_or_create_store,
+    byte_io, insert_into_bucket, iterate_bucket, load_or_create_bucket_from_store,
+    load_or_create_store,
     protocol::{self, ServerMessage},
-    CLIArg, ClientMessage, KVBucket, MessageKey, MessageValue, CHANNEL_SIZE,
+    Buffer, CLIArg, ClientMessage, KVBucket, MessageKey, MessageValue, CHANNEL_SIZE,
     CLIENT_ID_TRACING_FIELD,
 };
 use crossterm::style::Stylize;
@@ -104,14 +105,32 @@ pub mod handle_client_task {
     use super::*;
 
     #[instrument(skip_all, fields(client_id))]
-    pub(super) fn get_all_items_from_bucket<'a>(
+    pub(super) fn try_get_all_items_from_bucket<'a>(
         bucket: &KVBucket<'a, MessageKey, MessageValue>,
-    ) -> miette::Result<Vec<u8>> {
+    ) -> miette::Result<Buffer> {
         let mut item_vec: Vec<(MessageKey, MessageValue)> = vec![];
         iterate_bucket(bucket, |key: MessageKey, value: MessageValue| {
             item_vec.push((key, value));
         });
         let server_message = ServerMessage::<MessageKey, MessageValue>::GetAll(item_vec);
+        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
+        Ok(payload_buffer)
+    }
+
+    #[instrument(skip_all, fields(client_id))]
+    pub(super) fn try_insert_into_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+        key: MessageKey,
+        value: MessageValue,
+    ) -> miette::Result<Buffer> {
+        let it = match insert_into_bucket(bucket, key, value) {
+            Ok(_) => true,
+            Err(error) => {
+                error!(%error, "Problem inserting into bucket");
+                false
+            }
+        };
+        let server_message = ServerMessage::<MessageKey, MessageValue>::Insert(it);
         let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
         Ok(payload_buffer)
     }
@@ -132,11 +151,14 @@ pub mod handle_client_task {
                 return Err(miette!("Client requested exit"));
             }
             ClientMessage::GetAll => {
-                let payload_buffer = get_all_items_from_bucket(&bucket)?;
+                let payload_buffer = try_get_all_items_from_bucket(&bucket)?;
                 byte_io::write(buf_writer, payload_buffer).await?;
             }
             // TODO: do something meaningful w/ this payload & _store
-            ClientMessage::Insert(_, _) => todo!(),
+            ClientMessage::Insert(key, value) => {
+                let payload_buffer = try_insert_into_bucket(&bucket, key, value)?;
+                byte_io::write(buf_writer, payload_buffer).await?;
+            }
             ClientMessage::Remove(_) => todo!(),
             ClientMessage::Get(_) => todo!(),
             ClientMessage::Clear => todo!(),
@@ -249,6 +271,7 @@ pub async fn setup_ctrlc_handler(shutdown_token: CancellationToken) -> miette::R
 
 #[cfg(test)]
 pub mod test_fixtures {
+    use crate::Buffer;
     use std::io::Result;
     use std::pin::Pin;
     use std::task::{Context, Poll};
@@ -259,7 +282,7 @@ pub mod test_fixtures {
     /// - The difference is that [MockTcpStreamWrite] allows access to the expected write
     ///   buffer.
     pub struct MockTcpStreamWrite {
-        pub expected_write: Vec<u8>,
+        pub expected_write: Buffer,
     }
 
     /// Implement the [AsyncWrite] trait for the mock struct.
@@ -286,10 +309,10 @@ pub mod test_fixtures {
 #[cfg(test)]
 pub mod test_handle_client_task {
     use crate::{
-        handle_client_task::{get_all_items_from_bucket, handle_client_message},
+        handle_client_task::{handle_client_message, try_get_all_items_from_bucket},
         insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store,
         test_fixtures::MockTcpStreamWrite,
-        ClientMessage, Data,
+        Buffer, ClientMessage, Data,
     };
     use tempfile::tempdir;
     use tokio::io::BufWriter;
@@ -306,7 +329,7 @@ pub mod test_handle_client_task {
 
         // Get the bytes that are expected to be sent to the client (not including the
         // length prefix).
-        let payload_bytes = get_all_items_from_bucket(&bucket)?;
+        let payload_bytes = try_get_all_items_from_bucket(&bucket)?;
 
         // Create a mock writer (for the write half of the TcpStream).
         let writer = MockTcpStreamWrite {
@@ -327,7 +350,7 @@ pub mod test_handle_client_task {
         // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
 
         // Assert the actual bytes w/ the expected bytes.
-        let mut result_vec: Vec<u8> = vec![];
+        let mut result_vec: Buffer = vec![];
         let length_prefix = payload_bytes.len() as u64;
         let length_prefix_bytes = length_prefix.to_be_bytes();
         result_vec.extend_from_slice(length_prefix_bytes.as_ref());

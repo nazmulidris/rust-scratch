@@ -98,6 +98,9 @@ pub async fn client_main(
     // Get reader and writer from TCP stream.
     let (read_half, write_half) = tcp_stream.into_split();
 
+    // Reserve a space for the client_id. This is set for this entire client task.
+    let client_id = Arc::new(StdMutex::new(DEFAULT_CLIENT_ID.to_string()));
+
     // Shutdown cancellation token, to cooperatively & gracefully end all awaiting running
     // tasks. Calling `abort()` isn't reliable. Neither is dropping the task. More info:
     // https://cybernetist.com/2024/04/19/rust-tokio-task-cancellation-patterns/
@@ -110,10 +113,12 @@ pub async fn client_main(
         read_half,
         terminal_async.clone_shared_writer(),
         shutdown_token.clone(),
+        client_id.clone(),
     ));
 
     // DON'T SPAWN TASK: User input event infinite loop.
-    let _ = monitor_user_input::event_loop(write_half, terminal_async, shutdown_token).await;
+    let _ =
+        monitor_user_input::event_loop(write_half, terminal_async, shutdown_token, client_id).await;
 
     Ok(())
 }
@@ -128,6 +133,7 @@ pub mod monitor_user_input {
         write_half: OwnedWriteHalf,
         mut terminal_async: TerminalAsync,
         shutdown_token: CancellationToken,
+        client_id: Arc<StdMutex<String>>,
     ) -> miette::Result<()> {
         // Artificial delay to let all the other tasks settle.
         tokio::time::sleep(DELAY_UNIT).await;
@@ -169,6 +175,7 @@ pub mod monitor_user_input {
                                         &mut buf_writer,
                                         shutdown_token_clone.clone(),
                                         terminal_async.clone_shared_writer(),
+                                        client_id.clone(),
                                     )
                                     .await;
                                     terminal_async.resume().await;
@@ -219,6 +226,7 @@ pub mod monitor_user_input {
         buf_writer: &mut BufWriter<OwnedWriteHalf>,
         shutdown_token: CancellationToken,
         mut shared_writer: SharedWriter,
+        client_id: Arc<StdMutex<String>>,
     ) -> ControlFlow<()> {
         let result_maybe_spinner = Spinner::try_start(
             format!("Sending {} message", client_message),
@@ -243,7 +251,7 @@ pub mod monitor_user_input {
                 let key = generate_friendly_random_id();
                 let value = MessageValue {
                     id: rand::random(),
-                    description: "value".to_string(),
+                    description: format!("from: '{}'", client_id.lock().unwrap().clone()),
                     data: Buffer::from("data"),
                 };
 
@@ -306,11 +314,9 @@ pub mod monitor_tcp_conn_task {
         buf_reader: OwnedReadHalf,
         mut shared_writer: SharedWriter,
         shutdown_token: CancellationToken,
+        client_id: Arc<StdMutex<String>>,
     ) -> miette::Result<()> {
         let mut buf_reader = BufReader::new(buf_reader);
-
-        // This will be set by the server when the client connects.
-        let mut client_id = DEFAULT_CLIENT_ID.to_string();
 
         info!("Entering loop");
 
@@ -324,14 +330,15 @@ pub mod monitor_tcp_conn_task {
                             let server_message =
                                 bincode::deserialize::<protocol::ServerMessage<MessageKey, MessageValue>>(&payload_buffer)
                                     .into_diagnostic()?;
-                            handle_server_message(server_message, &mut client_id, shared_writer.clone(), shutdown_token.clone())
+                            handle_server_message(server_message, client_id.clone(), shared_writer.clone(), shutdown_token.clone())
                                 .await?;
                         }
                         Err(error) => {
+                            let client_id_str = client_id.lock().unwrap().clone();
                             let _ = writeln!(
                                 shared_writer,
                                 "Error reading from server for client task w/ 'client_id': {}",
-                                client_id.to_string().yellow().bold(),
+                                client_id_str.yellow().bold(),
                             );
                             error!(?error);
                             shutdown_token.cancel();
@@ -356,7 +363,7 @@ pub mod monitor_tcp_conn_task {
     #[instrument(skip_all, fields(server_message, client_id))]
     async fn handle_server_message(
         server_message: ServerMessage<MessageKey, MessageValue>,
-        client_id: &mut String,
+        client_id: Arc<StdMutex<String>>,
         mut shared_writer: SharedWriter,
         shutdown_token: CancellationToken,
     ) -> miette::Result<()> {
@@ -364,13 +371,13 @@ pub mod monitor_tcp_conn_task {
 
         match server_message {
             ServerMessage::SetClientId(ref id) => {
-                client_id.clone_from(id);
-                tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, &client_id);
+                *client_id.lock().unwrap() = id.to_string();
+                tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, id);
             }
             ServerMessage::Exit => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    client_id.to_string().yellow().bold(),
+                    client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received exit message from server".green().bold(),
                     "Shutting down client".red().bold(),
                 );
@@ -383,9 +390,21 @@ pub mod monitor_tcp_conn_task {
             ServerMessage::GetAll(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    client_id.to_string().yellow().bold(),
+                    client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received getall message from server".green().bold(),
                     format!("{:?}", data).magenta().bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+            }
+            ServerMessage::Insert(success_flag) => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received insert message from server".green().bold(),
+                    match success_flag {
+                        true => "✅ Success".green().bold(),
+                        false => "❌ Failure".red().bold(),
+                    }
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
@@ -394,7 +413,7 @@ pub mod monitor_tcp_conn_task {
                 // Display the message to the console.
                 let msg = format!(
                     "[{}]: {}: {}",
-                    client_id.to_string().yellow().bold(),
+                    client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received message from server".green().bold(),
                     format!("{:?}", server_message).magenta().bold(),
                 );
