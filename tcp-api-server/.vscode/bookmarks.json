@@ -10,7 +10,7 @@
 				},
 				{
 					"line": 356,
-					"column": 29,
+					"column": 13,
 					"label": "client::handle_server_message"
 				}
 			]
@@ -20,7 +20,7 @@
 			"bookmarks": [
 				{
 					"line": 119,
-					"column": 17,
+					"column": 4,
 					"label": "server::handle_client_message"
 				},
 				{

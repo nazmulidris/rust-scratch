@@ -324,7 +324,7 @@ pub mod monitor_tcp_conn_task {
                             let server_message =
                                 bincode::deserialize::<protocol::ServerMessage<MessageKey, MessageValue>>(&payload_buffer)
                                     .into_diagnostic()?;
-                            handle_server_message(server_message, &mut client_id, shared_writer.clone())
+                            handle_server_message(server_message, &mut client_id, shared_writer.clone(), shutdown_token.clone())
                                 .await?;
                         }
                         Err(error) => {
@@ -358,6 +358,7 @@ pub mod monitor_tcp_conn_task {
         server_message: ServerMessage<MessageKey, MessageValue>,
         client_id: &mut String,
         mut shared_writer: SharedWriter,
+        shutdown_token: CancellationToken,
     ) -> miette::Result<()> {
         info!(?server_message, "Start");
 
@@ -365,6 +366,19 @@ pub mod monitor_tcp_conn_task {
             ServerMessage::SetClientId(ref id) => {
                 client_id.clone_from(id);
                 tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, &client_id);
+            }
+            ServerMessage::Exit => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.to_string().yellow().bold(),
+                    "Received exit message from server".green().bold(),
+                    "Shutting down client".red().bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+
+                // Cancel the shutdown token to end the client.
+                tokio::time::sleep(DELAY_UNIT).await; // Delay to allow the message above to be printed.
+                shutdown_token.cancel();
             }
             ServerMessage::GetAll(ref data) => {
                 let msg = format!(

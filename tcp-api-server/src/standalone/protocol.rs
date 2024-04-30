@@ -132,10 +132,10 @@ pub enum ClientMessage<K: Default, V: Default> {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum ServerMessage<K, V> {
+    SetClientId(String),
     Exit,
     GetAll(Vec<(K, V)>),
     // TODO: impl the messages below
-    SetClientId(String),
     Insert(bool),
     Remove(bool),
     Get(Option<V>),

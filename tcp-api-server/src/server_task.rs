@@ -217,6 +217,13 @@ pub mod handle_client_task {
                 // Branch 3: Monitor shutdown cancellation token.
                 _ = shutdown_token.cancelled() => {
                     info!("Received shutdown signal");
+
+                    // Send Exit message to client.
+                    let payload_bytes = bincode::serialize(
+                        &ServerMessage::<MessageKey, MessageValue>::Exit,
+                    ).into_diagnostic()?;
+                    byte_io::write(&mut buf_writer, payload_bytes).await?;
+
                     break;
                 }
             }
