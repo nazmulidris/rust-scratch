@@ -123,6 +123,8 @@ pub async fn client_main(
 }
 
 pub mod monitor_user_input {
+    use strum::IntoEnumIterator;
+
     use super::*;
 
     mod spinner_support {
@@ -173,14 +175,17 @@ pub mod monitor_user_input {
         // Artificial delay to let all the other tasks settle.
         tokio::time::sleep(DELAY_UNIT).await;
 
-        let welcome_message = format!(
-            "{}, eg: {}, etc.",
-            "Enter a message".yellow().bold(),
-            "exit, info, getall, clear".green().bold()
-        );
+        let items = {
+            let mut items = vec![];
+            for item in ClientMessage::<String, String>::iter() {
+                let item = item.to_string().to_lowercase();
+                terminal_async.readline.add_history_entry(item.clone());
+                items.push(item.green().bold().to_string());
+            }
+            items.join(", ")
+        };
+        let welcome_message = format!("{}, eg: {}, etc.", "Enter a message".yellow().bold(), items);
 
-        // TODO: implement info which simply collects the `ClientMessage.iter()` (just like in the test)
-        // TODO: add history support to the terminal using the same `ClientMessage.iter()`
         terminal_async.println(welcome_message).await;
 
         let mut buf_writer = BufWriter::new(write_half);
@@ -227,19 +232,19 @@ pub mod monitor_user_input {
                                 }
                             }
                         }
-                        ReadlineEvent::Eof => {
-                            // 00: do something meaningful w/ the EOF event
+                        ReadlineEvent::Eof | ReadlineEvent::Interrupted => {
                             shutdown_token.cancel();
+                            // Ignore the result of the write operation, since the client is exiting.
+                            if let Ok(payload_buffer) =
+                                bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Exit)
+                            {
+                                let _ = byte_io::write(&mut buf_writer, payload_buffer).await;
+                            }
+                            // Delay to allow messages to be printed to display output.
+                            tokio::time::sleep(DELAY_UNIT).await;
                             break;
                         }
-                        ReadlineEvent::Interrupted => {
-                            // 00: do something meaningful w/ the Interrupted event
-                            shutdown_token.cancel();
-                            break;
-                        }
-                        ReadlineEvent::Resized => {
-                            // 00: do something meaningful w/ the Resize event
-                        }
+                        ReadlineEvent::Resized => {}
                     }
                 }
             }
