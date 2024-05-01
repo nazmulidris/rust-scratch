@@ -106,7 +106,7 @@ pub enum ClientMessage<K: Default, V: Default> {
     #[strum(ascii_case_insensitive)]
     GetAll,
 
-    // TODO: impl the messages below
+    // CLEANUP: impl the messages below
     #[strum(ascii_case_insensitive)]
     Insert(K, V),
 
@@ -158,7 +158,7 @@ pub enum ServerMessage<K, V> {
     SetClientId(String),
     Exit,
     GetAll(Vec<(K, V)>),
-    // TODO: impl the messages below
+    // CLEANUP: impl the messages below
     Insert(bool),
     Remove(bool),
     Get(Option<V>),

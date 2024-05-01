@@ -102,6 +102,8 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
 /// The `client_id` field is added to the span, so that it can be used in the logs by all
 /// the functions in this module. See also: [crate::CLIENT_ID_TRACING_FIELD].
 pub mod handle_client_task {
+    use crate::get_from_bucket;
+
     use super::*;
 
     // BOOKM: 2) handle_client_message
@@ -132,8 +134,11 @@ pub mod handle_client_task {
                 let payload_buffer = try_remove_from_bucket(&bucket, key)?;
                 byte_io::write(buf_writer, payload_buffer).await?;
             }
-            // TODO: implement the following cases
-            ClientMessage::Get(_) => todo!(),
+            ClientMessage::Get(key) => {
+                let payload_buffer = try_get_from_bucket(&bucket, key)?;
+                byte_io::write(buf_writer, payload_buffer).await?;
+            }
+            // CLEANUP: implement the following cases
             ClientMessage::Clear => todo!(),
             ClientMessage::Size => todo!(),
             ClientMessage::ContainsKey(_) => todo!(),
@@ -181,13 +186,30 @@ pub mod handle_client_task {
         key: MessageKey,
     ) -> miette::Result<Buffer> {
         let it = match remove_from_bucket(bucket, key) {
-            Ok(_) => true,
+            Ok(value) => value.is_some(),
             Err(error) => {
                 error!(%error, "Problem removing from bucket");
                 false
             }
         };
         let server_message = ServerMessage::<MessageKey, MessageValue>::Remove(it);
+        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
+        Ok(payload_buffer)
+    }
+
+    #[instrument(skip(bucket), fields(client_id))]
+    pub(super) fn try_get_from_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+        key: MessageKey,
+    ) -> miette::Result<Buffer> {
+        let it = match get_from_bucket(bucket, key) {
+            Ok(value) => value,
+            Err(error) => {
+                error!(%error, "Problem getting from bucket");
+                None
+            }
+        };
+        let server_message = ServerMessage::<MessageKey, MessageValue>::Get(it);
         let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
         Ok(payload_buffer)
     }
@@ -328,7 +350,7 @@ pub mod test_fixtures {
 }
 
 #[cfg(test)]
-pub mod test_handle_client_task {
+pub mod test_handle_client_message {
     use crate::{
         handle_client_task::{
             handle_client_message, try_get_all_items_from_bucket, try_insert_into_bucket,
@@ -343,7 +365,7 @@ pub mod test_handle_client_task {
 
     /// More info: <https://tokio.rs/tokio/topics/testing>
     #[tokio::test]
-    async fn test_handle_client_message_get_all() -> miette::Result<()> {
+    async fn test_try_get_all_items_from_bucket() -> miette::Result<()> {
         let dir = tempdir().expect("Failed to create temp dir");
         let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
         let bucket = load_or_create_bucket_from_store::<crate::MessageKey, crate::MessageValue>(
@@ -387,7 +409,7 @@ pub mod test_handle_client_task {
 
     // BOOKM: 4) add tests for each handle_client_message variant
     #[tokio::test]
-    async fn test_handle_client_message_insert() -> miette::Result<()> {
+    async fn test_try_insert_into_bucket() -> miette::Result<()> {
         let dir = tempdir().expect("Failed to create temp dir");
         let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
         let bucket = load_or_create_bucket_from_store::<crate::MessageKey, crate::MessageValue>(
@@ -429,7 +451,7 @@ pub mod test_handle_client_task {
     }
 
     #[tokio::test]
-    async fn test_handle_client_message_remove() -> miette::Result<()> {
+    async fn test_try_remove_from_bucket() -> miette::Result<()> {
         let dir = tempdir().expect("Failed to create temp dir");
         let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
         let bucket = load_or_create_bucket_from_store::<crate::MessageKey, crate::MessageValue>(
@@ -451,6 +473,50 @@ pub mod test_handle_client_task {
         // be accumulated in the buf_writer.
         handle_client_message(
             ClientMessage::Remove("foo".to_string()),
+            "test_client_id",
+            &store,
+            &mut buf_writer,
+        )
+        .await?;
+
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+
+        // Assert the actual bytes w/ the expected bytes.
+        let mut result_vec: Buffer = vec![];
+        let length_prefix = payload_bytes.len() as u64;
+        let length_prefix_bytes = length_prefix.to_be_bytes();
+        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+        result_vec.extend(payload_bytes);
+
+        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_try_get_from_bucket() -> miette::Result<()> {
+        let dir = tempdir().expect("Failed to create temp dir");
+        let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
+        let bucket = load_or_create_bucket_from_store::<crate::MessageKey, crate::MessageValue>(
+            &store, None,
+        )?;
+        insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
+
+        // Get the bytes that are expected to be sent to the client (not including the
+        // length prefix).
+        let payload_bytes =
+            crate::handle_client_task::try_get_from_bucket(&bucket, "foo".to_string())?;
+
+        // Create a mock writer (for the write half of the TcpStream).
+        let writer = MockTcpStreamWrite {
+            expected_write: Vec::new(),
+        };
+        let mut buf_writer = BufWriter::new(writer);
+
+        // Prepare the actual payload, with length-prefix from [byte_io::write]. This will
+        // be accumulated in the buf_writer.
+        handle_client_message(
+            ClientMessage::Get("foo".to_string()),
             "test_client_id",
             &store,
             &mut buf_writer,

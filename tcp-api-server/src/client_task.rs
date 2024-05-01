@@ -273,6 +273,38 @@ pub mod monitor_user_input {
         let mut control_flow = ControlFlow::Continue(());
 
         match client_message {
+            ClientMessage::Get(_) => {
+                // No key provided.
+                if rest.is_empty() {
+                    let msg = format!(
+                        "Please provide a key to get, eg: {} {}",
+                        "get".green(),
+                        "<key>".yellow().bold()
+                    );
+                    let _ = writeln!(shared_writer, "{}", msg);
+                    return control_flow;
+                }
+
+                // Start spinner.
+                let spinner = spinner_support::create(
+                    format!("Sending {} message", client_message),
+                    shared_writer,
+                )
+                .await;
+
+                // Get the key from `rest` param.
+                if let Ok(payload_buffer) =
+                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Get(rest))
+                {
+                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
+                        control_flow = ControlFlow::Break(());
+                    }
+                }
+
+                // Stop spinner.
+                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await;
+            }
             ClientMessage::Remove(_) => {
                 // No key provided.
                 if rest.is_empty() {
@@ -376,7 +408,7 @@ pub mod monitor_user_input {
                 let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
                     .await;
             }
-            // TODO: remove this when all the cases above are handled
+            // CLEANUP: remove this when all the cases above are handled
             _ => {
                 let msg = format!("TODO! implement: {:?}", client_message);
                 let _ = writeln!(shared_writer, "{}", msg);
@@ -504,7 +536,16 @@ pub mod monitor_tcp_conn_task {
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
-            // TODO: override behavior for any other server messages
+            ServerMessage::Get(ref data) => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received get message from server".green().bold(),
+                    format!("{:?}", data).magenta().bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+            }
+            // CLEANUP: remove when all other cases are handled
             _ => {
                 // Display the message to the console.
                 let msg = format!(
