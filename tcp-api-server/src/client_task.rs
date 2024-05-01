@@ -273,6 +273,27 @@ pub mod monitor_user_input {
 
         // BOOKM: 1) send_client_message
         match client_message {
+            ClientMessage::Size => {
+                // Start spinner.
+                let spinner = spinner_support::create(
+                    format!("Sending {} message", client_message),
+                    shared_writer,
+                )
+                .await;
+
+                // Ignore the result of the write operation, since the client is exiting.
+                if let Ok(payload_buffer) =
+                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Size)
+                {
+                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
+                        control_flow = ControlFlow::Break(());
+                    }
+                }
+
+                // Stop spinner.
+                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await;
+            }
             ClientMessage::Clear => {
                 // Start spinner.
                 let spinner = spinner_support::create(
@@ -507,6 +528,15 @@ pub mod monitor_tcp_conn_task {
 
         // BOOKM: 3) handle_server_message
         match server_message {
+            ServerMessage::Size(ref data) => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received size message from server".green().bold(),
+                    format!("{:?}", data).magenta().bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+            }
             ServerMessage::Clear(success_flag) => {
                 let msg = format!(
                     "[{}]: {}: {}",

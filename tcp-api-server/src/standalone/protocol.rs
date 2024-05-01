@@ -106,7 +106,6 @@ pub enum ClientMessage<K: Default, V: Default> {
     #[strum(ascii_case_insensitive)]
     GetAll,
 
-    // CLEANUP: impl the messages below
     #[strum(ascii_case_insensitive)]
     Insert(K, V),
 
@@ -119,14 +118,9 @@ pub enum ClientMessage<K: Default, V: Default> {
     #[strum(ascii_case_insensitive)]
     Clear,
 
+    // CLEANUP: impl the messages below
     #[strum(ascii_case_insensitive)]
     Size,
-
-    #[strum(ascii_case_insensitive)]
-    ContainsKey(K),
-
-    #[strum(ascii_case_insensitive)]
-    IsEmpty,
 
     #[strum(ascii_case_insensitive)]
     BroadcastToOthers(V), /* Client A initiates this. It gets BroadcastToOthersAck(..). Other clients get HandleBroadcast(..) */
@@ -158,14 +152,12 @@ pub enum ServerMessage<K, V> {
     SetClientId(String),
     Exit,
     GetAll(Vec<(K, V)>),
-    // CLEANUP: impl the messages below
     Insert(bool),
     Remove(bool),
     Get(Option<V>),
     Clear(bool),
+    // CLEANUP: impl the messages below
     Size(usize),
-    ContainsKey(bool),
-    IsEmpty(bool),
     HandleBroadcast(V), /* Client A initiates BroadcastToOthers(..). Client B, C get this. */
     BroadcastToOthersAck(Vec<(String, bool)>), /* Client A initiates BroadcastToOthers(..). Client A gets this. */
 }

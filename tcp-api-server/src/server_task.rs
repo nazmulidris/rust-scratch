@@ -118,6 +118,10 @@ pub mod handle_client_task {
 
         // BOOKM: 2) handle_client_message
         match client_message {
+            ClientMessage::Size => {
+                let payload_buffer = try_get_size_of_bucket(&bucket)?;
+                byte_io::write(buf_writer, payload_buffer).await?;
+            }
             ClientMessage::Clear => {
                 let payload_buffer = try_clear_bucket(&bucket)?;
                 byte_io::write(buf_writer, payload_buffer).await?;
@@ -143,9 +147,6 @@ pub mod handle_client_task {
                 return Err(miette!("Client requested exit"));
             }
             // CLEANUP: implement the following cases
-            ClientMessage::Size => todo!(),
-            ClientMessage::ContainsKey(_) => todo!(),
-            ClientMessage::IsEmpty => todo!(),
             ClientMessage::BroadcastToOthers(_) => todo!(),
         }
 
@@ -229,6 +230,16 @@ pub mod handle_client_task {
             }
         };
         let server_message = ServerMessage::<MessageKey, MessageValue>::Clear(it);
+        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
+        Ok(payload_buffer)
+    }
+
+    #[instrument(skip(bucket), fields(client_id))]
+    pub(super) fn try_get_size_of_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+    ) -> miette::Result<Buffer> {
+        let it = bucket.len();
+        let server_message = ServerMessage::<MessageKey, MessageValue>::Size(it);
         let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
         Ok(payload_buffer)
     }
@@ -594,6 +605,52 @@ pub mod test_handle_client_message {
         // be accumulated in the buf_writer.
         handle_client_message(
             ClientMessage::Clear,
+            "test_client_id",
+            &store,
+            &mut buf_writer,
+        )
+        .await?;
+
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+
+        // Assert the actual bytes w/ the expected bytes.
+        let mut result_vec: Buffer = vec![];
+        let length_prefix = expected_payload_bytes.len() as u64;
+        let length_prefix_bytes = length_prefix.to_be_bytes();
+        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+        result_vec.extend(expected_payload_bytes);
+
+        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_try_get_size_of_bucket() -> miette::Result<()> {
+        let dir = tempdir().expect("Failed to create temp dir");
+        let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
+        let bucket = load_or_create_bucket_from_store::<crate::MessageKey, crate::MessageValue>(
+            &store, None,
+        )?;
+        insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
+
+        // Get the bytes that are expected to be sent to the client (not including the
+        // length prefix).
+        let expected_payload_bytes = {
+            let server_message = ServerMessage::<String, Data>::Size(1);
+            bincode::serialize(&server_message).into_diagnostic()?
+        };
+
+        // Create a mock writer (for the write half of the TcpStream).
+        let writer = MockTcpStreamWrite {
+            expected_write: Vec::new(),
+        };
+        let mut buf_writer = BufWriter::new(writer);
+
+        // Prepare the actual payload, with length-prefix from [byte_io::write]. This will
+        // be accumulated in the buf_writer.
+        handle_client_message(
+            ClientMessage::Size,
             "test_client_id",
             &store,
             &mut buf_writer,
