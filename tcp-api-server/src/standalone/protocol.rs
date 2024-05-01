@@ -162,7 +162,7 @@ pub enum ServerMessage<K, V> {
     Insert(bool),
     Remove(bool),
     Get(Option<V>),
-    Clear,
+    Clear(bool),
     Size(usize),
     ContainsKey(bool),
     IsEmpty(bool),

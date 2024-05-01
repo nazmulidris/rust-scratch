@@ -106,7 +106,6 @@ pub mod handle_client_task {
 
     use super::*;
 
-    // BOOKM: 2) handle_client_message
     #[instrument(skip_all, fields(client_id))]
     pub async fn handle_client_message<Writer: AsyncWrite + Unpin>(
         client_message: ClientMessage<MessageKey, MessageValue>,
@@ -117,29 +116,33 @@ pub mod handle_client_task {
         info!(?client_message, "Received message from client");
         let bucket = load_or_create_bucket_from_store::<MessageKey, MessageValue>(store, None)?;
 
+        // BOOKM: 2) handle_client_message
         match client_message {
-            ClientMessage::Exit => {
-                info!("Exiting due to client request");
-                return Err(miette!("Client requested exit"));
-            }
-            ClientMessage::GetAll => {
-                let payload_buffer = try_get_all_items_from_bucket(&bucket)?;
-                byte_io::write(buf_writer, payload_buffer).await?;
-            }
-            ClientMessage::Insert(key, value) => {
-                let payload_buffer = try_insert_into_bucket(&bucket, key, value)?;
-                byte_io::write(buf_writer, payload_buffer).await?;
-            }
-            ClientMessage::Remove(key) => {
-                let payload_buffer = try_remove_from_bucket(&bucket, key)?;
+            ClientMessage::Clear => {
+                let payload_buffer = try_clear_bucket(&bucket)?;
                 byte_io::write(buf_writer, payload_buffer).await?;
             }
             ClientMessage::Get(key) => {
                 let payload_buffer = try_get_from_bucket(&bucket, key)?;
                 byte_io::write(buf_writer, payload_buffer).await?;
             }
+            ClientMessage::Remove(key) => {
+                let payload_buffer = try_remove_from_bucket(&bucket, key)?;
+                byte_io::write(buf_writer, payload_buffer).await?;
+            }
+            ClientMessage::Insert(key, value) => {
+                let payload_buffer = try_insert_into_bucket(&bucket, key, value)?;
+                byte_io::write(buf_writer, payload_buffer).await?;
+            }
+            ClientMessage::GetAll => {
+                let payload_buffer = try_get_all_items_from_bucket(&bucket)?;
+                byte_io::write(buf_writer, payload_buffer).await?;
+            }
+            ClientMessage::Exit => {
+                info!("Exiting due to client request");
+                return Err(miette!("Client requested exit"));
+            }
             // CLEANUP: implement the following cases
-            ClientMessage::Clear => todo!(),
             ClientMessage::Size => todo!(),
             ClientMessage::ContainsKey(_) => todo!(),
             ClientMessage::IsEmpty => todo!(),
@@ -210,6 +213,22 @@ pub mod handle_client_task {
             }
         };
         let server_message = ServerMessage::<MessageKey, MessageValue>::Get(it);
+        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
+        Ok(payload_buffer)
+    }
+
+    #[instrument(skip(bucket), fields(client_id))]
+    pub(super) fn try_clear_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+    ) -> miette::Result<Buffer> {
+        let it = match bucket.clear() {
+            Ok(_) => true,
+            Err(error) => {
+                error!(%error, "Problem clearing bucket");
+                false
+            }
+        };
+        let server_message = ServerMessage::<MessageKey, MessageValue>::Clear(it);
         let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
         Ok(payload_buffer)
     }
@@ -352,14 +371,11 @@ pub mod test_fixtures {
 #[cfg(test)]
 pub mod test_handle_client_message {
     use crate::{
-        handle_client_task::{
-            handle_client_message, try_get_all_items_from_bucket, try_insert_into_bucket,
-            try_remove_from_bucket,
-        },
-        insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store,
-        test_fixtures::MockTcpStreamWrite,
-        Buffer, ClientMessage, Data,
+        handle_client_task::handle_client_message, insert_into_bucket,
+        load_or_create_bucket_from_store, load_or_create_store, test_fixtures::MockTcpStreamWrite,
+        Buffer, ClientMessage, Data, ServerMessage,
     };
+    use miette::IntoDiagnostic;
     use tempfile::tempdir;
     use tokio::io::BufWriter;
 
@@ -371,11 +387,17 @@ pub mod test_handle_client_message {
         let bucket = load_or_create_bucket_from_store::<crate::MessageKey, crate::MessageValue>(
             &store, None,
         )?;
-        insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
+        let key = "foo";
+        let data = &Data::default();
+        insert_into_bucket(&bucket, key.to_string(), data.clone())?;
 
         // Get the bytes that are expected to be sent to the client (not including the
         // length prefix).
-        let payload_bytes = try_get_all_items_from_bucket(&bucket)?;
+        let expected_payload_bytes = {
+            let item_vec = vec![(key.to_string(), data.clone())];
+            let server_message = ServerMessage::GetAll(item_vec);
+            bincode::serialize(&server_message).into_diagnostic()?
+        };
 
         // Create a mock writer (for the write half of the TcpStream).
         let writer = MockTcpStreamWrite {
@@ -397,28 +419,27 @@ pub mod test_handle_client_message {
 
         // Assert the actual bytes w/ the expected bytes.
         let mut result_vec: Buffer = vec![];
-        let length_prefix = payload_bytes.len() as u64;
+        let length_prefix = expected_payload_bytes.len() as u64;
         let length_prefix_bytes = length_prefix.to_be_bytes();
         result_vec.extend_from_slice(length_prefix_bytes.as_ref());
-        result_vec.extend(payload_bytes);
+        result_vec.extend(expected_payload_bytes);
 
         assert_eq!(buf_writer.get_ref().expected_write, result_vec);
 
         Ok(())
     }
 
-    // BOOKM: 4) add tests for each handle_client_message variant
     #[tokio::test]
     async fn test_try_insert_into_bucket() -> miette::Result<()> {
         let dir = tempdir().expect("Failed to create temp dir");
         let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
-        let bucket = load_or_create_bucket_from_store::<crate::MessageKey, crate::MessageValue>(
-            &store, None,
-        )?;
 
         // Get the bytes that are expected to be sent to the client (not including the
         // length prefix).
-        let payload_bytes = try_insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
+        let expected_payload_bytes = {
+            let server_message = ServerMessage::<String, Data>::Insert(true);
+            bincode::serialize(&server_message).into_diagnostic()?
+        };
 
         // Create a mock writer (for the write half of the TcpStream).
         let writer = MockTcpStreamWrite {
@@ -440,10 +461,10 @@ pub mod test_handle_client_message {
 
         // Assert the actual bytes w/ the expected bytes.
         let mut result_vec: Buffer = vec![];
-        let length_prefix = payload_bytes.len() as u64;
+        let length_prefix = expected_payload_bytes.len() as u64;
         let length_prefix_bytes = length_prefix.to_be_bytes();
         result_vec.extend_from_slice(length_prefix_bytes.as_ref());
-        result_vec.extend(payload_bytes);
+        result_vec.extend(expected_payload_bytes);
 
         assert_eq!(buf_writer.get_ref().expected_write, result_vec);
 
@@ -461,7 +482,10 @@ pub mod test_handle_client_message {
 
         // Get the bytes that are expected to be sent to the client (not including the
         // length prefix).
-        let payload_bytes = try_remove_from_bucket(&bucket, "foo".to_string())?;
+        let expected_payload_bytes = {
+            let server_message = ServerMessage::<String, Data>::Remove(true);
+            bincode::serialize(&server_message).into_diagnostic()?
+        };
 
         // Create a mock writer (for the write half of the TcpStream).
         let writer = MockTcpStreamWrite {
@@ -483,10 +507,10 @@ pub mod test_handle_client_message {
 
         // Assert the actual bytes w/ the expected bytes.
         let mut result_vec: Buffer = vec![];
-        let length_prefix = payload_bytes.len() as u64;
+        let length_prefix = expected_payload_bytes.len() as u64;
         let length_prefix_bytes = length_prefix.to_be_bytes();
         result_vec.extend_from_slice(length_prefix_bytes.as_ref());
-        result_vec.extend(payload_bytes);
+        result_vec.extend(expected_payload_bytes);
 
         assert_eq!(buf_writer.get_ref().expected_write, result_vec);
 
@@ -500,12 +524,19 @@ pub mod test_handle_client_message {
         let bucket = load_or_create_bucket_from_store::<crate::MessageKey, crate::MessageValue>(
             &store, None,
         )?;
-        insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
+
+        // Insert some data into the bucket.
+        let key = "foo";
+        let data = &Data::default();
+        insert_into_bucket(&bucket, key.to_string(), data.clone())?;
 
         // Get the bytes that are expected to be sent to the client (not including the
         // length prefix).
-        let payload_bytes =
-            crate::handle_client_task::try_get_from_bucket(&bucket, "foo".to_string())?;
+        let expected_payload_bytes = {
+            let it = Some(data.clone());
+            let server_message = ServerMessage::<String, Data>::Get(it);
+            bincode::serialize(&server_message).into_diagnostic()?
+        };
 
         // Create a mock writer (for the write half of the TcpStream).
         let writer = MockTcpStreamWrite {
@@ -527,13 +558,61 @@ pub mod test_handle_client_message {
 
         // Assert the actual bytes w/ the expected bytes.
         let mut result_vec: Buffer = vec![];
-        let length_prefix = payload_bytes.len() as u64;
+        let length_prefix = expected_payload_bytes.len() as u64;
         let length_prefix_bytes = length_prefix.to_be_bytes();
         result_vec.extend_from_slice(length_prefix_bytes.as_ref());
-        result_vec.extend(payload_bytes);
+        result_vec.extend(expected_payload_bytes);
 
         assert_eq!(buf_writer.get_ref().expected_write, result_vec);
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_try_clear_bucket() -> miette::Result<()> {
+        let dir = tempdir().expect("Failed to create temp dir");
+        let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
+        let bucket = load_or_create_bucket_from_store::<crate::MessageKey, crate::MessageValue>(
+            &store, None,
+        )?;
+        insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
+
+        // Get the bytes that are expected to be sent to the client (not including the
+        // length prefix).
+        let expected_payload_bytes = {
+            let server_message = ServerMessage::<String, Data>::Clear(true);
+            bincode::serialize(&server_message).into_diagnostic()?
+        };
+
+        // Create a mock writer (for the write half of the TcpStream).
+        let writer = MockTcpStreamWrite {
+            expected_write: Vec::new(),
+        };
+        let mut buf_writer = BufWriter::new(writer);
+
+        // Prepare the actual payload, with length-prefix from [byte_io::write]. This will
+        // be accumulated in the buf_writer.
+        handle_client_message(
+            ClientMessage::Clear,
+            "test_client_id",
+            &store,
+            &mut buf_writer,
+        )
+        .await?;
+
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+
+        // Assert the actual bytes w/ the expected bytes.
+        let mut result_vec: Buffer = vec![];
+        let length_prefix = expected_payload_bytes.len() as u64;
+        let length_prefix_bytes = length_prefix.to_be_bytes();
+        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+        result_vec.extend(expected_payload_bytes);
+
+        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+
+        Ok(())
+    }
+
+    // BOOKM: 4) add tests for handle_client_message
 }

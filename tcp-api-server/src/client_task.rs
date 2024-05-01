@@ -257,7 +257,6 @@ pub mod monitor_user_input {
         Ok(())
     }
 
-    // BOOKM: 1) send_client_message
     /// Please refer to the [ClientMessage] enum in the [protocol] module for the list of
     /// commands.
     #[instrument(skip_all, fields(client_message))]
@@ -272,7 +271,29 @@ pub mod monitor_user_input {
         // Default control flow. Set to break if there is an error.
         let mut control_flow = ControlFlow::Continue(());
 
+        // BOOKM: 1) send_client_message
         match client_message {
+            ClientMessage::Clear => {
+                // Start spinner.
+                let spinner = spinner_support::create(
+                    format!("Sending {} message", client_message),
+                    shared_writer,
+                )
+                .await;
+
+                // Ignore the result of the write operation, since the client is exiting.
+                if let Ok(payload_buffer) =
+                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Clear)
+                {
+                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
+                        control_flow = ControlFlow::Break(());
+                    }
+                }
+
+                // Stop spinner.
+                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await;
+            }
             ClientMessage::Get(_) => {
                 // No key provided.
                 if rest.is_empty() {
@@ -475,7 +496,6 @@ pub mod monitor_tcp_conn_task {
         Ok(())
     }
 
-    // BOOKM: 3) handle_server_message
     #[instrument(skip_all, fields(server_message, client_id))]
     async fn handle_server_message(
         server_message: ServerMessage<MessageKey, MessageValue>,
@@ -485,50 +505,13 @@ pub mod monitor_tcp_conn_task {
     ) -> miette::Result<()> {
         info!(?server_message, "Start");
 
+        // BOOKM: 3) handle_server_message
         match server_message {
-            ServerMessage::SetClientId(ref id) => {
-                *client_id.lock().unwrap() = id.to_string();
-                tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, id);
-            }
-            ServerMessage::Exit => {
+            ServerMessage::Clear(success_flag) => {
                 let msg = format!(
                     "[{}]: {}: {}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received exit message from server".green().bold(),
-                    "Shutting down client".red().bold(),
-                );
-                let _ = writeln!(shared_writer, "{}", msg);
-
-                // Cancel the shutdown token to end the client.
-                tokio::time::sleep(DELAY_UNIT).await; // Delay to allow the message above to be printed.
-                shutdown_token.cancel();
-            }
-            ServerMessage::GetAll(ref data) => {
-                let msg = format!(
-                    "[{}]: {}: {}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received getall message from server".green().bold(),
-                    format!("{:?}", data).magenta().bold(),
-                );
-                let _ = writeln!(shared_writer, "{}", msg);
-            }
-            ServerMessage::Insert(success_flag) => {
-                let msg = format!(
-                    "[{}]: {}: {}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received insert message from server".green().bold(),
-                    match success_flag {
-                        true => "✅ Success".green().bold(),
-                        false => "❌ Failure".red().bold(),
-                    }
-                );
-                let _ = writeln!(shared_writer, "{}", msg);
-            }
-            ServerMessage::Remove(success_flag) => {
-                let msg = format!(
-                    "[{}]: {}: {}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received remove message from server".green().bold(),
+                    "Received clear message from server".green().bold(),
                     match success_flag {
                         true => "✅ Success".green().bold(),
                         false => "❌ Failure".red().bold(),
@@ -544,6 +527,56 @@ pub mod monitor_tcp_conn_task {
                     format!("{:?}", data).magenta().bold(),
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
+            }
+            ServerMessage::Remove(success_flag) => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received remove message from server".green().bold(),
+                    match success_flag {
+                        true => "✅ Success".green().bold(),
+                        false => "❌ Failure".red().bold(),
+                    }
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+            }
+            ServerMessage::Insert(success_flag) => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received insert message from server".green().bold(),
+                    match success_flag {
+                        true => "✅ Success".green().bold(),
+                        false => "❌ Failure".red().bold(),
+                    }
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+            }
+            ServerMessage::GetAll(ref data) => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received getall message from server".green().bold(),
+                    format!("{:?}", data).magenta().bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+            }
+            ServerMessage::Exit => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received exit message from server".green().bold(),
+                    "Shutting down client".red().bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+
+                // Cancel the shutdown token to end the client.
+                tokio::time::sleep(DELAY_UNIT).await; // Delay to allow the message above to be printed.
+                shutdown_token.cancel();
+            }
+            ServerMessage::SetClientId(ref id) => {
+                *client_id.lock().unwrap() = id.to_string();
+                tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, id);
             }
             // CLEANUP: remove when all other cases are handled
             _ => {
