@@ -24,44 +24,69 @@ use r3bl_tui::{
 use tcp_api_server::clap_args;
 use tracing::instrument;
 
-/// Gradients: <https://uigradients.com>
-fn colorize_header() -> String {
+mod header_banner {
+    use super::*;
+
     const TCP_API_SERVER: &str = r#"
 ░░░░░ ░░░░ ░░░░░   ░░░░░ ░░░░░ ░    ░░░░░ ░░░░ ░░░░░  ░░   ░ ░░░░ ░░░░░
-  ░   ░    ░   ░   ░   ░ ░   ░ ░    ░     ░    ░   ░  ░░   ░ ░    ░   ░
+  ░   ░  ░ ░   ░   ░   ░ ░   ░ ░    ░     ░    ░   ░  ░░   ░ ░    ░   ░
   ░░  ░░   ░░░░░   ░░░░░ ░░░░░ ░░   ░░░░░ ░░░░ ░░░░░░ ░░  ░░ ░░░░ ░░░░░░
   ░░  ░░   ░░      ░░  ░ ░░    ░░      ░░ ░░   ░░   ░  ░  ░  ░░   ░░   ░
   ░░  ░░░░ ░░      ░░  ░ ░░    ░░   ░░░░░ ░░░░ ░░   ░  ░░░░  ░░░░ ░░   ░
 "#;
 
-    let color_wheel_config = ColorWheelConfig::Rgb(
-        // Stops.
-        vec!["#4e54c8", "#9d459a"]
-            .into_iter()
-            .map(String::from)
-            .collect(),
-        // Speed.
-        ColorWheelSpeed::Medium,
-        // Steps.
-        50,
-    );
+    const TCP_API_CLIENT: &str = r#"
+░░░░░ ░░░░ ░░░░░   ░░░░░ ░░░░░ ░    ░░░░ ░     ░  ░░░░ ░░░░░ ░░░░░
+  ░   ░  ░ ░   ░   ░   ░ ░   ░ ░    ░  ░ ░     ░  ░    ░   ░   ░
+  ░░  ░░   ░░░░░   ░░░░░ ░░░░░ ░░   ░░   ░░    ░░ ░░░░ ░░  ░   ░░
+  ░░  ░░   ░░      ░░  ░ ░░    ░░   ░░   ░░    ░░ ░░   ░░  ░   ░░
+  ░░  ░░░░ ░░      ░░  ░ ░░    ░░   ░░░░ ░░░░░ ░░ ░░░░ ░░  ░   ░░
+"#;
 
-    ColorWheel::new(vec![color_wheel_config]).colorize_into_string(
-        &UnicodeString::from(TCP_API_SERVER),
-        GradientGenerationPolicy::ReuseExistingGradientAndResetIndex,
-        TextColorizationPolicy::ColorEachCharacter(None),
-    )
+    pub enum Header {
+        Server,
+        Client,
+    }
+
+    /// Gradients: <https://uigradients.com>
+    pub fn get_colorful(header: Header) -> String {
+        let it = match header {
+            Header::Server => TCP_API_SERVER,
+            Header::Client => TCP_API_CLIENT,
+        };
+
+        let color_wheel_config = ColorWheelConfig::Rgb(
+            // Stops.
+            vec!["#4e54c8", "#9d459a"]
+                .into_iter()
+                .map(String::from)
+                .collect(),
+            // Speed.
+            ColorWheelSpeed::Medium,
+            // Steps.
+            50,
+        );
+
+        ColorWheel::new(vec![color_wheel_config]).colorize_into_string(
+            &UnicodeString::from(it),
+            GradientGenerationPolicy::ReuseExistingGradientAndResetIndex,
+            TextColorizationPolicy::ColorEachCharacter(None),
+        )
+    }
 }
 
 #[tokio::main]
 #[instrument]
 async fn main() -> miette::Result<()> {
     let cli_args = clap_args::CLIArg::parse();
-    println!("{}", colorize_header());
 
     match cli_args.subcommand {
         // Start server (non interactive, no need for TerminalAsync. Normal stdout.
         tcp_api_server::CLISubcommand::Server => {
+            println!(
+                "{}",
+                header_banner::get_colorful(header_banner::Header::Server)
+            );
             tracing_setup::init(TracingConfig {
                 writers: cli_args.enable_tracing.clone(),
                 level: cli_args.tracing_log_level,
@@ -75,8 +100,11 @@ async fn main() -> miette::Result<()> {
         }
         // Start client (interactive and needs TerminalAsync). Async writer for stdout.
         tcp_api_server::CLISubcommand::Client => {
+            println!(
+                "{}",
+                header_banner::get_colorful(header_banner::Header::Client)
+            );
             let maybe_terminal_async = TerminalAsync::try_new("> ").await?;
-
             tracing_setup::init(TracingConfig {
                 writers: cli_args.enable_tracing.clone(),
                 level: cli_args.tracing_log_level,
