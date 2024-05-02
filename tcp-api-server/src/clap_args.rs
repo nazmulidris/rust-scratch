@@ -87,7 +87,7 @@ pub struct CLIArg {
         long = "tracing-log-level",
         name = color_print::cstr!("Set tracing <bright-yellow,bold>log level</>"),
         global = true,
-        default_value = "debug",
+        default_value = "info",
     )]
     pub tracing_log_level: tracing::Level,
 

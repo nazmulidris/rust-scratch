@@ -55,7 +55,7 @@ use kv::*;
 use miette::{Context, IntoDiagnostic};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
-use tracing::{info, instrument};
+use tracing::{debug, instrument};
 
 /// Convenience type alias for the [kv::Bucket] type.
 /// 1. A [Bucket] is created from a [Store].
@@ -113,7 +113,7 @@ pub fn load_or_create_store(maybe_db_folder_path: Option<&String>) -> miette::Re
             db_folder_path: db_folder_path.clone(),
         })?;
 
-    info!(
+    debug!(
         "📑 {}",
         format!(
             "{}{}",
@@ -147,7 +147,7 @@ pub fn load_or_create_bucket_from_store<
             bucket_name: bucket_name.clone(),
         })?;
 
-    info!(
+    debug!(
         "📦 {}",
         format!(
             "{}{}",
@@ -178,7 +178,7 @@ pub fn insert_into_bucket<
         .into_diagnostic()
         .wrap_err(KvErrorCouldNot::SaveKeyValuePairToBucket)?;
 
-    info!(
+    debug!(
         "🔽 {}",
         format!(
             "{}: {}: {}",
@@ -213,7 +213,7 @@ pub fn get_from_bucket<
         _ => Ok(None),
     };
 
-    info!(
+    debug!(
         "🔼 {}",
         format!(
             "{}: {}: {}",
@@ -246,7 +246,7 @@ pub fn remove_from_bucket<
         _ => Ok(None),
     };
 
-    info!(
+    debug!(
         "❌ {}",
         format!(
             "{}: {}: {}",
@@ -273,7 +273,7 @@ pub fn is_key_contained_in_bucket<
         .into_diagnostic()
         .wrap_err(KvErrorCouldNot::LoadKeyValuePairFromBucket)?;
 
-    info!(
+    debug!(
         "🔼 {}",
         format!(
             "{}: {}: {}",

@@ -16,7 +16,7 @@
  */
 
 use crate::{
-    byte_io, insert_into_bucket, iterate_bucket, load_or_create_bucket_from_store,
+    byte_io, get_from_bucket, insert_into_bucket, iterate_bucket, load_or_create_bucket_from_store,
     load_or_create_store,
     protocol::{self, ServerMessage},
     remove_from_bucket, Buffer, CLIArg, ClientMessage, KVBucket, MessageKey, MessageValue,
@@ -34,6 +34,10 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, instrument};
 
+/// 0. who: the client_id of the author.
+/// 1. what: the actual message.
+pub type InterClientMessage = (String, MessageValue);
+
 #[instrument(skip_all)]
 pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
     let address = cli_args.address;
@@ -47,7 +51,7 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
 
     // Create broadcast channel for sending messages to all clients.
     let (sender_inter_client_broadcast_channel, _) =
-        broadcast::channel::<MessageValue>(CHANNEL_SIZE);
+        broadcast::channel::<InterClientMessage>(CHANNEL_SIZE);
 
     // Shutdown cancellation token, to cooperatively & gracefully end all awaiting running
     // tasks. Calling `abort()` isn't reliable. Neither is dropping the task. More info:
@@ -102,22 +106,28 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
 /// The `client_id` field is added to the span, so that it can be used in the logs by all
 /// the functions in this module. See also: [crate::CLIENT_ID_TRACING_FIELD].
 pub mod handle_client_task {
-    use crate::get_from_bucket;
-
     use super::*;
 
     #[instrument(skip_all, fields(client_id))]
     pub async fn handle_client_message<Writer: AsyncWrite + Unpin>(
         client_message: ClientMessage<MessageKey, MessageValue>,
-        _client_id: &str,
+        client_id: &str,
         store: &Store,
         buf_writer: &mut BufWriter<Writer>,
+        sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
     ) -> miette::Result<()> {
         info!(?client_message, "Received message from client");
         let bucket = load_or_create_bucket_from_store::<MessageKey, MessageValue>(store, None)?;
 
-        // BOOKM: 2) handle_client_message
         match client_message {
+            ClientMessage::BroadcastToOthers(payload) => {
+                let payload_buffer = try_broadcast_to_others(
+                    client_id,
+                    sender_inter_client_broadcast_channel,
+                    payload,
+                )?;
+                byte_io::write(buf_writer, payload_buffer).await?;
+            }
             ClientMessage::Size => {
                 let payload_buffer = try_get_size_of_bucket(&bucket)?;
                 byte_io::write(buf_writer, payload_buffer).await?;
@@ -146,8 +156,6 @@ pub mod handle_client_task {
                 info!("Exiting due to client request");
                 return Err(miette!("Client requested exit"));
             }
-            // CLEANUP: implement the following cases
-            ClientMessage::BroadcastToOthers(_) => todo!(),
         }
 
         Ok(())
@@ -244,13 +252,49 @@ pub mod handle_client_task {
         Ok(payload_buffer)
     }
 
-    // TODO: do something meaningful w/ this payload and probably generate a response
+    #[instrument(skip(sender_inter_client_broadcast_channel), fields(client_id))]
+    pub(super) fn try_broadcast_to_others<'a>(
+        client_id: &str,
+        sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
+        payload: MessageValue,
+    ) -> miette::Result<Buffer> {
+        // Send the payload to the broadcast channel.
+        sender_inter_client_broadcast_channel
+            .send((client_id.to_string(), payload))
+            .into_diagnostic()?;
+
+        // Prepare the response payload.
+        let receiver_count = {
+            let count = sender_inter_client_broadcast_channel.receiver_count();
+            match count {
+                0 => 0,
+                // Subtract the current client from the count.
+                _ => count - 1,
+            }
+        };
+        let server_message =
+            ServerMessage::<MessageKey, MessageValue>::BroadcastToOthersAck(receiver_count);
+        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
+
+        Ok(payload_buffer)
+    }
+
+    /// Filter out the client_id that sent the message.
     #[instrument(skip_all, fields(client_id))]
-    pub async fn handle_broadcast_channel_between_clients_payload(payload: MessageValue) {
-        info!(
-            "Received payload from broadcast channel (for payloads between clients): {:?}",
-            payload
-        );
+    pub async fn handle_broadcast_channel_between_clients(
+        client_id: &str,
+        payload: InterClientMessage,
+    ) -> miette::Result<Option<Buffer>> {
+        // Filter out the client_id that sent the message.
+        let (sender_client_id, payload) = payload;
+        if sender_client_id == client_id {
+            return Ok(None);
+        }
+
+        // Send the payload to all other clients.
+        let server_message = ServerMessage::<MessageKey, MessageValue>::HandleBroadcast(payload);
+        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
+        Ok(Some(payload_buffer))
     }
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
@@ -258,7 +302,7 @@ pub mod handle_client_task {
     pub async fn event_loop(
         client_id: &str,
         client_tcp_stream: TcpStream,
-        sender_inter_client_broadcast_channel: Sender<MessageValue>,
+        sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
         shutdown_token: CancellationToken,
     ) -> miette::Result<()> {
         tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, client_id);
@@ -292,7 +336,13 @@ pub mod handle_client_task {
                     let payload_buffer = result?;
                     let client_message: protocol::ClientMessage<MessageKey, MessageValue> =
                         bincode::deserialize(&payload_buffer).into_diagnostic()?;
-                    if handle_client_message(client_message, client_id, &store, &mut buf_writer).await.is_err() {
+                    if handle_client_message(
+                        client_message,
+                        client_id,
+                        &store,
+                        &mut buf_writer,
+                        sender_inter_client_broadcast_channel.clone()
+                    ).await.is_err() {
                         break;
                     }
                 }
@@ -301,7 +351,13 @@ pub mod handle_client_task {
                 result = receiver_inter_client_broadcast_channel.recv() => {
                     match result {
                         Ok(payload) => {
-                            handle_broadcast_channel_between_clients_payload(payload).await;
+                            let payload_buffer = handle_broadcast_channel_between_clients(
+                                client_id,
+                                payload
+                            ).await?;
+                            if let Some(payload_buffer) = payload_buffer {
+                                byte_io::write(&mut buf_writer, payload_buffer).await?;
+                            }
                         }
                         Err(error) => {
                             error!("Problem reading from broadcast channel: {:?}", error);
@@ -382,13 +438,14 @@ pub mod test_fixtures {
 #[cfg(test)]
 pub mod test_handle_client_message {
     use crate::{
-        handle_client_task::handle_client_message, insert_into_bucket,
-        load_or_create_bucket_from_store, load_or_create_store, test_fixtures::MockTcpStreamWrite,
-        Buffer, ClientMessage, Data, ServerMessage,
+        handle_client_task::{self, handle_client_message},
+        insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store,
+        test_fixtures::MockTcpStreamWrite,
+        Buffer, ClientMessage, Data, InterClientMessage, ServerMessage, CHANNEL_SIZE,
     };
     use miette::IntoDiagnostic;
     use tempfile::tempdir;
-    use tokio::io::BufWriter;
+    use tokio::{io::BufWriter, sync::broadcast};
 
     /// More info: <https://tokio.rs/tokio/topics/testing>
     #[tokio::test]
@@ -423,6 +480,7 @@ pub mod test_handle_client_message {
             "test_client_id",
             &store,
             &mut buf_writer,
+            broadcast::channel::<InterClientMessage>(CHANNEL_SIZE).0,
         )
         .await?;
 
@@ -465,6 +523,7 @@ pub mod test_handle_client_message {
             "test_client_id",
             &store,
             &mut buf_writer,
+            broadcast::channel::<InterClientMessage>(CHANNEL_SIZE).0,
         )
         .await?;
 
@@ -511,6 +570,7 @@ pub mod test_handle_client_message {
             "test_client_id",
             &store,
             &mut buf_writer,
+            broadcast::channel::<InterClientMessage>(CHANNEL_SIZE).0,
         )
         .await?;
 
@@ -562,6 +622,7 @@ pub mod test_handle_client_message {
             "test_client_id",
             &store,
             &mut buf_writer,
+            broadcast::channel::<InterClientMessage>(CHANNEL_SIZE).0,
         )
         .await?;
 
@@ -608,6 +669,7 @@ pub mod test_handle_client_message {
             "test_client_id",
             &store,
             &mut buf_writer,
+            broadcast::channel::<InterClientMessage>(CHANNEL_SIZE).0,
         )
         .await?;
 
@@ -654,6 +716,7 @@ pub mod test_handle_client_message {
             "test_client_id",
             &store,
             &mut buf_writer,
+            broadcast::channel::<InterClientMessage>(CHANNEL_SIZE).0,
         )
         .await?;
 
@@ -671,5 +734,95 @@ pub mod test_handle_client_message {
         Ok(())
     }
 
-    // BOOKM: 4) add tests for handle_client_message
+    #[tokio::test]
+    async fn test_try_broadcast_to_others() -> miette::Result<()> {
+        // Store.
+        let dir = tempdir().expect("Failed to create temp dir");
+        let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
+
+        // Channel.
+        let (sender, mut receiver_1) = broadcast::channel::<InterClientMessage>(CHANNEL_SIZE);
+        let mut receiver_2 = sender.subscribe();
+        let expected_count = 1; // There are 2 receivers, but the sender is not counted.
+
+        // Get the bytes that are expected to be sent to the client (not including the
+        // length prefix).
+        let expected_payload_bytes = {
+            let server_message =
+                ServerMessage::<String, Data>::BroadcastToOthersAck(expected_count);
+            bincode::serialize(&server_message).into_diagnostic()?
+        };
+
+        // Create a mock writer (for the write half of the TcpStream).
+        let writer = MockTcpStreamWrite {
+            expected_write: Vec::new(),
+        };
+        let mut buf_writer = BufWriter::new(writer);
+
+        let id = "test_client_id";
+        let data = Data::default();
+
+        // Prepare the actual payload, with length-prefix from [byte_io::write]. This will
+        // be accumulated in the buf_writer.
+        handle_client_message(
+            ClientMessage::BroadcastToOthers(data),
+            id,
+            &store,
+            &mut buf_writer,
+            sender.clone(),
+        )
+        .await?;
+
+        // Assert the message was sent to the channel.
+        {
+            let (sent_id, sent_data) = receiver_1.try_recv().into_diagnostic()?;
+            assert_eq!(sent_id, "test_client_id");
+            assert_eq!(sent_data, Data::default());
+
+            let (sent_id, sent_data) = receiver_2.try_recv().into_diagnostic()?;
+            assert_eq!(sent_id, "test_client_id");
+            assert_eq!(sent_data, Data::default());
+        }
+
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+
+        // Assert the actual bytes w/ the expected bytes.
+        let mut result_vec: Buffer = vec![];
+        let length_prefix = expected_payload_bytes.len() as u64;
+        let length_prefix_bytes = length_prefix.to_be_bytes();
+        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+        result_vec.extend(expected_payload_bytes);
+
+        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_handle_broadcast_channel_between_clients() -> miette::Result<()> {
+        let self_id = "self_id";
+        let other_id = "other_id";
+        let payload = &Data::default();
+
+        // Get the bytes that are expected to be sent to the client (not including the
+        // length prefix).
+        let expected_payload_bytes = {
+            let server_message = ServerMessage::<String, Data>::HandleBroadcast(payload.clone());
+            bincode::serialize(&server_message).into_diagnostic()?
+        };
+
+        // Prepare the actual payload.
+        let actual_payload_bytes = handle_client_task::handle_broadcast_channel_between_clients(
+            self_id,
+            (other_id.to_string(), payload.clone()),
+        )
+        .await?;
+
+        // println!("actual bytes  : {:?}", actual_payload_bytes);
+
+        // Assert the actual bytes w/ the expected bytes.
+        assert_eq!(actual_payload_bytes, Some(expected_payload_bytes));
+
+        Ok(())
+    }
 }

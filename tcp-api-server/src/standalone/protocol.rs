@@ -99,31 +99,24 @@ pub mod byte_io {
     strum_macros::Display,
 )]
 pub enum ClientMessage<K: Default, V: Default> {
-    #[strum(ascii_case_insensitive)]
-    Exit,
-
     #[default]
     #[strum(ascii_case_insensitive)]
     GetAll,
-
+    #[strum(ascii_case_insensitive)]
+    Exit,
     #[strum(ascii_case_insensitive)]
     Insert(K, V),
-
     #[strum(ascii_case_insensitive)]
     Remove(K),
-
     #[strum(ascii_case_insensitive)]
     Get(K),
-
     #[strum(ascii_case_insensitive)]
     Clear,
-
-    // CLEANUP: impl the messages below
     #[strum(ascii_case_insensitive)]
     Size,
-
+    /// Client A initiates this. It gets BroadcastToOthersAck(..). Other clients get HandleBroadcast(..).
     #[strum(ascii_case_insensitive)]
-    BroadcastToOthers(V), /* Client A initiates this. It gets BroadcastToOthersAck(..). Other clients get HandleBroadcast(..) */
+    BroadcastToOthers(V),
 }
 
 impl<K: Default, V: Default> ClientMessage<K, V> {
@@ -156,10 +149,13 @@ pub enum ServerMessage<K, V> {
     Remove(bool),
     Get(Option<V>),
     Clear(bool),
-    // CLEANUP: impl the messages below
     Size(usize),
-    HandleBroadcast(V), /* Client A initiates BroadcastToOthers(..). Client B, C get this. */
-    BroadcastToOthersAck(Vec<(String, bool)>), /* Client A initiates BroadcastToOthers(..). Client A gets this. */
+    /// Client A initiates BroadcastToOthers(..). Client A gets this.
+    /// The usize is the number of clients, total # clients that received the broadcast.
+    /// This does NOT include Client A.
+    BroadcastToOthersAck(usize),
+    /// Client A initiates BroadcastToOthers(..). Client B, C get this.
+    HandleBroadcast(V),
 }
 
 impl<K, V> Default for ServerMessage<K, V> {

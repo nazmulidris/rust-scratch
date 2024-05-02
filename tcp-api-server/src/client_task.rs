@@ -271,8 +271,35 @@ pub mod monitor_user_input {
         // Default control flow. Set to break if there is an error.
         let mut control_flow = ControlFlow::Continue(());
 
-        // BOOKM: 1) send_client_message
         match client_message {
+            ClientMessage::BroadcastToOthers(_) => {
+                // Start spinner.
+                let spinner = spinner_support::create(
+                    format!("Sending {} message", client_message),
+                    shared_writer,
+                )
+                .await;
+
+                let message_to_others = MessageValue {
+                    description: format!("from: '{}'", client_id.lock().unwrap().clone()),
+                    ..Default::default()
+                };
+
+                if let Ok(payload_buffer) = bincode::serialize(&ClientMessage::<
+                    MessageKey,
+                    MessageValue,
+                >::BroadcastToOthers(
+                    message_to_others
+                )) {
+                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
+                        control_flow = ControlFlow::Break(());
+                    }
+                }
+
+                // Stop spinner.
+                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await;
+            }
             ClientMessage::Size => {
                 // Start spinner.
                 let spinner = spinner_support::create(
@@ -450,11 +477,6 @@ pub mod monitor_user_input {
                 let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
                     .await;
             }
-            // CLEANUP: remove this when all the cases above are handled
-            _ => {
-                let msg = format!("TODO! implement: {:?}", client_message);
-                let _ = writeln!(shared_writer, "{}", msg);
-            }
         };
 
         control_flow
@@ -526,8 +548,27 @@ pub mod monitor_tcp_conn_task {
     ) -> miette::Result<()> {
         info!(?server_message, "Start");
 
-        // BOOKM: 3) handle_server_message
         match server_message {
+            ServerMessage::HandleBroadcast(ref data) => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received broadcast message from server".green().bold(),
+                    format!("{:?}", data).magenta().bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+            }
+            ServerMessage::BroadcastToOthersAck(num_clients) => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received broadcast message from server".green().bold(),
+                    format!("Broadcast to {} clients", num_clients)
+                        .magenta()
+                        .bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+            }
             ServerMessage::Size(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {}",
@@ -607,17 +648,6 @@ pub mod monitor_tcp_conn_task {
             ServerMessage::SetClientId(ref id) => {
                 *client_id.lock().unwrap() = id.to_string();
                 tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, id);
-            }
-            // CLEANUP: remove when all other cases are handled
-            _ => {
-                // Display the message to the console.
-                let msg = format!(
-                    "[{}]: {}: {}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received message from server".green().bold(),
-                    format!("{:?}", server_message).magenta().bold(),
-                );
-                let _ = writeln!(shared_writer, "{}", msg);
             }
         };
 
