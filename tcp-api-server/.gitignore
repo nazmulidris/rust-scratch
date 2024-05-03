@@ -3,3 +3,4 @@ tcp_api_server_client
 *.log
 kv_folder
 *.bkp
+kv_db_folder
