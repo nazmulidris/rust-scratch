@@ -486,6 +486,8 @@ pub mod monitor_user_input {
 const DEFAULT_CLIENT_ID: &str = "none";
 
 pub mod monitor_tcp_conn_task {
+    use tracing::debug;
+
     use super::*;
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
@@ -551,10 +553,10 @@ pub mod monitor_tcp_conn_task {
         match server_message {
             ServerMessage::HandleBroadcast(ref data) => {
                 let msg = format!(
-                    "[{}]: {}: {}",
+                    "[{}]: {}: {:#?}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received broadcast message from server".green().bold(),
-                    format!("{:?}", data).magenta().bold(),
+                    data,
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
@@ -562,7 +564,10 @@ pub mod monitor_tcp_conn_task {
                 let msg = format!(
                     "[{}]: {}: {}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received broadcast message from server".green().bold(),
+                    "Received ACK for broadcast message from server"
+                        .white()
+                        .on_dark_grey()
+                        .bold(),
                     format!("Broadcast to {} clients", num_clients)
                         .magenta()
                         .bold(),
@@ -625,10 +630,10 @@ pub mod monitor_tcp_conn_task {
             }
             ServerMessage::GetAll(ref data) => {
                 let msg = format!(
-                    "[{}]: {}: {}",
+                    "[{}]: {}: {:#?}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received getall message from server".green().bold(),
-                    format!("{:?}", data).magenta().bold(),
+                    data,
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
@@ -648,10 +653,20 @@ pub mod monitor_tcp_conn_task {
             ServerMessage::SetClientId(ref id) => {
                 *client_id.lock().unwrap() = id.to_string();
                 tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, id);
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received setclientid message from server"
+                        .on_black()
+                        .yellow()
+                        .bold(),
+                    format!("{:?}", id).magenta().bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
             }
         };
 
-        info!(?server_message, "End");
+        debug!(?server_message, "End");
 
         Ok(())
     }

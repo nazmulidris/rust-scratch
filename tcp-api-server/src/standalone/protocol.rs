@@ -98,6 +98,8 @@ pub mod byte_io {
     strum_macros::EnumIter,
     strum_macros::Display,
 )]
+
+/// These are messages that the client can send to the server.
 pub enum ClientMessage<K: Default, V: Default> {
     #[default]
     #[strum(ascii_case_insensitive)]
@@ -140,6 +142,7 @@ impl<K: Default, V: Default> ClientMessage<K, V> {
     }
 }
 
+/// These are messages that the server can send to the client.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum ServerMessage<K, V> {
     SetClientId(String),

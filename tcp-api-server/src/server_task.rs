@@ -61,11 +61,15 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
     // Set up Ctrl-C handler.
     setup_ctrlc_handler(shutdown_token.clone()).await?;
 
+    // Create the kv store.
+    let store = load_or_create_store(None)?;
+
     info!("Listening for new connections");
 
     // Server infinite loop - accept connections.
     loop {
         let shutdown_token_clone = shutdown_token.clone();
+        let store_clone = store.clone();
         tokio::select! {
             // Branch 1: Accept incoming connections ("blocking").
             result /* Result<(TcpStream, SocketAddr), Error> */ = listener.accept() => {
@@ -82,6 +86,7 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
                         client_tcp_stream,
                         sender_inter_client_broadcast_channel,
                         shutdown_token_clone.clone(),
+                        store_clone.clone(),
                     )
                     .await
                     {
@@ -106,6 +111,8 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
 /// The `client_id` field is added to the span, so that it can be used in the logs by all
 /// the functions in this module. See also: [crate::CLIENT_ID_TRACING_FIELD].
 pub mod handle_client_task {
+    use tracing::debug;
+
     use super::*;
 
     #[instrument(skip_all, fields(client_id))]
@@ -304,9 +311,10 @@ pub mod handle_client_task {
         client_tcp_stream: TcpStream,
         sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
         shutdown_token: CancellationToken,
+        store: Store,
     ) -> miette::Result<()> {
         tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, client_id);
-        info!("Handling client task");
+        debug!("Handling client task");
 
         // Get the receiver for the inter client channel.
         let mut receiver_inter_client_broadcast_channel =
@@ -322,14 +330,12 @@ pub mod handle_client_task {
             ServerMessage::<MessageKey, MessageValue>::SetClientId(client_id.to_string());
         let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
         byte_io::write(&mut buf_writer, payload_buffer).await?;
-        info!(?server_message, "Sent to client");
+        debug!(?server_message, "Sent to client");
 
         info!("Entering infinite loop to handle client messages");
 
         // Infinite server loop.
         loop {
-            let store = load_or_create_store(None)?;
-
             tokio::select! {
                 // Branch 1: Read from client.
                 result = byte_io::read(&mut buf_reader) => {
