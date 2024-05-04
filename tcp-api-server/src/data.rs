@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-use crate::Buffer;
+use crate::{protocol, Buffer};
 use core::fmt;
 use crossterm::style::Stylize;
 use serde::{Deserialize, Serialize};
@@ -50,3 +50,9 @@ pub type MessageKey = String;
 /// These type aliases are used throughout the codebase to make it easier to specify the
 /// exact type of the value used in [crate::ServerMessage] and [crate::ClientMessage].
 pub type MessageValue = Data;
+
+/// Type alias for a specific client message type.
+pub type MyClientMessage = protocol::ClientMessage<MessageKey, MessageValue>;
+
+/// Type alias for a specific server message type.
+pub type MyServerMessage = protocol::ServerMessage<MessageKey, MessageValue>;

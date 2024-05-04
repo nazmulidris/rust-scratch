@@ -12,6 +12,7 @@
     "oneshot",
     "opentelemetry",
     "procspawn",
+    "setclientid",
     "sqlx",
     "tempdir",
     "tempfile"

@@ -37,13 +37,15 @@ pub mod byte_io {
     /// - The trait bounds on this function are so that this function can be tested w/ a
     ///   mock from [tokio_test::io::Builder].
     /// - More info: <https://tokio.rs/tokio/topics/testing>
-    pub async fn write<Writer: AsyncWrite + Unpin>(
-        buf_writer: &mut BufWriter<Writer>,
-        payload_buffer: Buffer,
+    pub async fn try_write<W: AsyncWrite + Unpin, T: Serialize>(
+        buf_writer: &mut BufWriter<W>,
+        data: &T,
     ) -> miette::Result<()> {
-        let payload_size = payload_buffer.len();
+        // Try to serialize the data.
+        let payload_buffer = bincode::serialize(data).into_diagnostic()?;
 
         // Write the length prefix number of bytes.
+        let payload_size = payload_buffer.len();
         buf_writer
             .write_u64(payload_size as LengthPrefixType)
             .await
@@ -66,9 +68,9 @@ pub mod byte_io {
     /// - The trait bounds on this function are so that this function can be tested w/ a
     ///   mock from [tokio_test::io::Builder].
     /// - More info: <https://tokio.rs/tokio/topics/testing>
-    pub async fn read<Reader: AsyncRead + Unpin>(
-        buf_reader: &mut BufReader<Reader>,
-    ) -> miette::Result<Buffer> {
+    pub async fn try_read<R: AsyncRead + Unpin, T: for<'d> Deserialize<'d>>(
+        buf_reader: &mut BufReader<R>,
+    ) -> miette::Result<T> {
         // Read the length prefix number of bytes.
         let size_of_payload = buf_reader.read_u64().await.into_diagnostic()?;
 
@@ -79,7 +81,10 @@ pub mod byte_io {
             .await
             .into_diagnostic()?;
 
-        Ok(payload_buffer)
+        // Deserialize the payload.
+        let payload: T = bincode::deserialize(&payload_buffer).into_diagnostic()?;
+
+        Ok(payload)
     }
 }
 
@@ -122,7 +127,7 @@ pub enum ClientMessage<K: Default, V: Default> {
 }
 
 impl<K: Default, V: Default> ClientMessage<K, V> {
-    pub fn parse_input(input: &str) -> Result<(Self, String), strum::ParseError> {
+    pub fn try_parse_input(input: &str) -> Result<(Self, String), strum::ParseError> {
         // If input is empty, then return the default command.
         if input.is_empty() {
             return Ok((ClientMessage::default(), "".to_string()));
@@ -189,7 +194,7 @@ mod tests_command_to_from_string {
     #[test]
     fn parse_input() {
         let input = "remove foo";
-        let result = ClientMessage::<String, String>::parse_input(input);
+        let result = ClientMessage::<String, String>::try_parse_input(input);
         let (command, rest) = result.unwrap();
         assert!(matches!(command, ClientMessage::Remove(_)));
         assert_eq!(rest, "foo");

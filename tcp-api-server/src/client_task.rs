@@ -15,11 +15,7 @@
  *   limitations under the License.
  */
 
-use crate::{
-    byte_io,
-    protocol::{self, ClientMessage, ServerMessage},
-    Buffer, CLIArg, MessageKey, MessageValue, CLIENT_ID_TRACING_FIELD,
-};
+use crate::{byte_io, Buffer, CLIArg, MessageValue, CLIENT_ID_TRACING_FIELD};
 use crossterm::style::Stylize;
 use miette::{Context, IntoDiagnostic};
 use r3bl_rs_utils_core::generate_friendly_random_id;
@@ -32,6 +28,7 @@ use std::{
     sync::Arc,
     time::Duration,
 };
+use strum::IntoEnumIterator;
 use tokio::{
     io::{BufReader, BufWriter},
     net::{
@@ -40,6 +37,7 @@ use tokio::{
     },
 };
 use tokio_util::sync::CancellationToken;
+use tracing::debug;
 use tracing::{error, info, instrument};
 
 // Constants.
@@ -123,7 +121,7 @@ pub async fn client_main(
 }
 
 pub mod monitor_user_input {
-    use strum::IntoEnumIterator;
+    use crate::MyClientMessage;
 
     use super::*;
 
@@ -177,7 +175,7 @@ pub mod monitor_user_input {
 
         let items = {
             let mut items = vec![];
-            for item in ClientMessage::<String, String>::iter() {
+            for item in MyClientMessage::iter() {
                 let item = item.to_string().to_lowercase();
                 terminal_async.readline.add_history_entry(item.clone());
                 items.push(item.green().bold().to_string());
@@ -204,11 +202,10 @@ pub mod monitor_user_input {
                     match readline_event {
                         ReadlineEvent::Line(input) => {
                             // Parse the input into a ClientMessage.
-                            let result = ClientMessage::<MessageKey, MessageValue>::parse_input(&input);
-                            match result {
+                            let result_parse = MyClientMessage::try_parse_input(&input);
+                            match result_parse {
                                 Ok((client_message, rest)) => {
-                                    terminal_async.pause().await;
-                                    let control_flow = send_client_message(
+                                    let result_send = send_client_message(
                                         client_message,
                                         rest,
                                         &mut buf_writer,
@@ -217,9 +214,9 @@ pub mod monitor_user_input {
                                         client_id.clone(),
                                     )
                                     .await;
-                                    terminal_async.resume().await;
-                                    if let ControlFlow::Break(_) = control_flow {
-                                        break;
+                                    match result_send {
+                                        ControlFlow::Break(_) => break,
+                                        ControlFlow::Continue(_) => continue,
                                     }
                                 }
                                 Err(_) => {
@@ -235,11 +232,11 @@ pub mod monitor_user_input {
                         ReadlineEvent::Eof | ReadlineEvent::Interrupted => {
                             shutdown_token.cancel();
                             // Ignore the result of the write operation, since the client is exiting.
-                            if let Ok(payload_buffer) =
-                                bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Exit)
-                            {
-                                let _ = byte_io::write(&mut buf_writer, payload_buffer).await;
-                            }
+                            let _ = byte_io::try_write(
+                                &mut buf_writer,
+                                &MyClientMessage::Exit,
+                            ).await;
+
                             // Delay to allow messages to be printed to display output.
                             tokio::time::sleep(DELAY_UNIT).await;
                             break;
@@ -261,7 +258,7 @@ pub mod monitor_user_input {
     /// commands.
     #[instrument(skip_all, fields(client_message))]
     pub async fn send_client_message(
-        client_message: ClientMessage<MessageKey, MessageValue>,
+        client_message: MyClientMessage,
         rest: String,
         buf_writer: &mut BufWriter<OwnedWriteHalf>,
         shutdown_token: CancellationToken,
@@ -272,7 +269,7 @@ pub mod monitor_user_input {
         let mut control_flow = ControlFlow::Continue(());
 
         match client_message {
-            ClientMessage::BroadcastToOthers(_) => {
+            MyClientMessage::BroadcastToOthers(_) => {
                 // Start spinner.
                 let spinner = spinner_support::create(
                     format!("Sending {} message", client_message),
@@ -280,27 +277,26 @@ pub mod monitor_user_input {
                 )
                 .await;
 
-                let message_to_others = MessageValue {
-                    description: format!("from: '{}'", client_id.lock().unwrap().clone()),
-                    ..Default::default()
-                };
-
-                if let Ok(payload_buffer) = bincode::serialize(&ClientMessage::<
-                    MessageKey,
-                    MessageValue,
-                >::BroadcastToOthers(
-                    message_to_others
-                )) {
-                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
-                        control_flow = ControlFlow::Break(());
-                    }
-                }
+                // Send the broadcast message to the server.
+                byte_io::try_write(buf_writer, &{
+                    let value = MessageValue {
+                        description: format!("from: '{}'", client_id.lock().unwrap().clone()),
+                        ..Default::default()
+                    };
+                    MyClientMessage::BroadcastToOthers(value)
+                })
+                .await
+                .map_err(|_| {
+                    control_flow = ControlFlow::Break(());
+                })
+                .ok();
 
                 // Stop spinner.
-                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
-                    .await;
+                spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await
+                    .ok();
             }
-            ClientMessage::Size => {
+            MyClientMessage::Size => {
                 // Start spinner.
                 let spinner = spinner_support::create(
                     format!("Sending {} message", client_message),
@@ -308,20 +304,20 @@ pub mod monitor_user_input {
                 )
                 .await;
 
-                // Ignore the result of the write operation, since the client is exiting.
-                if let Ok(payload_buffer) =
-                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Size)
-                {
-                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
+                // Send the size message to the server.
+                byte_io::try_write(buf_writer, &MyClientMessage::Size)
+                    .await
+                    .map_err(|_| {
                         control_flow = ControlFlow::Break(());
-                    }
-                }
+                    })
+                    .ok();
 
                 // Stop spinner.
-                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
-                    .await;
+                spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await
+                    .ok();
             }
-            ClientMessage::Clear => {
+            MyClientMessage::Clear => {
                 // Start spinner.
                 let spinner = spinner_support::create(
                     format!("Sending {} message", client_message),
@@ -329,20 +325,20 @@ pub mod monitor_user_input {
                 )
                 .await;
 
-                // Ignore the result of the write operation, since the client is exiting.
-                if let Ok(payload_buffer) =
-                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Clear)
-                {
-                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
+                // Send the clear message to the server.
+                byte_io::try_write(buf_writer, &MyClientMessage::Clear)
+                    .await
+                    .map_err(|_| {
                         control_flow = ControlFlow::Break(());
-                    }
-                }
+                    })
+                    .ok();
 
                 // Stop spinner.
-                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
-                    .await;
+                spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await
+                    .ok();
             }
-            ClientMessage::Get(_) => {
+            MyClientMessage::Get(_) => {
                 // No key provided.
                 if rest.is_empty() {
                     let msg = format!(
@@ -350,7 +346,7 @@ pub mod monitor_user_input {
                         "get".green(),
                         "<key>".yellow().bold()
                     );
-                    let _ = writeln!(shared_writer, "{}", msg);
+                    writeln!(shared_writer, "{}", msg).ok();
                     return control_flow;
                 }
 
@@ -361,20 +357,20 @@ pub mod monitor_user_input {
                 )
                 .await;
 
-                // Get the key from `rest` param.
-                if let Ok(payload_buffer) =
-                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Get(rest))
-                {
-                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
+                // Send the get message to the server.
+                byte_io::try_write(buf_writer, &MyClientMessage::Get(rest))
+                    .await
+                    .map_err(|_| {
                         control_flow = ControlFlow::Break(());
-                    }
-                }
+                    })
+                    .ok();
 
                 // Stop spinner.
-                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
-                    .await;
+                spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await
+                    .ok();
             }
-            ClientMessage::Remove(_) => {
+            MyClientMessage::Remove(_) => {
                 // No key provided.
                 if rest.is_empty() {
                     let msg = format!(
@@ -393,20 +389,20 @@ pub mod monitor_user_input {
                 )
                 .await;
 
-                // Get the key from `rest` param.
-                if let Ok(payload_buffer) =
-                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Remove(rest))
-                {
-                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
+                // Send the remove message to the server.
+                byte_io::try_write(buf_writer, &MyClientMessage::Remove(rest))
+                    .await
+                    .map_err(|_| {
                         control_flow = ControlFlow::Break(());
-                    }
-                }
+                    })
+                    .ok();
 
                 // Stop spinner.
-                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
-                    .await;
+                spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await
+                    .ok();
             }
-            ClientMessage::Insert(_, _) => {
+            MyClientMessage::Insert(_, _) => {
                 // Start spinner.
                 let spinner = spinner_support::create(
                     format!("Sending {} message", client_message),
@@ -414,28 +410,28 @@ pub mod monitor_user_input {
                 )
                 .await;
 
-                let key = generate_friendly_random_id();
-                let value = MessageValue {
-                    id: rand::random(),
-                    description: format!("from: '{}'", client_id.lock().unwrap().clone()),
-                    data: Buffer::from("data"),
-                };
-
-                if let Ok(payload_buffer) =
-                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Insert(
-                        key, value,
-                    ))
-                {
-                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
-                        control_flow = ControlFlow::Break(());
-                    }
-                }
+                // Send the insert message to the server.
+                byte_io::try_write(buf_writer, &{
+                    let key = generate_friendly_random_id();
+                    let value = MessageValue {
+                        id: rand::random(),
+                        description: format!("from: '{}'", client_id.lock().unwrap().clone()),
+                        data: Buffer::from("data"),
+                    };
+                    MyClientMessage::Insert(key, value)
+                })
+                .await
+                .map_err(|_| {
+                    control_flow = ControlFlow::Break(());
+                })
+                .ok();
 
                 // Stop spinner.
-                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
-                    .await;
+                spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await
+                    .ok();
             }
-            ClientMessage::GetAll => {
+            MyClientMessage::GetAll => {
                 // Start spinner.
                 let spinner = spinner_support::create(
                     format!("Sending {} message", client_message),
@@ -443,19 +439,23 @@ pub mod monitor_user_input {
                 )
                 .await;
 
-                if let Ok(payload_buffer) =
-                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::GetAll)
-                {
-                    if byte_io::write(buf_writer, payload_buffer).await.is_err() {
+                // Send the getall message to the server.
+                byte_io::try_write(buf_writer, &MyClientMessage::GetAll)
+                    .await
+                    .map_err(|_| {
                         control_flow = ControlFlow::Break(());
-                    }
-                }
+                    })
+                    .ok();
 
                 // Stop spinner.
-                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
-                    .await;
+                spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await
+                    .ok();
             }
-            ClientMessage::Exit => {
+            MyClientMessage::Exit => {
+                // Break out of the loop.
+                control_flow = ControlFlow::Break(());
+
                 // Start spinner.
                 let spinner = spinner_support::create(
                     format!("Sending {} message", client_message),
@@ -464,18 +464,17 @@ pub mod monitor_user_input {
                 .await;
 
                 // Ignore the result of the write operation, since the client is exiting.
-                if let Ok(payload_buffer) =
-                    bincode::serialize(&ClientMessage::<MessageKey, MessageValue>::Exit)
-                {
-                    let _ = byte_io::write(buf_writer, payload_buffer).await;
-                }
+                byte_io::try_write(buf_writer, &MyClientMessage::Exit)
+                    .await
+                    .ok();
+
                 // Send the shutdown signal to all tasks.
                 shutdown_token.cancel();
-                control_flow = ControlFlow::Break(());
 
                 // Stop spinner.
-                let _ = spinner_support::stop(format!("Sent {} message", client_message), spinner)
-                    .await;
+                spinner_support::stop(format!("Sent {} message", client_message), spinner)
+                    .await
+                    .ok();
             }
         };
 
@@ -486,7 +485,7 @@ pub mod monitor_user_input {
 const DEFAULT_CLIENT_ID: &str = "none";
 
 pub mod monitor_tcp_conn_task {
-    use tracing::debug;
+    use crate::MyServerMessage;
 
     use super::*;
 
@@ -505,14 +504,15 @@ pub mod monitor_tcp_conn_task {
         loop {
             tokio::select! {
                 // Poll the TCP stream for data.
-                result_payload_buffer = byte_io::read(&mut buf_reader) => {
-                    match result_payload_buffer {
-                        Ok(payload_buffer) => {
-                            let server_message =
-                                bincode::deserialize::<protocol::ServerMessage<MessageKey, MessageValue>>(&payload_buffer)
-                                    .into_diagnostic()?;
-                            handle_server_message(server_message, client_id.clone(), shared_writer.clone(), shutdown_token.clone())
-                                .await?;
+                result_payload = byte_io::try_read::<_, MyServerMessage>(&mut buf_reader) => {
+                    match result_payload {
+                        Ok(server_message) => {
+                            handle_server_message(
+                                server_message,
+                                client_id.clone(),
+                                shared_writer.clone(),
+                                shutdown_token.clone()
+                            ).await?;
                         }
                         Err(error) => {
                             let client_id_str = client_id.lock().unwrap().clone();
@@ -525,8 +525,8 @@ pub mod monitor_tcp_conn_task {
                             shutdown_token.cancel();
                             break;
                         }
-                    }
 
+                    }
                 }
 
                 // Poll the shutdown cancellation token.
@@ -543,7 +543,7 @@ pub mod monitor_tcp_conn_task {
 
     #[instrument(skip_all, fields(server_message, client_id))]
     async fn handle_server_message(
-        server_message: ServerMessage<MessageKey, MessageValue>,
+        server_message: MyServerMessage,
         client_id: Arc<StdMutex<String>>,
         mut shared_writer: SharedWriter,
         shutdown_token: CancellationToken,
@@ -551,7 +551,7 @@ pub mod monitor_tcp_conn_task {
         info!(?server_message, "Start");
 
         match server_message {
-            ServerMessage::HandleBroadcast(ref data) => {
+            MyServerMessage::HandleBroadcast(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {:#?}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
@@ -560,7 +560,7 @@ pub mod monitor_tcp_conn_task {
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
-            ServerMessage::BroadcastToOthersAck(num_clients) => {
+            MyServerMessage::BroadcastToOthersAck(num_clients) => {
                 let msg = format!(
                     "[{}]: {}: {}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
@@ -574,7 +574,7 @@ pub mod monitor_tcp_conn_task {
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
-            ServerMessage::Size(ref data) => {
+            MyServerMessage::Size(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
@@ -583,7 +583,7 @@ pub mod monitor_tcp_conn_task {
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
-            ServerMessage::Clear(success_flag) => {
+            MyServerMessage::Clear(success_flag) => {
                 let msg = format!(
                     "[{}]: {}: {}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
@@ -595,7 +595,7 @@ pub mod monitor_tcp_conn_task {
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
-            ServerMessage::Get(ref data) => {
+            MyServerMessage::Get(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
@@ -604,7 +604,7 @@ pub mod monitor_tcp_conn_task {
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
-            ServerMessage::Remove(success_flag) => {
+            MyServerMessage::Remove(success_flag) => {
                 let msg = format!(
                     "[{}]: {}: {}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
@@ -616,7 +616,7 @@ pub mod monitor_tcp_conn_task {
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
-            ServerMessage::Insert(success_flag) => {
+            MyServerMessage::Insert(success_flag) => {
                 let msg = format!(
                     "[{}]: {}: {}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
@@ -628,7 +628,7 @@ pub mod monitor_tcp_conn_task {
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
-            ServerMessage::GetAll(ref data) => {
+            MyServerMessage::GetAll(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {:#?}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
@@ -637,7 +637,7 @@ pub mod monitor_tcp_conn_task {
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
-            ServerMessage::Exit => {
+            MyServerMessage::Exit => {
                 let msg = format!(
                     "[{}]: {}: {}",
                     client_id.lock().unwrap().to_string().yellow().bold(),
@@ -650,7 +650,7 @@ pub mod monitor_tcp_conn_task {
                 tokio::time::sleep(DELAY_UNIT).await; // Delay to allow the message above to be printed.
                 shutdown_token.cancel();
             }
-            ServerMessage::SetClientId(ref id) => {
+            MyServerMessage::SetClientId(ref id) => {
                 *client_id.lock().unwrap() = id.to_string();
                 tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, id);
                 let msg = format!(

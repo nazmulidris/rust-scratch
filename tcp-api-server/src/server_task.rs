@@ -17,10 +17,8 @@
 
 use crate::{
     byte_io, get_from_bucket, insert_into_bucket, iterate_bucket, load_or_create_bucket_from_store,
-    load_or_create_store,
-    protocol::{self, ServerMessage},
-    remove_from_bucket, Buffer, CLIArg, ClientMessage, KVBucket, MessageKey, MessageValue,
-    CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD,
+    load_or_create_store, protocol::ServerMessage, remove_from_bucket, CLIArg, ClientMessage,
+    KVBucket, MessageKey, MessageValue, MyServerMessage, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD,
 };
 use crossterm::style::Stylize;
 use kv::Store;
@@ -32,11 +30,11 @@ use tokio::{
     sync::broadcast::{self, Sender},
 };
 use tokio_util::sync::CancellationToken;
-use tracing::{error, info, instrument};
+use tracing::{debug, error, info, instrument};
 
 /// 0. who: the client_id of the author.
 /// 1. what: the actual message.
-pub type InterClientMessage = (String, MessageValue);
+pub(super) type InterClientMessage = (String, MessageValue);
 
 #[instrument(skip_all)]
 pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
@@ -111,198 +109,9 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
 /// The `client_id` field is added to the span, so that it can be used in the logs by all
 /// the functions in this module. See also: [crate::CLIENT_ID_TRACING_FIELD].
 pub mod handle_client_task {
-    use tracing::debug;
+    use crate::{MyClientMessage, MyServerMessage};
 
     use super::*;
-
-    #[instrument(skip_all, fields(client_id))]
-    pub async fn handle_client_message<Writer: AsyncWrite + Unpin>(
-        client_message: ClientMessage<MessageKey, MessageValue>,
-        client_id: &str,
-        store: &Store,
-        buf_writer: &mut BufWriter<Writer>,
-        sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
-    ) -> miette::Result<()> {
-        info!(?client_message, "Received message from client");
-        let bucket = load_or_create_bucket_from_store::<MessageKey, MessageValue>(store, None)?;
-
-        match client_message {
-            ClientMessage::BroadcastToOthers(payload) => {
-                let payload_buffer = try_broadcast_to_others(
-                    client_id,
-                    sender_inter_client_broadcast_channel,
-                    payload,
-                )?;
-                byte_io::write(buf_writer, payload_buffer).await?;
-            }
-            ClientMessage::Size => {
-                let payload_buffer = try_get_size_of_bucket(&bucket)?;
-                byte_io::write(buf_writer, payload_buffer).await?;
-            }
-            ClientMessage::Clear => {
-                let payload_buffer = try_clear_bucket(&bucket)?;
-                byte_io::write(buf_writer, payload_buffer).await?;
-            }
-            ClientMessage::Get(key) => {
-                let payload_buffer = try_get_from_bucket(&bucket, key)?;
-                byte_io::write(buf_writer, payload_buffer).await?;
-            }
-            ClientMessage::Remove(key) => {
-                let payload_buffer = try_remove_from_bucket(&bucket, key)?;
-                byte_io::write(buf_writer, payload_buffer).await?;
-            }
-            ClientMessage::Insert(key, value) => {
-                let payload_buffer = try_insert_into_bucket(&bucket, key, value)?;
-                byte_io::write(buf_writer, payload_buffer).await?;
-            }
-            ClientMessage::GetAll => {
-                let payload_buffer = try_get_all_items_from_bucket(&bucket)?;
-                byte_io::write(buf_writer, payload_buffer).await?;
-            }
-            ClientMessage::Exit => {
-                info!("Exiting due to client request");
-                return Err(miette!("Client requested exit"));
-            }
-        }
-
-        Ok(())
-    }
-
-    #[instrument(skip(bucket), fields(client_id))]
-    pub(super) fn try_get_all_items_from_bucket<'a>(
-        bucket: &KVBucket<'a, MessageKey, MessageValue>,
-    ) -> miette::Result<Buffer> {
-        let mut item_vec: Vec<(MessageKey, MessageValue)> = vec![];
-        iterate_bucket(bucket, |key: MessageKey, value: MessageValue| {
-            item_vec.push((key, value));
-        });
-        let server_message = ServerMessage::<MessageKey, MessageValue>::GetAll(item_vec);
-        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
-        Ok(payload_buffer)
-    }
-
-    #[instrument(skip(bucket), fields(client_id))]
-    pub(super) fn try_insert_into_bucket<'a>(
-        bucket: &KVBucket<'a, MessageKey, MessageValue>,
-        key: MessageKey,
-        value: MessageValue,
-    ) -> miette::Result<Buffer> {
-        let it = match insert_into_bucket(bucket, key, value) {
-            Ok(_) => true,
-            Err(error) => {
-                error!(%error, "Problem inserting into bucket");
-                false
-            }
-        };
-        let server_message = ServerMessage::<MessageKey, MessageValue>::Insert(it);
-        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
-        Ok(payload_buffer)
-    }
-
-    #[instrument(skip(bucket), fields(client_id))]
-    pub(super) fn try_remove_from_bucket<'a>(
-        bucket: &KVBucket<'a, MessageKey, MessageValue>,
-        key: MessageKey,
-    ) -> miette::Result<Buffer> {
-        let it = match remove_from_bucket(bucket, key) {
-            Ok(value) => value.is_some(),
-            Err(error) => {
-                error!(%error, "Problem removing from bucket");
-                false
-            }
-        };
-        let server_message = ServerMessage::<MessageKey, MessageValue>::Remove(it);
-        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
-        Ok(payload_buffer)
-    }
-
-    #[instrument(skip(bucket), fields(client_id))]
-    pub(super) fn try_get_from_bucket<'a>(
-        bucket: &KVBucket<'a, MessageKey, MessageValue>,
-        key: MessageKey,
-    ) -> miette::Result<Buffer> {
-        let it = match get_from_bucket(bucket, key) {
-            Ok(value) => value,
-            Err(error) => {
-                error!(%error, "Problem getting from bucket");
-                None
-            }
-        };
-        let server_message = ServerMessage::<MessageKey, MessageValue>::Get(it);
-        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
-        Ok(payload_buffer)
-    }
-
-    #[instrument(skip(bucket), fields(client_id))]
-    pub(super) fn try_clear_bucket<'a>(
-        bucket: &KVBucket<'a, MessageKey, MessageValue>,
-    ) -> miette::Result<Buffer> {
-        let it = match bucket.clear() {
-            Ok(_) => true,
-            Err(error) => {
-                error!(%error, "Problem clearing bucket");
-                false
-            }
-        };
-        let server_message = ServerMessage::<MessageKey, MessageValue>::Clear(it);
-        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
-        Ok(payload_buffer)
-    }
-
-    #[instrument(skip(bucket), fields(client_id))]
-    pub(super) fn try_get_size_of_bucket<'a>(
-        bucket: &KVBucket<'a, MessageKey, MessageValue>,
-    ) -> miette::Result<Buffer> {
-        let it = bucket.len();
-        let server_message = ServerMessage::<MessageKey, MessageValue>::Size(it);
-        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
-        Ok(payload_buffer)
-    }
-
-    #[instrument(skip(sender_inter_client_broadcast_channel), fields(client_id))]
-    pub(super) fn try_broadcast_to_others<'a>(
-        client_id: &str,
-        sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
-        payload: MessageValue,
-    ) -> miette::Result<Buffer> {
-        // Send the payload to the broadcast channel.
-        sender_inter_client_broadcast_channel
-            .send((client_id.to_string(), payload))
-            .into_diagnostic()?;
-
-        // Prepare the response payload.
-        let receiver_count = {
-            let count = sender_inter_client_broadcast_channel.receiver_count();
-            match count {
-                0 => 0,
-                // Subtract the current client from the count.
-                _ => count - 1,
-            }
-        };
-        let server_message =
-            ServerMessage::<MessageKey, MessageValue>::BroadcastToOthersAck(receiver_count);
-        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
-
-        Ok(payload_buffer)
-    }
-
-    /// Filter out the client_id that sent the message.
-    #[instrument(skip_all, fields(client_id))]
-    pub async fn handle_broadcast_channel_between_clients(
-        client_id: &str,
-        payload: InterClientMessage,
-    ) -> miette::Result<Option<Buffer>> {
-        // Filter out the client_id that sent the message.
-        let (sender_client_id, payload) = payload;
-        if sender_client_id == client_id {
-            return Ok(None);
-        }
-
-        // Send the payload to all other clients.
-        let server_message = ServerMessage::<MessageKey, MessageValue>::HandleBroadcast(payload);
-        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
-        Ok(Some(payload_buffer))
-    }
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
     #[instrument(name = "handle_client_task:main_loop", skip_all, fields(client_id))]
@@ -326,11 +135,12 @@ pub mod handle_client_task {
         let mut buf_writer = BufWriter::new(write_half);
 
         // Send the client ID.
-        let server_message =
-            ServerMessage::<MessageKey, MessageValue>::SetClientId(client_id.to_string());
-        let payload_buffer = bincode::serialize(&server_message).into_diagnostic()?;
-        byte_io::write(&mut buf_writer, payload_buffer).await?;
-        debug!(?server_message, "Sent to client");
+        byte_io::try_write(&mut buf_writer, &{
+            let server_message = MyServerMessage::SetClientId(client_id.to_string());
+            debug!(?server_message, "Sent to client");
+            server_message
+        })
+        .await?;
 
         info!("Entering infinite loop to handle client messages");
 
@@ -338,10 +148,8 @@ pub mod handle_client_task {
         loop {
             tokio::select! {
                 // Branch 1: Read from client.
-                result = byte_io::read(&mut buf_reader) => {
-                    let payload_buffer = result?;
-                    let client_message: protocol::ClientMessage<MessageKey, MessageValue> =
-                        bincode::deserialize(&payload_buffer).into_diagnostic()?;
+                result = byte_io::try_read::<_, MyClientMessage>(&mut buf_reader) => {
+                    let client_message = result?;
                     if handle_client_message(
                         client_message,
                         client_id,
@@ -357,12 +165,12 @@ pub mod handle_client_task {
                 result = receiver_inter_client_broadcast_channel.recv() => {
                     match result {
                         Ok(payload) => {
-                            let payload_buffer = handle_broadcast_channel_between_clients(
+                            let payload_buffer = generate_server_message::try_handle_broadcast(
                                 client_id,
                                 payload
                             ).await?;
-                            if let Some(payload_buffer) = payload_buffer {
-                                byte_io::write(&mut buf_writer, payload_buffer).await?;
+                            if let Some(ref payload) = payload_buffer {
+                                byte_io::try_write(&mut buf_writer, payload).await?;
                             }
                         }
                         Err(error) => {
@@ -374,19 +182,204 @@ pub mod handle_client_task {
                 // Branch 3: Monitor shutdown cancellation token.
                 _ = shutdown_token.cancelled() => {
                     info!("Received shutdown signal");
-
                     // Send Exit message to client.
-                    let payload_bytes = bincode::serialize(
-                        &ServerMessage::<MessageKey, MessageValue>::Exit,
-                    ).into_diagnostic()?;
-                    byte_io::write(&mut buf_writer, payload_bytes).await?;
-
+                    byte_io::try_write(&mut buf_writer, &MyServerMessage::Exit).await?;
                     break;
                 }
             }
         }
 
         Ok(())
+    }
+
+    #[instrument(skip_all, fields(client_id))]
+    pub async fn handle_client_message<Writer: AsyncWrite + Unpin>(
+        client_message: MyClientMessage,
+        client_id: &str,
+        store: &Store,
+        buf_writer: &mut BufWriter<Writer>,
+        sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
+    ) -> miette::Result<()> {
+        info!(?client_message, "Received message from client");
+        let bucket = load_or_create_bucket_from_store::<MessageKey, MessageValue>(store, None)?;
+
+        match client_message {
+            ClientMessage::BroadcastToOthers(payload) => {
+                byte_io::try_write(
+                    buf_writer,
+                    &generate_server_message::try_broadcast_to_others(
+                        client_id,
+                        sender_inter_client_broadcast_channel,
+                        payload,
+                    )?,
+                )
+                .await?;
+            }
+            ClientMessage::Size => {
+                byte_io::try_write(
+                    buf_writer,
+                    &generate_server_message::try_get_size_of_bucket(&bucket)?,
+                )
+                .await?;
+            }
+            ClientMessage::Clear => {
+                byte_io::try_write(
+                    buf_writer,
+                    &generate_server_message::try_clear_bucket(&bucket)?,
+                )
+                .await?;
+            }
+            ClientMessage::Get(key) => {
+                byte_io::try_write(
+                    buf_writer,
+                    &generate_server_message::try_get_from_bucket(&bucket, key)?,
+                )
+                .await?;
+            }
+            ClientMessage::Remove(key) => {
+                byte_io::try_write(
+                    buf_writer,
+                    &generate_server_message::try_remove_from_bucket(&bucket, key)?,
+                )
+                .await?;
+            }
+            ClientMessage::Insert(key, value) => {
+                byte_io::try_write(
+                    buf_writer,
+                    &generate_server_message::try_insert_into_bucket(&bucket, key, value)?,
+                )
+                .await?;
+            }
+            ClientMessage::GetAll => {
+                byte_io::try_write(
+                    buf_writer,
+                    &generate_server_message::try_get_all_items_from_bucket(&bucket)?,
+                )
+                .await?;
+            }
+            ClientMessage::Exit => {
+                info!("Exiting due to client request");
+                return Err(miette!("Client requested exit"));
+            }
+        }
+
+        Ok(())
+    }
+}
+
+mod generate_server_message {
+    use super::*;
+
+    #[instrument(skip(sender_inter_client_broadcast_channel), fields(client_id))]
+    pub(super) fn try_broadcast_to_others<'a>(
+        client_id: &str,
+        sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
+        payload: MessageValue,
+    ) -> miette::Result<MyServerMessage> {
+        sender_inter_client_broadcast_channel
+            .send((client_id.to_string(), payload))
+            .into_diagnostic()?;
+        Ok(ServerMessage::BroadcastToOthersAck({
+            let count = sender_inter_client_broadcast_channel.receiver_count();
+            match count {
+                0 => 0,
+                // Subtract the current client from the count.
+                _ => count - 1,
+            }
+        }))
+    }
+
+    #[instrument(skip(bucket), fields(client_id))]
+    pub(super) fn try_get_size_of_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+    ) -> miette::Result<MyServerMessage> {
+        Ok(ServerMessage::Size(bucket.len()))
+    }
+
+    #[instrument(skip(bucket), fields(client_id))]
+    pub(super) fn try_clear_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+    ) -> miette::Result<MyServerMessage> {
+        let clear_status_flag = match bucket.clear() {
+            Ok(_) => true,
+            Err(error) => {
+                error!(%error, "Problem clearing bucket");
+                false
+            }
+        };
+        Ok(ServerMessage::Clear(clear_status_flag))
+    }
+
+    #[instrument(skip(bucket), fields(client_id))]
+    pub(super) fn try_get_from_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+        key: MessageKey,
+    ) -> miette::Result<MyServerMessage> {
+        let maybe_value = match get_from_bucket(bucket, key) {
+            Ok(value) => value,
+            Err(error) => {
+                error!(%error, "Problem getting from bucket");
+                None
+            }
+        };
+        Ok(ServerMessage::Get(maybe_value))
+    }
+
+    #[instrument(skip(bucket), fields(client_id))]
+    pub(super) fn try_get_all_items_from_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+    ) -> miette::Result<MyServerMessage> {
+        let mut item_vec: Vec<(MessageKey, MessageValue)> = vec![];
+        iterate_bucket(bucket, |key: MessageKey, value: MessageValue| {
+            item_vec.push((key, value));
+        });
+        Ok(ServerMessage::GetAll(item_vec))
+    }
+
+    #[instrument(skip(bucket), fields(client_id))]
+    pub(super) fn try_remove_from_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+        key: MessageKey,
+    ) -> miette::Result<MyServerMessage> {
+        let remove_status_flag = match remove_from_bucket(bucket, key) {
+            Ok(value) => value.is_some(),
+            Err(error) => {
+                error!(%error, "Problem removing from bucket");
+                false
+            }
+        };
+        Ok(ServerMessage::Remove(remove_status_flag))
+    }
+
+    #[instrument(skip(bucket), fields(client_id))]
+    pub(super) fn try_insert_into_bucket<'a>(
+        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+        key: MessageKey,
+        value: MessageValue,
+    ) -> miette::Result<MyServerMessage> {
+        let insert_status_flag = match insert_into_bucket(bucket, key, value) {
+            Ok(_) => true,
+            Err(error) => {
+                error!(%error, "Problem inserting into bucket");
+                false
+            }
+        };
+        Ok(ServerMessage::Insert(insert_status_flag))
+    }
+
+    /// Filter out the client_id that sent the message.
+    #[instrument(skip_all, fields(client_id))]
+    pub async fn try_handle_broadcast(
+        client_id: &str,
+        payload: InterClientMessage,
+    ) -> miette::Result<Option<MyServerMessage>> {
+        // Filter out the client_id that sent the message.
+        let (sender_client_id, payload) = payload;
+        if sender_client_id == client_id {
+            return Ok(None);
+        }
+        // Send the payload to all other clients.
+        Ok(Some(ServerMessage::HandleBroadcast(payload)))
     }
 }
 
@@ -444,10 +437,10 @@ pub mod test_fixtures {
 #[cfg(test)]
 pub mod test_handle_client_message {
     use crate::{
-        handle_client_task::{self, handle_client_message},
-        insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store,
-        test_fixtures::MockTcpStreamWrite,
-        Buffer, ClientMessage, Data, InterClientMessage, ServerMessage, CHANNEL_SIZE,
+        handle_client_task::handle_client_message, insert_into_bucket,
+        load_or_create_bucket_from_store, load_or_create_store,
+        server_task::generate_server_message, test_fixtures::MockTcpStreamWrite, Buffer,
+        ClientMessage, Data, InterClientMessage, ServerMessage, CHANNEL_SIZE,
     };
     use miette::IntoDiagnostic;
     use tempfile::tempdir;
@@ -818,16 +811,21 @@ pub mod test_handle_client_message {
         };
 
         // Prepare the actual payload.
-        let actual_payload_bytes = handle_client_task::handle_broadcast_channel_between_clients(
+        let actual_payload = generate_server_message::try_handle_broadcast(
             self_id,
             (other_id.to_string(), payload.clone()),
         )
         .await?;
 
+        let actual_payload_bytes = actual_payload
+            .map(|payload| bincode::serialize(&payload).into_diagnostic())
+            .unwrap()
+            .unwrap();
+
         // println!("actual bytes  : {:?}", actual_payload_bytes);
 
         // Assert the actual bytes w/ the expected bytes.
-        assert_eq!(actual_payload_bytes, Some(expected_payload_bytes));
+        assert_eq!(actual_payload_bytes, expected_payload_bytes);
 
         Ok(())
     }
