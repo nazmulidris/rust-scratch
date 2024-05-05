@@ -21,8 +21,10 @@ use r3bl_terminal_async::{tracing_setup, DisplayPreference, TerminalAsync, Traci
 use r3bl_tui::{
     ColorWheel, ColorWheelConfig, ColorWheelSpeed, GradientGenerationPolicy, TextColorizationPolicy,
 };
-use tcp_api_server::clap_args;
+use tcp_api_server::{clap_args, setup_default_miette_global_report_handler};
 use tracing::instrument;
+
+const ERROR_REPORT_HANDLER_FOOTER:&str = "If you believe this is a bug, please report it: https://github.com/nazmulidris/rust-scratch/issues";
 
 mod header_banner {
     use super::*;
@@ -96,6 +98,9 @@ async fn main() -> miette::Result<()> {
                 ),
                 preferred_display: tracing_setup::DisplayPreference::Stdout,
             })?;
+
+            setup_default_miette_global_report_handler(ERROR_REPORT_HANDLER_FOOTER);
+
             tcp_api_server::server_task::server_main(cli_args).await?
         }
         // Start client (interactive and needs TerminalAsync). Async writer for stdout.
@@ -120,6 +125,8 @@ async fn main() -> miette::Result<()> {
                     None => DisplayPreference::Stdout,
                 },
             })?;
+
+            setup_default_miette_global_report_handler(ERROR_REPORT_HANDLER_FOOTER);
 
             if let Some(terminal_async) = maybe_terminal_async {
                 tcp_api_server::client_task::client_main(cli_args, terminal_async).await?
