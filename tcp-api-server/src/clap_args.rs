@@ -16,7 +16,7 @@
  */
 
 use clap::{Parser, Subcommand};
-use r3bl_terminal_async::tracing_writer_config::Writer;
+use r3bl_terminal_async::WriterArg;
 use std::{fmt::Display, net::IpAddr};
 
 const DEFAULT_PORT_NUM: u16 = 3000;
@@ -71,7 +71,7 @@ pub struct CLIArg {
         default_values = &["stdout+file"],
         value_delimiter = '+',
     )]
-    pub enable_tracing: Vec<Writer>,
+    pub enable_tracing: Vec<WriterArg>,
 
     #[arg(
         short = 'f',
