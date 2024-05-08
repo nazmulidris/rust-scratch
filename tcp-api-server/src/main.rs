@@ -101,7 +101,7 @@ async fn main() -> miette::Result<()> {
 
             setup_default_miette_global_report_handler(ERROR_REPORT_HANDLER_FOOTER);
 
-            tcp_api_server::server_task::server_main(cli_args).await?
+            tcp_api_server::server_task::server_main_event_loop(cli_args).await?
         }
         // Start client (interactive and needs TerminalAsync). Async writer for stdout.
         tcp_api_server::CLISubcommand::Client => {

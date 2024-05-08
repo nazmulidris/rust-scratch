@@ -35,8 +35,8 @@ use tokio::{
         tcp::{OwnedReadHalf, OwnedWriteHalf},
         TcpStream,
     },
+    sync::broadcast::{self},
 };
-use tokio_util::sync::CancellationToken;
 use tracing::{error, info, instrument};
 
 // Constants.
@@ -95,10 +95,17 @@ pub async fn client_main(
     // Reserve a space for the client_id. This is set for this entire client task.
     let safe_client_id = Arc::new(StdMutex::new(DEFAULT_CLIENT_ID.to_string()));
 
-    // Shutdown cancellation token, to cooperatively & gracefully end all awaiting running
-    // tasks. Calling `abort()` isn't reliable. Neither is dropping the task. More info:
-    // https://cybernetist.com/2024/04/19/rust-tokio-task-cancellation-patterns/
-    let shutdown_token = CancellationToken::new();
+    // Use broadcast channel for shutting down the server, to cooperatively & gracefully
+    // end all awaiting running tasks.
+    // Use this in favor of:
+    // 1. `abort()` - behavior is undefined / inconsistent.
+    // 2. Dropping the task is not reliable.
+    // 3. `CancellationToken` from `tokio_util` crate - does not work the way that
+    //    broadcast channel or other channels do. It doesn't block when `is_cancelled()`
+    //    is called, and creates a strange behavior in `tokio::select!` blocks, causing
+    //    the loop to be run repeatedly.
+    // More info: <https://cybernetist.com/2024/04/19/rust-tokio-task-cancellation-patterns/>
+    let (shutdown_sender, _) = broadcast::channel::<()>(1);
 
     // SPAWN TASK: Listen to server messages.
     // Handle messages from the server in a separate task. This will ensure that both the
@@ -106,14 +113,18 @@ pub async fn client_main(
     tokio::spawn(monitor_tcp_conn_task::event_loop(
         read_half,
         terminal_async.clone_shared_writer(),
-        shutdown_token.clone(),
+        shutdown_sender.clone(),
         safe_client_id.clone(),
     ));
 
     // DON'T SPAWN TASK: User input event infinite loop.
-    let _ =
-        monitor_user_input::event_loop(write_half, terminal_async, shutdown_token, safe_client_id)
-            .await;
+    let _ = monitor_user_input::event_loop(
+        write_half,
+        terminal_async,
+        shutdown_sender.clone(),
+        safe_client_id,
+    )
+    .await;
 
     TerminalAsync::print_exit_message("Goodbye! 👋").ok();
 
@@ -168,7 +179,7 @@ pub mod monitor_user_input {
     pub async fn event_loop(
         write_half: OwnedWriteHalf,
         mut terminal_async: TerminalAsync,
-        shutdown_token: CancellationToken,
+        shutdown_sender: broadcast::Sender<()>,
         safe_client_id: Arc<StdMutex<String>>,
     ) -> miette::Result<()> {
         info!("Entering loop");
@@ -187,12 +198,12 @@ pub mod monitor_user_input {
         terminal_async.println(welcome_message).await;
 
         let mut buf_writer = BufWriter::new(write_half);
-        let shutdown_token_clone = shutdown_token.clone();
+        let mut shutdown_receiver = shutdown_sender.subscribe();
 
         loop {
             tokio::select! {
                 // Poll shutdown cancellation token.
-                _ = shutdown_token.cancelled() => {
+                _ = shutdown_receiver.recv() => {
                     break;
                 }
 
@@ -209,7 +220,7 @@ pub mod monitor_user_input {
                                         client_message,
                                         rest,
                                         &mut buf_writer,
-                                        shutdown_token_clone.clone(),
+                                        shutdown_sender.clone(),
                                         terminal_async.clone_shared_writer(),
                                         safe_client_id.clone(),
                                     )
@@ -230,7 +241,7 @@ pub mod monitor_user_input {
                             }
                         }
                         ReadlineEvent::Eof | ReadlineEvent::Interrupted => {
-                            shutdown_token.cancel();
+                            shutdown_sender.send(()).ok();
                             // Ignore the result of the write operation, since the client is exiting.
                             let _ = byte_io::try_write(
                                 &mut buf_writer,
@@ -260,7 +271,7 @@ pub mod monitor_user_input {
         client_message: MyClientMessage,
         rest: String,
         buf_writer: &mut BufWriter<OwnedWriteHalf>,
-        shutdown_token: CancellationToken,
+        shutdown_sender: broadcast::Sender<()>,
         mut shared_writer: SharedWriter,
         safe_client_id: Arc<StdMutex<String>>,
     ) -> ControlFlow<()> {
@@ -470,7 +481,7 @@ pub mod monitor_user_input {
                     .ok();
 
                 // Send the shutdown signal to all tasks.
-                shutdown_token.cancel();
+                shutdown_sender.send(()).ok();
 
                 // Stop spinner.
                 spinner_support::stop(format!("Sent {} message", client_message), spinner)
@@ -500,13 +511,13 @@ pub mod monitor_tcp_conn_task {
     pub async fn event_loop(
         buf_reader: OwnedReadHalf,
         mut shared_writer: SharedWriter,
-        shutdown_token: CancellationToken,
+        shutdown_sender: broadcast::Sender<()>,
         safe_client_id: Arc<StdMutex<String>>,
     ) -> miette::Result<()> {
         info!("Entering loop");
 
         let mut buf_reader = BufReader::new(buf_reader);
-
+        let mut shutdown_receiver = shutdown_sender.subscribe();
         loop {
             tokio::select! {
                 // Poll the TCP stream for data.
@@ -517,7 +528,7 @@ pub mod monitor_tcp_conn_task {
                                 server_message,
                                 safe_client_id.clone(),
                                 shared_writer.clone(),
-                                shutdown_token.clone()
+                                shutdown_sender.clone()
                             ).await?;
                         }
                         Err(error) => {
@@ -528,7 +539,7 @@ pub mod monitor_tcp_conn_task {
                                 client_id_str.yellow().bold(),
                             );
                             error!(?error);
-                            shutdown_token.cancel();
+                            shutdown_sender.send(()).ok();
                             break;
                         }
 
@@ -536,7 +547,7 @@ pub mod monitor_tcp_conn_task {
                 }
 
                 // Poll the shutdown cancellation token.
-                _ = shutdown_token.cancelled() => {
+                _ = shutdown_receiver.recv() => {
                     break;
                 }
             }
@@ -552,7 +563,7 @@ pub mod monitor_tcp_conn_task {
         server_message: MyServerMessage,
         safe_client_id: Arc<StdMutex<String>>,
         mut shared_writer: SharedWriter,
-        shutdown_token: CancellationToken,
+        shutdown_sender: broadcast::Sender<()>,
     ) -> miette::Result<Option<String>> {
         info!("Handling server message");
 
@@ -567,7 +578,7 @@ pub mod monitor_tcp_conn_task {
                 let _ = writeln!(shared_writer, "{}", msg);
 
                 // Cancel the shutdown token to end the client.
-                shutdown_token.cancel();
+                shutdown_sender.send(()).ok();
             }
             MyServerMessage::SetClientId(ref id) => {
                 *safe_client_id.lock().unwrap() = id.to_string();
