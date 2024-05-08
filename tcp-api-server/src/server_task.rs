@@ -18,7 +18,7 @@
 use crate::{
     byte_io, get_from_bucket, insert_into_bucket, iterate_bucket, load_or_create_bucket_from_store,
     load_or_create_store, protocol::ServerMessage, remove_from_bucket, CLIArg, ClientMessage,
-    KVBucket, MessageKey, MessageValue, MyServerMessage, CHANNEL_SIZE, CLIENT_ID_TRACING_FIELD,
+    KVBucket, MessageKey, MessageValue, MyClientMessage, MyServerMessage, CHANNEL_SIZE,
 };
 use crossterm::style::Stylize;
 use kv::Store;
@@ -68,6 +68,7 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
     loop {
         let shutdown_token_clone = shutdown_token.clone();
         let store_clone = store.clone();
+
         tokio::select! {
             // Branch 1: Accept incoming connections ("blocking").
             result /* Result<(TcpStream, SocketAddr), Error> */ = listener.accept() => {
@@ -109,12 +110,10 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
 /// The `client_id` field is added to the span, so that it can be used in the logs by all
 /// the functions in this module. See also: [crate::CLIENT_ID_TRACING_FIELD].
 pub mod handle_client_task {
-    use crate::{MyClientMessage, MyServerMessage};
-
     use super::*;
 
     /// This has an infinite loop, so you might want to call it in a spawn block.
-    #[instrument(name = "handle_client_task:main_loop", skip_all, fields(client_id))]
+    #[instrument(name = "handle_client_task:event_loop", skip_all, fields(%client_id))]
     pub async fn event_loop(
         client_id: &str,
         client_tcp_stream: TcpStream,
@@ -122,8 +121,7 @@ pub mod handle_client_task {
         shutdown_token: CancellationToken,
         store: Store,
     ) -> miette::Result<()> {
-        tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, client_id);
-        debug!("Handling client task");
+        info!("Handling client connection");
 
         // Get the receiver for the inter client channel.
         let mut receiver_inter_client_broadcast_channel =
@@ -192,7 +190,7 @@ pub mod handle_client_task {
         Ok(())
     }
 
-    #[instrument(skip_all, fields(client_id))]
+    #[instrument(skip_all, fields(?client_message))]
     pub async fn handle_client_message<Writer: AsyncWrite + Unpin>(
         client_message: MyClientMessage,
         client_id: &str,
@@ -200,7 +198,8 @@ pub mod handle_client_task {
         buf_writer: &mut BufWriter<Writer>,
         sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
     ) -> miette::Result<()> {
-        info!(?client_message, "Received message from client");
+        info!("Handling client message");
+
         let bucket = load_or_create_bucket_from_store::<MessageKey, MessageValue>(store, None)?;
 
         match client_message {
@@ -270,12 +269,13 @@ pub mod handle_client_task {
 mod generate_server_message {
     use super::*;
 
-    #[instrument(skip(sender_inter_client_broadcast_channel), fields(client_id))]
+    #[instrument(skip_all, fields(?payload))]
     pub(super) fn try_broadcast_to_others<'a>(
         client_id: &str,
         sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
         payload: MessageValue,
     ) -> miette::Result<MyServerMessage> {
+        info!("Broadcasting to others");
         sender_inter_client_broadcast_channel
             .send((client_id.to_string(), payload))
             .into_diagnostic()?;
@@ -289,17 +289,19 @@ mod generate_server_message {
         }))
     }
 
-    #[instrument(skip(bucket), fields(client_id))]
+    #[instrument(skip_all, fields(bucket_len = bucket.len()))]
     pub(super) fn try_get_size_of_bucket<'a>(
         bucket: &KVBucket<'a, MessageKey, MessageValue>,
     ) -> miette::Result<MyServerMessage> {
+        info!("Getting size of bucket");
         Ok(ServerMessage::Size(bucket.len()))
     }
 
-    #[instrument(skip(bucket), fields(client_id))]
+    #[instrument(skip_all)]
     pub(super) fn try_clear_bucket<'a>(
         bucket: &KVBucket<'a, MessageKey, MessageValue>,
     ) -> miette::Result<MyServerMessage> {
+        info!("Clearing bucket");
         let clear_status_flag = match bucket.clear() {
             Ok(_) => true,
             Err(error) => {
@@ -310,11 +312,12 @@ mod generate_server_message {
         Ok(ServerMessage::Clear(clear_status_flag))
     }
 
-    #[instrument(skip(bucket), fields(client_id))]
+    #[instrument(skip_all, fields(?key))]
     pub(super) fn try_get_from_bucket<'a>(
         bucket: &KVBucket<'a, MessageKey, MessageValue>,
         key: MessageKey,
     ) -> miette::Result<MyServerMessage> {
+        info!("Getting from bucket");
         let maybe_value = match get_from_bucket(bucket, key) {
             Ok(value) => value,
             Err(error) => {
@@ -325,10 +328,11 @@ mod generate_server_message {
         Ok(ServerMessage::Get(maybe_value))
     }
 
-    #[instrument(skip(bucket), fields(client_id))]
+    #[instrument(skip_all)]
     pub(super) fn try_get_all_items_from_bucket<'a>(
         bucket: &KVBucket<'a, MessageKey, MessageValue>,
     ) -> miette::Result<MyServerMessage> {
+        info!("Getting all items from bucket");
         let mut item_vec: Vec<(MessageKey, MessageValue)> = vec![];
         iterate_bucket(bucket, |key: MessageKey, value: MessageValue| {
             item_vec.push((key, value));
@@ -351,12 +355,13 @@ mod generate_server_message {
         Ok(ServerMessage::Remove(remove_status_flag))
     }
 
-    #[instrument(skip(bucket), fields(client_id))]
+    #[instrument(skip_all, fields(?key, ?value))]
     pub(super) fn try_insert_into_bucket<'a>(
         bucket: &KVBucket<'a, MessageKey, MessageValue>,
         key: MessageKey,
         value: MessageValue,
     ) -> miette::Result<MyServerMessage> {
+        info!("Inserting into bucket");
         let insert_status_flag = match insert_into_bucket(bucket, key, value) {
             Ok(_) => true,
             Err(error) => {
@@ -368,7 +373,7 @@ mod generate_server_message {
     }
 
     /// Filter out the client_id that sent the message.
-    #[instrument(skip_all, fields(client_id))]
+    #[instrument(skip_all, fields(?payload))]
     pub async fn try_handle_broadcast(
         client_id: &str,
         payload: InterClientMessage,
@@ -376,9 +381,11 @@ mod generate_server_message {
         // Filter out the client_id that sent the message.
         let (sender_client_id, payload) = payload;
         if sender_client_id == client_id {
+            info!("Ignoring broadcast from self");
             return Ok(None);
         }
         // Send the payload to all other clients.
+        info!("Handling broadcast");
         Ok(Some(ServerMessage::HandleBroadcast(payload)))
     }
 }

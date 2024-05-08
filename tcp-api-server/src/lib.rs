@@ -28,8 +28,3 @@ pub use server_task::*;
 pub use standalone::*;
 
 pub const CHANNEL_SIZE: usize = 10;
-
-/// Make sure that this is the same as the [tracing::Metadata::fields] field symbol
-/// declared in the attribute macro [tracing::instrument::Instrument]. Eg:
-/// `#[instrument(fields(client_id))]`. There is no compiler check for this unfortunately.
-pub const CLIENT_ID_TRACING_FIELD: &str = "client_id";

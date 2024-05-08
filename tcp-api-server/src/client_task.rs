@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-use crate::{byte_io, Buffer, CLIArg, MessageValue, CLIENT_ID_TRACING_FIELD};
+use crate::{byte_io, Buffer, CLIArg, MessageValue, MyClientMessage, MyServerMessage};
 use crossterm::style::Stylize;
 use miette::{Context, IntoDiagnostic};
 use r3bl_rs_utils_core::generate_friendly_random_id;
@@ -37,7 +37,6 @@ use tokio::{
     },
 };
 use tokio_util::sync::CancellationToken;
-use tracing::debug;
 use tracing::{error, info, instrument};
 
 // Constants.
@@ -45,9 +44,7 @@ const DELAY_MS: u64 = 75;
 const DELAY_UNIT: Duration = Duration::from_millis(DELAY_MS);
 const ARTIFICIAL_UI_DELAY: Duration = Duration::from_millis(DELAY_MS * 10);
 
-/// The `client_id` field is added to the span, so that it can be used in the logs by
-/// functions called by this one. See also: [crate::CLIENT_ID_TRACING_FIELD].
-#[instrument(skip_all, fields(client_id))]
+#[instrument(skip_all)]
 pub async fn client_main(
     cli_args: CLIArg,
     mut terminal_async: TerminalAsync,
@@ -96,7 +93,7 @@ pub async fn client_main(
     let (read_half, write_half) = tcp_stream.into_split();
 
     // Reserve a space for the client_id. This is set for this entire client task.
-    let client_id = Arc::new(StdMutex::new(DEFAULT_CLIENT_ID.to_string()));
+    let safe_client_id = Arc::new(StdMutex::new(DEFAULT_CLIENT_ID.to_string()));
 
     // Shutdown cancellation token, to cooperatively & gracefully end all awaiting running
     // tasks. Calling `abort()` isn't reliable. Neither is dropping the task. More info:
@@ -110,19 +107,20 @@ pub async fn client_main(
         read_half,
         terminal_async.clone_shared_writer(),
         shutdown_token.clone(),
-        client_id.clone(),
+        safe_client_id.clone(),
     ));
 
     // DON'T SPAWN TASK: User input event infinite loop.
     let _ =
-        monitor_user_input::event_loop(write_half, terminal_async, shutdown_token, client_id).await;
+        monitor_user_input::event_loop(write_half, terminal_async, shutdown_token, safe_client_id)
+            .await;
+
+    TerminalAsync::print_exit_message("Goodbye! 👋").ok();
 
     Ok(())
 }
 
 pub mod monitor_user_input {
-    use crate::MyClientMessage;
-
     use super::*;
 
     mod spinner_support {
@@ -161,17 +159,19 @@ pub mod monitor_user_input {
         }
     }
 
-    /// This has an infinite loop, so you might want to spawn a task before calling it.
-    /// And it has a blocking call, so you can't exit it preemptively.
-    #[instrument(name = "user_input:main_loop", skip_all, fields(client_id))]
+    /// - This has an infinite loop, so you might want to spawn a task before calling it.
+    ///   And it has a blocking call, so you can't exit it preemptively.
+    /// - Inject the `safe_client_id` into the call chain for tracing. All other async
+    ///   functions which are instrumented will also have this field embedded in their log
+    ///   output.
+    #[instrument(name = "user_input:event_loop", skip_all, fields(?safe_client_id))]
     pub async fn event_loop(
         write_half: OwnedWriteHalf,
         mut terminal_async: TerminalAsync,
         shutdown_token: CancellationToken,
-        client_id: Arc<StdMutex<String>>,
+        safe_client_id: Arc<StdMutex<String>>,
     ) -> miette::Result<()> {
-        // Artificial delay to let all the other tasks settle.
-        tokio::time::sleep(DELAY_UNIT).await;
+        info!("Entering loop");
 
         let items = {
             let mut items = vec![];
@@ -211,7 +211,7 @@ pub mod monitor_user_input {
                                         &mut buf_writer,
                                         shutdown_token_clone.clone(),
                                         terminal_async.clone_shared_writer(),
-                                        client_id.clone(),
+                                        safe_client_id.clone(),
                                     )
                                     .await;
                                     match result_send {
@@ -238,7 +238,6 @@ pub mod monitor_user_input {
                             ).await;
 
                             // Delay to allow messages to be printed to display output.
-                            tokio::time::sleep(DELAY_UNIT).await;
                             break;
                         }
                         ReadlineEvent::Resized => {}
@@ -256,15 +255,17 @@ pub mod monitor_user_input {
 
     /// Please refer to the [ClientMessage] enum in the [protocol] module for the list of
     /// commands.
-    #[instrument(skip_all, fields(client_message))]
+    #[instrument(skip_all, fields(?client_message, %rest))]
     pub async fn send_client_message(
         client_message: MyClientMessage,
         rest: String,
         buf_writer: &mut BufWriter<OwnedWriteHalf>,
         shutdown_token: CancellationToken,
         mut shared_writer: SharedWriter,
-        client_id: Arc<StdMutex<String>>,
+        safe_client_id: Arc<StdMutex<String>>,
     ) -> ControlFlow<()> {
+        info!("Sending client message");
+
         // Default control flow. Set to break if there is an error.
         let mut control_flow = ControlFlow::Continue(());
 
@@ -280,7 +281,7 @@ pub mod monitor_user_input {
                 // Send the broadcast message to the server.
                 byte_io::try_write(buf_writer, &{
                     let value = MessageValue {
-                        description: format!("from: '{}'", client_id.lock().unwrap().clone()),
+                        description: format!("from: '{}'", safe_client_id.lock().unwrap().clone()),
                         ..Default::default()
                     };
                     MyClientMessage::BroadcastToOthers(value)
@@ -415,7 +416,7 @@ pub mod monitor_user_input {
                     let key = generate_friendly_random_id();
                     let value = MessageValue {
                         id: rand::random(),
-                        description: format!("from: '{}'", client_id.lock().unwrap().clone()),
+                        description: format!("from: '{}'", safe_client_id.lock().unwrap().clone()),
                         data: Buffer::from("data"),
                     };
                     MyClientMessage::Insert(key, value)
@@ -485,21 +486,26 @@ pub mod monitor_user_input {
 const DEFAULT_CLIENT_ID: &str = "none";
 
 pub mod monitor_tcp_conn_task {
-    use crate::MyServerMessage;
-
     use super::*;
 
-    /// This has an infinite loop, so you might want to call it in a spawn block.
-    #[instrument(name = "monitor_tcp_conn_task:main_loop", fields(client_id), skip_all)]
+    /// - This has an infinite loop, so you might want to call it in a spawn block.
+    /// - Inject the `safe_client_id` into the call chain for tracing. All other async
+    ///   functions which are instrumented will also have this field embedded in their log
+    ///   output.
+    #[instrument(
+        name = "monitor_tcp_conn_task:event_loop",
+        skip_all,
+        fields(?safe_client_id)
+    )]
     pub async fn event_loop(
         buf_reader: OwnedReadHalf,
         mut shared_writer: SharedWriter,
         shutdown_token: CancellationToken,
-        client_id: Arc<StdMutex<String>>,
+        safe_client_id: Arc<StdMutex<String>>,
     ) -> miette::Result<()> {
-        let mut buf_reader = BufReader::new(buf_reader);
-
         info!("Entering loop");
+
+        let mut buf_reader = BufReader::new(buf_reader);
 
         loop {
             tokio::select! {
@@ -509,13 +515,13 @@ pub mod monitor_tcp_conn_task {
                         Ok(server_message) => {
                             handle_server_message(
                                 server_message,
-                                client_id.clone(),
+                                safe_client_id.clone(),
                                 shared_writer.clone(),
                                 shutdown_token.clone()
                             ).await?;
                         }
                         Err(error) => {
-                            let client_id_str = client_id.lock().unwrap().clone();
+                            let client_id_str = safe_client_id.lock().unwrap().clone();
                             let _ = writeln!(
                                 shared_writer,
                                 "Error reading from server for client task w/ 'client_id': {}",
@@ -541,20 +547,46 @@ pub mod monitor_tcp_conn_task {
         Ok(())
     }
 
-    #[instrument(skip_all, fields(server_message, client_id))]
+    #[instrument(skip_all, fields(?server_message))]
     async fn handle_server_message(
         server_message: MyServerMessage,
-        client_id: Arc<StdMutex<String>>,
+        safe_client_id: Arc<StdMutex<String>>,
         mut shared_writer: SharedWriter,
         shutdown_token: CancellationToken,
-    ) -> miette::Result<()> {
-        info!(?server_message, "Start");
+    ) -> miette::Result<Option<String>> {
+        info!("Handling server message");
 
         match server_message {
+            MyServerMessage::Exit => {
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received exit message from server".green().bold(),
+                    "Shutting down client".red().bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+
+                // Cancel the shutdown token to end the client.
+                shutdown_token.cancel();
+            }
+            MyServerMessage::SetClientId(ref id) => {
+                *safe_client_id.lock().unwrap() = id.to_string();
+                let msg = format!(
+                    "[{}]: {}: {}",
+                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
+                    "Received setclientid message from server"
+                        .on_black()
+                        .yellow()
+                        .bold(),
+                    format!("{:?}", id).magenta().bold(),
+                );
+                let _ = writeln!(shared_writer, "{}", msg);
+                return Ok(Some(id.to_string()));
+            }
             MyServerMessage::HandleBroadcast(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {:#?}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received broadcast message from server".green().bold(),
                     data,
                 );
@@ -563,7 +595,7 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::BroadcastToOthersAck(num_clients) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received ACK for broadcast message from server"
                         .white()
                         .on_dark_grey()
@@ -577,7 +609,7 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::Size(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received size message from server".green().bold(),
                     format!("{:?}", data).magenta().bold(),
                 );
@@ -586,7 +618,7 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::Clear(success_flag) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received clear message from server".green().bold(),
                     match success_flag {
                         true => "✅ Success".green().bold(),
@@ -598,7 +630,7 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::Get(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received get message from server".green().bold(),
                     format!("{:?}", data).magenta().bold(),
                 );
@@ -607,7 +639,7 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::Remove(success_flag) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received remove message from server".green().bold(),
                     match success_flag {
                         true => "✅ Success".green().bold(),
@@ -619,7 +651,7 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::Insert(success_flag) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received insert message from server".green().bold(),
                     match success_flag {
                         true => "✅ Success".green().bold(),
@@ -631,43 +663,14 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::GetAll(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {:#?}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
+                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
                     "Received getall message from server".green().bold(),
                     data,
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
-            MyServerMessage::Exit => {
-                let msg = format!(
-                    "[{}]: {}: {}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received exit message from server".green().bold(),
-                    "Shutting down client".red().bold(),
-                );
-                let _ = writeln!(shared_writer, "{}", msg);
-
-                // Cancel the shutdown token to end the client.
-                tokio::time::sleep(DELAY_UNIT).await; // Delay to allow the message above to be printed.
-                shutdown_token.cancel();
-            }
-            MyServerMessage::SetClientId(ref id) => {
-                *client_id.lock().unwrap() = id.to_string();
-                tracing::Span::current().record(CLIENT_ID_TRACING_FIELD, id);
-                let msg = format!(
-                    "[{}]: {}: {}",
-                    client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received setclientid message from server"
-                        .on_black()
-                        .yellow()
-                        .bold(),
-                    format!("{:?}", id).magenta().bold(),
-                );
-                let _ = writeln!(shared_writer, "{}", msg);
-            }
         };
 
-        debug!(?server_message, "End");
-
-        Ok(())
+        Ok(None)
     }
 }
