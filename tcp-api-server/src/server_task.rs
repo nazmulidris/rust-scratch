@@ -97,10 +97,10 @@ pub async fn server_main_event_loop(cli_args: CLIArg) -> miette::Result<()> {
                 // tasks spawned where n is the number of connected clients.
                 tokio::spawn(async move {
                     // Increment the connected client count.
-                    safe_connected_client_count_clone.fetch_add(1, Ordering::Relaxed);
+                    safe_connected_client_count_clone.fetch_add(1, Ordering::SeqCst);
 
                     let client_id = friendly_random_id::generate_friendly_random_id();
-                    let result = handle_client_task::event_loop(
+                    let result_handle_client_task = handle_client_task::event_loop(
                         &client_id,
                         client_tcp_stream,
                         sender_inter_client_broadcast_channel_clone,
@@ -110,26 +110,32 @@ pub async fn server_main_event_loop(cli_args: CLIArg) -> miette::Result<()> {
                     ).await;
 
                     // Decrement the connected client count.
-                    safe_connected_client_count_clone.fetch_sub(1, Ordering::Relaxed);
+                    safe_connected_client_count_clone.fetch_sub(1, Ordering::SeqCst);
 
-                    match result
-                    {
-                        Err(error) => error!(client_id, %error, ?safe_connected_client_count_clone, "Problem handling client task"),
-                        Ok(_) => info!(client_id, ?safe_connected_client_count_clone, "Successfully ended client task"),
-                    }
-
-                    if !shutdown_receiver_clone.is_empty() && safe_connected_client_count_clone.load(Ordering::Relaxed) == 0 {
+                    // If Ctrl-C signal is received and there are no connected clients,
+                    // then exit.
+                    let ctrl_c_signal_received = !shutdown_receiver_clone.is_empty();
+                    let no_clients_are_connected = safe_connected_client_count_clone.load(Ordering::SeqCst) == 0;
+                    if ctrl_c_signal_received && no_clients_are_connected {
                         info!(
                             "{}",
                             "Send signal to shutdown channel, connected clients: 0".to_string().yellow()
                         );
                         shutdown_sender_clone.send(()).ok();
                     }
+
+                    // Log the result of the client task.
+                    match result_handle_client_task
+                    {
+                        Err(error) => error!(client_id, %error, ?safe_connected_client_count_clone, "Problem handling client task"),
+                        Ok(_) => info!(client_id, ?safe_connected_client_count_clone, "Successfully ended client task"),
+                    }
+
                 });
             }
 
             _ = shutdown_receiver.recv() => {
-                if safe_connected_client_count.load(Ordering::Relaxed) == 0 {
+                if safe_connected_client_count.load(Ordering::SeqCst) == 0 {
                     info!(
                         "{}",
                         "Received signal in shutdown channel - No connected clients, exiting main loop".to_string().dark_red()
@@ -170,7 +176,7 @@ pub mod handle_client_task {
     ) -> miette::Result<()> {
         info!(
             "Handling client connection, connected client count: {}",
-            safe_connected_client_count.load(Ordering::Relaxed)
+            safe_connected_client_count.load(Ordering::SeqCst)
         );
 
         // Get the receiver for the inter client channel.
