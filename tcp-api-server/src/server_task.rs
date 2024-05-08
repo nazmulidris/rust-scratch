@@ -24,12 +24,15 @@ use crossterm::style::Stylize;
 use kv::Store;
 use miette::{miette, IntoDiagnostic};
 use r3bl_rs_utils_core::friendly_random_id;
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
 use tokio::{
     io::{AsyncWrite, BufReader, BufWriter},
     net::{TcpListener, TcpStream},
-    sync::broadcast::{self, Sender},
+    sync::broadcast::{self},
 };
-use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, instrument};
 
 /// 0. who: the client_id of the author.
@@ -37,7 +40,7 @@ use tracing::{debug, error, info, instrument};
 pub(super) type InterClientMessage = (String, MessageValue);
 
 #[instrument(skip_all)]
-pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
+pub async fn server_main_event_loop(cli_args: CLIArg) -> miette::Result<()> {
     let address = cli_args.address;
     let port = cli_args.port;
 
@@ -51,58 +54,98 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
     let (sender_inter_client_broadcast_channel, _) =
         broadcast::channel::<InterClientMessage>(CHANNEL_SIZE);
 
-    // Shutdown cancellation token, to cooperatively & gracefully end all awaiting running
-    // tasks. Calling `abort()` isn't reliable. Neither is dropping the task. More info:
-    // https://cybernetist.com/2024/04/19/rust-tokio-task-cancellation-patterns/
-    let shutdown_token = CancellationToken::new();
+    // Keep track of the number of connected clients.
+    let safe_connected_client_count = Arc::new(AtomicUsize::new(0));
+
+    // Use broadcast channel for shutting down the server, to cooperatively & gracefully
+    // end all awaiting running tasks.
+    // Use this in favor of:
+    // 1. `abort()` - behavior is undefined / inconsistent.
+    // 2. Dropping the task is not reliable.
+    // 3. `CancellationToken` from `tokio_util` crate - does not work the way that
+    //    broadcast channel or other channels do. It doesn't block when `is_cancelled()`
+    //    is called, and creates a strange behavior in `tokio::select!` blocks, causing
+    //    the loop to be run repeatedly.
+    // More info: <https://cybernetist.com/2024/04/19/rust-tokio-task-cancellation-patterns/>
+    let (shutdown_sender, mut shutdown_receiver) = broadcast::channel::<()>(1);
 
     // Set up Ctrl-C handler.
-    setup_ctrlc_handler(shutdown_token.clone()).await?;
+    setup_ctrlc_handler(shutdown_sender.clone()).await?;
 
     // Create the kv store.
     let store = load_or_create_store(None)?;
 
     info!("Listening for new connections");
 
-    // Server infinite loop - accept connections.
+    // Server main event loop - accept connections.
     loop {
-        let shutdown_token_clone = shutdown_token.clone();
-        let store_clone = store.clone();
-
         tokio::select! {
-            // Branch 1: Accept incoming connections ("blocking").
-            result /* Result<(TcpStream, SocketAddr), Error> */ = listener.accept() => {
+            // Branch 1: Accept incoming connections (this is not blocking and doesn't tie
+            // up a thread 🎉).
+            result /*: Result<(TcpStream, SocketAddr), Error> */ = listener.accept() => {
                 let (client_tcp_stream, _) = result.into_diagnostic()?;
 
-                // Clone the broadcast channel senders.
-                let sender_inter_client_broadcast_channel = sender_inter_client_broadcast_channel.clone();
+                // Clone all the things to move into tokio::spawn.
+                let store_clone = store.clone();
+                let sender_inter_client_broadcast_channel_clone =
+                    sender_inter_client_broadcast_channel.clone();
+                let safe_connected_client_count_clone = safe_connected_client_count.clone();
+                let shutdown_sender_clone = shutdown_sender.clone();
+                let shutdown_receiver_clone = shutdown_sender_clone.subscribe();
 
-                // Start task to handle a connection.
+                // Start task to handle a connection. Note that there might be n of these
+                // tasks spawned where n is the number of connected clients.
                 tokio::spawn(async move {
+                    // Increment the connected client count.
+                    safe_connected_client_count_clone.fetch_add(1, Ordering::Relaxed);
+
                     let client_id = friendly_random_id::generate_friendly_random_id();
-                    match handle_client_task::event_loop(
+                    let result = handle_client_task::event_loop(
                         &client_id,
                         client_tcp_stream,
-                        sender_inter_client_broadcast_channel,
-                        shutdown_token_clone.clone(),
+                        sender_inter_client_broadcast_channel_clone,
+                        shutdown_sender_clone.clone(),
                         store_clone.clone(),
-                    )
-                    .await
+                        safe_connected_client_count_clone.clone(),
+                    ).await;
+
+                    // Decrement the connected client count.
+                    safe_connected_client_count_clone.fetch_sub(1, Ordering::Relaxed);
+
+                    match result
                     {
-                        Err(error) => error!(client_id, %error, "Problem handling client task"),
-                        Ok(_) => info!(client_id, "Successfully ended client task"),
+                        Err(error) => error!(client_id, %error, ?safe_connected_client_count_clone, "Problem handling client task"),
+                        Ok(_) => info!(client_id, ?safe_connected_client_count_clone, "Successfully ended client task"),
+                    }
+
+                    if !shutdown_receiver_clone.is_empty() && safe_connected_client_count_clone.load(Ordering::Relaxed) == 0 {
+                        info!(
+                            "{}",
+                            "Send signal to shutdown channel, connected clients: 0".to_string().yellow()
+                        );
+                        shutdown_sender_clone.send(()).ok();
                     }
                 });
-
             }
 
-            // Branch 2: Monitor shutdown cancellation token.
-            _ = shutdown_token.cancelled() => {
-                info!("Received shutdown signal");
-                break;
+            _ = shutdown_receiver.recv() => {
+                if safe_connected_client_count.load(Ordering::Relaxed) == 0 {
+                    info!(
+                        "{}",
+                        "Received signal in shutdown channel - No connected clients, exiting main loop".to_string().dark_red()
+                    );
+                    break;
+                } else {
+                    info!(
+                        "{}",
+                        "Received signal in shutdown channel - Waiting for connected clients to reach 0".to_string().dark_yellow()
+                    );
+                }
             }
         }
     }
+
+    println!("Goodbye! 👋");
 
     Ok(())
 }
@@ -112,16 +155,23 @@ pub async fn server_main(cli_args: CLIArg) -> miette::Result<()> {
 pub mod handle_client_task {
     use super::*;
 
-    /// This has an infinite loop, so you might want to call it in a spawn block.
+    /// This has an infinite loop, so you might want to call it in a spawn block. Server
+    /// shutdown policy - this function can't affect the main event loop. It only affects
+    /// the client task (it is responsible for sending an Exit message to it's connected
+    /// client) when Ctrl+C is detected.
     #[instrument(name = "handle_client_task:event_loop", skip_all, fields(%client_id))]
     pub async fn event_loop(
         client_id: &str,
         client_tcp_stream: TcpStream,
-        sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
-        shutdown_token: CancellationToken,
+        sender_inter_client_broadcast_channel: broadcast::Sender<InterClientMessage>,
+        shutdown_sender: broadcast::Sender<()>,
         store: Store,
+        safe_connected_client_count: Arc<AtomicUsize>,
     ) -> miette::Result<()> {
-        info!("Handling client connection");
+        info!(
+            "Handling client connection, connected client count: {}",
+            safe_connected_client_count.load(Ordering::Relaxed)
+        );
 
         // Get the receiver for the inter client channel.
         let mut receiver_inter_client_broadcast_channel =
@@ -141,6 +191,8 @@ pub mod handle_client_task {
         .await?;
 
         info!("Entering infinite loop to handle client messages");
+
+        let mut shutdown_receiver = shutdown_sender.subscribe();
 
         // Infinite server loop.
         loop {
@@ -177,11 +229,16 @@ pub mod handle_client_task {
                     }
                 }
 
-                // Branch 3: Monitor shutdown cancellation token.
-                _ = shutdown_token.cancelled() => {
-                    info!("Received shutdown signal");
-                    // Send Exit message to client.
-                    byte_io::try_write(&mut buf_writer, &MyServerMessage::Exit).await?;
+                // Branch 3: Monitor Ctrl-C shutdown broadcast channel. Note that this
+                // code runs n-times where n is the number of connected clients (each
+                // client is spawned a green thread / tokio task.
+                _ = shutdown_receiver.recv() => {
+                    info!("Received Ctrl-C signal");
+
+                    // Send Exit message to client (don't do anything if it fails).
+                    let _ = byte_io::try_write(&mut buf_writer, &MyServerMessage::Exit).await;
+                    info!("Sent Exit server message to client");
+
                     break;
                 }
             }
@@ -196,7 +253,7 @@ pub mod handle_client_task {
         client_id: &str,
         store: &Store,
         buf_writer: &mut BufWriter<Writer>,
-        sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
+        sender_inter_client_broadcast_channel: broadcast::Sender<InterClientMessage>,
     ) -> miette::Result<()> {
         info!("Handling client message");
 
@@ -272,7 +329,7 @@ mod generate_server_message {
     #[instrument(skip_all, fields(?payload))]
     pub(super) fn try_broadcast_to_others<'a>(
         client_id: &str,
-        sender_inter_client_broadcast_channel: Sender<InterClientMessage>,
+        sender_inter_client_broadcast_channel: broadcast::Sender<InterClientMessage>,
         payload: MessageValue,
     ) -> miette::Result<MyServerMessage> {
         info!("Broadcasting to others");
@@ -391,7 +448,7 @@ mod generate_server_message {
 }
 
 #[instrument(skip_all)]
-pub async fn setup_ctrlc_handler(shutdown_token: CancellationToken) -> miette::Result<()> {
+pub async fn setup_ctrlc_handler(shutdown_sender: broadcast::Sender<()>) -> miette::Result<()> {
     ctrlc::set_handler(move || {
         info!(
             "{}",
@@ -399,7 +456,7 @@ pub async fn setup_ctrlc_handler(shutdown_token: CancellationToken) -> miette::R
                 .yellow()
                 .bold()
         );
-        shutdown_token.cancel();
+        shutdown_sender.send(()).ok();
     })
     .into_diagnostic()
 }
