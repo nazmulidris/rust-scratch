@@ -18,6 +18,7 @@
 - [Mental models](#mental-models)
 - [Tokio tracing usage](#tokio-tracing-usage)
 - [Run the server and client](#run-the-server-and-client)
+  - [Run Jaeger in Docker](#run-jaeger-in-docker)
   - [To see help for the command](#to-see-help-for-the-command)
   - [To run the server on the default port on localhost:](#to-run-the-server-on-the-default-port-on-localhost)
   - [To run the client on the default port on localhost](#to-run-the-client-on-the-default-port-on-localhost)
@@ -105,6 +106,19 @@ mod client_task {
 
 ## Run the server and client
 <a id="markdown-run-the-server-and-client" name="run-the-server-and-client"></a>
+
+### Run Jaeger in Docker
+<a id="markdown-run-jaeger-in-docker" name="run-jaeger-in-docker"></a>
+
+Do the following before running the server or client.
+
+1. Run: `docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 -p14268:14268 jaegertracing/all-in-one:latest`
+2. Open: <http://localhost:16686/search>
+
+> 1) You can use `docker stats` to see the currently running containers.
+> 2) Here's a [full Rust
+>    example](https://github.com/open-telemetry/opentelemetry-rust/blob/main/examples/tracing-jaeger/src/main.rs)
+>    of using Jaeger tracing.
 
 ### To see help for the command
 <a id="markdown-to-see-help-for-the-command" name="to-see-help-for-the-command"></a>
