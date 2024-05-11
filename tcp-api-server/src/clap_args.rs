@@ -17,7 +17,7 @@
 
 use clap::{Parser, Subcommand};
 use r3bl_terminal_async::WriterArg;
-use std::{fmt::Display, net::IpAddr};
+use std::fmt::Display;
 
 const DEFAULT_PORT_NUM: u16 = 3000;
 const DEFAULT_ADDRESS_STR: &str = "127.0.0.1";
@@ -48,7 +48,7 @@ pub struct CLIArg {
         global = true,
         default_value = DEFAULT_ADDRESS_STR
     )]
-    pub address: IpAddr,
+    pub address: std::net::IpAddr,
 
     #[arg(
         short = 'p',
@@ -90,6 +90,16 @@ pub struct CLIArg {
         default_value = "info",
     )]
     pub tracing_log_level: tracing::Level,
+
+    // add a command line argument, to specify the "otel" collector endpoint as an ip4v address
+    #[arg(
+        short = 'o',
+        long = "otel-collector-endpoint",
+        name = color_print::cstr!("Set the <bright-yellow,bold>OTel collector endpoint</>"),
+        global = true,
+        default_value = "127.0.0.1:4317",
+    )]
+    pub otel_collector_endpoint: std::net::SocketAddr,
 
     #[command(subcommand)]
     pub subcommand: CLISubcommand,

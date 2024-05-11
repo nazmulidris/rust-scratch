@@ -119,7 +119,7 @@ pub async fn server_main_event_loop(cli_args: CLIArg) -> miette::Result<()> {
                     if ctrl_c_signal_received && no_clients_are_connected {
                         info!(
                             "{}",
-                            "Send signal to shutdown channel, connected clients: 0".to_string().yellow()
+                            "Send signal to shutdown channel, connected clients: 0" /* .to_string().yellow() */
                         );
                         shutdown_sender_clone.send(()).ok();
                     }
@@ -138,13 +138,13 @@ pub async fn server_main_event_loop(cli_args: CLIArg) -> miette::Result<()> {
                 if safe_connected_client_count.load(Ordering::SeqCst) == 0 {
                     info!(
                         "{}",
-                        "Received signal in shutdown channel - No connected clients, exiting main loop".to_string().dark_red()
+                        "Received signal in shutdown channel - No connected clients, exiting main loop" /* .to_string().dark_red() */
                     );
                     break;
                 } else {
                     info!(
                         "{}",
-                        "Received signal in shutdown channel - Waiting for connected clients to reach 0".to_string().dark_yellow()
+                        "Received signal in shutdown channel - Waiting for connected clients to reach 0" /*.to_string().dark_yellow() */
                     );
                 }
             }
@@ -156,8 +156,6 @@ pub async fn server_main_event_loop(cli_args: CLIArg) -> miette::Result<()> {
     Ok(())
 }
 
-/// The `client_id` field is added to the span, so that it can be used in the logs by all
-/// the functions in this module. See also: [crate::CLIENT_ID_TRACING_FIELD].
 pub mod handle_client_task {
     use super::*;
 
@@ -456,12 +454,13 @@ mod generate_server_message {
 #[instrument(skip_all)]
 pub async fn setup_ctrlc_handler(shutdown_sender: broadcast::Sender<()>) -> miette::Result<()> {
     ctrlc::set_handler(move || {
-        info!(
+        println!(
             "{}",
             "Ctrl-C event detected. Gracefully shutting down..."
                 .yellow()
                 .bold()
         );
+        info!("{}", "Ctrl-C event detected. Gracefully shutting down...");
         shutdown_sender.send(()).ok();
     })
     .into_diagnostic()

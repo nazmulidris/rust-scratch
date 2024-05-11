@@ -17,10 +17,10 @@
 
 // Attach.
 pub mod kv;
-pub mod protocol;
 pub mod miette_setup_global_report_handler;
+pub mod protocol;
 
 // Re-export.
 pub use kv::*;
-pub use protocol::*;
 pub use miette_setup_global_report_handler::*;
+pub use protocol::*;

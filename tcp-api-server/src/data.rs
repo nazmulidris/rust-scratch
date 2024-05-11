@@ -17,7 +17,6 @@
 
 use crate::{protocol, Buffer};
 use core::fmt;
-use crossterm::style::Stylize;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fmt::Formatter;
@@ -32,13 +31,14 @@ pub struct Data {
 }
 
 impl Debug for Data {
+    /// The ANSI escape sequences don't look very good for OTel.
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "Data {{ id: {}, description: {}, data.size: {} }}",
-            self.id.to_string().yellow(),
-            self.description.to_string().green(),
-            self.data.len().to_string().blue(),
+            self.id,          /* .to_string().yellow() */
+            self.description, /* .to_string().green() */
+            self.data.len(),  /* .to_string().blue() */
         )
     }
 }

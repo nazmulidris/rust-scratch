@@ -46,19 +46,9 @@ rand = "0.8.5"
 # https://tokio.rs/tokio/topics/tracing-next-steps
 tracing = "0.1.40"
 tracing-appender = "0.2.3"
-tracing-subscriber = "0.3.18"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tokio = { version = "1.37.0", features = ["full", "tracing"] }
-tokio-test = "0.4.4"                                           # For mock `TcpStream` (`Builder`)
-
-# OTel, jaeger, tracing. Implements the types defined in the Otel spec
-# Run: `docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 -p14268:14268 jaegertracing/all-in-one:latest`
-# Open: http://localhost:16686/search
-# Example: https://github.com/open-telemetry/opentelemetry-rust/blob/main/examples/tracing-jaeger/src/main.rs
-
-opentelemetry = { version = "0.17.0", features = ["rt-tokio"] }
-# Integration between the tracing crate and the opentelemetry crate
-tracing-opentelemetry = "0.17.2"
-opentelemetry-jaeger = { version = "0.16.0", features = ["rt-tokio"] }
+tokio-test = "0.4.4"                                                   # For mock `TcpStream` (`Builder`)
 
 [dev-dependencies]
 tempfile = "3.2.0"
