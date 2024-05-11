@@ -37,7 +37,7 @@ use tokio::{
     },
     sync::broadcast::{self},
 };
-use tracing::{error, info, instrument};
+use tracing::{error, info, instrument, Span};
 
 // Constants.
 const DELAY_MS: u64 = 75;
@@ -175,7 +175,7 @@ pub mod monitor_user_input {
     /// - Inject the `safe_client_id` into the call chain for tracing. All other async
     ///   functions which are instrumented will also have this field embedded in their log
     ///   output.
-    #[instrument(name = "user_input:event_loop", skip_all, fields(?safe_client_id))]
+    #[instrument(name = "monitor_user_input:event_loop", skip_all, fields(client_id))]
     pub async fn event_loop(
         write_half: OwnedWriteHalf,
         mut terminal_async: TerminalAsync,
@@ -200,6 +200,9 @@ pub mod monitor_user_input {
         let mut buf_writer = BufWriter::new(write_half);
         let mut shutdown_receiver = shutdown_sender.subscribe();
 
+        // Used to record the value of `client_id` only once.
+        let mut self_client_id: Option<String> = None;
+
         loop {
             tokio::select! {
                 // Poll shutdown cancellation token.
@@ -214,6 +217,16 @@ pub mod monitor_user_input {
                         ReadlineEvent::Line(input) => {
                             // Parse the input into a ClientMessage.
                             let result_parse = MyClientMessage::try_parse_input(&input);
+
+                            // Set the client_id for this client task, only once.
+                            if self_client_id.is_none() {
+                                let it = safe_client_id.lock().unwrap().clone();
+                                if it != DEFAULT_CLIENT_ID {
+                                    Span::current().record(CLIENT_ID_FIELD, it.clone());
+                                    self_client_id = Some(it);
+                                }
+                            }
+
                             match result_parse {
                                 Ok((client_message, rest)) => {
                                     let result_send = send_client_message(
@@ -264,7 +277,7 @@ pub mod monitor_user_input {
         Ok(())
     }
 
-    /// Please refer to the [ClientMessage] enum in the [protocol] module for the list of
+    /// Please refer to the [crate::ClientMessage] enum in the [crate::protocol] module for the list of
     /// commands.
     #[instrument(skip_all, fields(?client_message, %rest))]
     pub async fn send_client_message(
@@ -495,6 +508,7 @@ pub mod monitor_user_input {
 }
 
 const DEFAULT_CLIENT_ID: &str = "none";
+const CLIENT_ID_FIELD: &str = "client_id";
 
 pub mod monitor_tcp_conn_task {
     use super::*;
@@ -503,11 +517,7 @@ pub mod monitor_tcp_conn_task {
     /// - Inject the `safe_client_id` into the call chain for tracing. All other async
     ///   functions which are instrumented will also have this field embedded in their log
     ///   output.
-    #[instrument(
-        name = "monitor_tcp_conn_task:event_loop",
-        skip_all,
-        fields(?safe_client_id)
-    )]
+    #[instrument(name = "monitor_tcp_conn_task:event_loop", skip_all, fields(client_id))]
     pub async fn event_loop(
         buf_reader: OwnedReadHalf,
         mut shared_writer: SharedWriter,
@@ -524,12 +534,14 @@ pub mod monitor_tcp_conn_task {
                 result_payload = byte_io::try_read::<_, MyServerMessage>(&mut buf_reader) => {
                     match result_payload {
                         Ok(server_message) => {
-                            handle_server_message(
+                            if let Some(new_client_id) = handle_server_message(
                                 server_message,
                                 safe_client_id.clone(),
                                 shared_writer.clone(),
                                 shutdown_sender.clone()
-                            ).await?;
+                            ).await? {
+                                Span::current().record(CLIENT_ID_FIELD, &new_client_id);
+                            }
                         }
                         Err(error) => {
                             let client_id_str = safe_client_id.lock().unwrap().clone();

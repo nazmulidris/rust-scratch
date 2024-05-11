@@ -117,8 +117,7 @@ pub fn load_or_create_store(maybe_db_folder_path: Option<&String>) -> miette::Re
         "📑 {}",
         format!(
             "{}{}",
-            "load or create a store: ".blue(),
-            db_folder_path.bold().cyan()
+            "load or create a store: ", /*.blue() */ db_folder_path /*.bold().cyan() */
         )
     );
 
@@ -151,8 +150,8 @@ pub fn load_or_create_bucket_from_store<
         "📦 {}",
         format!(
             "{}{}",
-            "Load or create bucket from store, and instantiate: ".blue(),
-            bucket_name.bold().cyan()
+            "Load or create bucket from store, and instantiate: ", /*.blue() */
+            bucket_name,                                           /*.bold().cyan() */
         )
     );
 
@@ -182,8 +181,8 @@ pub fn insert_into_bucket<
         "🔽 {}",
         format!(
             "{}: {}: {}",
-            "Save key / value pair to bucket".green(),
-            key.to_string().bold().cyan(),
+            "Save key / value pair to bucket", /*.green() */
+            key.to_string(),                   /*.bold().cyan() */
             value_str
         )
     );
@@ -217,9 +216,9 @@ pub fn get_from_bucket<
         "🔼 {}",
         format!(
             "{}: {}: {}",
-            "Load key / value pair from bucket".green(),
-            key.to_string().bold().cyan(),
-            format!("{:?}", it).bold().cyan()
+            "Load key / value pair from bucket", /*.green() */
+            key.to_string(),                     /*.bold().cyan() */
+            format!("{:?}", it)                  /*.bold().cyan() */
         )
     );
 
@@ -250,9 +249,9 @@ pub fn remove_from_bucket<
         "❌ {}",
         format!(
             "{}: {}: {}",
-            "Delete key / value pair from bucket".green(),
-            key.to_string().bold().cyan(),
-            format!("{:?}", it).bold().cyan()
+            "Delete key / value pair from bucket", /*.green() */
+            key.to_string(),                       /*.bold().cyan() */
+            format!("{:?}", it)                    /*.bold().cyan() */
         )
     );
 
@@ -277,11 +276,11 @@ pub fn is_key_contained_in_bucket<
         "🔼 {}",
         format!(
             "{}: {}: {}",
-            "Check if key is contained in bucket".green(),
-            key.to_string().bold().cyan(),
+            "Check if key is contained in bucket", /*.green() */
+            key.to_string(),                       /*.bold().cyan() */
             match it {
-                true => "true".to_string().green(),
-                false => "false".to_string().red(),
+                true => "true",   /*.to_string().green() */
+                false => "false", /*.to_string().red() */
             }
         )
     );

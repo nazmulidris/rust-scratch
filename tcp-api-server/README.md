@@ -60,8 +60,9 @@ the client at any time. Comparing this to the web, it would be akin to a websock
 <a id="markdown-tokio-tracing-usage" name="tokio-tracing-usage"></a>
 
 Code:
-- [tracing setup](https://github.com/r3bl-org/r3bl-open-core/blob/nazmulidris/refactor-tokio-tracing/terminal_async/src/public_api/tracing_setup.rs)
-- [use tracing setup](https://github.com/nazmulidris/rust-scratch/tree/main/tcp-api-server)
+- [`r3bl_terminal_async` tracing setup](https://github.com/r3bl-org/r3bl-open-core/blob/nazmulidris/otel/terminal_async/src/public_api/tracing_setup.rs)
+- [`r3bl_terminal_async` jaeger & otel setup](https://github.com/r3bl-org/r3bl-open-core/blob/nazmulidris/otel/terminal_async/src/public_api/jaeger_setup.rs#L1)
+- [use tracing setup in this project](https://github.com/nazmulidris/rust-scratch/tree/main/tcp-api-server)
 
 Here's an example.
 
@@ -112,8 +113,13 @@ mod client_task {
 
 Do the following before running the server or client.
 
-1. Run: `docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 -p14268:14268 jaegertracing/all-in-one:latest`
+1. Run `docker compose up -d` to start the Jaeger backend. Alternatively you can run
+   `docker run -d -p16686:16686 -p4317:4317 -e COLLECTOR_OTLP_ENABLED=true
+   jaegertracing/all-in-one:latest`
 2. Open: <http://localhost:16686/search>
+3. Run the server or client.
+4. When you're done running the server or client, run `docker compose down` to stop the
+   Jaeger backend.
 
 > 1) You can use `docker stats` to see the currently running containers.
 > 2) Here's a [full Rust
