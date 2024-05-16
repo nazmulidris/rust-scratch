@@ -114,3 +114,77 @@ pub mod local_set_tests {
         local_set.await;
     }
 }
+
+/// From: <https://rust-lang.github.io/async-book/02_execution/03_wakeups.html>.
+/// - Build a timer that wakes up a task after a certain amount of time, to explore how
+///   `Waker` works.
+/// - For the sake of the example, we'll just spin up a new thread when the timer is
+///   created, sleep for the required time, and then signal the timer future when the time
+///   window has elapsed.
+pub mod build_a_timer_future_using_waker {
+    use std::{
+        future::Future,
+        pin::Pin,
+        sync::{Arc, Mutex},
+        task::{Context, Poll, Waker},
+        thread,
+        time::Duration,
+    };
+
+    #[derive(Default)]
+    pub struct SharedState {
+        pub completed: bool,
+        pub waker: Option<Waker>,
+    }
+
+    #[derive(Default)]
+    pub struct TimerFuture {
+        pub shared_state: Arc<Mutex<SharedState>>,
+    }
+
+    impl Future for TimerFuture {
+        type Output = ();
+
+        fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+            let mut shared_state = self.shared_state.lock().unwrap();
+            match shared_state.completed {
+                true => Poll::Ready(()),
+                false => {
+                    // Importantly, we have to update the Waker every time the future is
+                    // polled because the future may have moved to a different task with a
+                    // different Waker. This will happen when futures are passed around
+                    // between tasks after being polled.
+                    shared_state.waker = Some(cx.waker().clone());
+                    Poll::Pending
+                }
+            }
+        }
+    }
+
+    impl TimerFuture {
+        pub fn new(duration: Duration) -> Self {
+            let this = TimerFuture::default();
+
+            let shared_state_clone = this.shared_state.clone();
+            thread::spawn(move || {
+                thread::sleep(duration);
+                let mut shared_state = shared_state_clone.lock().unwrap();
+                shared_state.completed = true;
+                if let Some(waker) = shared_state.waker.take() {
+                    waker.wake();
+                }
+            });
+
+            this
+        }
+    }
+
+    #[tokio::test]
+    async fn run_timer_future_with_tokio() {
+        let timer_future = TimerFuture::new(Duration::from_millis(10));
+        let shared_state = timer_future.shared_state.clone();
+        assert!(!shared_state.lock().unwrap().completed);
+        timer_future.await;
+        assert!(shared_state.lock().unwrap().completed);
+    }
+}
