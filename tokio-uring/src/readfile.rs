@@ -15,12 +15,12 @@
  *   limitations under the License.
  */
 
-//! From: https://tokio.rs/blog/2021-07-tokio-uring
 //! More info:
-//! - https://github.com/tokio-rs/tokio-uring
-//! - https://www.scylladb.com/2020/05/05/how-io_uring-and-ebpf-will-revolutionize-programming-in-linux/0/
-//! - https://www.datadoghq.com/blog/engineering/introducing-glommio/
-//! - https://lore.kernel.org/io-uring/4af91b50-4a9c-8a16-9470-a51430bd7733@kernel.dk/T/#u
+//! - <https://tokio.rs/blog/2021-07-tokio-uring>
+//! - <https://github.com/tokio-rs/tokio-uring>
+//! - <https://www.scylladb.com/2020/05/05/how-io_uring-and-ebpf-will-revolutionize-programming-in-linux/0/>
+//! - <https://www.datadoghq.com/blog/engineering/introducing-glommio/>
+//! - <https://lore.kernel.org/io-uring/4af91b50-4a9c-8a16-9470-a51430bd7733@kernel.dk/T/#u>
 use std::path::Path;
 
 use crossterm::style::Stylize;
