@@ -1835,7 +1835,7 @@ dependencies = [
  "opentelemetry_sdk",
  "pretty_assertions",
  "r3bl_rs_utils_core 0.9.13",
- "r3bl_tui 0.5.3",
+ "r3bl_tui 0.5.5",
  "r3bl_tuify",
  "strip-ansi-escapes",
  "strum 0.26.2",
@@ -1849,31 +1849,6 @@ dependencies = [
  "tracing-subscriber",
  "unicode-segmentation",
  "unicode-width",
-]
-
-[[package]]
-name = "r3bl_tui"
-version = "0.5.3"
-dependencies = [
- "chrono",
- "colorgrad",
- "copypasta-ext",
- "crossterm",
- "futures-util",
- "get-size",
- "is-terminal",
- "log",
- "nom",
- "r3bl_ansi_color 0.6.9",
- "r3bl_rs_utils_core 0.9.13",
- "r3bl_rs_utils_macro 0.9.9",
- "rand",
- "serde",
- "serde_json",
- "strum 0.25.0",
- "strum_macros 0.25.3",
- "syntect",
- "tokio",
 ]
 
 [[package]]
@@ -1894,6 +1869,31 @@ dependencies = [
  "r3bl_ansi_color 0.6.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "r3bl_rs_utils_core 0.9.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "r3bl_rs_utils_macro 0.9.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand",
+ "serde",
+ "serde_json",
+ "strum 0.25.0",
+ "strum_macros 0.25.3",
+ "syntect",
+ "tokio",
+]
+
+[[package]]
+name = "r3bl_tui"
+version = "0.5.5"
+dependencies = [
+ "chrono",
+ "colorgrad",
+ "copypasta-ext",
+ "crossterm",
+ "futures-util",
+ "get-size",
+ "is-terminal",
+ "log",
+ "nom",
+ "r3bl_ansi_color 0.6.9",
+ "r3bl_rs_utils_core 0.9.13",
+ "r3bl_rs_utils_macro 0.9.9",
  "rand",
  "serde",
  "serde_json",
@@ -2410,7 +2410,7 @@ dependencies = [
  "pretty_assertions",
  "r3bl_rs_utils_core 0.9.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "r3bl_terminal_async",
- "r3bl_tui 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r3bl_tui 0.5.3",
  "rand",
  "serde",
  "serde_json",
