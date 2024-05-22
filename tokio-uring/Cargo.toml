@@ -13,8 +13,12 @@ path = "src/socketserver.rs"
 
 [dependencies]
 tokio-uring = "0.4.0"
-miette = { version = "7.2.0", features = ["fancy"] }
-crossterm = { version = "0.27.0", features = ["event-stream"] }
-tokio = { version = "1.37.0", features = ["full"] }
+tokio = { version = "1.37.0", features = ["full", "tracing"] }
 tokio-util = "0.7.11"
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+
 ctrlc = "3.4.4"
+miette = { version = "7.2.0", features = ["fancy"] }
+
+crossterm = { version = "0.27.0", features = ["event-stream"] }

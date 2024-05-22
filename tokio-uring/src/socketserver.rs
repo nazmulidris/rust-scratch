@@ -39,6 +39,7 @@
 //! - <https://tokio.rs/blog/2021-07-tokio-uring>
 //! - <https://docs.rs/tokio-uring/latest/tokio_uring/net/struct.TcpStream.html>
 //! - <https://tokio.rs/blog/2021-07-tokio-uring>
+use crossterm::style::Stylize;
 use miette::IntoDiagnostic;
 use std::net::SocketAddr;
 use tokio::task::AbortHandle;
@@ -50,6 +51,16 @@ use tokio_util::sync::CancellationToken;
 
 /// Run `netcat localhost:8080` to test this server (once you run this main function).
 fn main() -> miette::Result<()> {
+    // Register tracing subscriber.
+    tracing_subscriber::fmt()
+        .without_time()
+        .compact()
+        .with_target(false)
+        .with_line_number(false)
+        .with_thread_ids(true)
+        .with_thread_names(true)
+        .init();
+
     let cancellation_token = CancellationToken::new();
 
     // Can't use #[tokio::main] for `main()`, so we have to use the
@@ -57,8 +68,11 @@ fn main() -> miette::Result<()> {
     // thread, because we don't want it to collide with the `tokio_uring::start()` call.
     let cancellation_token_clone = cancellation_token.clone();
     std::thread::spawn(move || {
-        tokio::runtime::Builder::new_current_thread()
+        // If you use `Builder::new_current_thread()`, the runtime will use the single /
+        // current thread scheduler. `Builder::new_multi_thread()` will use a thread pool.
+        tokio::runtime::Builder::new_multi_thread()
             .enable_all()
+            .worker_threads(4)
             .build()
             .into_diagnostic()
             .unwrap()
@@ -67,7 +81,7 @@ fn main() -> miette::Result<()> {
 
     let cancellation_token_clone = cancellation_token.clone();
     ctrlc::set_handler(move || {
-        println!("Received Ctrl+C!");
+        tracing::info!("Received Ctrl+C!");
         cancellation_token_clone.cancel();
     })
     .into_diagnostic()?;
@@ -78,32 +92,66 @@ fn main() -> miette::Result<()> {
 }
 
 async fn async_main(cancellation_token: CancellationToken) {
-    println!("async_main - start");
+    tracing::info!("{}", "async_main - start".to_string().magenta().bold());
 
-    let mut interval = tokio::time::interval(std::time::Duration::from_millis(1_000));
+    let mut interval = tokio::time::interval(std::time::Duration::from_millis(2_500));
 
     loop {
         tokio::select! {
             _ = interval.tick() => {
-                println!("async_main - tick");
+                tracing::info!("{}", "async_main - tick".to_string().magenta().bold());
+
+                // Notice in the output, that these tasks are NOT spawned in the same
+                // order repeatedly. They are run in parallel on different threads. And
+                // these are scheduled in a non-deterministic order.
+                let task_1 = tokio::spawn(async {
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                    tracing::info!("async_main - tick {} - spawn", "#1".to_string().on_green().black().bold());
+                });
+                let task_2 = tokio::spawn(async {
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                    tracing::info!("async_main - tick {} - spawn", "#2".to_string().on_red().black().bold());
+                });
+                let task_3 = tokio::spawn(async {
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                    tracing::info!("async_main - tick {} - spawn", "#3".to_string().on_blue().black().bold());
+                });
+                let _ = tokio::join!(task_1, task_2, task_3);
             }
             _ = cancellation_token.cancelled() => {
-                println!("async_main - cancelled");
+                tracing::info!("async_main - cancelled");
                 break;
             }
         }
     }
 
-    println!("async_main - end");
+    tracing::info!("{}", "async_main - end".to_string().magenta().bold());
+}
+
+pub async fn is_port_available(addr: std::net::SocketAddr) -> miette::Result<bool> {
+    let socket = tokio::net::TcpSocket::new_v4().into_diagnostic()?;
+    match socket.connect(addr).await {
+        Ok(_) => Ok(false),
+        Err(_) => Ok(true),
+    }
 }
 
 async fn start_server(cancellation_token: CancellationToken) -> miette::Result<()> {
     let tcp_listener = {
         let addr: SocketAddr = "0.0.0.0:8080".parse().into_diagnostic()?;
+        // You can bind to the same address repeatedly, and it won't return an error!
+        // Might have to check to see whether the port is open or not before binding to
+        // it!
+        if is_port_available(addr).await? {
+            tracing::info!("Port {} is available", addr.port());
+        } else {
+            tracing::info!("Port {} is NOT available", addr.port());
+            return Err(miette::miette!("Port {} is NOT available", addr.port()));
+        }
         TcpListener::bind(addr).into_diagnostic()?
     };
 
-    println!("server - started");
+    tracing::info!("{}", "server - started".to_string().red().bold());
 
     let mut abort_handles: Vec<AbortHandle> = vec![];
 
@@ -121,13 +169,13 @@ async fn start_server(cancellation_token: CancellationToken) -> miette::Result<(
         }
     }
 
-    println!("server - stopped");
+    tracing::info!("{}", "server - stopped".to_string().red().bold());
     Ok(())
 }
 
 /// This is an echo server implementation.
 async fn handle_connection(stream: TcpStream) -> miette::Result<()> {
-    println!("handle_connection - start");
+    tracing::info!("handle_connection - start");
 
     let mut total_bytes_read = 0;
     let mut buf = vec![0u8; 10];
@@ -150,9 +198,15 @@ async fn handle_connection(stream: TcpStream) -> miette::Result<()> {
         // Update the buffer.
         buf = slice.into_inner();
         total_bytes_read += num_bytes_read;
+
+        tracing::info!(
+            "{}: {}",
+            "handle_connection - num_bytes_read".to_string().red(),
+            num_bytes_read
+        );
     }
 
-    println!(
+    tracing::info!(
         "handle_connection - end, total_bytes_read: {}",
         total_bytes_read
     );
