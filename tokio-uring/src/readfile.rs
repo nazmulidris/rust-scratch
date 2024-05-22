@@ -21,10 +21,10 @@
 //! - <https://www.scylladb.com/2020/05/05/how-io_uring-and-ebpf-will-revolutionize-programming-in-linux/0/>
 //! - <https://www.datadoghq.com/blog/engineering/introducing-glommio/>
 //! - <https://lore.kernel.org/io-uring/4af91b50-4a9c-8a16-9470-a51430bd7733@kernel.dk/T/#u>
-use std::path::Path;
 
 use crossterm::style::Stylize;
 use miette::IntoDiagnostic;
+use std::path::Path;
 use tokio_uring::fs::File;
 
 fn main() -> miette::Result<()> {
@@ -36,6 +36,9 @@ async fn read_file(name: impl AsRef<Path>) -> miette::Result<()> {
     let file = File::open(name).await.into_diagnostic()?;
 
     let buf_move = vec![0; 4096];
+
+    // Read some data, the buffer is passed by ownership and submitted to the kernel. When
+    // the operation completes, we get the buffer back.
     let (result, buf_from_kernel) = file.read_at(buf_move, 0).await;
     let bytes_read = result.into_diagnostic()?;
 

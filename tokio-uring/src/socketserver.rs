@@ -41,6 +41,7 @@
 //! - <https://tokio.rs/blog/2021-07-tokio-uring>
 use crossterm::style::Stylize;
 use miette::IntoDiagnostic;
+use r3bl_terminal_async::port_availability;
 use std::net::SocketAddr;
 use tokio::task::AbortHandle;
 use tokio_uring::{
@@ -128,25 +129,23 @@ async fn async_main(cancellation_token: CancellationToken) {
     tracing::info!("{}", "async_main - end".to_string().magenta().bold());
 }
 
-pub async fn is_port_available(addr: std::net::SocketAddr) -> miette::Result<bool> {
-    let socket = tokio::net::TcpSocket::new_v4().into_diagnostic()?;
-    match socket.connect(addr).await {
-        Ok(_) => Ok(false),
-        Err(_) => Ok(true),
-    }
-}
-
 async fn start_server(cancellation_token: CancellationToken) -> miette::Result<()> {
     let tcp_listener = {
         let addr: SocketAddr = "0.0.0.0:8080".parse().into_diagnostic()?;
         // You can bind to the same address repeatedly, and it won't return an error!
         // Might have to check to see whether the port is open or not before binding to
         // it!
-        if is_port_available(addr).await? {
-            tracing::info!("Port {} is available", addr.port());
-        } else {
-            tracing::info!("Port {} is NOT available", addr.port());
-            return Err(miette::miette!("Port {} is NOT available", addr.port()));
+        match port_availability::check(addr).await? {
+            port_availability::Status::Free => {
+                tracing::info!("Port {} is available", addr.port());
+            }
+            port_availability::Status::Occupied => {
+                tracing::info!("Port {} is NOT available, can't bind to it", addr.port());
+                return Err(miette::miette!(
+                    "Port {} is NOT available, can't bind to it",
+                    addr.port()
+                ));
+            }
         }
         TcpListener::bind(addr).into_diagnostic()?
     };
@@ -182,6 +181,8 @@ async fn handle_connection(stream: TcpStream) -> miette::Result<()> {
 
     loop {
         // Read from the stream.
+        // Read some data, the buffer is passed by ownership and submitted to the kernel.
+        // When the operation completes, we get the buffer back.
         let (result_num_bytes_read, return_buf) = stream.read(buf).await;
         buf = return_buf;
         let num_bytes_read = result_num_bytes_read.into_diagnostic()?;
