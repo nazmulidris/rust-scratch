@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-//! More info:
+//! # References:
 //! - <https://tokio.rs/blog/2021-07-tokio-uring>
 //! - <https://github.com/tokio-rs/tokio-uring>
 //! - <https://www.scylladb.com/2020/05/05/how-io_uring-and-ebpf-will-revolutionize-programming-in-linux/0/>

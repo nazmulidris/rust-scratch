@@ -16,7 +16,6 @@
  */
 
 //! # tokio-uring socket server
-//!
 //! This is a simple TCP server that listens on port 8080 and echoes back any data that it
 //! receives.
 //!
@@ -27,7 +26,6 @@
 //!   Ctrl+C signals.
 //!
 //! # Usage
-//!
 //! To run this server, run `cargo run --bin socketserver`.
 //!
 //! To test this server, you can use the `netcat` command-line tool. Run `netcat localhost 8080`
@@ -35,7 +33,6 @@
 //! the text that you typed.
 //!
 //! # References
-//!
 //! - <https://tokio.rs/blog/2021-07-tokio-uring>
 //! - <https://docs.rs/tokio-uring/latest/tokio_uring/net/struct.TcpStream.html>
 //! - <https://tokio.rs/blog/2021-07-tokio-uring>
