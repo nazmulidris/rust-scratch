@@ -28,6 +28,17 @@ Timecodes:
 00:29 Format the file bytes as a string and colorize the output
 00:31 Can't mix #[tokio::main] with tokio_uring::start
 00:32 Create an echo TCP server using tokio_uring (socketserver.rs)
+00:33
+00:36 Run TcpListener::bind(addr) and check for port availability
+00:40 Test check port availability
+00:44 Main loop to accept connections and shutdown the server using CancellationToken
+00:46 Use tokio::select! and tokio_uring::spawn
+00:50 Vec of abort handles for server shutdown
+00:53 Write the echo server code
+01:04 CtrlC handler to shutdown the server
+01:09 Intermix tokio runtime with tokio_uring::start (runtime)
+01:13 Run tasks in the tokio runtime using tokio::spawn
+
 
 ## Command to stitch videos into one
 
