@@ -26,9 +26,15 @@ Benefits of using the Typestate Pattern:
   easier to understand. Here are some resources where you can learn more about the
   Typestate Pattern in Rust:
 
-## More info:
+# References
 
-- https://en.wikipedia.org/wiki/Typestate_analysis
-- https://gemini.google.com/app/5a89741003af5358
-- https://cliffle.com/blog/rust-typestate/
-- https://www.youtube.com/watch?v=pwmIQzLuYl0
+Functional typed design patterns:
+- https://arxiv.org/pdf/2307.07069
+
+More info on typestate:
+- enums and typestate (and limitations): https://gemini.google.com/app/5bd7fed51858cb4d
+- https://willcrichton.net/rust-api-type-patterns/typestate.html
+- https://ruk.si/notes/rust/typestate/
+- https://rustype.github.io/notes/notes/rust-typestate-series/rust-typestate-part-1
+- https://docs.rust-embedded.org/book/static-guarantees/typestate-programming.html
+- https://yoric.github.io/post/rust-typestate/
