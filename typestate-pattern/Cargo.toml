@@ -3,6 +3,22 @@ name = "typestate-pattern"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "ex1"
+path = "src/ex1.rs"
+
+[[bin]]
+name = "ex2"
+path = "src/ex2.rs"
+
+[[bin]]
+name = "ex3"
+path = "src/ex3.rs"
+
+[[bin]]
+name = "ex3_1"
+path = "src/ex3_1.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

@@ -15,6 +15,13 @@
  *   limitations under the License.
  */
 
+//! Best of both worlds, using generics and struct / enum with a marker trait.
+//!
+//! - You can now group all the states under a marker.
+//! - You can have methods that are specific to a variant.
+//! - You can specify methods that are common to all.
+//! - It's like a very sophisticated builder pattern if you're already familiar with that.
+
 use self::type_state_builder::HttpResponse;
 use crossterm::style::Stylize;
 
@@ -27,9 +34,12 @@ pub fn main() -> Result<(), String> {
         response.get_size().to_string().blue().bold()
     );
 
+    // Transition to HeaderAndBody state by calling `set_status_line`.
+    let mut response = response.set_status_line(200, "OK");
+    println!("response: {:#?}", response);
+
     // Status line is required.
     println!("{}", "HeaderAndBody state".red().bold().underlined());
-    let mut response = response.set_status_line(200, "OK");
     println!("response_code: {}", response.get_response_code());
     println!("response body: {:#?}", response.get_body());
     println!("response: {:#?}", response);
@@ -102,14 +112,14 @@ pub mod type_state_builder {
         pub state: S,
     }
 
-    // Operations that are only valid in ().
+    // Operations that are only valid in `()`.
     impl HttpResponse<()> {
         pub fn new() -> HttpResponse<Start> {
             HttpResponse { state: Start {} }
         }
     }
 
-    // Operations that are only valid in StartState.
+    // Operations that are only valid in `Start`.
     impl HttpResponse<Start> {
         pub fn set_status_line(
             self,
@@ -126,8 +136,9 @@ pub mod type_state_builder {
         }
     }
 
-    // Operations that are only valid in HeaderAndBodyState.
+    // Operations that are only valid in `HeaderAndBodyState`.
     impl HttpResponse<HeaderAndBody> {
+        // setter.
         pub fn add_header(&mut self, key: &str, value: &str) {
             if self.state.headers.is_none() {
                 self.state.headers.replace(Vec::new());
@@ -137,18 +148,22 @@ pub mod type_state_builder {
             }
         }
 
+        // getter.
         pub fn get_response_code(&self) -> u8 {
             self.state.response_code
         }
 
+        // setter.
         pub fn set_body(&mut self, body: &str) {
             self.state.body.replace(body.to_string());
         }
 
+        // getter.
         pub fn get_body(&self) -> Option<&str> {
             self.state.body.as_deref()
         }
 
+        // transition to Final state.
         pub fn finish(mut self) -> HttpResponse<Final> {
             HttpResponse {
                 state: Final {
@@ -161,20 +176,24 @@ pub mod type_state_builder {
         }
     }
 
-    // Operations that are only valid in FinalState.
+    // Operations that are only valid in `Final`.
     impl HttpResponse<Final> {
+        // getter.
         pub fn get_headers(&self) -> &Vec<(String, String)> {
             &self.state.headers
         }
 
+        // getter.
         pub fn get_body(&self) -> &str {
             &self.state.body
         }
 
+        // getter.
         pub fn get_response_code(&self) -> u8 {
             self.state.response_code
         }
 
+        // getter.
         pub fn get_status_line(&self) -> &str {
             &self.state.status_line
         }
