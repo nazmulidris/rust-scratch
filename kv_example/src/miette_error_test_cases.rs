@@ -136,12 +136,15 @@ pub mod app_use_case_into_diagnostic_and_context {
                     "wrapper for the source parse int error",
                 ));
 
+        // let converted_result: std::result::Result<u32, Box<dyn std::error::Error>> =
+        //     miette_result.map_err(|report| report.into());
+
         let converted_result: std::result::Result<(), Box<dyn std::error::Error>> =
             match miette_result {
                 Ok(_) => Ok(()),
                 Err(miette_report) => {
-                    let error: Box<dyn std::error::Error> = miette_report.into();
-                    Err(error)
+                    let boxed_error: Box<dyn std::error::Error> = miette_report.into();
+                    Err(boxed_error)
                 }
             };
 
@@ -213,7 +216,7 @@ mod library_use_case_fails_tests_miette_thiserror {
 
     // Flat error.
     fn return_flat_error_db() -> miette::Result<(), KVStoreError> {
-        Err(KVStoreError::CouldNotCreateDbFolder {
+        Result::Err(KVStoreError::CouldNotCreateDbFolder {
             db_folder_path: "some/path/to/db".into(),
         })
     }
@@ -228,9 +231,9 @@ mod library_use_case_fails_tests_miette_thiserror {
     #[test]
     fn fails_with_flat_error() -> miette::Result<()> {
         let result = return_flat_error_db();
-        if let Err(rkv_error) = &result {
+        if let Err(error) = &result {
             assert_eq!(
-                format!("{:?}", rkv_error),
+                format!("{:?}", error),
                 "CouldNotCreateDbFolder { db_folder_path: \"some/path/to/db\" }"
             );
         }
@@ -247,7 +250,7 @@ mod library_use_case_fails_tests_miette_thiserror {
         // Variant 1 - Very verbose.
         let store_error = UnderlyingDatabaseError::DatabaseCorrupted;
         let rkv_error = KVStoreError::from(store_error);
-        Err(rkv_error)
+        Result::Err(rkv_error)
 
         // Variant 2 - Same as above.
         // Err(UnderlyingDatabaseError::DatabaseCorrupted.into())
