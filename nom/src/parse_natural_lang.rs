@@ -32,6 +32,7 @@ mod tests {
         branch::*, bytes::complete::*, character::complete::*, combinator::*, sequence::*, IResult,
     };
 
+    #[allow(dead_code)]
     /// Hold the parsed data from a sentence.
     mod output_structs {
         #[derive(Debug)]

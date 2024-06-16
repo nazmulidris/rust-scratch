@@ -212,7 +212,7 @@ mod tests {
     /// separate line).
     #[test]
     fn parse_vec_string() {
-        let input_vec: Vec<String> = vec![
+        let input_vec: Vec<String> = [
             "style = {",
             "    fg_color: #FF0000;",
             "    bg_color: #00FF00FF;",
