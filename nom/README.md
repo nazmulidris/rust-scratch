@@ -1,7 +1,6 @@
 # nom parser combinator
 <a id="markdown-nom-parser-combinator" name="nom-parser-combinator"></a>
 
-
 <!-- TOC -->
 
 - [Introduction w/ simple example](#introduction-w-simple-example)
@@ -157,12 +156,12 @@ How does this code work?
 ## Learn by doing
 <a id="markdown-learn-by-doing" name="learn-by-doing"></a>
 
-
 - There are lots of great examples of varying levels of complexity in the `src` folder in this repo.
 - So if you run `cargo test -- --nocapture` you will see them all run.
 - Most of these examples are written as tests. Their files are loaded by `main.rs`.
+  - `parse_simple_hex.rs` (`tests_1` and `tests_2`)
+  - `parse_hex_with_error_handling.rs` (`tests_3`)
   - `convert_vec_string_for_parsing.rs`
-  - `parse_simple_hex.rs`
   - `parse_simple_css.rs`
   - `parse_natural_lang.rs`
 - The `md_parser` folder contains a fully functional Markdown parser (and isn't written as a test
@@ -171,7 +170,6 @@ How does this code work?
 
 ## Documentation
 <a id="markdown-documentation" name="documentation"></a>
-
 
 - Useful:
   - Videos:

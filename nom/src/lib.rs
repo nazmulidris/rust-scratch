@@ -15,5 +15,12 @@
  *   limitations under the License.
  */
 
+pub mod convert_vec_string_for_parsing;
+pub mod parse_hex_with_error_handling;
+pub mod parse_natural_lang;
+pub mod parser_simple_css;
+
+pub mod parser_simple_hex;
+
 pub mod md_parser;
 pub use md_parser::*;

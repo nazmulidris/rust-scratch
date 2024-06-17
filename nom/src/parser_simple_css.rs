@@ -36,7 +36,6 @@ mod tests {
         branch::*, bytes::complete::*, character::complete::*, combinator::*, multi::*,
         sequence::*, IResult,
     };
-
     use std::collections::HashMap;
 
     /// Output structs to hold color w/ and w/out alpha.
@@ -112,28 +111,32 @@ mod tests {
     }
     pub use output_structs::*;
 
+    /// Type alias for [nom::error::VerboseError] to make the code more readable.
+    type VError<'input> = nom::error::VerboseError<&'input str>;
+
     /// Parser functions for a single hex segment & `#RRGGBB` & `#RRGGBBAA`.
     mod hex_color_parser_helper_fns {
         use super::*;
 
-        pub fn parse_single_hex_segment(input: &str) -> IResult<&str, u8> {
+        pub fn parse_single_hex_segment(input: &str) -> IResult<&str, u8, VError> {
             map_res(
-                take_while_m_n(2, 2, |c: char| c.is_ascii_hexdigit()),
-                |s: &str| u8::from_str_radix(s, 16),
+                take_while_m_n(2, 2, |it: char| it.is_ascii_hexdigit()),
+                |it: &str| u8::from_str_radix(it, 16),
             )(input)
         }
 
-        pub fn parse_hex_color_no_alpha(input: &str) -> IResult<&str, Color> {
+        pub fn parse_hex_color_no_alpha(input: &str) -> IResult<&str, Color, VError> {
             let (input, _) = tag("#")(input)?;
             let (input, (red, green, blue)) = tuple((
                 parse_single_hex_segment,
                 parse_single_hex_segment,
                 parse_single_hex_segment,
             ))(input)?;
+
             Ok((input, Color::NoAlpha(ColorNoAlpha::new(red, green, blue))))
         }
 
-        pub fn parse_hex_color_with_alpha(input: &str) -> IResult<&str, Color> {
+        pub fn parse_hex_color_with_alpha(input: &str) -> IResult<&str, Color, VError> {
             let (input, _) = tag("#")(input)?;
             let (input, (red, green, blue, alpha)) = tuple((
                 parse_single_hex_segment,
@@ -141,6 +144,7 @@ mod tests {
                 parse_single_hex_segment,
                 parse_single_hex_segment,
             ))(input)?;
+
             Ok((
                 input,
                 Color::WithAlpha(ColorWithAlpha::new(red, green, blue, alpha)),
@@ -154,12 +158,14 @@ mod tests {
         use super::*;
 
         /// Parse `style = { bg_color: .. , fg_color: .. }` parser.
-        pub fn parse_style(input: &str) -> IResult<&str, Option<HashMap<ColorKind, Color>>> {
+        pub fn parse_style(
+            input: &str,
+        ) -> IResult<&str, Option<HashMap<ColorKind, Color>>, VError> {
             // Parse `style = {`.
             let (input, _) = tuple((
                 tag("style"),
                 multispace0,
-                nom::character::complete::char('='),
+                char('='),
                 multispace0,
                 tag("{"),
                 multispace0,
@@ -182,10 +188,10 @@ mod tests {
             Ok((input, Some(output)))
         }
 
-        /// Parse `<key>: #<val>`, where:
+        /// Parse `<key> : <val> ;`, where:
         /// 1. `<key>` can be `fg_color` or `bg_color`.
         /// 2. `<val>` can be `#RRGGBB` or `#RRGGBBAA`.
-        pub fn parse_color_key_value(input: &str) -> IResult<&str, (ColorKind, Color)> {
+        pub fn parse_color_key_value(input: &str) -> IResult<&str, (ColorKind, Color), VError> {
             // Parse `fg_color` or `bg_color`.
             let (input, key_str) = alt((tag("fg_color"), tag("bg_color")))(input)?;
 

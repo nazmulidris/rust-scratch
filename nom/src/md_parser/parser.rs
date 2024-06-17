@@ -31,7 +31,7 @@ use nom::{branch::*, combinator::*, multi::*, IResult};
 /// 3. code block (which contains string slices of the language & code),
 /// 4. line (which contains a [Fragments]).
 #[rustfmt::skip]
-pub fn parse_markdown(input: &str) -> IResult<&str, Document> {
+pub fn root_parse_markdown(input: &str) -> IResult<&str, Document> {
     many0(
         /* Each of these parsers end up scanning until EOL. */
         alt((
@@ -52,7 +52,7 @@ mod tests {
 
     #[test]
     fn test_parse_markdown() {
-        let it = parse_markdown(raw_strings::MARKDOWN_INPUT);
+        let it = root_parse_markdown(raw_strings::MARKDOWN_INPUT);
         assert_eq!(
             it,
             Ok((

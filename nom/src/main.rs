@@ -15,11 +15,6 @@
  *   limitations under the License.
  */
 
-mod convert_vec_string_for_parsing;
-mod parse_natural_lang;
-mod parser_simple_css;
-mod parser_simple_hex;
-
 fn main() {
     println!("Please run the tests to see this in action: `cargo test -- --nocapture`");
 }

@@ -18,6 +18,7 @@
 //! This module contains a parser that parses a hex color string into a [Color] struct.
 //! The hex color string can be in the following format: `#RRGGBB`, eg: `#FF0000` for red.
 
+#[allow(unused_imports)]
 use nom::{bytes::complete::*, combinator::*, error::*, sequence::*, IResult, Parser};
 use std::num::ParseIntError;
 
@@ -35,6 +36,7 @@ impl Color {
 }
 
 /// Helper functions to match and parse hex digits. These are not [Parser] implementations.
+#[allow(dead_code)]
 mod helper_fns {
     use super::*;
 
@@ -58,9 +60,11 @@ mod helper_fns {
 }
 
 /// These are [Parser] implementations that are used by [hex_color_no_alpha].
+#[allow(dead_code)]
 mod intermediate_parsers {
     use super::*;
 
+    /// Higher order function.
     /// Call this to return function that implements the [Parser] trait.
     pub fn gen_hex_seg_parser_fn<'input, E>() -> impl Parser<&'input str, u8, E>
     where
@@ -74,7 +78,7 @@ mod intermediate_parsers {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests_1 {
     use super::*;
 
     /// This is the "main" function that is called by the tests.
@@ -84,16 +88,20 @@ mod tests {
             context("remove #", tag("#")),
             /* return color */
             tuple((
-                context("first hex seg", helper_fns::parse_hex_seg),
+                context(
+                    "first hex seg",
+                    helper_fns::parse_hex_seg, /* just the function */
+                ),
                 context(
                     "second hex seg",
-                    intermediate_parsers::gen_hex_seg_parser_fn(),
+                    intermediate_parsers::gen_hex_seg_parser_fn(), /* higher order function */
                 ),
                 context(
                     "third hex seg",
+                    /* inline */
                     map_res(
-                        take_while_m_n(2, 2, helper_fns::match_is_hex_digit),
-                        helper_fns::parse_str_to_hex_num,
+                        take_while_m_n(2, 2, |it: char| it.is_ascii_hexdigit()),
+                        |it| u8::from_str_radix(it, 16),
                     ),
                 ),
             )),
@@ -138,21 +146,12 @@ mod tests_2 {
     > {
         let mut root_fn = preceded(
             /* throw away "#" */
-            context("remove #", tag("#")),
+            tag("#"),
             /* return color */
             tuple((
-                context("first hex seg", helper_fns::parse_hex_seg),
-                context(
-                    "second hex seg",
-                    intermediate_parsers::gen_hex_seg_parser_fn(),
-                ),
-                context(
-                    "third hex seg",
-                    map_res(
-                        take_while_m_n(2, 2, helper_fns::match_is_hex_digit),
-                        helper_fns::parse_str_to_hex_num,
-                    ),
-                ),
+                helper_fns::parse_hex_seg,
+                helper_fns::parse_hex_seg,
+                helper_fns::parse_hex_seg,
             )),
         );
 
@@ -160,7 +159,7 @@ mod tests_2 {
         let pre_root_fn = take_until::<
             /* input after "#" */ &str,
             /* start remainder */ &str,
-            nom::error::VerboseError<&str>,
+            /* error type */ nom::error::VerboseError<&str>,
         >("#");
 
         if let Ok((input_after_hash, start_remainder)) = pre_root_fn(input) {

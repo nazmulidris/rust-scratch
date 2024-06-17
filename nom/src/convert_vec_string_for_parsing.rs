@@ -16,8 +16,7 @@
  */
 
 //! In the TUI engine, the editor component uses a `Vec<String>` to store the lines of text. Each
-//! line is represented as a single unicode string. In order to parse
-//!
+//! line is represented as a single unicode string.
 
 #[cfg(test)]
 mod tests {
