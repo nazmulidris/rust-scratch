@@ -1,20 +1,39 @@
+/*
+ *   Copyright (c) 2024 Nazmul Idris
+ *   All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
+
 /// Equivalent to [test_sleep_right_and_wrong_ways_v2]. This test uses
 /// [`tokio::pin`] and [`tokio::time::sleep`].
-/// Run the test using `cargo test -- --nocapture test_sleep_right_and_wrong_ways_v1`.
+/// Run the test using:
+/// `cargo test -- --nocapture test_sleep_right_and_wrong_ways_v1`
 #[tokio::test]
 async fn test_sleep_right_and_wrong_ways_v1() {
     let mut count = 5;
 
     let sleep_time = 100;
+    let duration = std::time::Duration::from_millis(sleep_time);
 
-    let sleep = tokio::time::sleep(std::time::Duration::from_millis(sleep_time));
+    let sleep = tokio::time::sleep(duration);
     tokio::pin!(sleep);
 
     loop {
         tokio::select! {
             // Branch 1 (right way)
-            // This branch executes a deterministic number of times. The same sleep future
-            // is re-used on each iteration.
+            // This branch executes a deterministic number of times. The same
+            // sleep future is re-used on each iteration.
             _ = &mut sleep => {
                 println!("branch 1 - tick : {count}");
                 count -= 1;
@@ -24,10 +43,11 @@ async fn test_sleep_right_and_wrong_ways_v1() {
             }
 
             // Branch 2 (wrong way)
-            // This branch is executed a non deterministic number of times. This is
-            // because the sleep future is not pinned. It is dropped when the other branch
-            // is executed. Then on the next iteration, a new sleep future is created.
-            _ = tokio::time::sleep(std::time::Duration::from_millis(sleep_time)) => {
+            // This branch is executed a non deterministic number of times.
+            // This is because the sleep future is not pinned. It is dropped
+            // when the other branch is executed. Then on the next iteration,
+            // a new sleep future is created.
+            _ = tokio::time::sleep(duration) => {
                 println!("branch 2 - sleep");
             }
         }
@@ -36,20 +56,22 @@ async fn test_sleep_right_and_wrong_ways_v1() {
 
 /// Equivalent to [test_sleep_right_and_wrong_ways_v1]. This test uses
 /// [`tokio::time::interval()`]
-/// Run the test using `cargo test -- --nocapture test_sleep_right_and_wrong_ways_v2`.
+/// Run the test using:
+/// `cargo test -- --nocapture test_sleep_right_and_wrong_ways_v2`
 #[tokio::test]
 async fn test_sleep_right_and_wrong_ways_v2() {
     let mut count = 5;
 
     let sleep_time = 100;
+    let duration = std::time::Duration::from_millis(sleep_time);
 
-    let mut interval = tokio::time::interval(std::time::Duration::from_millis(sleep_time));
+    let mut interval = tokio::time::interval(duration);
 
     loop {
         tokio::select! {
             // Branch 1 (right way)
-            // This branch executes a deterministic number of times. The same sleep future
-            // is re-used on each iteration.
+            // This branch executes a deterministic number of times. The same
+            // sleep future is re-used on each iteration.
             _ = interval.tick() => {
                 println!("branch 1 - tick : {count}");
                 count -= 1;
@@ -59,22 +81,26 @@ async fn test_sleep_right_and_wrong_ways_v2() {
             }
 
             // Branch 2 (wrong way)
-            // This branch is executed a non deterministic number of times. This is
-            // because the sleep future is not pinned. It is dropped when the other branch
-            // is executed. Then on the next iteration, a new sleep future is created.
-            _ = tokio::time::sleep(std::time::Duration::from_millis(sleep_time)) => {
+            // This branch is executed a non deterministic number of times.
+            // This is because the sleep future is not pinned. It is dropped
+            // when the other branch is executed. Then on the next iteration,
+            // a new sleep future is created.
+            _ = tokio::time::sleep(duration) => {
                 println!("branch 2 - sleep");
             }
         }
     }
 }
 
-/// Run the test using `cargo test -- --nocapture test_safe_cancel_example`.
+/// Run the test using:
+/// `cargo test -- --nocapture test_safe_cancel_example`
 #[tokio::test]
 async fn test_safe_cancel_example() {
     let sleep_time = 100;
+    let duration = std::time::Duration::from_millis(sleep_time);
+
     let mut count = 5;
-    let mut interval = tokio::time::interval(std::time::Duration::from_millis(sleep_time));
+    let mut interval = tokio::time::interval(duration);
 
     // Shutdown channel.
     let (tx, mut rx) = tokio::sync::mpsc::channel(1);
@@ -111,7 +137,8 @@ pub mod test_unsafe_cancel_example {
     use futures_util::StreamExt;
 
     use std::{io::Error, pin::Pin};
-    pub type PinnedInputStream = Pin<Box<dyn Stream<Item = Result<usize, Error>>>>;
+    pub type MyResult = Result<usize, Error>;
+    pub type PinnedInputStream = Pin<Box<dyn Stream<Item = MyResult>>>;
 
     pub fn get_input_vec() -> Vec<usize> {
         vec![1, 2, 3, 4]
@@ -119,10 +146,11 @@ pub mod test_unsafe_cancel_example {
 
     /// There's a 100ms delay between each event.
     pub fn gen_input_stream() -> PinnedInputStream {
+        let duration = std::time::Duration::from_millis(100);
         let it = stream! {
             for item in get_input_vec() {
                 // wait for 100ms
-                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                tokio::time::sleep(duration).await;
                 println!("yielding item: {item}");
                 yield Ok(item);
             }
@@ -144,7 +172,10 @@ pub mod test_unsafe_cancel_example {
         }
     }
 
-    async fn read_3_items_not_cancel_safe(stream: &mut PinnedInputStream) -> Vec<usize> {
+    #[rustfmt::skip]
+    async fn read_3_items_not_cancel_safe(stream: &mut PinnedInputStream)
+        -> Vec<usize>
+    {
         let mut vec = vec![];
 
         println!("branch 2 => entering read_3_items_not_cancel_safe");
@@ -163,7 +194,8 @@ pub mod test_unsafe_cancel_example {
     async fn test_unsafe_cancel_stream() {
         let mut stream = gen_input_stream();
         let sleep_time = 300;
-        let sleep = tokio::time::sleep(std::time::Duration::from_millis(sleep_time));
+        let duration = std::time::Duration::from_millis(sleep_time);
+        let sleep = tokio::time::sleep(duration);
         tokio::pin!(sleep);
 
         loop {
@@ -182,7 +214,8 @@ pub mod test_unsafe_cancel_example {
 
         println!("loop exited");
 
-        // Only [1, 2] is consumed by Branch 2 before the timeout happens in Branch 1.
+        // Only [1, 2] is consumed by Branch 2 before the timeout happens
+        // in Branch 1.
         let it = stream.next().await.unwrap().unwrap();
         assert_eq!(it, 3);
     }
