@@ -134,7 +134,7 @@ async fn test_safe_cancel_example() {
 pub mod test_unsafe_cancel_example {
     use async_stream::stream;
     use futures_core::Stream;
-    use futures_util::StreamExt;
+    use futures_util::{FutureExt, StreamExt};
 
     use std::{io::Error, pin::Pin};
     pub type MyResult = Result<usize, Error>;
@@ -172,6 +172,11 @@ pub mod test_unsafe_cancel_example {
         }
     }
 
+    /// There is no need to [futures_util::FutureExt::fuse()] the items in each
+    /// [tokio::select!] branch. This is because Tokio's event loop is designed to handle
+    /// this efficiently by remembering the state of each future across iterations.
+    ///
+    /// More info: <https://gemini.google.com/app/e55fd62339b674fb>
     #[rustfmt::skip]
     async fn read_3_items_not_cancel_safe(stream: &mut PinnedInputStream)
         -> Vec<usize>
@@ -181,7 +186,7 @@ pub mod test_unsafe_cancel_example {
         println!("branch 2 => entering read_3_items_not_cancel_safe");
 
         for _ in 0..3 {
-            let item = stream.next().await.unwrap().unwrap();
+            let item = stream.next() /* .fuse() */ .await.unwrap().unwrap();
             println!("branch 2 => read_3_items_not_cancel_safe got item: {item}");
             vec.push(item);
             println!("branch 2 => vec so far contains: {vec:?}");
@@ -190,6 +195,11 @@ pub mod test_unsafe_cancel_example {
         vec
     }
 
+    /// There is no need to [futures_util::FutureExt::fuse()] the items in each
+    /// [tokio::select!] branch. This is because Tokio's event loop is designed to handle
+    /// this efficiently by remembering the state of each future across iterations.
+    ///
+    /// More info: <https://gemini.google.com/app/e55fd62339b674fb>
     #[tokio::test]
     async fn test_unsafe_cancel_stream() {
         let mut stream = gen_input_stream();
@@ -206,7 +216,7 @@ pub mod test_unsafe_cancel_example {
                     break;
                 }
                 // Branch 2 - Read from stream.
-                it = read_3_items_not_cancel_safe(&mut stream) => {
+                it = read_3_items_not_cancel_safe(&mut stream) /* .fuse() */ => {
                     println!("branch 2 - got 3 items: {it:?}");
                 }
             }
