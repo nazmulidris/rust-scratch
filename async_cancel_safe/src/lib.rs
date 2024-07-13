@@ -132,40 +132,30 @@ async fn test_safe_cancel_example() {
 
 #[cfg(test)]
 pub mod test_unsafe_cancel_example {
-    use async_stream::stream;
-    use futures_core::Stream;
-    use futures_util::{FutureExt, StreamExt};
-
-    use std::{io::Error, pin::Pin};
-    pub type MyResult = Result<usize, Error>;
-    pub type PinnedInputStream = Pin<Box<dyn Stream<Item = MyResult>>>;
+    use r3bl_test_fixtures::{gen_input_stream_with_delay, PinnedInputStream};
 
     pub fn get_input_vec() -> Vec<usize> {
         vec![1, 2, 3, 4]
     }
 
-    /// There's a 100ms delay between each event.
-    pub fn gen_input_stream() -> PinnedInputStream {
-        let duration = std::time::Duration::from_millis(100);
-        let it = stream! {
-            for item in get_input_vec() {
-                // wait for 100ms
-                tokio::time::sleep(duration).await;
-                println!("yielding item: {item}");
-                yield Ok(item);
-            }
-        };
-        Box::pin(it)
+    pub fn get_stream_delay() -> std::time::Duration {
+        std::time::Duration::from_millis(100)
+    }
+
+    fn get_input_stream() -> PinnedInputStream<usize> {
+        gen_input_stream_with_delay(get_input_vec(), get_stream_delay())
     }
 
     /// This is just to see how to use the async stream [gen_input_stream()].
     #[tokio::test]
     async fn test_generate_event_stream_pinned() {
+        use futures_util::StreamExt;
+
         let mut count = 0;
-        let mut stream = gen_input_stream();
+        let mut stream = get_input_stream();
 
         while let Some(item) = stream.next().await {
-            let lhs = item.unwrap();
+            let lhs = item;
             let rhs = get_input_vec()[count];
             assert_eq!(lhs, rhs);
             count += 1;
@@ -178,15 +168,16 @@ pub mod test_unsafe_cancel_example {
     ///
     /// More info: <https://gemini.google.com/app/e55fd62339b674fb>
     #[rustfmt::skip]
-    async fn read_3_items_not_cancel_safe(stream: &mut PinnedInputStream)
+    async fn read_3_items_not_cancel_safe(stream: &mut PinnedInputStream<usize>)
         -> Vec<usize>
     {
+        use futures_util::StreamExt;
         let mut vec = vec![];
 
         println!("branch 2 => entering read_3_items_not_cancel_safe");
 
         for _ in 0..3 {
-            let item = stream.next() /* .fuse() */ .await.unwrap().unwrap();
+            let item = stream.next() /* .fuse() */ .await.unwrap();
             println!("branch 2 => read_3_items_not_cancel_safe got item: {item}");
             vec.push(item);
             println!("branch 2 => vec so far contains: {vec:?}");
@@ -202,7 +193,9 @@ pub mod test_unsafe_cancel_example {
     /// More info: <https://gemini.google.com/app/e55fd62339b674fb>
     #[tokio::test]
     async fn test_unsafe_cancel_stream() {
-        let mut stream = gen_input_stream();
+        use futures_util::StreamExt;
+
+        let mut stream = get_input_stream();
         let sleep_time = 300;
         let duration = std::time::Duration::from_millis(sleep_time);
         let sleep = tokio::time::sleep(duration);
@@ -226,7 +219,7 @@ pub mod test_unsafe_cancel_example {
 
         // Only [1, 2] is consumed by Branch 2 before the timeout happens
         // in Branch 1.
-        let it = stream.next().await.unwrap().unwrap();
+        let it = stream.next().await.unwrap();
         assert_eq!(it, 3);
     }
 }
