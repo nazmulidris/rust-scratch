@@ -1,0 +1,8 @@
+[package]
+name = "box-and-pin"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+crossterm = { version = "0.27.0", features = ["event-stream"] }
+serial_test = "3.1.1"

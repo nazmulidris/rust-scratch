@@ -43,8 +43,8 @@ sudo apt full-upgrade -y
 sudo apt autoremove -y
 
 # Make fish the default shell.
-echo (which fish) | sudo tee -a /etc/shells
-sudo chsh --shell (which fish)
+echo $(which fish) | sudo tee -a /etc/shells
+sudo chsh --shell $(which fish)
 
 echo "⛔ Please logout and log back in to start using using fish shell, and then run 1-install.fish"
 echo "⛔ Please restart for flatpak, and then run 1-install.fish"

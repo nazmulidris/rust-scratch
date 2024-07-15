@@ -1,0 +1,25 @@
+Chapters:
+00:00:00 Introduction
+00:00:30 async Rust, Futures and state machine and the need for Pin
+00:01:30 Why Pin and Box?
+00:02:15 Move semantics
+00:02:44 Create a new crate for live coding
+00:03:35 Deps to make tests run serially and to format println output
+00:04:00 Operating systems background - process, heap, stack, and memory layout
+00:06:00 Sized and stack
+00:07:30 Variables and values (on the stack)
+00:08:30 Rust ownership and borrowing
+00:09:11 Pointers and indirection, pointers and pointees
+00:10:00 Stack and function calls
+00:11:00 Heap and !Sized, type erasure, trait pointers, and need for Box
+00:12:50 Stack and heap interplay
+00:13:30 Pointer, pointee, size, indirection, and dereference
+00:15:15 Rust - get address of variable
+00:22:00 Formatting println output with color
+00:25:00 Macros that we can use for ease of use
+00:29:00 size of pointees
+00:30:40 Moving boxes and switching the contents of boxes
+00:32:00 Example - move a box
+00:48:00 Example - swap the contents of two boxes
+00:59:00 Example - pin and box together
+01:10:10 Outro
