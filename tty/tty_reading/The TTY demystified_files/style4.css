@@ -1,0 +1,701 @@
+body {
+	background-color: #ffffff;
+	padding: 0;
+	margin: 0;
+	font-size: 20px;
+}
+
+div img {
+	display: block;
+}
+
+div.outer {
+	width: auto;
+	padding: 0;
+	margin: 0;
+}
+
+div.leftbar {
+	display: inline-block;
+	width: 192px;
+	vertical-align: top;
+	margin: 10px;
+	background-color: #dfdfc0;
+	border: 1px solid black;
+	border-radius: 3px;
+	padding: 8px;
+	font-size: 15px;
+}
+
+div.tocdiv {
+	text-align: center;
+	width: auto;
+	display: block;
+}
+
+div.tocalt {
+	text-align: center;
+	width: auto;
+	display: none;
+}
+
+@media (max-width: 960px) {
+	div.tocdiv { display: none; }
+	div.tocalt { display: block; }
+	div.leftbar { display: block; width: auto; max-width: 686px; }
+}
+
+div.maindiv {
+	display: inline-block;
+	max-width: 724px;
+	width: 100%;
+	vertical-align: top;
+	margin: 0px;
+	background-color: #ffffff;
+}
+
+div.maindiv2 {
+	margin: 10px;
+}
+
+span.nobreak {
+	white-space: nowrap;
+}
+
+td {
+	vertical-align: top;
+}
+
+td.righty {
+	text-align: right;
+}
+
+td.centery {
+	text-align: center;
+}
+
+td.songlength {
+	text-align: right;
+	padding-left: 1em;
+}
+
+h1 {
+	margin: 8px 4px 16px 0;
+	font: bold 2em sans-serif;
+}
+
+h2 {
+	margin: 25px 10px 8px 0;
+	font: bold 1.3em sans-serif;
+}
+
+h3 {
+	margin: 8px 10px 2px 0;
+	font: bold 1em sans-serif;
+}
+
+div.toc0 {
+	text-align: center;
+	width: auto;
+}
+
+div.toc2 {
+	text-align: left;
+	font: .9em sans-serif;
+	margin: 2em 5px 1em 0;
+}
+
+div.tocgroup {
+	width: 180px;
+	margin: 0 auto;
+}
+
+table.toc {
+	margin: 10px 0px 10px 0px;
+	width: auto;
+}
+
+th.toc0 {
+	text-align: center;
+	font: bold 1.1em sans-serif;
+	padding-right: 5px;
+}
+
+th.toc1 {
+	text-align: left;
+	font: bold .9em sans-serif;
+}
+
+td.toc2 {
+	text-align: left;
+	font: .9em sans-serif;
+	padding: 0px 10px 0px 0px;
+}
+
+td.toc2 a {
+	color: #444444;
+}
+
+td.toc2 a:visited {
+	color: #888888;
+}
+
+td.toc2 a:hover {
+	color: #8888ff;
+}
+
+p {
+	margin: 15px 10px 15px 0;
+}
+
+table.hatstory tr td {
+	vertical-align: middle;
+	padding-left: 4em;
+}
+
+table.space tr th {
+	text-align: left;
+	padding-right: 2em;
+}
+
+table.space tr td {
+	padding-right: 2em;
+}
+
+td.thumb {
+	background-color: #dddddd;
+	border: 1px solid #444444;
+	text-align: center;
+	vertical-align: top;
+	margin: 2px;
+	padding: 2px;
+	width: 200px;
+}
+
+div.thumb {
+	background-color: #dddddd;
+	border: 1px solid #444444;
+	text-align: center;
+	vertical-align: top;
+	margin: 2px;
+	padding: 2px;
+	width: 200px;
+}
+
+p.stamp {
+	font: 0.7em sans-serif;
+	text-align: left;
+	margin: 2px;
+}
+
+a {
+	border: 0px;
+	color: #444444;
+}
+
+a:visited {
+	border: 0px;
+	color: #888888;
+}
+
+a:hover {
+	border: 0px;
+	color: #8888ff;
+}
+
+img {
+	border: 0px;
+}
+
+div.haiku {
+	background-color: #dddddd;
+	border: 1px solid black;
+	padding: 40px;
+	margin: 10px 10px 0 0;
+	height: 4em;
+}
+
+div.haikuouter {
+	width: 18em;
+	height: 12em;
+	float: left;
+}
+
+ul.haiku {
+	list-style: none;
+	margin-bottom: 10px;
+	margin: 0;
+	padding: 0;
+}
+
+p.haikustamp {
+	font: 0.6em sans-serif;
+	text-align: right;
+	margin: 20px 0 0 0;
+}
+
+ul.clean {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+ul.clean li {
+	padding: 2px 0 2px 0;
+}
+
+ul.pixkw {
+	padding: 0 0 0 1em;
+}
+
+ul.pixkw li {
+	padding: 2px 0 2px 0;
+}
+
+div.cookie {
+	background-color: #dddddd;
+	border: 1px solid black;
+	padding: 20px 40px 20px 40px;
+	margin: 10px 10px 0 0;
+}
+
+div.comment {
+	background-color: #dddddd;
+	padding: 0px 10px 0px 10px;
+}
+
+div.pageblurb {
+	background-color: #e8e8e0;
+	margin: 10px 0px 2px 0px;
+	padding: 10px 10px 0px 10px;
+}
+
+div.pagethumb {
+	display: inline-block;
+	width: 128px;
+	vertical-align: top;
+}
+
+div.pageinfo {
+	display: inline-block;
+	max-width: 540px;
+	margin-left: 16px;
+	margin-bottom: 10px;
+	vertical-align: top;
+}
+
+
+img.pagethumb {
+	margin: 0 1em .5em 0;
+}
+
+p.attrib {
+	font: italic 1em serif;
+	text-align: right;
+}
+
+p.edited {
+	font: 0.7em sans-serif;
+	margin-top: 8px;
+	padding-top: 12px;
+	margin-bottom: 4px;
+	text-align: left;
+}
+
+p.cookielink {
+	font: 0.7em sans-serif;
+	margin-top: 0px;
+	text-align: left;
+}
+
+div.pic {
+	background-color: #dddddd;
+	border: 1px solid black;
+	margin: 4px;
+	padding: 4px;
+}
+
+p.picnote {
+	font: 0.7em sans-serif;
+	padding: 0;
+	margin: 4px 0 0 0;
+	text-align: center;
+}
+
+div.picinfo {
+	margin: 4px;
+	padding: 10px;
+	background-color: #dddddd;
+	border: 1px solid black;
+}
+
+td.pixmeta1 {
+	font: 0.8em serif;
+	text-align: right;
+	font-variant: small-caps;
+}
+
+td.pixmeta2 {
+	font: 0.8em serif;
+	padding-left: 4px;
+}
+
+p.picdesc {
+	font: italic 0.9em serif;
+}
+
+input {
+	padding: 0;
+	margin: 0;
+}
+
+input.sitesearch {
+	width: 172px;
+	height: 1.2em;
+}
+
+span.bigquote {
+	font: bold 1.0em serif;
+	color: #5c6df1;
+}
+
+div.confbox {
+	margin: .5em 0;
+	padding: 4px 4px 0px 0px;
+	float: left;
+	text-align: center;
+	font-size: 0.8em;
+	width: 100%;
+}
+
+ul.conf {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+ul.conf li {
+	padding: 0;
+}
+
+ul.dot {
+	margin: 5px;
+}
+
+ul.dot li {
+	margin-left: .1em;
+}
+
+form {
+	padding: 0;
+	margin: 0;
+}
+
+div.idthumb {
+	background-color: #ffffff;
+	margin: 2px;
+	float: right;
+	border: 1px solid #cccccc;
+	width: 48px;
+	height: 48px;
+	vertical-align: middle;
+	text-align: center;
+}
+
+textarea.foruminp {
+	width: 100%;
+	height: 6em;
+	background-color: #efefd0;
+	border: 1px solid black;
+	padding: 3px;
+}
+
+input.forumis {
+	width: 100%;
+}
+
+p.forumii {
+	font: 0.7em sans-serif;
+	margin: 2px 0 0 0;
+}
+
+input.forumreg {
+	width: 300px;
+	background-color: #dfdfc0;
+}
+
+textarea.forum {
+	width: 70%;
+	height: 10em;
+	background-color: #dfdfc0;
+}
+
+input.button {
+	margin: 2px 2px 2px 0px;
+	border: 2px solid black;
+	padding: 2px;
+	background-color: #dddddd;
+}
+
+div.forum0 {
+	background-color: #dfdfc0;
+	border-bottom: 4px solid white;
+}
+
+div.forum1 {
+	width: 9em;
+	word-wrap: break-word;
+	display: inline-block;
+	vertical-align: top;
+	padding: 8px;
+}
+
+div.forum2 {
+	max-width: 33em;
+	word-wrap: break-word;
+	display: inline-block;
+	vertical-align: top;
+	padding: 8px;
+}
+
+div.forumquote {
+	border: 1px solid #444400;
+	margin: 4px 0px 4px 2em;
+	padding: 4px;
+	background-color: #efefef;
+	word-wrap: break-word;
+}
+
+p.forumquote {
+	font: 0.7em sans-serif;
+	margin: 0 0 5px 0;
+}
+
+div.forumpostbuttons {
+	display: block;
+	text-align: right;
+}
+
+div.forumpostbutton {
+	margin: 8px;
+	width: 8em;
+	display: inline-block;
+}
+
+input.fbutton {
+	margin: 2px 2px 2px 0px;
+	border: 2px solid black;
+	padding: 2px;
+	width: 100%;
+	background-color: #dddddd;
+}
+
+a.spoilerbutton {
+	margin: 2px 2px 2px 0px;
+	border: 1px solid black;
+	padding: 5px;
+	font: 1em sans-serif bold;
+	color: black;
+	text-decoration: none;
+	background-color: #dddddd;
+}
+
+a.spoilerbutton:hover {
+	color: #8888dd;
+}
+
+div.otherbg {
+	background-color: #dddddd;
+	padding: 10px;
+	margin: 10px 0 10px 10px;
+}
+
+div.otherbg90 {
+	background-color: #dddddd;
+	padding: 10px;
+	margin: 10px 0 10px 10px;
+	font-size: 0.7em;
+}
+
+div.centered {
+	text-align: center;
+}
+
+div.cookiefilter {
+	background-color: #cccccc;
+	border-bottom: 1px solid #999999;
+	border-right: 1px solid #999999;
+	padding: 10px;
+	margin: 0px;
+}
+
+div.inlineright {
+	clear: right;
+	float: right;
+	margin: 20px 10px 10px 10px;
+	border: 1px solid black;
+}
+
+div.inlineleft {
+	clear: left;
+	float: left;
+	margin-right: 20px;
+	border: 1px solid black;
+}
+
+div.inlineimg {
+	margin: 10px;
+	border: 1px solid black;
+}
+
+table.cookiefilter th {
+	font-variant: small-caps;
+	font-size: 0.8em;
+}
+
+table.cookiefilter td {
+	font-size: 0.8em;
+}
+
+input.cfbutton {
+	margin: 2px 2px 2px 0px;
+	border: 2px solid black;
+	padding: 2px;
+	font-size: 0.8em;
+	width: 100%;
+	background-color: #dddddd;
+}
+
+div.archive {
+	background-color: #dddddd;
+	padding: 10px;
+	margin: 10px;
+}
+
+ul.chronolist {
+	list-style: none;
+	padding: 0;
+	margin: 0 0 10px 0;
+}
+
+ul.chronolist li {
+	padding: 4px;
+	display: block;
+	float: left;
+}
+
+p.disclaimer {
+	font-variant: small-caps;
+	font-size: 0.8em;
+}
+
+div.cappic {
+	margin: 1em;
+}
+
+div.cappic img {
+	border: 1px solid black;
+}
+
+div.caption {
+	font-style: italic;
+	width: 100%;
+}
+
+table.themes th {
+	text-align: left;
+}
+
+tt {
+	font: 0.85em monospace;
+	color: #666666;
+}
+
+pre {
+	font: 0.85em monospace;
+}
+
+div.otherbg tt {
+	font: 1.0em monospace;
+	color: #000000;
+}
+
+div.otherbg tt span.inverse {
+	font: 1.0em monospace;
+	background-color: #000000;
+	color: #dddddd;
+}
+
+table.sokoban {
+	background: #000000;
+	border-spacing: 0px;
+	border-collapse: collapse;
+	margin: 0px 10px 0px 10px;
+	border: 3px solid #bbbbbb;
+}
+
+table.sokoban tr td {
+	width: 20px;
+	height: 20px;
+	background: #eedddd;
+	border-style: none;
+	padding: 0px;
+	margin: 0px;
+}
+
+input.arrow {
+	width: 40px;
+	height: 30px;
+	font: 15px sans-serif;
+	margin: 0px;
+	border: 2px solid black;
+	padding: 0px;
+}
+
+input.sokobutton {
+	width: 100%;
+	height: 30px;
+	font: 15px sans-serif;
+	margin: 0px;
+	border: 2px solid black;
+	padding: 2px;
+}
+
+table.sokoban_nav {
+	border-spacing: 0px;
+}
+
+div.ttysignal {
+	width: 300px;
+	height: 20em;
+	float: left;
+	background-image: url("/programming/tty/note.png");
+	background-position: center center;
+	background-repeat: no-repeat;
+	padding: 0px;
+}
+
+div.ttysignal p {
+	margin: 4px 24px 4px 24px;
+	font-size: 14px;
+}
+
+div.ttysignal ul {
+	margin: 4px 20px 4px 10px;
+	padding-left: 40px;
+	font-size: 14px;
+}
+
+div.ttysignal h3 {
+	text-align: center;
+	margin-top: 30px;
+}
+
+table.sttytable tr td {
+	background: #dddddd;
+	padding: 5px;
+}
+
+i {
+	font-style: italic;
+}

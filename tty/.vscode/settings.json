@@ -1,0 +1,19 @@
+{
+  "cSpell.words": [
+    "killall",
+    "nohup",
+    "sigaction",
+    "SIGCHLD",
+    "SIGCONT",
+    "SIGPIPE",
+    "SIGSTOP",
+    "SIGTSTP",
+    "SIGTTIN",
+    "SIGTTOU",
+    "SIGWINCH",
+    "subshell",
+    "subshells",
+    "UART",
+    "Userland"
+  ]
+}
