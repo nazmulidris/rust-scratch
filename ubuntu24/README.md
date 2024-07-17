@@ -35,15 +35,40 @@ and run the scripts, or just copy the links below and run them in your terminal.
 The scripts can be run in the following order. Really the only one that is required to be run
 first is the `0-bootstrap.bash` script. The rest can be run in any order.
 
-1. `curl -s https://raw.githubusercontent.com/nazmulidris/rust-scratch/main/ubuntu24/0-bootstrap.bash | bash`
-2. `curl -s https://raw.githubusercontent.com/nazmulidris/rust-scratch/main/ubuntu24/1-install.fish | fish`
-3. `curl -s https://raw.githubusercontent.com/nazmulidris/rust-scratch/main/ubuntu24/2-install-docker.bash | bash`
-4. `curl -s https://raw.githubusercontent.com/nazmulidris/rust-scratch/main/ubuntu24/3-install-fonts.fish | fish`
+You can run the following commands to get this on your machine. The first script
+`0-bootstrap.bash` has to be installed first. It installs `fish` shell and makes it the
+default and installs `flatpak` and `flatpak flathub`. It also installs `bass` to allow
+running bash scripts in fish. The remainder of the scripts can be run in any order.
+
+```bash
+sudo apt install -y curl git
+cd ~/Downloads/
+git clone https://github.com/nazmulidris/rust-scratch/
+cd rust-scratch/ubuntu24/
+./0-bootstrap.bash
+# You will need to reboot after running the 0-bootstrap.bash script
+```
+
+Once you reboot, you can run the following scripts.
+
+```bash
+cd ~/Downloads/rust-scratch/ubuntu24/
+./1-install.fish
+./2-install-docker.bash
+./3-install-fonts.fish
+```
+
+You can see the contents of the scripts by clicking on the links below:
+
+1. <https://raw.githubusercontent.com/nazmulidris/rust-scratch/main/ubuntu24/0-bootstrap.bash>
+2. <https://raw.githubusercontent.com/nazmulidris/rust-scratch/main/ubuntu24/1-install.fish>
+3. <https://raw.githubusercontent.com/nazmulidris/rust-scratch/main/ubuntu24/2-install-docker.bash>
+4. <https://raw.githubusercontent.com/nazmulidris/rust-scratch/main/ubuntu24/3-install-fonts.fish>
 
 Optional scripts:
-1. `curl -s https://github.com/nazmulidris/rust-scratch/blob/main/ubuntu24/install-agent-into-bin.fish | fish`
-2. `curl -s https://github.com/nazmulidris/rust-scratch/blob/main/ubuntu24/fix-gnome-session-path-env-var-linuxbrew.fish | fish`
-3. `curl -s https://github.com/nazmulidris/rust-scratch/blob/main/ubuntu24/fix-usr-local-bin-symlinks.fish | fish`
+1. <https://github.com/nazmulidris/rust-scratch/blob/main/ubuntu24/install-agent-into-bin.fish>
+2. <https://github.com/nazmulidris/rust-scratch/blob/main/ubuntu24/fix-gnome-session-path-env-var-linuxbrew.fish>
+3. <https://github.com/nazmulidris/rust-scratch/blob/main/ubuntu24/fix-usr-local-bin-symlinks.fish>
 
 ## Gnome Extensions
 
