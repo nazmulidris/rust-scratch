@@ -1,7 +1,12 @@
 {
   "cSpell.words": [
+    "baeldung",
+    "epoll",
     "killall",
     "nohup",
+    "POSIX",
+    "procspawn",
+    "rustix",
     "sigaction",
     "SIGCHLD",
     "SIGCONT",

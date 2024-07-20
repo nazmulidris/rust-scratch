@@ -13,6 +13,7 @@ Table of contents
   - [Using redirection to write to another PTY run command in left terminal, see output in right terminal](#using-redirection-to-write-to-another-pty-run-command-in-left-terminal-see-output-in-right-terminal)
   - [Using redirection to read from another PTY type in left terminal, see it in right terminal](#using-redirection-to-read-from-another-pty-type-in-left-terminal-see-it-in-right-terminal)
   - [Breaking things in raw mode.](#breaking-things-in-raw-mode)
+- [What is /dev/tty?](#what-is-devtty)
 - [Processes, sessions, jobs, PTYs, signals](#processes-sessions-jobs-ptys-signals)
   - [Background information knowledgebase](#background-information-knowledgebase)
     - [File descriptors and processes, ulimit, stdin, stdout, stderr, pipes](#file-descriptors-and-processes-ulimit-stdin-stdout-stderr-pipes)
@@ -23,10 +24,14 @@ Table of contents
       - [How do subshells work, in the case where I don't the shell's environment to be affected at all?](#how-do-subshells-work-in-the-case-where-i-dont-the-shells-environment-to-be-affected-at-all)
       - [Deep dive of all this information in video format](#deep-dive-of-all-this-information-in-video-format)
     - [Processes, sessions, jobs, PTYs, signals using C](#processes-sessions-jobs-ptys-signals-using-c)
+- [How is crossterm built on top of stdio, PTY, etc?](#how-is-crossterm-built-on-top-of-stdio-pty-etc)
 - [Sending and receiving signals in Rust 🦀](#sending-and-receiving-signals-in-rust-)
   - [List of signals](#list-of-signals)
-  - [Code to receive signals](#code-to-receive-signals)
-  - [Code to send signals](#code-to-send-signals)
+  - [Crates to send and receive signals](#crates-to-send-and-receive-signals)
+    - [TODO Code to receive signals](#todo-code-to-receive-signals)
+    - [TODO Code to send signals](#todo-code-to-send-signals)
+- [TODO Communicating with processes in Rust 🦀](#todo-communicating-with-processes-in-rust-)
+- [TODO Process handling in Rust 🦀](#todo-process-handling-in-rust-)
 
 <!-- /TOC -->
 
@@ -219,6 +224,33 @@ will be messed up. The same thing happens if you use `micro` or `nano`.
 
 To terminate the `vi` process (or many of them), run `killall -9 vi`. That sends the
 `SIGKILL` signal to all the `vi` processes.
+
+## What is /dev/tty?
+<a id="markdown-what-is-%2Fdev%2Ftty%3F" name="what-is-%2Fdev%2Ftty%3F"></a>
+
+`/dev/tty` is a special file in Unix-like operating systems that represents the
+controlling terminal of the current process. It is a synonym for the controlling terminal
+device file associated with the process.
+
+The controlling terminal is the terminal that is currently active and connected to the
+process, allowing input and output interactions. It provides a way for processes to
+interact with the user through the terminal interface.
+
+The `/dev/tty` file can be used to read from or write to the controlling terminal.
+
+In each process, `/dev/tty` is a synonym for the controlling terminal associated with the
+process group of that process, if any. It is useful for programs or shell procedures that
+wish to be sure of writing messages to or reading data from the terminal no matter how
+output has been redirected. It can also be used for applications that demand the name of a
+file for output, when typed output is desired and it is tiresome to find out what terminal
+is currently in use.
+
+1. Definition from [IEEE Open Group Base Specifications for
+   POSIX](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap10.html).
+2. You can see it used in `crossterm` crate
+   [here](https://github.com/crossterm-rs/crossterm/blob/master/src/terminal/sys/file_descriptor.rs#L143).
+3. Here's more info about this on
+   [baeldung.com](https://www.baeldung.com/linux/monitor-keyboard-drivers#devtty).
 
 ## Processes, sessions, jobs, PTYs, signals
 <a id="markdown-processes%2C-sessions%2C-jobs%2C-ptys%2C-signals" name="processes%2C-sessions%2C-jobs%2C-ptys%2C-signals"></a>
@@ -438,6 +470,76 @@ Here are some videos on forking processes, zombies, and signals in C:
 - [[video] Zombie processes in C](https://www.youtube.com/watch?v=xJ8KenZw2ag)
 - [[video] Stop process becoming zombie in C](https://www.youtube.com/watch?v=_5SCtRNnf9U)
 
+## How is crossterm built on top of stdio, PTY, etc?
+<a id="markdown-how-is-crossterm-built-on-top-of-stdio%2C-pty%2C-etc%3F" name="how-is-crossterm-built-on-top-of-stdio%2C-pty%2C-etc%3F"></a>
+
+The [`crossterm`](https://github.com/crossterm-rs/crossterm) crate is built on top of
+Tokio's [`mio`](https://docs.rs/mio/latest/mio/guide/index.html) crate, which uses Linux
+[`epoll`](https://man7.org/linux/man-pages/man7/epoll.7.html) to work with file
+descriptors in an async manner.
+
+- Here's [`mio`'s `Poll`](https://docs.rs/mio/latest/mio/struct.Poll.html) using `epoll`
+  under the hood.
+- Here's an [example](https://docs.rs/mio/latest/mio/guide/index.html) of `mio` using
+  Linux `epoll` in order to read from a file descriptor in an async manner.
+
+> Linux `epoll` is able to work with `stdio` file descriptors (ie, `stdin`, `stdout`,
+> `stderr`), as well as other file descriptors (network and file system). However, for throughput
+> and performance (by reducing context switching and being efficient with buffers that hold
+> IO data), Linux [`io_uring`](https://en.wikipedia.org/wiki/Io_uring) might be more
+> suitable.
+
+Here are some links to learn more about how `crossterm` works with `PTY`s and `stdio`:
+
+- [Get a file descriptor for the TTY
+  `tty_fd()`](https://github.com/crossterm-rs/crossterm/blob/master/src/terminal/sys/file_descriptor.rs#L143).
+  It uses
+  [`rustix::stdio::stdin()`](https://docs.rs/rustix/latest/rustix/stdio/fn.stdin.html) by
+  default and falls back on `/dev/tty/`.
+- This `fd` is used by
+  [`UnixInternalEventSource`](https://github.com/crossterm-rs/crossterm/blob/master/src/event/source/unix/mio.rs#L35)
+  which creates a `mio::Poll` object for the `fd`. This `Poll` object uses `epoll` under
+  the hood. The [`EventSource` trait impl for
+  `UnixInternalEventSource`](https://github.com/crossterm-rs/crossterm/blob/master/src/event/source/unix/mio.rs#L72)
+  is used to actually
+  [read](https://github.com/crossterm-rs/crossterm/blob/master/src/terminal/sys/file_descriptor.rs#L75)
+  the bytes from the `fd` (using
+  [`rustix::io::read()`](https://docs.rs/rustix/latest/rustix/io/fn.read.html)).
+- Once a `Poll` has been created, a
+  [`mio::Poll::registry()`](https://docs.rs/mio/latest/mio/struct.Registry.html) must be
+  used to tell the OS to listen for events on the `fd`. A [source and interest must be
+  registered](https://docs.rs/mio/latest/mio/guide/index.html#2-registering-event-source)
+  with the registry next:
+  - The `fd` [implements](https://docs.rs/mio/latest/mio/unix/struct.SourceFd.html) the
+    [`Source` trait](https://docs.rs/mio/latest/mio/event/trait.Source.html) which
+    [allows](https://docs.rs/mio/latest/mio/event/trait.Source.html#implementing-eventsource)
+    `mio` to listen for events on the `fd`.
+  - An `Interest::READABLE` must also be "registered" with the `registry`. For eg, for
+    `stdin`, this tells the OS to listen for input from the keyboard, and wake the `Poll`
+    when this is ready.
+  - A `Token` is supplied that can be used when polling for events to see if they're
+    available on the source. This happens in the
+    [`loop`](https://docs.rs/mio/latest/mio/guide/index.html#3-creating-the-event-loop)
+    that calls `poll()` to fill an `Event` buffer. If an event in this buffer matches the
+    `Token`, then the `fd` is ready for reading.
+
+You can see all the steps (outlined above) in action, in the following crates:
+- [Guide in `mio` docs](https://docs.rs/mio/latest/mio/guide/index.html).
+- [`mio.rs` file in
+  `crossterm`](https://github.com/crossterm-rs/crossterm/blob/master/src/event/source/unix/mio.rs).
+- This [PR](https://github.com/nazmulidris/crossterm/pull/1) in my fork of `crossterm` has
+  `println!` traces so you can see how `mio` is used under the hood by `crossterm` to read
+  from `stdin`.
+
+## How is termion built on top of stdio, PTY, etc?
+
+Here's a [PR](https://github.com/nazmulidris/termion/pull/1) to explore the examples in
+`termion` crate. This is a beautifully simple and elegant crate that is much simpler than
+`crossterm`. It simply uses the standard library and a few other crates to get bytes from
+`stdin` and write bytes to `stdout`. It does not use `mio`, and neither does it support
+`async` `EventStream`. There is an "async mode", which simply spawns another thread and
+uses a channel to send events to the main thread.
+
 ## Sending and receiving signals in Rust 🦀
 <a id="markdown-sending-and-receiving-signals-in-rust-%F0%9F%A6%80" name="sending-and-receiving-signals-in-rust-%F0%9F%A6%80"></a>
 
@@ -551,8 +653,20 @@ Here are some important ones.
     upon this, fetch the new terminal size from the TTY device and redraw themselves
     accordingly.
 
-### Code to receive signals
-<a id="markdown-code-to-receive-signals" name="code-to-receive-signals"></a>
+### Crates to send and receive signals
+<a id="markdown-crates-to-send-and-receive-signals" name="crates-to-send-and-receive-signals"></a>
+
+| crate | recv | send |
+|-------|------|------|
+| https://docs.rs/tokio/latest/tokio/signal | ✅ | ❌ |
+| https://crates.io/crates/ctrlc | ✅ | ❌ |
+| https://crates.io/crates/signal-hook | ✅ | ✅ * |
+| https://docs.rs/nix/latest/nix/ | ✅ | ❌ |
+
+> *: Via [`signal_hook::low_level::raise`](https://docs.rs/signal-hook/latest/signal_hook/low_level/fn.raise.html).
+
+#### (TODO) Code to receive signals
+<a id="markdown-todo-code-to-receive-signals" name="todo-code-to-receive-signals"></a>
 
 Deal with Linux signals in Rust code using `tokio`:
 - [Use in this repo](https://docs.rs/tokio/latest/tokio/signal/index.html#)
@@ -582,7 +696,16 @@ Other choices:
 - [ctrlc](https://crates.io/crates/ctrlc)
 - [signal-hook](https://crates.io/crates/signal-hook)
 
-### Code to send signals
-<a id="markdown-code-to-send-signals" name="code-to-send-signals"></a>
+#### (TODO) Code to send signals
+<a id="markdown-todo-code-to-send-signals" name="todo-code-to-send-signals"></a>
 
-TODO: Need to use a different crate than tokio to send them (perhaps `nix`?). You can also use `kill` command in the shell to send signals to processes.
+## (TODO) Communicating with processes in Rust 🦀
+<a id="markdown-todo-communicating-with-processes-in-rust-%F0%9F%A6%80" name="todo-communicating-with-processes-in-rust-%F0%9F%A6%80"></a>
+
+- Use [tokio::process::Command](https://docs.rs/tokio/latest/tokio/process/struct.Command.html#method.stdin)
+- Look at [interactive_process crate (**not async**)](https://github.com/paulgb/interactive_process?tab=readme-ov-file) for some ideas
+- Look at this [code & tutorial](https://www.nikbrendler.com/rust-process-communication/) for some ideas.
+
+## (TODO) Process handling in Rust 🦀
+<a id="markdown-todo-process-handling-in-rust-%F0%9F%A6%80" name="todo-process-handling-in-rust-%F0%9F%A6%80"></a>
+- [procspawn crate](https://crates.io/crates/procspawn)
