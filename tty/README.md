@@ -25,6 +25,7 @@ Table of contents
       - [Deep dive of all this information in video format](#deep-dive-of-all-this-information-in-video-format)
     - [Processes, sessions, jobs, PTYs, signals using C](#processes-sessions-jobs-ptys-signals-using-c)
 - [How is crossterm built on top of stdio, PTY, etc?](#how-is-crossterm-built-on-top-of-stdio-pty-etc)
+- [How is termion built on top of stdio, PTY, etc?](#how-is-termion-built-on-top-of-stdio-pty-etc)
 - [Sending and receiving signals in Rust 🦀](#sending-and-receiving-signals-in-rust-)
   - [List of signals](#list-of-signals)
   - [Crates to send and receive signals](#crates-to-send-and-receive-signals)
@@ -532,6 +533,7 @@ You can see all the steps (outlined above) in action, in the following crates:
   from `stdin`.
 
 ## How is termion built on top of stdio, PTY, etc?
+<a id="markdown-how-is-termion-built-on-top-of-stdio%2C-pty%2C-etc%3F" name="how-is-termion-built-on-top-of-stdio%2C-pty%2C-etc%3F"></a>
 
 Here's a [PR](https://github.com/nazmulidris/termion/pull/1) to explore the examples in
 `termion` crate. This is a beautifully simple and elegant crate that is much simpler than
