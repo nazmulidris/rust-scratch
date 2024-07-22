@@ -29,10 +29,10 @@ Table of contents
 - [Sending and receiving signals in Rust 🦀](#sending-and-receiving-signals-in-rust-)
   - [List of signals](#list-of-signals)
   - [Crates to send and receive signals](#crates-to-send-and-receive-signals)
-    - [TODO Code to receive signals](#todo-code-to-receive-signals)
-    - [TODO Code to send signals](#todo-code-to-send-signals)
-- [TODO Communicating with processes in Rust 🦀](#todo-communicating-with-processes-in-rust-)
-- [TODO Process handling in Rust 🦀](#todo-process-handling-in-rust-)
+    - [🚀TODO Code to receive signals](#todo-code-to-receive-signals)
+    - [🚀TODO Code to send signals](#todo-code-to-send-signals)
+- [🚀TODO Communicating with processes in Rust 🦀](#todo-communicating-with-processes-in-rust-)
+- [🚀TODO Process spawning in Rust 🦀](#todo-process-spawning-in-rust-)
 
 <!-- /TOC -->
 
@@ -667,8 +667,8 @@ Here are some important ones.
 
 > *: Via [`signal_hook::low_level::raise`](https://docs.rs/signal-hook/latest/signal_hook/low_level/fn.raise.html).
 
-#### (TODO) Code to receive signals
-<a id="markdown-todo-code-to-receive-signals" name="todo-code-to-receive-signals"></a>
+#### (🚀TODO) Code to receive signals
+<a id="markdown-%F0%9F%9A%80todo-code-to-receive-signals" name="%F0%9F%9A%80todo-code-to-receive-signals"></a>
 
 Deal with Linux signals in Rust code using `tokio`:
 - [Use in this repo](https://docs.rs/tokio/latest/tokio/signal/index.html#)
@@ -698,16 +698,16 @@ Other choices:
 - [ctrlc](https://crates.io/crates/ctrlc)
 - [signal-hook](https://crates.io/crates/signal-hook)
 
-#### (TODO) Code to send signals
-<a id="markdown-todo-code-to-send-signals" name="todo-code-to-send-signals"></a>
+#### (🚀TODO) Code to send signals
+<a id="markdown-%F0%9F%9A%80todo-code-to-send-signals" name="%F0%9F%9A%80todo-code-to-send-signals"></a>
 
-## (TODO) Communicating with processes in Rust 🦀
-<a id="markdown-todo-communicating-with-processes-in-rust-%F0%9F%A6%80" name="todo-communicating-with-processes-in-rust-%F0%9F%A6%80"></a>
+## (🚀TODO) Communicating with processes in Rust 🦀
+<a id="markdown-%F0%9F%9A%80todo-communicating-with-processes-in-rust-%F0%9F%A6%80" name="%F0%9F%9A%80todo-communicating-with-processes-in-rust-%F0%9F%A6%80"></a>
 
 - Use [tokio::process::Command](https://docs.rs/tokio/latest/tokio/process/struct.Command.html#method.stdin)
 - Look at [interactive_process crate (**not async**)](https://github.com/paulgb/interactive_process?tab=readme-ov-file) for some ideas
 - Look at this [code & tutorial](https://www.nikbrendler.com/rust-process-communication/) for some ideas.
 
-## (TODO) Process handling in Rust 🦀
-<a id="markdown-todo-process-handling-in-rust-%F0%9F%A6%80" name="todo-process-handling-in-rust-%F0%9F%A6%80"></a>
+## (🚀TODO) Process spawning in Rust 🦀
+<a id="markdown-%F0%9F%9A%80todo-process-spawning-in-rust-%F0%9F%A6%80" name="%F0%9F%9A%80todo-process-spawning-in-rust-%F0%9F%A6%80"></a>
 - [procspawn crate](https://crates.io/crates/procspawn)

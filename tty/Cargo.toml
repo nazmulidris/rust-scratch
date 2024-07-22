@@ -3,4 +3,21 @@ name = "tty"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "recieve_signal"
+path = "src/receive_signal.rs"
+
+[[bin]]
+name = "send_signal"
+path = "src/send_signal.rs"
+
+[[bin]]
+name = "async_command_exec"
+path = "src/async_command_exec.rs"
+
+[[bin]]
+name = "procspawn"
+path = "src/procspawn.rs"
+
 [dependencies]
+tokio = { version = "1.38.1", features = ["full"] }
