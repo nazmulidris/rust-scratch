@@ -3,6 +3,7 @@
     "baeldung",
     "epoll",
     "killall",
+    "libc",
     "nohup",
     "POSIX",
     "procspawn",

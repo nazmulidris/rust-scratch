@@ -13,7 +13,6 @@ Table of contents
   - [Using redirection to write to another PTY run command in left terminal, see output in right terminal](#using-redirection-to-write-to-another-pty-run-command-in-left-terminal-see-output-in-right-terminal)
   - [Using redirection to read from another PTY type in left terminal, see it in right terminal](#using-redirection-to-read-from-another-pty-type-in-left-terminal-see-it-in-right-terminal)
   - [Breaking things in raw mode.](#breaking-things-in-raw-mode)
-- [What is /dev/tty?](#what-is-devtty)
 - [Processes, sessions, jobs, PTYs, signals](#processes-sessions-jobs-ptys-signals)
   - [Background information knowledgebase](#background-information-knowledgebase)
     - [File descriptors and processes, ulimit, stdin, stdout, stderr, pipes](#file-descriptors-and-processes-ulimit-stdin-stdout-stderr-pipes)
@@ -24,11 +23,12 @@ Table of contents
       - [How do subshells work, in the case where I don't the shell's environment to be affected at all?](#how-do-subshells-work-in-the-case-where-i-dont-the-shells-environment-to-be-affected-at-all)
       - [Deep dive of all this information in video format](#deep-dive-of-all-this-information-in-video-format)
     - [Processes, sessions, jobs, PTYs, signals using C](#processes-sessions-jobs-ptys-signals-using-c)
-- [How is crossterm built on top of stdio, PTY, etc?](#how-is-crossterm-built-on-top-of-stdio-pty-etc)
-- [How is termion built on top of stdio, PTY, etc?](#how-is-termion-built-on-top-of-stdio-pty-etc)
+- [What is /dev/tty?](#what-is-devtty)
+  - [How is crossterm built on top of stdio, PTY, etc?](#how-is-crossterm-built-on-top-of-stdio-pty-etc)
+  - [How is termion built on top of stdio, PTY, etc?](#how-is-termion-built-on-top-of-stdio-pty-etc)
 - [List of signals](#list-of-signals)
 - [Sending and receiving signals in Rust 🦀](#sending-and-receiving-signals-in-rust-)
-  - [🚀TODO Code to receive signals](#todo-code-to-receive-signals)
+  - [Code to receive signals](#code-to-receive-signals)
   - [🚀TODO Code to send signals](#todo-code-to-send-signals)
 - [🚀TODO Communicating with processes in Rust 🦀](#todo-communicating-with-processes-in-rust-)
 - [🚀TODO Process spawning in Rust 🦀](#todo-process-spawning-in-rust-)
@@ -222,32 +222,6 @@ thing happens if you use `micro` or `nano`.
 
 To terminate the `vi` process (or many of them), run `killall -9 vi`. That sends the `SIGKILL`
 signal to all the `vi` processes.
-
-## What is /dev/tty?
-<a id="markdown-what-is-%2Fdev%2Ftty%3F" name="what-is-%2Fdev%2Ftty%3F"></a>
-
-`/dev/tty` is a special file in Unix-like operating systems that represents the controlling terminal
-of the current process. It is a synonym for the controlling terminal device file associated with the
-process.
-
-The controlling terminal is the terminal that is currently active and connected to the process,
-allowing input and output interactions. It provides a way for processes to interact with the user
-through the terminal interface.
-
-The `/dev/tty` file can be used to read from or write to the controlling terminal.
-
-In each process, `/dev/tty` is a synonym for the controlling terminal associated with the process
-group of that process, if any. It is useful for programs or shell procedures that wish to be sure of
-writing messages to or reading data from the terminal no matter how output has been redirected. It
-can also be used for applications that demand the name of a file for output, when typed output is
-desired and it is tiresome to find out what terminal is currently in use.
-
-1. Definition from
-   [IEEE Open Group Base Specifications for POSIX](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap10.html).
-2. You can see it used in `crossterm` crate
-   [here](https://github.com/crossterm-rs/crossterm/blob/master/src/terminal/sys/file_descriptor.rs#L143).
-3. Here's more info about this on
-   [baeldung.com](https://www.baeldung.com/linux/monitor-keyboard-drivers#devtty).
 
 ## Processes, sessions, jobs, PTYs, signals
 <a id="markdown-processes%2C-sessions%2C-jobs%2C-ptys%2C-signals" name="processes%2C-sessions%2C-jobs%2C-ptys%2C-signals"></a>
@@ -467,7 +441,33 @@ Here are some videos on forking processes, zombies, and signals in C:
 - [[video] Zombie processes in C](https://www.youtube.com/watch?v=xJ8KenZw2ag)
 - [[video] Stop process becoming zombie in C](https://www.youtube.com/watch?v=_5SCtRNnf9U)
 
-## How is crossterm built on top of stdio, PTY, etc?
+## What is /dev/tty?
+<a id="markdown-what-is-%2Fdev%2Ftty%3F" name="what-is-%2Fdev%2Ftty%3F"></a>
+
+`/dev/tty` is a special file in Unix-like operating systems that represents the controlling terminal
+of the current process. It is a synonym for the controlling terminal device file associated with the
+process.
+
+The controlling terminal is the terminal that is currently active and connected to the process,
+allowing input and output interactions. It provides a way for processes to interact with the user
+through the terminal interface.
+
+The `/dev/tty` file can be used to read from or write to the controlling terminal.
+
+In each process, `/dev/tty` is a synonym for the controlling terminal associated with the process
+group of that process, if any. It is useful for programs or shell procedures that wish to be sure of
+writing messages to or reading data from the terminal no matter how output has been redirected. It
+can also be used for applications that demand the name of a file for output, when typed output is
+desired and it is tiresome to find out what terminal is currently in use.
+
+1. Definition from
+   [IEEE Open Group Base Specifications for POSIX](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap10.html).
+2. You can see it used in `crossterm` crate
+   [here](https://github.com/crossterm-rs/crossterm/blob/master/src/terminal/sys/file_descriptor.rs#L143).
+3. Here's more info about this on
+   [baeldung.com](https://www.baeldung.com/linux/monitor-keyboard-drivers#devtty).
+
+### How is crossterm built on top of stdio, PTY, etc?
 <a id="markdown-how-is-crossterm-built-on-top-of-stdio%2C-pty%2C-etc%3F" name="how-is-crossterm-built-on-top-of-stdio%2C-pty%2C-etc%3F"></a>
 
 The [`crossterm`](https://github.com/crossterm-rs/crossterm) crate is built on top of Tokio's
@@ -524,7 +524,7 @@ You can see all the steps (outlined above) in action, in the following crates:
   `println!` traces so you can see how `mio` is used under the hood by `crossterm` to read from
   `stdin`.
 
-## How is termion built on top of stdio, PTY, etc?
+### How is termion built on top of stdio, PTY, etc?
 <a id="markdown-how-is-termion-built-on-top-of-stdio%2C-pty%2C-etc%3F" name="how-is-termion-built-on-top-of-stdio%2C-pty%2C-etc%3F"></a>
 
 Here's a [PR](https://github.com/nazmulidris/termion/pull/1) to explore the examples in `termion`
@@ -536,6 +536,10 @@ thread.
 
 ## List of signals
 <a id="markdown-list-of-signals" name="list-of-signals"></a>
+
+Here are the reference docs on signals:
+- [gnu libc termination signals](https://www.gnu.org/software/libc/manual/html_node/Termination-Signals.html)
+- [gnu libc job control signals](https://www.gnu.org/software/libc/manual/html_node/Job-Control-Signals.html)
 
 Here is a list of all the signals that a process might get:
 [signals](https://www.linusakesson.net/programming/tty/#signal-madness:~:text=using%20a%20signal.-,Signal%20madness,-Now%20let%27s%20take).
@@ -676,41 +680,23 @@ Here are some important ones.
 > \*: Via
 > [`signal_hook::low_level::raise`](https://docs.rs/signal-hook/latest/signal_hook/low_level/fn.raise.html).
 
-### (🚀TODO) Code to receive signals
-<a id="markdown-%F0%9F%9A%80todo-code-to-receive-signals" name="%F0%9F%9A%80todo-code-to-receive-signals"></a>
+### Code to receive signals
+<a id="markdown-code-to-receive-signals" name="code-to-receive-signals"></a>
 
-Deal with Linux signals in Rust code using `tokio`:
+`tokio` has limited handling of signals. You can only receive certain signals, not send
+them. Here's an
+[example](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/receive_signal.rs#L18)
+of how to receive signals using `tokio`.
 
-- [Use in this repo](https://docs.rs/tokio/latest/tokio/signal/index.html#)
-
-```rs
-use tokio::signal::unix::{Signal, SignalKind};
-use tokio::time;
-
-#[tokio::main]
-async fn main() {
-    // Create a stream for the SIGINT signal (Ctrl+C)
-    let sigint = Signal::new(SignalKind::interrupt()).unwrap();
-
-    println!("Waiting for SIGINT (Ctrl+C) signal...");
-
-    // Wait for the SIGINT signal
-    sigint.recv().await;
-
-    println!("Received SIGINT signal. Exiting...");
-
-    // Add a delay to demonstrate signal handling
-    time::sleep(time::Duration::from_secs(2)).await;
-}
-```
-
-Other choices:
+Other choices to receive signals:
 
 - [ctrlc](https://crates.io/crates/ctrlc)
 - [signal-hook](https://crates.io/crates/signal-hook)
 
 ### (🚀TODO) Code to send signals
 <a id="markdown-%F0%9F%9A%80todo-code-to-send-signals" name="%F0%9F%9A%80todo-code-to-send-signals"></a>
+
+// TODO: Use `signal-hook` to send and receive all kinds of signals
 
 ## (🚀TODO) Communicating with processes in Rust 🦀
 <a id="markdown-%F0%9F%9A%80todo-communicating-with-processes-in-rust-%F0%9F%A6%80" name="%F0%9F%9A%80todo-communicating-with-processes-in-rust-%F0%9F%A6%80"></a>

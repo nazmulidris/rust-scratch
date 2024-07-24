@@ -15,4 +15,86 @@
  *   limitations under the License.
  */
 
-fn main() {}
+use crossterm::style::Stylize;
+use miette::IntoDiagnostic;
+
+/// This example demonstrates how to receive Linux (POSIX, Unix) signals in a process
+/// using Tokio.
+///
+/// - [tokio::signal::ctrl_c] is a utility function that creates a future that completes
+///   when `ctrl-c` is pressed. There is no need to write a signal stream for this like
+///   so:
+///   ```rust
+///   let mut stream_sigterm =
+///       tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+///       .into_diagnostic()?;
+///   loop {
+///       tokio::select! {
+///           _ = stream_sigterm.recv() => {
+///               println!("\nSIGTERM received");
+///               break;
+///           }
+///       }
+///   }
+///   ```
+///
+/// - [tokio::signal::unix::signal] is a lower level function that you can use to create a
+///   stream of signals of a given type (e.g., [tokio::signal::unix::SignalKind]). Some
+///   examples are:
+///   - [tokio::signal::unix::SignalKind::hangup]
+///   - [tokio::signal::unix::SignalKind::interrupt]
+///   - [tokio::signal::unix::SignalKind::pipe]
+///
+///  - There are limitations to what [tokio::signal::unix::SignalKind::from_raw] can do.
+///    For example you can't just pass in `SIGSTOP` ie `19` and expect it to work. For
+///    anything other than the functions provided by [tokio::signal::unix::SignalKind],
+///    you'll need to use the [signal-hook](https://github.com/vorner/signal-hook) crate.
+///
+/// Here are relevant docs:
+/// - [tokio::signal](https://docs.rs/tokio/latest/tokio/signal/index.html)
+/// - [tokio::signal::unix::signal](https://docs.rs/tokio/latest/tokio/signal/unix/fn.signal.html)
+/// - [tokio::signal::unix::SignalKind](https://docs.rs/tokio/latest/tokio/signal/unix/struct.SignalKind.html)
+#[tokio::main]
+async fn main() -> miette::Result<()> {
+    println!("{}",
+        "Press Ctrl-C to exit the program, and resize the terminal to send SIGWINCH and end the program".blue().bold()
+    );
+
+    // Tick every 500ms.
+    let mut tick_interval = tokio::time::interval(std::time::Duration::from_millis(500));
+
+    // Sleep for 5 seconds (ends program).
+    let sleep_future = tokio::time::sleep(std::time::Duration::from_secs(5));
+    tokio::pin!(sleep_future);
+
+    // Infinite stream of `SIGWINCH` signals (when terminal size changes).
+    let mut stream_sigwinch =
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::window_change())
+            .into_diagnostic()?;
+
+    loop {
+        tokio::select! {
+            // Wait for Ctrl-C to be pressed. This is equivalent to `SIGTERM`.
+            _ = tokio::signal::ctrl_c() => {
+                println!("\nCtrl-C pressed");
+                break;
+            }
+            // This branch will run when the terminal is resized.
+            _ = stream_sigwinch.recv() => {
+                println!("\nSIGWINCH received");
+                break;
+            }
+            // This branch will run every 500ms.
+            _ = tick_interval.tick() => {
+                println!("Tick");
+            }
+            // This branch will end the program after 5 seconds.
+            _ = &mut sleep_future => {
+                println!("Final tick");
+                break;
+            }
+        }
+    }
+
+    Ok(())
+}

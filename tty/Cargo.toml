@@ -21,3 +21,5 @@ path = "src/procspawn.rs"
 
 [dependencies]
 tokio = { version = "1.38.1", features = ["full"] }
+miette = { version = "7.2.0", features = ["fancy"] }
+crossterm = { version = "0.27.0", features = ["event-stream"] }
