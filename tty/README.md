@@ -29,7 +29,7 @@ Table of contents
 - [List of signals](#list-of-signals)
 - [Sending and receiving signals in Rust 🦀](#sending-and-receiving-signals-in-rust-)
   - [Code to receive signals](#code-to-receive-signals)
-  - [🚀TODO Code to send signals](#todo-code-to-send-signals)
+  - [Code to send & receive signals](#code-to-send--receive-signals)
 - [🚀TODO Communicating with processes in Rust 🦀](#todo-communicating-with-processes-in-rust-)
 - [🚀TODO Process spawning in Rust 🦀](#todo-process-spawning-in-rust-)
 
@@ -672,10 +672,10 @@ Here are some important ones.
 
 | crate                                     | recv | send  |
 | ----------------------------------------- | ---- | ----- |
-| https://docs.rs/tokio/latest/tokio/signal | ✅   | ❌    |
-| https://crates.io/crates/ctrlc            | ✅   | ❌    |
-| https://crates.io/crates/signal-hook      | ✅   | ✅ \* |
-| https://docs.rs/nix/latest/nix/           | ✅   | ❌    |
+| https://docs.rs/tokio/latest/tokio/signal | 🟢   | 🔴   |
+| https://crates.io/crates/ctrlc            | 🟢   | 🔴   |
+| https://crates.io/crates/signal-hook      | 🟢   | 🟢 \*|
+| https://docs.rs/nix/latest/nix/           | 🟢   | 🟢   |
 
 > \*: Via
 > [`signal_hook::low_level::raise`](https://docs.rs/signal-hook/latest/signal_hook/low_level/fn.raise.html).
@@ -693,10 +693,12 @@ Other choices to receive signals:
 - [ctrlc](https://crates.io/crates/ctrlc)
 - [signal-hook](https://crates.io/crates/signal-hook)
 
-### (🚀TODO) Code to send signals
-<a id="markdown-%F0%9F%9A%80todo-code-to-send-signals" name="%F0%9F%9A%80todo-code-to-send-signals"></a>
+### Code to send & receive signals
+<a id="markdown-code-to-send-%26-receive-signals" name="code-to-send-%26-receive-signals"></a>
 
-// TODO: Use `signal-hook` to send and receive all kinds of signals
+Here's an
+[example](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/send_and_receive_signal.rs)
+of using `signal-hook` and `signal-hook-tokio`
 
 ## (🚀TODO) Communicating with processes in Rust 🦀
 <a id="markdown-%F0%9F%9A%80todo-communicating-with-processes-in-rust-%F0%9F%A6%80" name="%F0%9F%9A%80todo-communicating-with-processes-in-rust-%F0%9F%A6%80"></a>

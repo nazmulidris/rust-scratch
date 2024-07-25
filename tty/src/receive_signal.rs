@@ -46,9 +46,18 @@ use miette::IntoDiagnostic;
 ///   - [tokio::signal::unix::SignalKind::pipe]
 ///
 ///  - There are limitations to what [tokio::signal::unix::SignalKind::from_raw] can do.
-///    For example you can't just pass in `SIGSTOP` ie `19` and expect it to work. For
-///    anything other than the functions provided by [tokio::signal::unix::SignalKind],
-///    you'll need to use the [signal-hook](https://github.com/vorner/signal-hook) crate.
+///    - For example you can't just pass in `SIGSTOP` ie `19` and expect it to work. This
+///      is an [OS
+///      limitation](https://docs.rs/signal-hook/latest/signal_hook/#limitations) for both
+///      `SIGKILL` or `SIGSTOP`.
+///    - Here's a list of POSIX signals that are
+///      [`FORBIDDEN`](https://docs.rs/signal-hook/latest/signal_hook/low_level/fn.register.html#panics)
+///      from the `signal_hook` crate.
+///    - You can just pass the signal number directly to
+///      [tokio::signal::unix::SignalKind::from_raw].
+///    - However, if you're doing more sophisticated things you might need to use the
+///      [signal-hook](https://github.com/vorner/signal-hook) crate (which not only
+///      supports sending and receiving signals, but also has async adapters for `tokio`).
 ///
 /// Here are relevant docs:
 /// - [tokio::signal](https://docs.rs/tokio/latest/tokio/signal/index.html)
