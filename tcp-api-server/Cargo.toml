@@ -13,7 +13,6 @@ r3bl_terminal_async = { version = "0.5.3" }
 r3bl_tui = { version = "0.5.5" }
 r3bl_rs_utils_core = { version = "0.9.13" }
 crossterm = "0.27.0"
-ctrlc = "3.4.4"
 
 # Command line argument parsing.
 clap = { version = "4.5.4", features = ["derive"] }

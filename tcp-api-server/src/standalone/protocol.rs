@@ -92,6 +92,7 @@ pub mod byte_io {
 /// - <https://docs.rs/strum_macros/latest/strum_macros/derive.EnumString.html>
 /// - <https://docs.rs/strum_macros/latest/strum_macros/derive.Display.html>
 /// - <https://docs.rs/strum_macros/latest/strum_macros/derive.EnumIter.html>
+///
 #[derive(
     Clone,
     Debug,

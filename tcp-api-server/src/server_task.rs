@@ -69,9 +69,6 @@ pub async fn server_main_event_loop(cli_args: CLIArg) -> miette::Result<()> {
     // More info: <https://cybernetist.com/2024/04/19/rust-tokio-task-cancellation-patterns/>
     let (shutdown_sender, mut shutdown_receiver) = broadcast::channel::<()>(1);
 
-    // Set up Ctrl-C handler.
-    setup_ctrlc_handler(shutdown_sender.clone()).await?;
-
     // Create the kv store.
     let store = load_or_create_store(None)?;
 
@@ -134,6 +131,7 @@ pub async fn server_main_event_loop(cli_args: CLIArg) -> miette::Result<()> {
                 });
             }
 
+            // Branch 2: Monitor shutdown broadcast channel.
             _ = shutdown_receiver.recv() => {
                 if safe_connected_client_count.load(Ordering::SeqCst) == 0 {
                     info!(
@@ -147,6 +145,18 @@ pub async fn server_main_event_loop(cli_args: CLIArg) -> miette::Result<()> {
                         "Received signal in shutdown channel - Waiting for connected clients to reach 0" /*.to_string().dark_yellow() */
                     );
                 }
+            }
+
+            // Branch 3: Monitor Ctrl-C.
+            _ = tokio::signal::ctrl_c() => {
+                println!(
+                    "{}",
+                    "Ctrl-C event detected. Gracefully shutting down..."
+                        .yellow()
+                        .bold()
+                );
+                info!("{}", "Ctrl-C event detected. Gracefully shutting down...");
+                shutdown_sender.send(()).ok();
             }
         }
     }
@@ -449,21 +459,6 @@ mod generate_server_message {
         info!("Handling broadcast");
         Ok(Some(ServerMessage::HandleBroadcast(payload)))
     }
-}
-
-#[instrument(skip_all)]
-pub async fn setup_ctrlc_handler(shutdown_sender: broadcast::Sender<()>) -> miette::Result<()> {
-    ctrlc::set_handler(move || {
-        println!(
-            "{}",
-            "Ctrl-C event detected. Gracefully shutting down..."
-                .yellow()
-                .bold()
-        );
-        info!("{}", "Ctrl-C event detected. Gracefully shutting down...");
-        shutdown_sender.send(()).ok();
-    })
-    .into_diagnostic()
 }
 
 #[cfg(test)]
