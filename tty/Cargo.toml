@@ -12,8 +12,12 @@ name = "send_and_receive_signal"
 path = "src/send_and_receive_signal.rs"
 
 [[bin]]
-name = "async_command_exec"
-path = "src/async_command_exec.rs"
+name = "async_command_exec_1"
+path = "src/async_command_exec_1.rs"
+
+[[bin]]
+name = "async_command_exec_2"
+path = "src/async_command_exec_2.rs"
 
 [[bin]]
 name = "procspawn"

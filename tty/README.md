@@ -703,6 +703,7 @@ of using `signal-hook` and `signal-hook-tokio`
 ## (🚀TODO) Communicating with processes in Rust 🦀
 <a id="markdown-%F0%9F%9A%80todo-communicating-with-processes-in-rust-%F0%9F%A6%80" name="%F0%9F%9A%80todo-communicating-with-processes-in-rust-%F0%9F%A6%80"></a>
 
+References:
 - Use
   [tokio::process::Command](https://docs.rs/tokio/latest/tokio/process/struct.Command.html#method.stdin)
 - Look at
@@ -710,6 +711,10 @@ of using `signal-hook` and `signal-hook-tokio`
   for some ideas
 - Look at this [code & tutorial](https://www.nikbrendler.com/rust-process-communication/) for some
   ideas.
+
+Code examples:
+- [async_command_exec_1.rs](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_1.rs)
+- [async_command_exec_2_.rs](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_2.rs)
 
 ## (🚀TODO) Process spawning in Rust 🦀
 <a id="markdown-%F0%9F%9A%80todo-process-spawning-in-rust-%F0%9F%A6%80" name="%F0%9F%9A%80todo-process-spawning-in-rust-%F0%9F%A6%80"></a>
