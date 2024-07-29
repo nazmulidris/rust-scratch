@@ -5,6 +5,7 @@
     "epoll",
     "killall",
     "libc",
+    "nbaz",
     "nohup",
     "POSIX",
     "procspawn",

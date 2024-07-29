@@ -15,6 +15,13 @@
  *   limitations under the License.
  */
 
+use std::process::Stdio;
+
+use crossterm::style::Stylize;
+use miette::IntoDiagnostic;
+use r3bl_rs_utils_core::ok;
+use tokio::io::{AsyncBufReadExt, BufReader};
+
 /// This example uses the
 /// [`tokio::process::Command`](https://docs.rs/tokio/latest/tokio/process/index.html)
 /// struct to execute a command asynchronously, and then pipes the output of this command,
@@ -31,11 +38,9 @@
 ///
 /// ```text
 /// Terminal emulator running fish shell
-/// ┌─────────────────────────────────────────────────────┐
-/// │                                                     │
-/// │ > echo "foo" | cargo run --bin async_command_exec_2 │
-/// │                                                     │
-/// └───────▲─────────────▲───────────────────────────────┘
+/// ┌──────────────────────────────────────────────────────────────────┐
+/// │ > echo -e "foo\nbar\nbaz" | cargo run --bin async_command_exec_2 │
+/// └───────▲─────────────▲────────────────────────────────────────────┘
 ///         │             │        Pipeline above runs
 ///         │             │        in parallel
 ///    internal         external
@@ -52,18 +57,54 @@
 ///                       │      which is provided by the terminal
 ///                       │      and `pipe`
 ///                       │
-///                       ├────► `cmd.spawn()` then runs the `cat`
-///                       │      process with the given stdin & stdout
+///                       ├────► `cmd.spawn()` then sets up the `cat` process
+///                       │      to run with the given stdin & stdout and
+///                       │      returns a `Child` struct
 ///                       │
-///                       ├────► instead of waiting normally, we must use
-///                       │      tokio::spawn to call `wait()` on the child
-///                       │      so it can make progress while we wait for
-///                       │      its output below.
+///                       ├────► instead of waiting "normally", we must use
+///                       │      `tokio::spawn` to call `child.wait().await`
+///                       │      on the child so it can make progress while
+///                       │      we wait for its output below (in the current task)
 ///                       │
-///                       └────► in our normal task, we can now access `stdout`
-///                              WHILE the child task is making progress above.
+///                       └────► in our current task, we can now access `stdout`
+///                              WHILE the child task is making progress above
 /// ```
 #[tokio::main]
 async fn main() -> miette::Result<()> {
-    Ok(())
+    // Create a child process that runs `cat`, and send the output of `cat` back to this
+    // child process. This child / command does not make progress until `wait().await` is
+    // called.
+    let mut child = tokio::process::Command::new("cat")
+        .stdout(Stdio::piped())
+        .stdin(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .into_diagnostic()?;
+
+    // Get the stdout of the child process.
+    let Some(stdout) = child.stdout.take() else {
+        return Err(miette::miette!("Child process did not have a stdout"));
+    };
+    let mut stdout_reader = BufReader::new(stdout).lines();
+
+    // Ensure the child process is spawned in the runtime, so it can make progress on its
+    // own while we await any output.
+    let child_task_join_handle = tokio::spawn(async move {
+        let status = child.wait().await;
+        println!(
+            "{}",
+            format!("Child process exited with status: {:?}", status).red()
+        );
+    });
+
+    // As long as there is a line to be read from the child process, print it to the
+    // terminal.
+    while let Some(line) = stdout_reader.next_line().await.into_diagnostic()? {
+        println!("{}", format!("❯ {}", line).blue());
+    }
+
+    // Wait for the child task to complete.
+    child_task_join_handle.await.into_diagnostic()?;
+
+    ok!()
 }

@@ -32,7 +32,8 @@ use miette::IntoDiagnostic;
 /// In both cases, the pattern is the same:
 /// 1. Create a [tokio::process::Command].
 /// 2. Configure it with the desired `stdin` and `stdout`.
-/// 3. Spawn the command.
+/// 3. Spawn the command. Note this doesn't make any progress until you call
+///    `wait().await` or `wait_with_output().await`.
 /// 4. Wait for the command to complete with or without output capture.
 #[tokio::main]
 async fn main() -> miette::Result<()> {
@@ -55,7 +56,13 @@ async fn run_command_no_capture() -> miette::Result<()> {
     // Without redirection, the output of the command will be inherited from the process
     // that starts the command. So if this is running in a terminal, the output will be
     // printed to the terminal.
+    //
+    // Even though `spawn()` is called this child / command doesn't make any progress
+    // until you call `wait().await`.
     let mut child = command!("echo", &["hello", "world"])
+        .stderr(Stdio::inherit())
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
         .spawn()
         .into_diagnostic()?;
 
@@ -76,7 +83,12 @@ async fn run_command_capture_output() -> miette::Result<()> {
     println!("{}", "run_command_capture_output".blue());
 
     // Redirect the output of the command to a pipe `Stdio::piped()`.
+    //
+    // Even though `spawn()` is called this child / command doesn't make any progress
+    // until you call `wait_with_output().await`.
     let child = command!("echo", &["hello", "world"])
+        .stderr(Stdio::inherit())
+        .stdin(Stdio::inherit())
         .stdout(Stdio::piped())
         .spawn()
         .into_diagnostic()?;
