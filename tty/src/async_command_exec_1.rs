@@ -85,7 +85,7 @@ async fn run_command_capture_output() -> miette::Result<()> {
     // Redirect the output of the command to a pipe `Stdio::piped()`.
     //
     // Even though `spawn()` is called this child / command doesn't make any progress
-    // until you call `wait_with_output().await`.
+    // until you call `wait_with_out().await`.
     let child = command!("echo", &["hello", "world"])
         .stderr(Stdio::inherit())
         .stdin(Stdio::inherit())

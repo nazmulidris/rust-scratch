@@ -15,7 +15,8 @@
  *   limitations under the License.
  */
 
-// TODO: use procspawn crate to spawn many processes
+// TODO: use `r3bl_terminal_async` to run commands and pipe it to `bash` or `fish`
+// TODO: this might be a great example to include in `r3bl_terminal_async` as an example
 
 #[tokio::main]
 async fn main() {

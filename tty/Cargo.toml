@@ -20,8 +20,16 @@ name = "async_command_exec_2"
 path = "src/async_command_exec_2.rs"
 
 [[bin]]
-name = "async_command_exec_2_1"
-path = "src/async_command_exec_2_1.rs"
+name = "async_command_exec_3"
+path = "src/async_command_exec_3.rs"
+
+[[bin]]
+name = "async_command_exec_4"
+path = "src/async_command_exec_4.rs"
+
+[[bin]]
+name = "async_command_exec_5"
+path = "src/async_command_exec_5.rs"
 
 [[bin]]
 name = "procspawn"
