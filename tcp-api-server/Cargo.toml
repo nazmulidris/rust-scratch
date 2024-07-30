@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 # Async CLI UI.
-# r3bl_terminal_async = { path = "/home/nazmul/github/r3bl-open-core/terminal_async" }
 r3bl_terminal_async = { version = "0.5.3" }
 
 r3bl_tui = { version = "0.5.5" }

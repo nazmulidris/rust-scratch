@@ -10,13 +10,14 @@ description = "An exploration of clap"
 [dependencies]
 
 # Tokio.
-tokio = { version = "1.24.1", features = ["full"] }
+tokio = { version = "1.39.2", features = ["full"] }
 
-# Latest r3bl_rs_utils.
-r3bl_rs_utils = { version = "0.9.3" , path = "../../r3bl_rs_utils" }
+# Latest r3bl_rs_utils_core.
+r3bl_rs_utils_core = { git = "https://github.com/r3bl-org/r3bl-open-core" }
+r3bl_tui = { git = "https://github.com/r3bl-org/r3bl-open-core" }
 
 # CLI argument parser.
-clap = { version = "4.1.1", features = ["derive"] }
+clap = { version = "4.5.11", features = ["derive"] }
 
 # serde-json
-serde_json = "1.0.91"
+serde_json = "1.0.121"

@@ -7,9 +7,11 @@ edition = "2021"
 
 [dependencies]
 seshat-unicode = "*"
-unicode-width = "0.1.9"
-unicode-segmentation = "1.9.0"
-crossterm = "0.24.0"
+unicode-width = "0.1.13"
+unicode-segmentation = "1.11.0"
+crossterm = "0.27.0"
 
 # Latest r3bl_rs_utils.
-r3bl_rs_utils = { version = "*", path = "../../r3bl_rs_utils" }
+r3bl_rs_utils_core = { git = "https://github.com/r3bl-org/r3bl-open-core" }
+miette = { version = "7.2.0", features = ["fancy"] }
+pretty_assertions = "1.4.0"

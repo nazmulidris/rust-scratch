@@ -30,8 +30,8 @@ use crossterm::{cursor::{self, *},
                 event::*,
                 execute,
                 style::*,
-                terminal::{self, *},
-                Result};
+                terminal::{self, *}};
+use miette::{IntoDiagnostic, Result};
 use seshat::unicode::{Segmentation, Ucd};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -49,10 +49,10 @@ const TEST_STRING: &str = "Hi 😃 📦 🙏🏽 👨🏾‍🤝‍👨🏿.";
 
 pub fn test_crossterm_grapheme_cluster_width_calc() -> Result<()> {
   // Enter raw mode, clear screen.
-  enable_raw_mode()?;
-  execute!(stdout(), EnterAlternateScreen)?;
-  execute!(stdout(), Clear(ClearType::All))?;
-  execute!(stdout(), MoveTo(0, 0))?;
+  enable_raw_mode().into_diagnostic()?;
+  execute!(stdout(), EnterAlternateScreen).into_diagnostic()?;
+  execute!(stdout(), Clear(ClearType::All)).into_diagnostic()?;
+  execute!(stdout(), MoveTo(0, 0)).into_diagnostic()?;
 
   // Perform test of grapheme cluster width.
   #[derive(Default, Debug, Clone, Copy)]
@@ -74,9 +74,9 @@ pub fn test_crossterm_grapheme_cluster_width_calc() -> Result<()> {
   fn process_map(map: &mut HashMap<&str, Positions>) -> Result<()> {
     for (index, (key, value)) in map.iter_mut().enumerate() {
       let orig_pos: (u16, u16) = (/* col: */ 0, /* row: */ index as u16);
-      execute!(stdout(), MoveTo(orig_pos.0, orig_pos.1))?;
-      execute!(stdout(), Print(key))?;
-      let new_pos = cursor::position()?;
+      execute!(stdout(), MoveTo(orig_pos.0, orig_pos.1)).into_diagnostic()?;
+      execute!(stdout(), Print(key)).into_diagnostic()?;
+      let new_pos = cursor::position().into_diagnostic()?;
       value.new_pos = new_pos;
       value.orig_pos = orig_pos;
       value.col_width = new_pos.0 - orig_pos.0;
@@ -88,17 +88,17 @@ pub fn test_crossterm_grapheme_cluster_width_calc() -> Result<()> {
 
   // Just blocking on user input.
   {
-    execute!(stdout(), Print("... Press any key to continue ..."))?;
-    if let Event::Key(_) = read()? {
-      execute!(stdout(), terminal::Clear(ClearType::All))?;
-      execute!(stdout(), cursor::MoveTo(0, 0))?;
+    execute!(stdout(), Print("... Press any key to continue ...")).into_diagnostic()?;
+    if let Event::Key(_) = read().into_diagnostic()? {
+      execute!(stdout(), terminal::Clear(ClearType::All)).into_diagnostic()?;
+      execute!(stdout(), cursor::MoveTo(0, 0)).into_diagnostic()?;
     }
   }
 
   // Exit raw mode, clear screen.
-  execute!(stdout(), terminal::Clear(ClearType::All))?;
-  execute!(stdout(), cursor::MoveTo(0, 0))?;
-  execute!(stdout(), LeaveAlternateScreen)?;
+  execute!(stdout(), terminal::Clear(ClearType::All)).into_diagnostic()?;
+  execute!(stdout(), cursor::MoveTo(0, 0)).into_diagnostic()?;
+  execute!(stdout(), LeaveAlternateScreen).into_diagnostic()?;
   disable_raw_mode().expect("Unable to disable raw mode");
   println!("map:{:#?}", map);
 

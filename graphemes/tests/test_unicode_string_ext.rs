@@ -16,7 +16,7 @@
  */
 
 use graphemes::{GraphemeClusterSegment, UnicodeStringExt};
-use r3bl_rs_utils::assert_eq2;
+use r3bl_rs_utils_core::assert_eq2;
 
 const TEST_STRING: &str = "Hi 😃 📦 🙏🏽 👨🏾‍🤝‍👨🏿.";
 
@@ -35,8 +35,8 @@ fn test_unicode_string_ext() {
 #[test]
 fn test_grapheme_cluster_segment() {
   fn assert_segment(
-    segment: GraphemeClusterSegment, string: &str, byte_offset: usize, unicode_width: usize,
-    logical_index: usize, byte_size: usize,
+    segment: GraphemeClusterSegment, string: &str, byte_offset: usize, unicode_width: usize, logical_index: usize,
+    byte_size: usize,
   ) {
     assert_eq2!(segment.string, string);
     assert_eq2!(segment.byte_offset, byte_offset);
