@@ -25,7 +25,7 @@ use signal_hook_tokio::Signals;
 /// - [signal-hook](https://docs.rs/signal-hook/)
 /// - [signal-hook-tokio](https://docs.rs/signal-hook-tokio/latest/signal_hook_tokio/)
 ///
-/// ## Signal handler registration limitations (to receive signals)
+/// # Signal handler registration limitations (to receive signals)
 ///
 /// POSIX allows signal handlers to be overridden in a process. This is a powerful feature
 /// that can be used to implement a wide variety of functionality.
@@ -41,7 +41,7 @@ use signal_hook_tokio::Signals;
 ///   [`FORBIDDEN`](https://docs.rs/signal-hook/latest/signal_hook/low_level/fn.register.html#panics)
 ///   signals that will `panic` the `register` function, if used.
 ///
-/// ## Dependencies needed
+/// # Dependencies needed
 ///
 /// The following needs to be added to the `Cargo.toml` file for this to work:
 /// ```toml

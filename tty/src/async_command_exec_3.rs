@@ -26,18 +26,17 @@ use tokio::{
     task::JoinHandle,
 };
 
-/// This example is similar to `async_command_exec_2.rs`, but it both:
-/// 1. Provides data to the `cat` command via `stdin`.
-/// 2. Captures the output of `cat` via `stdout`. So there is no need to pipe input from
-/// the shell into this program.
+/// This example is similar to `async_command_exec_2.rs`, except that there is no need to
+/// pipe input from the shell into this program. It does the following:
+/// 1. Programmatically provides data to the `cat` command via `stdin`.
+/// 2. Programmatically captures the output of `cat` via `stdout`.
 ///
-/// You can just run `cargo run --bin async_command_exec_2_1` and it will print the
-/// output.
+/// You can run `cargo run --bin async_command_exec_2_1` and it will print the output.
 ///
-/// Look at code example of [tokio::process::Child::wait] to see how to write / send data
-/// to the `stdin` of a command.
+/// > Note: Look at code example of [tokio::process::Child::wait] to see how to write /
+/// send data to the `stdin` of a command.
 ///
-/// Here's a diagram depicting what happens:
+/// # Flow of what happens
 ///
 /// ```text
 /// Terminal emulator running fish shell

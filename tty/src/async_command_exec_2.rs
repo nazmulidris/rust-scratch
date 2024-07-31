@@ -34,7 +34,7 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 /// - This process will then run `cat` and capture the output from `cat`.
 /// - It will then print the output from `cat` one line at time to the terminal.
 ///
-/// Here's a diagram depicting what happens:
+/// # Flow of what happens
 ///
 /// ```text
 /// Terminal emulator running fish shell

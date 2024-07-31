@@ -27,11 +27,11 @@ Table of contents
   - [How is crossterm built on top of stdio, PTY, etc?](#how-is-crossterm-built-on-top-of-stdio-pty-etc)
   - [How is termion built on top of stdio, PTY, etc?](#how-is-termion-built-on-top-of-stdio-pty-etc)
 - [List of signals](#list-of-signals)
-- [Sending and receiving signals in Rust 🦀](#sending-and-receiving-signals-in-rust-)
+- [🦀 Sending and receiving signals in Rust](#-sending-and-receiving-signals-in-rust)
   - [Code to receive signals](#code-to-receive-signals)
   - [Code to send & receive signals](#code-to-send--receive-signals)
-- [🚀TODO Communicating with processes in Rust 🦀](#todo-communicating-with-processes-in-rust-)
-- [🚀TODO Process spawning in Rust 🦀](#todo-process-spawning-in-rust-)
+- [🦀 Communicating with processes in Rust](#-communicating-with-processes-in-rust)
+- [🦀🚀TODO Process spawning in Rust](#todo-process-spawning-in-rust)
 
 <!-- /TOC -->
 
@@ -285,8 +285,8 @@ Several processes have `/dev/pts/0` attached to their standard input. With these
 ### Background information (knowledgebase)
 <a id="markdown-background-information-knowledgebase" name="background-information-knowledgebase"></a>
 
-The following sections are a deep live of the Linux kernel and how it works with
-processes, file descriptors, shells, and PTYs.
+The following sections are a deep live of the Linux kernel and how it works with processes, file
+descriptors, shells, and PTYs.
 
 #### File descriptors and processes, ulimit, stdin, stdout, stderr, pipes
 <a id="markdown-file-descriptors-and-processes%2C-ulimit%2C-stdin%2C-stdout%2C-stderr%2C-pipes" name="file-descriptors-and-processes%2C-ulimit%2C-stdin%2C-stdout%2C-stderr%2C-pipes"></a>
@@ -538,6 +538,7 @@ thread.
 <a id="markdown-list-of-signals" name="list-of-signals"></a>
 
 Here are the reference docs on signals:
+
 - [gnu libc termination signals](https://www.gnu.org/software/libc/manual/html_node/Termination-Signals.html)
 - [gnu libc job control signals](https://www.gnu.org/software/libc/manual/html_node/Job-Control-Signals.html)
 
@@ -667,15 +668,15 @@ Here are some important ones.
   Well-behaving interactive applications, such as editors, react upon this, fetch the new terminal
   size from the TTY device and redraw themselves accordingly.
 
-## Sending and receiving signals in Rust 🦀
-<a id="markdown-sending-and-receiving-signals-in-rust-%F0%9F%A6%80" name="sending-and-receiving-signals-in-rust-%F0%9F%A6%80"></a>
+## 🦀 Sending and receiving signals in Rust
+<a id="markdown-%F0%9F%A6%80-sending-and-receiving-signals-in-rust" name="%F0%9F%A6%80-sending-and-receiving-signals-in-rust"></a>
 
 | crate                                     | recv | send  |
 | ----------------------------------------- | ---- | ----- |
-| https://docs.rs/tokio/latest/tokio/signal | 🟢   | 🔴   |
-| https://crates.io/crates/ctrlc            | 🟢   | 🔴   |
-| https://crates.io/crates/signal-hook      | 🟢   | 🟢 \*|
-| https://docs.rs/nix/latest/nix/           | 🟢   | 🟢   |
+| https://docs.rs/tokio/latest/tokio/signal | 🟢   | 🔴    |
+| https://crates.io/crates/ctrlc            | 🟢   | 🔴    |
+| https://crates.io/crates/signal-hook      | 🟢   | 🟢 \* |
+| https://docs.rs/nix/latest/nix/           | 🟢   | 🟢    |
 
 > \*: Via
 > [`signal_hook::low_level::raise`](https://docs.rs/signal-hook/latest/signal_hook/low_level/fn.raise.html).
@@ -683,10 +684,9 @@ Here are some important ones.
 ### Code to receive signals
 <a id="markdown-code-to-receive-signals" name="code-to-receive-signals"></a>
 
-`tokio` has limited handling of signals. You can only receive certain signals, not send
-them. Here's an
-[example](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/receive_signal.rs#L18)
-of how to receive signals using `tokio`.
+`tokio` has limited handling of signals. You can only receive certain signals, not send them. Here's
+an [example](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/receive_signal.rs#L18) of
+how to receive signals using `tokio`.
 
 Other choices to receive signals:
 
@@ -700,28 +700,24 @@ Here's an
 [example](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/send_and_receive_signal.rs)
 of using `signal-hook` and `signal-hook-tokio`
 
-## (🚀TODO) Communicating with processes in Rust 🦀
-<a id="markdown-%F0%9F%9A%80todo-communicating-with-processes-in-rust-%F0%9F%A6%80" name="%F0%9F%9A%80todo-communicating-with-processes-in-rust-%F0%9F%A6%80"></a>
+## 🦀 Communicating with processes in Rust
+<a id="markdown-%F0%9F%A6%80-communicating-with-processes-in-rust" name="%F0%9F%A6%80-communicating-with-processes-in-rust"></a>
 
 In `tokio` a good place to start is
 [`tokio::process`](https://docs.rs/tokio/latest/tokio/process/index.html) which mimics the
 `std::process` module.
 
-Here are examples of how to communicate with processes in Rust asynchronously:
+Here are code examples of how to communicate with processes in Rust asynchronously:
 
-- [Example of running `echo`
-  process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_1.rs)
+- [Example of running `echo` process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_1.rs)
 - [Example of piping input to `cat` process programmatically](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_2.rs)
-- [Example of programmatically providing input into `stdin` and getting output from
-  `stdout` of a
-  process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_3.rs)
+- [Example of programmatically providing input into `stdin` and getting output from `stdout` of a process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_3.rs)
 - [Example of programmatically piping the output of one process into another](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_4.rs)
+- [(🚀TODO) Example of using `r3bl_terminal_async` to send commands to a long running `bash` child process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_5.rs)
 
-Code examples:
-- [async_command_exec_1.rs](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_1.rs)
-- [async_command_exec_2_.rs](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_2.rs)
+## 🦀(🚀TODO) Process spawning in Rust
+<a id="markdown-%F0%9F%A6%80%F0%9F%9A%80todo-process-spawning-in-rust" name="%F0%9F%A6%80%F0%9F%9A%80todo-process-spawning-in-rust"></a>
 
-## (🚀TODO) Process spawning in Rust 🦀
-<a id="markdown-%F0%9F%9A%80todo-process-spawning-in-rust-%F0%9F%A6%80" name="%F0%9F%9A%80todo-process-spawning-in-rust-%F0%9F%A6%80"></a>
+Here's the [procspawn crate](https://crates.io/crates/procspawn) that we can use for this.
 
-- [procspawn crate](https://crates.io/crates/procspawn)
+- [(🚀TODO) Example of using `procspawn` to spawn processes](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/procspawn.rs)
