@@ -49,6 +49,13 @@ use signal_hook_tokio::Signals;
 /// signal-hook-tokio = { version = "0.3.1", features = ["futures-v0_3"] }
 /// futures = "0.3.30"
 /// ```
+///
+/// # Run the binary
+/// ```text
+/// ┌───────────────────────────────────────────┐
+/// │ > cargo run --bin send_and_receive_signal │
+/// └───────────────────────────────────────────┘
+/// ```
 #[tokio::main]
 async fn main() -> miette::Result<()> {
     // Create a broadcast channel to send signals to the signal handler.

@@ -17,6 +17,10 @@
 
 // TODO: use procspawn crate to spawn many processes
 
+/// # Run the binary
+/// ┌─────────────────────────────┐
+/// │ > cargo run --bin procspawn │
+/// └─────────────────────────────┘
 #[tokio::main]
 async fn main() {
     todo!()

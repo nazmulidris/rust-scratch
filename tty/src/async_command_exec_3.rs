@@ -31,7 +31,7 @@ use tokio::{
 /// 1. Programmatically provides data to the `cat` command via `stdin`.
 /// 2. Programmatically captures the output of `cat` via `stdout`.
 ///
-/// You can run `cargo run --bin async_command_exec_2_1` and it will print the output.
+/// You can run `cargo run --bin async_command_exec_3` and it will print the output.
 ///
 /// > Note: Look at code example of [tokio::process::Child::wait] to see how to write /
 /// send data to the `stdin` of a command.
@@ -40,9 +40,9 @@ use tokio::{
 ///
 /// ```text
 /// Terminal emulator running fish shell
-/// ┌──────────────────────────────────────────┐
-/// │ > cargo run --bin async_command_exec_2_1 │
-/// └───▲──────────────────────────────────────┘
+/// ┌────────────────────────────────────────┐
+/// │ > cargo run --bin async_command_exec_3 │
+/// └───▲────────────────────────────────────┘
 ///     ├────► create async Command for `cat`
 ///     │      with stdout = `Stdio::piped()` to
 ///     │      capture the output of `cmd`

@@ -30,6 +30,14 @@ use tokio::{io::AsyncReadExt, process::Command};
 ///    `a-z A-Z` and spawn it.
 /// 3. Finally we join the `echo` and `tr` child processes and wait for them both to
 ///    complete.
+///
+/// # Run the binary
+/// ```text
+/// ┌────────────────────────────────────────┐
+/// │ > cargo run --bin async_command_exec_4 │
+/// └────────────────────────────────────────┘
+/// ```
+
 #[tokio::main]
 async fn main() -> miette::Result<()> {
     // Spawn `echo` command & get its `stdout`.
@@ -101,13 +109,14 @@ fn spawn_child_tr_and_pipe_to_stdin(
 ) -> miette::Result<(tokio::process::ChildStdout, tokio::task::JoinHandle<()>)> {
     // Note the type conversion here, from a `tokio::process::ChildStdout` to a
     // `std::process::Stdio`.
-    let stdin: std::process::Stdio = stdout_from_other_child.try_into().into_diagnostic()?;
+    let stdout_from_other_child: std::process::Stdio =
+        stdout_from_other_child.try_into().into_diagnostic()?;
 
     // Spawn child process.
     let mut tr_child = Command::new("tr")
         .arg("a-z")
         .arg("A-Z")
-        .stdin(stdin)
+        .stdin(stdout_from_other_child) // Pipe stdout into this child's stdin.
         .stdout(Stdio::piped())
         .spawn()
         .into_diagnostic()?;

@@ -31,7 +31,7 @@ Table of contents
   - [Code to receive signals](#code-to-receive-signals)
   - [Code to send & receive signals](#code-to-send--receive-signals)
 - [🦀 Communicating with processes in Rust](#-communicating-with-processes-in-rust)
-- [🦀🚀TODO Process spawning in Rust](#todo-process-spawning-in-rust)
+- [🦀 Process spawning in Rust](#-process-spawning-in-rust)
 
 <!-- /TOC -->
 
@@ -713,10 +713,10 @@ Here are code examples of how to communicate with processes in Rust asynchronous
 - [Example of piping input to `cat` process programmatically](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_2.rs)
 - [Example of programmatically providing input into `stdin` and getting output from `stdout` of a process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_3.rs)
 - [Example of programmatically piping the output of one process into another](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_4.rs)
-- [(🚀TODO) Example of using `r3bl_terminal_async` to send commands to a long running `bash` child process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_5.rs)
+- [Example of using `r3bl_terminal_async` to send commands to a long running `bash` child process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_5.rs)
 
-## 🦀(🚀TODO) Process spawning in Rust
-<a id="markdown-%F0%9F%A6%80%F0%9F%9A%80todo-process-spawning-in-rust" name="%F0%9F%A6%80%F0%9F%9A%80todo-process-spawning-in-rust"></a>
+## 🦀 Process spawning in Rust
+<a id="markdown-%F0%9F%A6%80-process-spawning-in-rust" name="%F0%9F%A6%80-process-spawning-in-rust"></a>
 
 Here's the [procspawn crate](https://crates.io/crates/procspawn) that we can use for this.
 

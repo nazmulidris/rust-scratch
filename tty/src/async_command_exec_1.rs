@@ -35,6 +35,14 @@ use miette::IntoDiagnostic;
 /// 3. Spawn the command. Note this doesn't make any progress until you call
 ///    `wait().await` or `wait_with_output().await`.
 /// 4. Wait for the command to complete with or without output capture.
+///
+/// # Run the binary
+/// ```text
+/// ┌────────────────────────────────────────┐
+/// │ > cargo run --bin async_command_exec_1 │
+/// └────────────────────────────────────────┘
+/// ```
+
 #[tokio::main]
 async fn main() -> miette::Result<()> {
     run_command_no_capture().await?;

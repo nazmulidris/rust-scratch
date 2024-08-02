@@ -63,6 +63,13 @@ use miette::IntoDiagnostic;
 /// - [tokio::signal](https://docs.rs/tokio/latest/tokio/signal/index.html)
 /// - [tokio::signal::unix::signal](https://docs.rs/tokio/latest/tokio/signal/unix/fn.signal.html)
 /// - [tokio::signal::unix::SignalKind](https://docs.rs/tokio/latest/tokio/signal/unix/struct.SignalKind.html)
+///
+/// # Run the binary
+/// ```text
+/// ┌───────────────────────────────────────┐
+/// │ > cargo run --bin send_receive_signal │
+/// └───────────────────────────────────────┘
+/// ```
 #[tokio::main]
 async fn main() -> miette::Result<()> {
     println!("{}",
