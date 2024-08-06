@@ -15,11 +15,9 @@
  *   limitations under the License.
  */
 
+// TODO: try and pause input when suspended
 // TODO: fix prompt size in terminal_async, which size the prompt with ansi stripped length
-// TODO: fix problem with trailing newline in terminal_async (type "exit" and press enter to see this)
 // TODO: add a colorized prompt in this example
-// TODO: add colorized output to this program for stdout and stderr
-// TODO: this might be a great to include in `r3bl_terminal_async` as an example
 
 use std::io::Write;
 

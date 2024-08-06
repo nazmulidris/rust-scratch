@@ -44,4 +44,4 @@ signal-hook-tokio = { version = "0.3.1", features = ["futures-v0_3"] }
 futures = "0.3.30"
 # The `ok!` macro comes from the `r3bl_rs_utils_core` crate.
 r3bl_rs_utils_core = { git = "https://github.com/r3bl-org/r3bl-open-core" }
-r3bl_terminal_async = "0.5.5"
+r3bl_terminal_async = { git = "https://github.com/r3bl-org/r3bl-open-core" }
