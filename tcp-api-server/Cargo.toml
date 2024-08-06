@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 # Async CLI UI.
-r3bl_terminal_async = { version = "0.5.3" }
+r3bl_terminal_async = { git = "https://github.com/r3bl-org/r3bl-open-core" }
 
 r3bl_tui = { version = "0.5.5" }
 r3bl_rs_utils_core = { version = "0.9.13" }
