@@ -707,13 +707,16 @@ In `tokio` a good place to start is
 [`tokio::process`](https://docs.rs/tokio/latest/tokio/process/index.html) which mimics the
 `std::process` module.
 
-Here are code examples of how to communicate with processes in Rust asynchronously:
+Here are code examples of how to communicate with processes in Rust asynchronously (in this repo):
 
 - [Example of running `echo` process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_1.rs)
 - [Example of piping input to `cat` process programmatically](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_2.rs)
 - [Example of programmatically providing input into `stdin` and getting output from `stdout` of a process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_3.rs)
 - [Example of programmatically piping the output of one process into another](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_4.rs)
-- [Example of using `r3bl_terminal_async` to send commands to a long running `bash` child process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_5.rs)
+
+This example is in the `r3bl_terminal_async` repo:
+
+- [Example of using `r3bl_terminal_async` to send commands to a long running `bash` child process](https://github.com/r3bl-org/r3bl-open-core/blob/main/terminal_async/examples/shell_async.rs)
 
 ## 🦀 Process spawning in Rust
 <a id="markdown-%F0%9F%A6%80-process-spawning-in-rust" name="%F0%9F%A6%80-process-spawning-in-rust"></a>
