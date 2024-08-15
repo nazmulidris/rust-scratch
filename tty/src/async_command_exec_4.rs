@@ -32,6 +32,7 @@ use tokio::{io::AsyncReadExt, process::Command};
 ///    complete.
 ///
 /// # Run the binary
+/// 
 /// ```text
 /// ┌────────────────────────────────────────┐
 /// │ > cargo run --bin async_command_exec_4 │

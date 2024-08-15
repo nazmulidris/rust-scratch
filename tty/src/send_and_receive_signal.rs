@@ -51,6 +51,7 @@ use signal_hook_tokio::Signals;
 /// ```
 ///
 /// # Run the binary
+///
 /// ```text
 /// ┌───────────────────────────────────────────┐
 /// │ > cargo run --bin send_and_receive_signal │

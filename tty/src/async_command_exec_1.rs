@@ -37,6 +37,7 @@ use miette::IntoDiagnostic;
 /// 4. Wait for the command to complete with or without output capture.
 ///
 /// # Run the binary
+/// 
 /// ```text
 /// ┌────────────────────────────────────────┐
 /// │ > cargo run --bin async_command_exec_1 │

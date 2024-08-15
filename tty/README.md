@@ -723,4 +723,5 @@ This example is in the `r3bl_terminal_async` repo:
 
 Here's the [procspawn crate](https://crates.io/crates/procspawn) that we can use for this.
 
-- [(🚀TODO) Example of using `procspawn` to spawn processes](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/procspawn.rs)
+- [Example of using `procspawn` to spawn
+  processes](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/procspawn.rs)
