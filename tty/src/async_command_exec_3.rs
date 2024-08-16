@@ -26,6 +26,8 @@ use tokio::{
     task::JoinHandle,
 };
 
+/// # Example of programmatically providing input into `stdin` and getting output from `stdout` of a process
+///
 /// This example is similar to `async_command_exec_2.rs`, except that there is no need to
 /// pipe input from the shell into this program. It does the following:
 /// 1. Programmatically provides data to the `cat` command via `stdin`.

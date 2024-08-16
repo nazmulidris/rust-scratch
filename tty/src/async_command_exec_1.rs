@@ -20,14 +20,15 @@ use std::process::Stdio;
 use crossterm::style::Stylize;
 use miette::IntoDiagnostic;
 
-/// This example uses the
-/// [`tokio::process::Command`](https://docs.rs/tokio/latest/tokio/process/index.html)
-/// struct to execute a command asynchronously.
+/// # Example of running `echo` process programmatically
 ///
-/// It illustrates the following scenarios:
 /// 1. Run a command and wait for it to complete. Do not capture the output or provide the
 ///    input.
 /// 2. Run a command and capture the output. Do not provide the input.
+///
+/// This example uses the
+/// [`tokio::process::Command`](https://docs.rs/tokio/latest/tokio/process/index.html)
+/// struct to execute a command asynchronously.
 ///
 /// In both cases, the pattern is the same:
 /// 1. Create a [tokio::process::Command].
@@ -37,7 +38,7 @@ use miette::IntoDiagnostic;
 /// 4. Wait for the command to complete with or without output capture.
 ///
 /// # Run the binary
-/// 
+///
 /// ```text
 /// ┌────────────────────────────────────────┐
 /// │ > cargo run --bin async_command_exec_1 │

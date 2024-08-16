@@ -21,6 +21,8 @@ use r3bl_rs_utils_core::ok;
 use std::process::Stdio;
 use tokio::{io::AsyncReadExt, process::Command};
 
+/// # Example of programmatically piping the output of one process into another
+///
 /// In this example, we will will orchestrate two processes and make a pipe between them
 /// programmatically (we are used to doing this using `|` in shells). We will replicate
 /// the following functionality in this program: `echo hello world | tr a-z A-Z`.
@@ -32,7 +34,7 @@ use tokio::{io::AsyncReadExt, process::Command};
 ///    complete.
 ///
 /// # Run the binary
-/// 
+///
 /// ```text
 /// ┌────────────────────────────────────────┐
 /// │ > cargo run --bin async_command_exec_4 │

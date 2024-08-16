@@ -13,7 +13,7 @@ Table of contents
   - [Using redirection to write to another PTY run command in left terminal, see output in right terminal](#using-redirection-to-write-to-another-pty-run-command-in-left-terminal-see-output-in-right-terminal)
   - [Using redirection to read from another PTY type in left terminal, see it in right terminal](#using-redirection-to-read-from-another-pty-type-in-left-terminal-see-it-in-right-terminal)
   - [Breaking things in raw mode.](#breaking-things-in-raw-mode)
-- [Processes, sessions, jobs, PTYs, signals](#processes-sessions-jobs-ptys-signals)
+- [Shells, processes, sessions, jobs, PTYs, signals](#shells-processes-sessions-jobs-ptys-signals)
   - [Background information knowledgebase](#background-information-knowledgebase)
     - [File descriptors and processes, ulimit, stdin, stdout, stderr, pipes](#file-descriptors-and-processes-ulimit-stdin-stdout-stderr-pipes)
     - [Unix shells that run in terminals to execute built-in and program commands](#unix-shells-that-run-in-terminals-to-execute-built-in-and-program-commands)
@@ -28,8 +28,8 @@ Table of contents
   - [How is termion built on top of stdio, PTY, etc?](#how-is-termion-built-on-top-of-stdio-pty-etc)
 - [List of signals](#list-of-signals)
 - [🦀 Sending and receiving signals in Rust](#-sending-and-receiving-signals-in-rust)
-  - [Code to receive signals](#code-to-receive-signals)
-  - [Code to send & receive signals](#code-to-send--receive-signals)
+  - [🦀 Code to receive signals](#-code-to-receive-signals)
+  - [🦀 Code to send & receive signals](#-code-to-send--receive-signals)
 - [🦀 Communicating with processes in Rust](#-communicating-with-processes-in-rust)
 - [🦀 Process spawning in Rust](#-process-spawning-in-rust)
 
@@ -223,8 +223,8 @@ thing happens if you use `micro` or `nano`.
 To terminate the `vi` process (or many of them), run `killall -9 vi`. That sends the `SIGKILL`
 signal to all the `vi` processes.
 
-## Processes, sessions, jobs, PTYs, signals
-<a id="markdown-processes%2C-sessions%2C-jobs%2C-ptys%2C-signals" name="processes%2C-sessions%2C-jobs%2C-ptys%2C-signals"></a>
+## Shells, processes, sessions, jobs, PTYs, signals
+<a id="markdown-shells%2C-processes%2C-sessions%2C-jobs%2C-ptys%2C-signals" name="shells%2C-processes%2C-sessions%2C-jobs%2C-ptys%2C-signals"></a>
 
 Let's say in a new terminal emulator program `xterm`, and then you run the following commands in
 `fish`:
@@ -538,7 +538,8 @@ thread.
 <a id="markdown-list-of-signals" name="list-of-signals"></a>
 
 Here are the reference docs on signals:
-
+<!-- cspell:disable-next-line -->
+- [POSIX](https://en.wikipedia.org/wiki/POSIX), pronounced "paw-siks", [signals](https://en.wikipedia.org/wiki/Signal_(IPC))
 - [gnu libc termination signals](https://www.gnu.org/software/libc/manual/html_node/Termination-Signals.html)
 - [gnu libc job control signals](https://www.gnu.org/software/libc/manual/html_node/Job-Control-Signals.html)
 
@@ -599,7 +600,7 @@ Here are some important ones.
 
 - Default action: Core dump
 - Possible actions: Core dump, Ignore, Function call
-- `SIGQUIT` works just like SIGINT, but the quit character is typically <kbd>^\</kbd> and the
+- `SIGQUIT` works just like SIGINT, but the quit character is typically <kbd>^\\</kbd> and the
   default action is different.
 
 4. `SIGPIPE`
@@ -681,47 +682,52 @@ Here are some important ones.
 > \*: Via
 > [`signal_hook::low_level::raise`](https://docs.rs/signal-hook/latest/signal_hook/low_level/fn.raise.html).
 
-### Code to receive signals
-<a id="markdown-code-to-receive-signals" name="code-to-receive-signals"></a>
+### 🦀 Code to receive signals
+<a id="markdown-%F0%9F%A6%80-code-to-receive-signals" name="%F0%9F%A6%80-code-to-receive-signals"></a>
 
-`tokio` has limited handling of signals. You can only receive certain signals, not send them. Here's
-an [example](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/receive_signal.rs#L18) of
-how to receive signals using `tokio`.
+Examples in this repo:
 
-Other choices to receive signals:
+1. [Example using `tokio` to receive
+  signals](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/receive_signal.rs#L18).
+  `tokio` has limited handling of signals. You can only receive certain signals, not send
+  them.
 
-- [`ctrlc`](https://crates.io/crates/ctrlc)
-- [`signal-hook`](https://crates.io/crates/signal-hook)
+> Other choices to receive signals:
+>
+> - [`ctrlc`](https://crates.io/crates/ctrlc)
+> - [`signal-hook`](https://crates.io/crates/signal-hook)
 
-### Code to send & receive signals
-<a id="markdown-code-to-send-%26-receive-signals" name="code-to-send-%26-receive-signals"></a>
+### 🦀 Code to send & receive signals
+<a id="markdown-%F0%9F%A6%80-code-to-send-%26-receive-signals" name="%F0%9F%A6%80-code-to-send-%26-receive-signals"></a>
 
-Here's an
-[example](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/send_and_receive_signal.rs)
-of using `signal-hook` and `signal-hook-tokio`
+Examples in this repo:
+
+2. [Example using `signal-hook` and `signal-hook-tokio`](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/send_and_receive_signal.rs)
 
 ## 🦀 Communicating with processes in Rust
 <a id="markdown-%F0%9F%A6%80-communicating-with-processes-in-rust" name="%F0%9F%A6%80-communicating-with-processes-in-rust"></a>
 
-In `tokio` a good place to start is
-[`tokio::process`](https://docs.rs/tokio/latest/tokio/process/index.html) which mimics the
-`std::process` module.
+Examples of how to communicate with processes in Rust asynchronously (in this repo):
 
-Here are code examples of how to communicate with processes in Rust asynchronously (in this repo):
+3. [Example running `echo` process programmatically](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_1.rs)
+4. [Example piping input to `cat` process programmatically](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_2.rs)
+5. [Example programmatically providing input into `stdin` and getting output from `stdout` of a process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_3.rs)
+6. [Example programmatically piping the output of one process into another](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_4.rs)
 
-- [Example of running `echo` process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_1.rs)
-- [Example of piping input to `cat` process programmatically](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_2.rs)
-- [Example of programmatically providing input into `stdin` and getting output from `stdout` of a process](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_3.rs)
-- [Example of programmatically piping the output of one process into another](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/async_command_exec_4.rs)
+Example in the `r3bl_terminal_async` repo:
 
-This example is in the `r3bl_terminal_async` repo:
+7. [Example using `r3bl_terminal_async` to send commands to a long running `bash` child process](https://github.com/r3bl-org/r3bl-open-core/blob/main/terminal_async/examples/shell_async.rs)
 
-- [Example of using `r3bl_terminal_async` to send commands to a long running `bash` child process](https://github.com/r3bl-org/r3bl-open-core/blob/main/terminal_async/examples/shell_async.rs)
+> In `tokio` a good place to start is
+> [`tokio::process`](https://docs.rs/tokio/latest/tokio/process/index.html) which mimics the
+> `std::process` module.
 
 ## 🦀 Process spawning in Rust
 <a id="markdown-%F0%9F%A6%80-process-spawning-in-rust" name="%F0%9F%A6%80-process-spawning-in-rust"></a>
 
-Here's the [procspawn crate](https://crates.io/crates/procspawn) that we can use for this.
+Examples in this repo:
 
-- [Example of using `procspawn` to spawn
-  processes](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/procspawn.rs)
+8. [Example using `procspawn` to spawn processes](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/procspawn.rs)
+9. [Example using `procspawn` to spawn processes w/ `ipc-channel`](https://github.com/nazmulidris/rust-scratch/blob/main/tty/src/procspawn_ipc_channel.rs)
+
+> Here's the [procspawn crate](https://crates.io/crates/procspawn) that we can use for this.

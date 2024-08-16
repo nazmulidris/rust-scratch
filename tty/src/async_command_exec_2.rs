@@ -22,6 +22,8 @@ use miette::IntoDiagnostic;
 use r3bl_rs_utils_core::ok;
 use tokio::io::{AsyncBufReadExt, BufReader};
 
+/// # Example of piping input to `cat` process programmatically
+///
 /// This example uses the
 /// [`tokio::process::Command`](https://docs.rs/tokio/latest/tokio/process/index.html)
 /// struct to execute a command asynchronously, and then pipes the output of this command,

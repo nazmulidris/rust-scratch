@@ -20,8 +20,9 @@ use miette::IntoDiagnostic;
 use signal_hook::consts::signal::*;
 use signal_hook_tokio::Signals;
 
-/// This example demonstrates how to send and receive Linux (POSIX, Unix) signals in a
-/// process. It uses the following crates to make this happen:
+/// # Example of how to send and receive Linux (POSIX, Unix) signals in a process
+///
+/// It uses the following crates to make this happen:
 /// - [signal-hook](https://docs.rs/signal-hook/)
 /// - [signal-hook-tokio](https://docs.rs/signal-hook-tokio/latest/signal_hook_tokio/)
 ///
