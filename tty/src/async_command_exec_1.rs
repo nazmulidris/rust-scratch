@@ -15,47 +15,39 @@
  *   limitations under the License.
  */
 
-use std::process::Stdio;
+//! # Example of running `echo` process programmatically
+//!
+//! 1. Run a command and wait for it to complete. Do not capture the output or provide the
+//!    input.
+//! 2. Run a command and capture the output. Do not provide the input.
+//!
+//! This example uses the
+//! [`tokio::process::Command`](https://docs.rs/tokio/latest/tokio/process/index.html)
+//! struct to execute a command asynchronously.
+//!
+//! In both cases, the pattern is the same:
+//! 1. Create a [tokio::process::Command].
+//! 2. Configure it with the desired `stdin` and `stdout`.
+//! 3. Spawn the command. Note this doesn't make any progress until you call
+//!    `wait().await` or `wait_with_output().await`.
+//! 4. Wait for the command to complete with or without output capture.
+//!
+//! # Run the binary
+//!
+//! ```text
+//! ┌────────────────────────────────────────┐
+//! │ > cargo run --bin async_command_exec_1 │
+//! └────────────────────────────────────────┘
+//! ```
 
 use crossterm::style::Stylize;
 use miette::IntoDiagnostic;
-
-/// # Example of running `echo` process programmatically
-///
-/// 1. Run a command and wait for it to complete. Do not capture the output or provide the
-///    input.
-/// 2. Run a command and capture the output. Do not provide the input.
-///
-/// This example uses the
-/// [`tokio::process::Command`](https://docs.rs/tokio/latest/tokio/process/index.html)
-/// struct to execute a command asynchronously.
-///
-/// In both cases, the pattern is the same:
-/// 1. Create a [tokio::process::Command].
-/// 2. Configure it with the desired `stdin` and `stdout`.
-/// 3. Spawn the command. Note this doesn't make any progress until you call
-///    `wait().await` or `wait_with_output().await`.
-/// 4. Wait for the command to complete with or without output capture.
-///
-/// # Run the binary
-///
-/// ```text
-/// ┌────────────────────────────────────────┐
-/// │ > cargo run --bin async_command_exec_1 │
-/// └────────────────────────────────────────┘
-/// ```
 
 #[tokio::main]
 async fn main() -> miette::Result<()> {
     run_command_no_capture().await?;
     run_command_capture_output().await?;
     Ok(())
-}
-
-macro_rules! command {
-    ($cmd:expr, $args:expr) => {
-        tokio::process::Command::new($cmd).args($args)
-    };
 }
 
 // - Run `echo hello world` and wait for it to complete.
@@ -69,12 +61,16 @@ async fn run_command_no_capture() -> miette::Result<()> {
     //
     // Even though `spawn()` is called this child / command doesn't make any progress
     // until you call `wait().await`.
-    let mut child = command!("echo", &["hello", "world"])
-        .stderr(Stdio::inherit())
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .spawn()
-        .into_diagnostic()?;
+    let mut command = {
+        let mut command = tokio::process::Command::new("echo");
+        command
+            .args(["hello", "world"])
+            .stdin(std::process::Stdio::inherit())
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit());
+        command
+    };
+    let mut child = command.spawn().into_diagnostic()?;
 
     // Wait for the command to complete. Don't capture the output, it will go to `stdout`
     // of the process running this program.
@@ -96,12 +92,16 @@ async fn run_command_capture_output() -> miette::Result<()> {
     //
     // Even though `spawn()` is called this child / command doesn't make any progress
     // until you call `wait_with_out().await`.
-    let child = command!("echo", &["hello", "world"])
-        .stderr(Stdio::inherit())
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::piped())
-        .spawn()
-        .into_diagnostic()?;
+    let mut command = {
+        let mut command = tokio::process::Command::new("echo");
+        command
+            .args(["hello", "world"])
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null());
+        command
+    };
+    let child = command.spawn().into_diagnostic()?;
 
     // Wait for the command to complete and capture the output.
     // - Calling `wait()` consumes the child process, so we can't call `output.stdout` on

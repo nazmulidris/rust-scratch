@@ -18,16 +18,16 @@
 //! # Example of how to receive Linux (POSIX, Unix) signals in a process using Tokio
 //!
 //! - [tokio::signal::ctrl_c] is a utility function that creates a future that completes
-//!   when `ctrl-c` is pressed. There is no need to write a signal stream for this like
-//!   so:
+//!   when `ctrl-c` is pressed. There is **NO** need to write a signal stream for this
+//!   like so:
 //!   ```rust
-//!   let mut stream_sigterm =
-//!       tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+//!   let signal = tokio::signal::unix::SignalKind::interrupt();
+//!   let mut stream = tokio::signal::unix::signal(signal)
 //!       .into_diagnostic()?;
 //!   loop {
 //!       tokio::select! {
-//!           _ = stream_sigterm.recv() => {
-//!               println!("\nSIGTERM received");
+//!           _ = stream.recv() => {
+//!               println!("\nSIGINT received");
 //!               break;
 //!           }
 //!       }
@@ -85,28 +85,23 @@
 //! kill -INT <PID>
 //! ```
 //!
-//! To send `SIGWINCH`, aka [tokio::signal::unix::SignalKind::window_change] to the process,
-//! simply change the terminal window size of the terminal that the process is running in. Or run
-//! the following command:
+//! To send `SIGWINCH`, aka [tokio::signal::unix::SignalKind::window_change] to the
+//! process, simply change the terminal window size of the terminal that the process is
+//! running in. Or run the following command:
 //!
 //! ```shell
 //! kill -28 <PID>
 //! kill -WINCH <PID>
 //! ```
 
-use cli_clipboard::ClipboardProvider;
-use crossterm::style::Stylize;
 use miette::IntoDiagnostic;
 use r3bl_rs_utils_core::ok;
+use tokio::signal::unix;
 
 #[tokio::main]
 async fn main() -> miette::Result<()> {
-    println!("{}",
-        "Press Ctrl-C to exit the program, and resize the terminal to send SIGWINCH and end the program".blue().bold()
-    );
-
-    let signal = tokio::signal::unix::SignalKind::window_change();
-    let mut stream = tokio::signal::unix::signal(signal).into_diagnostic()?;
+    let signal = unix::SignalKind::window_change();
+    let mut stream = unix::signal(signal).into_diagnostic()?;
 
     let mut tick_interval = tokio::time::interval(tokio::time::Duration::from_millis(500));
 
@@ -117,9 +112,13 @@ async fn main() -> miette::Result<()> {
     println!("PID: {}", pid);
 
     // Copy child PID to clipboard.
-    let mut ctx = cli_clipboard::ClipboardContext::new().unwrap();
-    ctx.set_contents(pid.to_string().to_owned()).unwrap();
-    ctx.get_contents().unwrap();
+    use cli_clipboard::ClipboardProvider as _; // Import `ClipboardProvider` trait.
+    let mut ctx = cli_clipboard::ClipboardContext::new()
+        .map_err(|e| miette::miette!("could not create clipboard context: {}", e))?;
+    ctx.set_contents(pid.to_string().to_owned())
+        .map_err(|e| miette::miette!("could not set clipboard contents: {}", e))?;
+    ctx.get_contents()
+        .map_err(|e| miette::miette!("could not get clipboard contents: {}", e))?;
 
     loop {
         tokio::select! {

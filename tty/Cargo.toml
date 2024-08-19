@@ -8,6 +8,14 @@ name = "recieve_signal"
 path = "src/receive_signal.rs"
 
 [[bin]]
+name = "procspawn"
+path = "src/procspawn.rs"
+
+[[bin]]
+name = "procspawn_ipc_channel"
+path = "src/procspawn_ipc_channel.rs"
+
+[[bin]]
 name = "send_and_receive_signal"
 path = "src/send_and_receive_signal.rs"
 
@@ -27,16 +35,8 @@ path = "src/async_command_exec_3.rs"
 name = "async_command_exec_4"
 path = "src/async_command_exec_4.rs"
 
-[[bin]]
-name = "procspawn"
-path = "src/procspawn.rs"
-
-[[bin]]
-name = "procspawn_ipc_channel"
-path = "src/procspawn_ipc_channel.rs"
-
 [dependencies]
-tokio = { version = "1.39.2", features = ["full"] }
+tokio = { version = "1.39.3", features = ["full"] }
 miette = { version = "7.2.0", features = ["fancy"] }
 crossterm = { version = "0.28.1", features = ["event-stream"] }
 signal-hook = { version = "0.3.17" }
@@ -45,6 +45,8 @@ futures = "0.3.30"
 procspawn = "1.0.1"
 cli-clipboard = "0.4.0"
 ipc-channel = "0.18.2"
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0.63"
 # The `ok!` macro comes from the `r3bl_rs_utils_core` crate.
 r3bl_rs_utils_core = { git = "https://github.com/r3bl-org/r3bl-open-core" }
 r3bl_terminal_async = { git = "https://github.com/r3bl-org/r3bl-open-core" }

@@ -42,59 +42,79 @@
 //! └─────────────────────────────┘
 //! ```
 
-use cli_clipboard::ClipboardProvider;
-use std::io::Read;
-use std::process::Stdio;
+use miette::IntoDiagnostic;
+use r3bl_rs_utils_core::ok;
 
-fn main() {
+fn main() -> miette::Result<()> {
     // A spawned process will execute every line of code up to this point.
     procspawn::init();
 
-    let pid = std::process::id();
-    println!("PID (parent): {}", pid);
+    let pid_parent = std::process::id();
 
-    // This is passed across process boundaries, using serde.
-    let arg: Vec<i64> = vec![1, 2, 3, 4];
-    let mut join_handle = get_builder().spawn(arg, run_on_another_process);
+    let args: Vec<i64> = vec![1, 2, 3, 4];
+    let (sum, pid_child, pid_child_from_clip) = configure_builder()
+        .spawn(args, run_in_child_process)
+        .join()
+        .into_diagnostic()?
+        .into_diagnostic()?;
 
-    // Read the stdout of the child process into `buf`.
-    let mut buf = String::new();
-    join_handle
-        .stdout()
-        .unwrap()
-        .read_to_string(&mut buf)
-        .unwrap();
-    let (sum, pid_child) = join_handle.join().unwrap();
+    println!("Parent PID: {}", pid_parent);
+    println!(
+        "Child PID: {}, sum: {}, pid from clip: {}",
+        pid_child, sum, pid_child_from_clip
+    );
 
-    // Make assertions.
-    assert_eq!(buf, "Received data [1, 2, 3, 4]\n");
     assert_eq!(sum, 10);
-    println!("Sum: {} from PID (child): {}", sum, pid_child);
+    assert_eq!(pid_child, pid_child_from_clip);
+
+    ok!()
 }
 
-/// Create a new builder with stdout piped.
-fn get_builder() -> procspawn::Builder {
+// Create a new builder with stderr & stdout that's null.
+fn configure_builder() -> procspawn::Builder {
     let mut it = procspawn::Builder::new();
-    it.stdout(Stdio::piped());
-    it.stderr(Stdio::null());
+    it.stderr(std::process::Stdio::null()); // Suppress stderr.
+    it.stdout(std::process::Stdio::null()); // Suppress stdout.
     it
 }
 
-/// This function will be executed in a separate process.
-fn run_on_another_process(param: Vec<i64>) -> (i64, u32) {
-    println!("Received data {:?}", &param);
-
-    // This won't get printed to the terminal. In fact all the stderr output of the
-    // child process will be discarded. This includes the error from `mesa` driver for
-    // `wayland` on Linux (via the `cli-clipboard` crate, via the `wl-clipboard-rs`
-    // crate).
-    let pid = std::process::id();
-    eprintln!("PID (child ): {}", pid);
+// This function will be executed in a child process.
+fn run_in_child_process(
+    /* serde */ param: Vec<i64>,
+) -> std::result::Result<
+    /* serde - Ok variant */
+    (
+        /* sum */ i64,
+        /* pid */ String,
+        /* pid from clip */ String,
+    ),
+    /* serde - Err variant */
+    ClipboardError,
+> {
+    let pid_child = std::process::id();
+    let sum = param.iter().sum();
 
     // Copy child pid to the clipboard.
-    let mut ctx = cli_clipboard::ClipboardContext::new().unwrap();
-    ctx.set_contents(pid.to_string().to_owned()).unwrap();
-    ctx.get_contents().unwrap();
+    use cli_clipboard::ClipboardProvider as _; // Import `ClipboardProvider` trait.
+    let mut ctx =
+        cli_clipboard::ClipboardContext::new().map_err(|_| ClipboardError::ContextUnavailable)?;
+    ctx.set_contents(pid_child.to_string().to_owned())
+        .map_err(|_| ClipboardError::SetContents)?;
+    let pid_child_from_clip = ctx
+        .get_contents()
+        .map_err(|_| ClipboardError::GetContents)?;
 
-    (param.into_iter().sum::<i64>(), pid)
+    Ok((sum, pid_child.to_string(), pid_child_from_clip))
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize, thiserror::Error)]
+pub enum ClipboardError {
+    #[error("clipboard context unavailable")]
+    ContextUnavailable,
+
+    #[error("could not get clipboard contents")]
+    GetContents,
+
+    #[error("could not set clipboard contents")]
+    SetContents,
 }
