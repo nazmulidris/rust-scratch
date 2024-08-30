@@ -17,3 +17,8 @@
 
 mod ex_1_references;
 mod ex_2_aliasing;
+mod ex_3_lifetimes;
+mod ex_4_input_slices;
+mod ex_5_splitting_borrows_on_structs;
+mod ex_6_cow;
+mod ex_7_subtyping_and_variance;
