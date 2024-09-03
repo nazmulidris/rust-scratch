@@ -1,5 +1,15 @@
 # lifetimes
 
+Please read the article for this repo on
+[developerlife.com](https://developerlife.com/2024/09/02/rust-lifetimes/).
+
+And watch the videos here:
+
+- [Rust lifetimes](https://youtu.be/eIJxAEcle7E)
+- [Rust subtyping and variance](https://youtu.be/HRlpYXi4E-M)
+
+# References
+
 - Rustonomicon on [ownership](https://doc.rust-lang.org/nomicon/ownership.html):
   - [Aliasing](https://doc.rust-lang.org/nomicon/aliasing.html),
     [Lifetimes](https://doc.rust-lang.org/nomicon/lifetimes.html),
