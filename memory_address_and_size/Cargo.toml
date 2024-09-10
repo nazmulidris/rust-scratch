@@ -1,0 +1,8 @@
+[package]
+name = "memory_address_and_size"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+crossterm = { version = "0.28.1", features = ["event-stream"] }
+size-of = "0.1.5"
