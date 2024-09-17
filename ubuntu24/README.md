@@ -137,3 +137,11 @@ settings.
 - https://jichu4n.com/posts/how-to-set-default-fonts-and-font-aliases-on-linux/
 - https://www.freedesktop.org/software/fontconfig/fontconfig-user.html
 - https://en.wikipedia.org/wiki/Fontconfig
+
+## Firefox issues
+
+By default Ubuntu 24 wants you to install Firefox from snap. The ability to use 
+`sudo apt install firefox` is disabled. To enable this again:
+1. Run `sudo snap remove firefox ; sudo apt remove firefox`
+2. Run the `install-firefox.bash` script. And it will fix this for you.
+3. [More info on how to install firefox from the .APT repository](https://support.mozilla.org/en-US/kb/install-firefox-linux?as=u&utm_source=inproduct)

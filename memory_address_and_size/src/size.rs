@@ -15,9 +15,6 @@
  *   limitations under the License.
  */
 
-// TODO: use std::mem::size_of
-// TODO: use size-of crate
-
 //! Different ways of getting the size of a variable, in Rust:
 //! - std::mem::size_of_val
 //! - size-of crate
