@@ -24,6 +24,7 @@
 /// [More info](https://doc.rust-lang.org/nomicon/ownership.html)
 #[test]
 fn ex_1_references() {
+    #[allow(dead_code)]
     fn try_to_use_after_free(arg: usize) -> &'static str {
         let s = format!("{} is a number", arg);
         // return &s; /* 🧨 won't compile! */

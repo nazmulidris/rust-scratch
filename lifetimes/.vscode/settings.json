@@ -1,9 +1,14 @@
 {
   "cSpell.words": [
+    "Dimens",
     "HRTB",
     "pointee",
     "rustfmt",
     "Rustonomicon",
-    "subtyping"
+    "subtrait",
+    "subtraits",
+    "subtyping",
+    "supertrait",
+    "supertraits"
   ]
 }

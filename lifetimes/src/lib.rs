@@ -15,10 +15,67 @@
  *   limitations under the License.
  */
 
+#[allow(
+    unused_mut,
+    dead_code,
+    unused_variables,
+    clippy::useless_vec,
+    clippy::needless_lifetimes
+)]
 mod ex_1_references;
+#[allow(
+    unused_mut,
+    dead_code,
+    unused_variables,
+    clippy::useless_vec,
+    clippy::needless_lifetimes
+)]
 mod ex_2_aliasing;
+#[allow(
+    unused_mut,
+    dead_code,
+    unused_variables,
+    clippy::useless_vec,
+    clippy::needless_lifetimes
+)]
 mod ex_3_lifetimes;
+#[allow(
+    unused_mut,
+    dead_code,
+    unused_variables,
+    clippy::useless_vec,
+    clippy::needless_lifetimes
+)]
 mod ex_4_input_slices;
+#[allow(
+    unused_mut,
+    dead_code,
+    unused_variables,
+    clippy::useless_vec,
+    clippy::needless_lifetimes
+)]
 mod ex_5_splitting_borrows_on_structs;
+#[allow(
+    unused_mut,
+    dead_code,
+    unused_variables,
+    clippy::useless_vec,
+    clippy::needless_lifetimes
+)]
 mod ex_6_cow;
+#[allow(
+    unused_mut,
+    dead_code,
+    unused_variables,
+    clippy::useless_vec,
+    clippy::needless_lifetimes
+)]
 mod ex_7_subtyping_and_variance;
+#[allow(
+    unused_mut,
+    dead_code,
+    unused_variables,
+    clippy::useless_vec,
+    clippy::needless_lifetimes
+)]
+mod ex_8_subtyping_and_variance;
