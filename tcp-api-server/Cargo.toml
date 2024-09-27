@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 # Async CLI UI.
-r3bl_terminal_async = { git = "https://github.com/r3bl-org/r3bl-open-core" }
-r3bl_tui = { git = "https://github.com/r3bl-org/r3bl-open-core" }
-r3bl_rs_utils_core = { git = "https://github.com/r3bl-org/r3bl-open-core" }
+r3bl_terminal_async = { git = "https://github.com/r3bl-org/r3bl-open-core", rev = "e0fe0d30855cf5923900079a24a2f2597b2400d1" }
+r3bl_tui = { git = "https://github.com/r3bl-org/r3bl-open-core", rev = "e0fe0d30855cf5923900079a24a2f2597b2400d1" }
+r3bl_rs_utils_core = { git = "https://github.com/r3bl-org/r3bl-open-core", rev = "e0fe0d30855cf5923900079a24a2f2597b2400d1" }
 crossterm = "0.28.1"
 
 # Command line argument parsing.
@@ -47,6 +47,26 @@ tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tokio = { version = "1.40.0", features = ["full", "tracing"] }
 tokio-test = "0.4.4"                                                   # For mock `TcpStream` (`Builder`)
+
+# ⚠️ NOTE ⚠️
+# DO NOT UPDATE TO THE LATEST VERSION OF THE FOLLOWING CRATES YET THERE ARE
+# SOME INCOMPATIBILITIES WITH THE LATEST VERSIONS (0.24.0, etc)
+
+# OTel, jaeger, tracing. Implements the types defined in the Otel spec
+# Run: `docker run -d -p16686:16686 -p4317:4317 -e COLLECTOR_OTLP_ENABLED=true jaegertracing/all-in-one:latest`
+# Open: http://localhost:16686/search
+# Example: https://github.com/open-telemetry/opentelemetry-rust/blob/main/examples/tracing-jaeger/src/main.rs
+# OpenTelemetry’s API-level view of tracing, spans, etc.
+opentelemetry = { version = "0.22.0" }
+# Implements the OpenTelemetry APIs.
+opentelemetry_sdk = { version = "0.22.1", features = ["rt-tokio"] }
+# The OTel protocol (OTLP) implementation to export data to Jaeger or some other backend.
+# tonic is a gRPC crate.
+opentelemetry-otlp = { version = "0.15.0", features = ["tonic"] }
+# Integration between the tracing crate and the opentelemetry crate.
+tracing-opentelemetry = "0.23.0"
+# Standardized naming patterns for OpenTelemetry things.
+opentelemetry-semantic-conventions = "0.14.0"
 
 [dev-dependencies]
 tempfile = "3.12.0"

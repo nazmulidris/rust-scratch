@@ -16,14 +16,16 @@
  */
 
 use crate::{
-    byte_io, get_from_bucket, insert_into_bucket, iterate_bucket, load_or_create_bucket_from_store,
-    load_or_create_store, protocol::ServerMessage, remove_from_bucket, CLIArg, ClientMessage,
-    KVBucket, MessageKey, MessageValue, MyClientMessage, MyServerMessage, CHANNEL_SIZE,
+    byte_io, protocol::ServerMessage, CLIArg, ClientMessage, MessageKey, MessageValue,
+    MyClientMessage, MyServerMessage, CHANNEL_SIZE,
 };
 use crossterm::style::Stylize;
 use kv::Store;
 use miette::{miette, IntoDiagnostic};
-use r3bl_rs_utils_core::friendly_random_id;
+use r3bl_rs_utils_core::{
+    friendly_random_id, get_from_bucket, insert_into_bucket, iterate_bucket,
+    load_or_create_bucket_from_store, load_or_create_store, remove_from_bucket, KVBucket,
+};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -501,12 +503,14 @@ pub mod test_fixtures {
 #[cfg(test)]
 pub mod test_handle_client_message {
     use crate::{
-        handle_client_task::handle_client_message, insert_into_bucket,
-        load_or_create_bucket_from_store, load_or_create_store,
-        server_task::generate_server_message, test_fixtures::MockTcpStreamWrite, Buffer,
-        ClientMessage, Data, InterClientMessage, ServerMessage, CHANNEL_SIZE,
+        handle_client_task::handle_client_message, server_task::generate_server_message,
+        test_fixtures::MockTcpStreamWrite, Buffer, ClientMessage, Data, InterClientMessage,
+        ServerMessage, CHANNEL_SIZE,
     };
     use miette::IntoDiagnostic;
+    use r3bl_rs_utils_core::{
+        insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store,
+    };
     use tempfile::tempdir;
     use tokio::{io::BufWriter, sync::broadcast};
 

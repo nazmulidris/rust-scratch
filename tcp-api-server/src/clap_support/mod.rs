@@ -15,12 +15,10 @@
  *   limitations under the License.
  */
 
-// Attach.
-pub mod kv;
-pub mod miette_setup_global_report_handler;
-pub mod protocol;
+// Attach sources.
+pub mod clap_args;
+pub mod log_request;
 
 // Re-export.
-pub use kv::*;
-pub use miette_setup_global_report_handler::*;
-pub use protocol::*;
+pub use clap_args::*;
+pub use log_request::*;

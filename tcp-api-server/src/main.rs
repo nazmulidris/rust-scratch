@@ -17,16 +17,15 @@
 
 use clap::Parser;
 use miette::IntoDiagnostic;
-use r3bl_rs_utils_core::UnicodeString;
-use r3bl_terminal_async::{
-    jaeger_setup, tracing_setup, DisplayPreference, TerminalAsync, TracingConfig,
+use r3bl_rs_utils_core::{
+    setup_default_miette_global_report_handler, tracing_logging, ColorWheel, ColorWheelConfig,
+    ColorWheelSpeed, DisplayPreference, GradientGenerationPolicy, TextColorizationPolicy,
+    TracingConfig, UnicodeString,
 };
-use r3bl_tui::{
-    ColorWheel, ColorWheelConfig, ColorWheelSpeed, GradientGenerationPolicy, TextColorizationPolicy,
-};
+use r3bl_terminal_async::TerminalAsync;
 use tcp_api_server::{
     clap_args::{self, CLISubcommand},
-    setup_default_miette_global_report_handler,
+    convert_args_into_writer_config, jaeger_setup,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -111,30 +110,44 @@ async fn main() -> miette::Result<()> {
 
     // Create a tracing config based on whether this is server or client.
     let tracing_config = match &cli_args.subcommand {
-        CLISubcommand::Server => TracingConfig {
-            writers: cli_args.enable_tracing.clone(),
-            level: cli_args.tracing_log_level,
-            tracing_log_file_path_and_prefix: format!(
+        CLISubcommand::Server => {
+            let level = cli_args.tracing_log_level;
+            let file_path_and_prefix = format!(
                 "{}_{}.log",
                 cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
-            ),
-            preferred_display: tracing_setup::DisplayPreference::Stdout,
-        },
-        CLISubcommand::Client => TracingConfig {
-            writers: cli_args.enable_tracing.clone(),
-            level: cli_args.tracing_log_level,
-            tracing_log_file_path_and_prefix: format!(
+            );
+
+            TracingConfig {
+                writer_config: convert_args_into_writer_config(
+                    &cli_args.enable_tracing,
+                    file_path_and_prefix,
+                    DisplayPreference::Stdout,
+                ),
+                level,
+            }
+        }
+        CLISubcommand::Client => {
+            let level = cli_args.tracing_log_level;
+            let file_path_and_prefix = format!(
                 "{}_{}.log",
                 cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
-            ),
-            preferred_display: match &maybe_terminal_async {
+            );
+            let display_preference = match &maybe_terminal_async {
                 Some(terminal_async) => {
                     let shared_writer = terminal_async.clone_shared_writer();
                     DisplayPreference::SharedWriter(shared_writer)
                 }
                 None => DisplayPreference::Stdout,
-            },
-        },
+            };
+            TracingConfig {
+                writer_config: convert_args_into_writer_config(
+                    &cli_args.enable_tracing,
+                    file_path_and_prefix,
+                    display_preference,
+                ),
+                level,
+            }
+        }
     };
 
     let service_name = match cli_args.subcommand {
@@ -146,7 +159,7 @@ async fn main() -> miette::Result<()> {
     // that it can be dropped at the end of the program, and the tracer can be shutdown.
     // Don't assign this to `_` because it will be dropped immediately.
     let mut _maybe_drop_tracer = None;
-    if let Some(mut tracing_layers) = tracing_setup::try_create_layers(tracing_config)? {
+    if let Some(mut tracing_layers) = tracing_logging::try_create_layers(tracing_config)? {
         if let Some((otel_layer, drop_tracer)) =
             jaeger_setup::try_get_otel_layer(service_name, Some(cli_args.otel_collector_endpoint))
                 .await?

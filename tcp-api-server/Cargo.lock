@@ -825,12 +825,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d231dfb89cfffdbc30e7fc41579ed6066ad03abda9e567ccafae602b97ec5024"
 
 [[package]]
-name = "hermit-abi"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbf6a919d6cf397374f7dfeeea91d974c7c0a7221d0d0f4f20d859d329e53fcc"
-
-[[package]]
 name = "home"
 version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -959,17 +953,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e0242819d153cba4b4b05a5a8f2a7e9bbf97b6055b2a002b395c96b5ff3c0222"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "is-terminal"
-version = "0.4.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "261f68e344040fbd0edea105bef17c66edf46f984ddb1115b775ce31be948f4b"
-dependencies = [
- "hermit-abi 0.4.0",
- "libc",
- "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1197,7 +1180,7 @@ version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80e04d1dcff3aae0704555fe5fee3bcfaf3d1fdf8a7e521d5b9d2b42acb52cec"
 dependencies = [
- "hermit-abi 0.3.9",
+ "hermit-abi",
  "libc",
  "log",
  "wasi",
@@ -1652,20 +1635,26 @@ dependencies = [
 [[package]]
 name = "r3bl_ansi_color"
 version = "0.6.10"
-source = "git+https://github.com/r3bl-org/r3bl-open-core#58388f624c4c63e51f65d6fed4b7362dfdf48d9b"
+source = "git+https://github.com/r3bl-org/r3bl-open-core?rev=e0fe0d30855cf5923900079a24a2f2597b2400d1#e0fe0d30855cf5923900079a24a2f2597b2400d1"
 dependencies = [
- "is-terminal",
  "is_ci",
 ]
 
 [[package]]
 name = "r3bl_rs_utils_core"
 version = "0.9.16"
-source = "git+https://github.com/r3bl-org/r3bl-open-core#58388f624c4c63e51f65d6fed4b7362dfdf48d9b"
+source = "git+https://github.com/r3bl-org/r3bl-open-core?rev=e0fe0d30855cf5923900079a24a2f2597b2400d1#e0fe0d30855cf5923900079a24a2f2597b2400d1"
 dependencies = [
+ "bincode",
  "chrono",
+ "colorgrad",
+ "crossterm 0.28.1",
+ "futures-util",
+ "kv",
  "log",
+ "miette",
  "nom",
+ "pretty_assertions",
  "r3bl_ansi_color",
  "r3bl_simple_logger",
  "rand",
@@ -1674,7 +1663,15 @@ dependencies = [
  "sha2",
  "size-of",
  "strip-ansi",
+ "strum",
+ "strum_macros",
+ "thiserror",
  "time",
+ "tokio",
+ "tracing",
+ "tracing-appender",
+ "tracing-core",
+ "tracing-subscriber",
  "unicode-segmentation",
  "unicode-width",
 ]
@@ -1682,7 +1679,7 @@ dependencies = [
 [[package]]
 name = "r3bl_rs_utils_macro"
 version = "0.9.10"
-source = "git+https://github.com/r3bl-org/r3bl-open-core#58388f624c4c63e51f65d6fed4b7362dfdf48d9b"
+source = "git+https://github.com/r3bl-org/r3bl-open-core?rev=e0fe0d30855cf5923900079a24a2f2597b2400d1#e0fe0d30855cf5923900079a24a2f2597b2400d1"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -1694,7 +1691,7 @@ dependencies = [
 [[package]]
 name = "r3bl_simple_logger"
 version = "0.1.4"
-source = "git+https://github.com/r3bl-org/r3bl-open-core#58388f624c4c63e51f65d6fed4b7362dfdf48d9b"
+source = "git+https://github.com/r3bl-org/r3bl-open-core?rev=e0fe0d30855cf5923900079a24a2f2597b2400d1#e0fe0d30855cf5923900079a24a2f2597b2400d1"
 dependencies = [
  "log",
  "r3bl_ansi_color",
@@ -1705,17 +1702,13 @@ dependencies = [
 [[package]]
 name = "r3bl_terminal_async"
 version = "0.5.7"
-source = "git+https://github.com/r3bl-org/r3bl-open-core#58388f624c4c63e51f65d6fed4b7362dfdf48d9b"
+source = "git+https://github.com/r3bl-org/r3bl-open-core?rev=e0fe0d30855cf5923900079a24a2f2597b2400d1#e0fe0d30855cf5923900079a24a2f2597b2400d1"
 dependencies = [
  "async-stream",
  "crossterm 0.28.1",
  "futures-core",
  "futures-util",
  "miette",
- "opentelemetry",
- "opentelemetry-otlp",
- "opentelemetry-semantic-conventions",
- "opentelemetry_sdk",
  "pretty_assertions",
  "r3bl_rs_utils_core",
  "r3bl_tui",
@@ -1727,7 +1720,6 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-core",
- "tracing-opentelemetry",
  "tracing-subscriber",
  "unicode-segmentation",
  "unicode-width",
@@ -1736,14 +1728,12 @@ dependencies = [
 [[package]]
 name = "r3bl_tui"
 version = "0.5.9"
-source = "git+https://github.com/r3bl-org/r3bl-open-core#58388f624c4c63e51f65d6fed4b7362dfdf48d9b"
+source = "git+https://github.com/r3bl-org/r3bl-open-core?rev=e0fe0d30855cf5923900079a24a2f2597b2400d1#e0fe0d30855cf5923900079a24a2f2597b2400d1"
 dependencies = [
  "chrono",
- "colorgrad",
  "copypasta-ext",
  "crossterm 0.28.1",
  "futures-util",
- "is-terminal",
  "log",
  "nom",
  "r3bl_ansi_color",
@@ -1762,11 +1752,10 @@ dependencies = [
 [[package]]
 name = "r3bl_tuify"
 version = "0.1.27"
-source = "git+https://github.com/r3bl-org/r3bl-open-core#58388f624c4c63e51f65d6fed4b7362dfdf48d9b"
+source = "git+https://github.com/r3bl-org/r3bl-open-core?rev=e0fe0d30855cf5923900079a24a2f2597b2400d1#e0fe0d30855cf5923900079a24a2f2597b2400d1"
 dependencies = [
  "clap",
  "crossterm 0.28.1",
- "is-terminal",
  "log",
  "r3bl_ansi_color",
  "r3bl_rs_utils_core",
@@ -2293,6 +2282,10 @@ dependencies = [
  "crossterm 0.28.1",
  "kv",
  "miette",
+ "opentelemetry",
+ "opentelemetry-otlp",
+ "opentelemetry-semantic-conventions",
+ "opentelemetry_sdk",
  "pretty_assertions",
  "r3bl_rs_utils_core",
  "r3bl_terminal_async",
@@ -2309,6 +2302,7 @@ dependencies = [
  "tokio-test",
  "tracing",
  "tracing-appender",
+ "tracing-opentelemetry",
  "tracing-subscriber",
 ]
 

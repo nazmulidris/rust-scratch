@@ -15,8 +15,8 @@
  *   limitations under the License.
  */
 
+use super::LogClapArg;
 use clap::{Parser, Subcommand};
-use r3bl_terminal_async::WriterArg;
 use std::fmt::Display;
 
 const DEFAULT_PORT_NUM: u16 = 3000;
@@ -71,7 +71,7 @@ pub struct CLIArg {
         default_values = &["stdout+file"],
         value_delimiter = '+',
     )]
-    pub enable_tracing: Vec<WriterArg>,
+    pub enable_tracing: Vec<LogClapArg>,
 
     #[arg(
         short = 'f',
