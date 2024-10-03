@@ -29,13 +29,23 @@ async fn test_sleep_right_and_wrong_ways_v1() {
     let sleep = tokio::time::sleep(duration);
     tokio::pin!(sleep);
 
+    let current_time = std::time::Instant::now();
+
     loop {
         tokio::select! {
             // Branch 1 (right way)
-            // This branch executes a deterministic number of times. The same
-            // sleep future is re-used on each iteration.
+            // This branch executes a deterministic number of times. The same sleep future
+            // is re-used on each iteration. Once the sleep "expires" it stays "expired"!
+            // This is the desired behavior:
+            // https://docs.rs/tokio/latest/tokio/time/struct.Sleep.html
+            //
+            // Notice that the first time in `branch 1` the code waits for 100ms, and then
+            // the subsequent 4 iterations of the loop do not wait at all! This is because
+            // the `sleep` future is in a `Ready` state after the first iteration, and
+            // effectively, we only wait 100ms in this loop. For those familiar with
+            // Javascript, this is akin to `setTimeout` and not `setInterval`.
             _ = &mut sleep => {
-                println!("branch 1 - tick : {count}");
+                println!("branch 1 - tick : {count}, elapsed: {} ms", current_time.elapsed().as_millis());
                 count -= 1;
                 if count == 0 {
                     break;
@@ -43,12 +53,11 @@ async fn test_sleep_right_and_wrong_ways_v1() {
             }
 
             // Branch 2 (wrong way)
-            // This branch is executed a non deterministic number of times.
-            // This is because the sleep future is not pinned. It is dropped
-            // when the other branch is executed. Then on the next iteration,
-            // a new sleep future is created.
+            // This branch is executed a non deterministic number of times. This is
+            // because the sleep future is not pinned. It is dropped when the other branch
+            // is executed. Then on the next iteration, a new sleep future is created.
             _ = tokio::time::sleep(duration) => {
-                println!("branch 2 - sleep");
+                println!("branch 2 - sleep : {count}, elapsed: {} ms", current_time.elapsed().as_millis());
             }
         }
     }
