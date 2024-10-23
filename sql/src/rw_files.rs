@@ -33,6 +33,8 @@ struct FileEntry {
 /// byte array (Vec<u8>) that contains the contents of a file. Read the byte array back
 /// and convert it to a string.
 pub fn run_db(db_connection: &Connection) -> miette::Result<()> {
+    println!("{}", "Running rw_files::run_db".magenta().bold().underlined());
+
     // Create a the FILE_TABLE table, which has id: String, name: String, data: BLOB.
     db_connection
         .execute(

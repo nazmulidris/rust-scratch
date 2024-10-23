@@ -15,22 +15,29 @@
  *   limitations under the License.
  */
 
+use crate::constants::DATA_TABLE_NAME;
 use crossterm::style::Stylize;
 use miette::IntoDiagnostic;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 
-use crate::constants::DATA_TABLE_NAME;
+#[derive(Serialize, Deserialize, Debug)]
+struct Record {
+    id: String,
+    name: String,
+    raw_json_data: String,
+}
 
 /// Create a SQLite database, a schema, write data to it, and read it back. The data is a
 /// struct containing some JSON data. Parse the raw JSON string into a JSON object.
 pub fn run_db(db_connection: &Connection) -> miette::Result<()> {
-    #[derive(Serialize, Deserialize, Debug)]
-    struct Record {
-        id: String,
-        name: String,
-        raw_json_data: String,
-    }
+    println!(
+        "{}",
+        "Running structs_and_strings::run_db"
+            .magenta()
+            .bold()
+            .underlined()
+    );
 
     // Create table.
     db_connection
