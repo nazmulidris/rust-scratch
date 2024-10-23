@@ -1319,6 +1319,7 @@ dependencies = [
 name = "sql"
 version = "0.1.0"
 dependencies = [
+ "crossterm",
  "miette",
  "petname",
  "r3bl_core",

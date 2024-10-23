@@ -15,13 +15,7 @@
  *   limitations under the License.
  */
 
-// Attach sources.
-mod constants;
-mod rw_files;
-mod structs_and_strings;
-
-fn main() -> miette::Result<()> {
-    structs_and_strings::run_db()?;
-    rw_files::run_db()?;
-    Ok(())
-}
+pub const SQLITE_FILE: &str = "test.db";
+pub const DATA_TABLE_NAME: &str = "data_table";
+pub const FILE_TABLE_NAME: &str = "file_table";
+pub const FILENAME_TO_READ: &str = "Cargo.toml";
