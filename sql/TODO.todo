@@ -1,0 +1,13 @@
+create table schema, read and write data:
+  ✔ create table schema @done(24-10-23 13:49)
+  ✔ read data @done(24-10-23 13:49)
+  ✔ write data @done(24-10-23 13:49)
+
+parse json string to/from struct:
+  ✔ store raw json string in table @done(24-10-23 13:49)
+  ✔ parse json string to struct @done(24-10-23 13:49)
+
+write and read files to/from table:
+  ☐ read a file into bytes
+  ☐ write the bytes into a table
+  ☐ read the bytes from the table
