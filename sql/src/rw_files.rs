@@ -15,12 +15,12 @@
  *   limitations under the License.
  */
 
+use crate::constants::{FILENAME_TO_READ, FILE_TABLE_NAME};
 use crossterm::style::Stylize;
 use miette::IntoDiagnostic;
+use r3bl_core::StringLength;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
-
-use crate::constants::{FILENAME_TO_READ, FILE_TABLE_NAME, SQLITE_FILE};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct FileEntry {
@@ -32,10 +32,7 @@ struct FileEntry {
 /// Create a SQLite database, a schema, write data to it, and read it back. The data is a
 /// byte array (Vec<u8>) that contains the contents of a file. Read the byte array back
 /// and convert it to a string.
-pub fn run_db() -> miette::Result<()> {
-    // Connect to SQLite database.
-    let db_connection = Connection::open(SQLITE_FILE).into_diagnostic()?;
-
+pub fn run_db(db_connection: &Connection) -> miette::Result<()> {
     // Create a the FILE_TABLE table, which has id: String, name: String, data: BLOB.
     db_connection
         .execute(
@@ -84,11 +81,12 @@ pub fn run_db() -> miette::Result<()> {
         let id = file_entry.id;
         let name = file_entry.name;
         let content_as_string = String::from_utf8_lossy(file_entry.content.as_slice());
+        let sha = StringLength::calculate_sha256(content_as_string.as_ref());
         println!(
-            "{}, {}, content: {}",
+            "{}, {}, \ncontent (sha): {}",
             format!("Found file: id: {id}").green().underlined(),
             name.to_string().grey(),
-            format!("\n{content_as_string}").dark_blue()
+            format!("{sha}").dark_blue()
         );
     }
 

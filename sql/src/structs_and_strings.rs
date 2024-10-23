@@ -20,20 +20,17 @@ use miette::IntoDiagnostic;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 
-use crate::constants::{DATA_TABLE_NAME, SQLITE_FILE};
+use crate::constants::DATA_TABLE_NAME;
 
 /// Create a SQLite database, a schema, write data to it, and read it back. The data is a
 /// struct containing some JSON data. Parse the raw JSON string into a JSON object.
-pub fn run_db() -> miette::Result<()> {
+pub fn run_db(db_connection: &Connection) -> miette::Result<()> {
     #[derive(Serialize, Deserialize, Debug)]
     struct Record {
         id: String,
         name: String,
         raw_json_data: String,
     }
-
-    // Connect to SQLite database.
-    let db_connection = Connection::open(SQLITE_FILE).into_diagnostic()?;
 
     // Create table.
     db_connection
