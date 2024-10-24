@@ -15,18 +15,7 @@
  *   limitations under the License.
  */
 
-use miette::IntoDiagnostic as _;
-use rusqlite::Connection;
-
-// Attach sources.
-mod constants;
-mod rw_files;
-mod structs_and_strings;
-
-fn main() -> miette::Result<()> {
-    // Connect to SQLite database.
-    let db_connection = Connection::open(constants::SQLITE_FILE).into_diagnostic()?;
-    structs_and_strings::run_db(&db_connection)?;
-    rw_files::run_db(&db_connection)?;
-    Ok(())
-}
+// Attach.
+pub mod constants;
+pub mod rw_files;
+pub mod rw_structs_and_strings;
