@@ -34,6 +34,13 @@ TODO:
 
 TODO:
 
+## vscode and SQLite extension
+
+You can install
+[`qwtel.sqlite-viewer`](https://marketplace.visualstudio.com/items?itemName=qwtel.sqlite-viewer)
+to view SQLite databases in VSCode. Alternatively you can use RustRover as db explorer is
+built in.
+
 ## History
 
 This [tracking bug](https://github.com/r3bl-org/r3bl-private-planning/issues/16) has lots
