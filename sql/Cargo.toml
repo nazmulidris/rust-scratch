@@ -19,3 +19,5 @@ miette = { version = "7.2.0", features = ["fancy"] }
 r3bl_core = "0.10.0"
 petname = "2.0.2"
 crossterm = { version = "0.28.1", features = ["event-stream"] }
+diesel = { version = "2.2.4", features = ["sqlite"] }
+dotenvy = "0.15.7"

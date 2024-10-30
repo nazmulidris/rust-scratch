@@ -15,7 +15,4 @@
  *   limitations under the License.
  */
 
-pub const SQLITE_FILE: &str = "rusqlite.db";
-pub const DATA_TABLE_NAME: &str = "data_table";
-pub const FILE_TABLE_NAME: &str = "file_table";
-pub const FILENAME_TO_READ: &str = "Cargo.toml";
+-- Your SQL goes here
