@@ -11,10 +11,6 @@ path = "src/bin/rusqlite_ex.rs"
 name = "diesel_sqlite_ex"
 path = "src/bin/diesel_sqlite_ex.rs"
 
-[[bin]]
-name = "sqlx_sqlite_ex"
-path = "src/bin/sqlx_sqlite_ex.rs"
-
 [dependencies]
 rusqlite = { version = "0.32.1", features = ["bundled"] }
 serde = { version = "1.0.213", features = ["derive"] }

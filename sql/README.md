@@ -28,11 +28,7 @@ It does the following:
 
 ## diesel and SQLite example
 
-TODO:
-
-## sqlx and SQLite example
-
-TODO:
+TODO: <https://diesel.rs/guides/getting-started.html>
 
 ## vscode and SQLite extension
 
