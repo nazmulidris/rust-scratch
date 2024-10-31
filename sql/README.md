@@ -116,10 +116,14 @@ fn establish_connection() -> SqliteConnection {
 
 ## VSCode and SQLite extension
 
-You can install
-[`qwtel.sqlite-viewer`](https://marketplace.visualstudio.com/items?itemName=qwtel.sqlite-viewer)
-to view SQLite databases in VSCode. Alternatively you can use RustRover as db explorer is
-built in.
+1. You can install
+   [`qwtel.sqlite-viewer`](https://marketplace.visualstudio.com/items?itemName=qwtel.sqlite-viewer)
+   to view SQLite databases in VSCode. Alternatively you can use RustRover as db explorer
+   is built in.
+
+2. You can install
+   [`adpyke.vscode-sql-formatter`](https://marketplace.visualstudio.com/items?itemName=adpyke.vscode-sql-formatter)
+   to format SQL queries in VSCode.
 
 ## History
 

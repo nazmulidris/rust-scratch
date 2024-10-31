@@ -1,5 +1,6 @@
 {
   "recommendations": [
-    "qwtel.sqlite-viewer" // SQLite Viewer
+    "qwtel.sqlite-viewer", // SQLite Viewer
+    "adpyke.vscode-sql-formatter" // SQL Formatter
   ]
 }
