@@ -12,12 +12,20 @@ name = "diesel_sqlite_ex"
 path = "src/bin/diesel_sqlite_ex.rs"
 
 [dependencies]
-rusqlite = { version = "0.32.1", features = ["bundled"] }
+r3bl_core = "0.10.0"
+
+crossterm = { version = "0.28.1", features = ["event-stream"] }
+
 serde = { version = "1.0.213", features = ["derive"] }
 serde_json = "1.0.132"
+
 miette = { version = "7.2.0", features = ["fancy"] }
-r3bl_core = "0.10.0"
+
 petname = "2.0.2"
-crossterm = { version = "0.28.1", features = ["event-stream"] }
-diesel = { version = "2.2.4", features = ["sqlite"] }
-dotenvy = "0.15.7"
+
+rusqlite = { version = "0.32.1", features = ["bundled"] }
+
+diesel = { version = "2.2.4", features = [
+  "sqlite",
+  "returning_clauses_for_sqlite_3_35",
+] }
