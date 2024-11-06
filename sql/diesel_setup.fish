@@ -83,10 +83,13 @@ function check_if_migrations_folders_exist
 end
 
 function install_libsqlite3
-    if not test (pkg-config --libs sqlite3)
+    set -l packageIsInstalled (dpkg -l "libsqlite3-dev")
+    if test -z "$packageIsInstalled"
         # Non zero exit code was returned in $status.
         echo (set_color yellow)"libsqlite3 not found, installing it now..."(set_color normal)
         sudo apt-get install libsqlite3-dev
+    else
+        echo (set_color yellow)"libsqlite3 already installed."(set_color normal)
     end
 end
 
@@ -96,6 +99,8 @@ function install_diesel_cli
     if not test (string match -r "^diesel_cli" $output)
         echo (set_color yellow)"Diesel CLI not found, installing it now..."(set_color normal)
         cargo install diesel_cli --no-default-features --features sqlite
+    else
+        echo (set_color yellow)"Diesel CLI already installed."(set_color normal)
     end
 end
 

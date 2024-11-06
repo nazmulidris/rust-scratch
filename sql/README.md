@@ -14,7 +14,7 @@
   - [4. Write SQL migrations, then run them to create tables and generate schema.rs](#4-write-sql-migrations-then-run-them-to-create-tables-and-generate-schemars)
   - [5. Use the script, Luke](#5-use-the-script-luke)
     - [5.1. Instead of raw SQL, write Rust for migrations](#51-instead-of-raw-sql-write-rust-for-migrations)
-    - [5.2 Include migrations in the final binary](#52-include-migrations-in-the-final-binary)
+    - [5.2. Include migrations in the final binary](#52-include-migrations-in-the-final-binary)
   - [6. Diesel and Rust](#6-diesel-and-rust)
 - [VSCode and SQLite extension](#vscode-and-sqlite-extension)
 - [History](#history)
@@ -179,10 +179,10 @@ writing the `src/schema.rs` file instead and then run
 `diesel migration generate --diff-schema create_tables` to have it generate the `up.sql` and
 `down.sql` files for you. The script does not currently support this.
 
-#### 5.2 Include migrations in the final binary
+#### 5.2. Include migrations in the final binary
 
 When preparing your app for use in production, you may want to run your migrations during the
-application’s initialization phase. You may also want to include the migration scripts as a part of
+application's initialization phase. You may also want to include the migration scripts as a part of
 your code, to avoid having to copy them to your deployment location/image etc.
 
 You can also include the migrations in the final binary of the application you're building by using
