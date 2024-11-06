@@ -32,14 +32,14 @@ struct FileEntry {
 /// Create a SQLite database, a schema, write data to it, and read it back. The data is a
 /// byte array (Vec<u8>) that contains the contents of a file. Read the byte array back
 /// and convert it to a string.
-pub fn run_db(db_connection: &Connection) -> miette::Result<()> {
+pub fn run_db(connection: &Connection) -> miette::Result<()> {
     println!(
         "{}",
         "Running rw_files::run_db".magenta().bold().underlined()
     );
 
     // Create a the FILE_TABLE table, which has id: String, name: String, data: BLOB.
-    db_connection
+    connection
         .execute(
             (format!(
                 "CREATE TABLE IF NOT EXISTS {FILE_TABLE_NAME} (
@@ -57,7 +57,7 @@ pub fn run_db(db_connection: &Connection) -> miette::Result<()> {
     let cargo_toml_bytes = std::fs::read(FILENAME_TO_READ).into_diagnostic()?;
 
     // Write the contents of the `Cargo.toml` file into the FILE_TABLE table.
-    db_connection
+    connection
         .execute(
             "INSERT INTO file_table (id, name, data) VALUES (?1, ?2, ?3)",
             params![
@@ -69,7 +69,7 @@ pub fn run_db(db_connection: &Connection) -> miette::Result<()> {
         .into_diagnostic()?;
 
     // Read all the entries in the FILE_TABLE table.
-    let mut prepared_statement = db_connection
+    let mut prepared_statement = connection
         .prepare("SELECT id, name, data FROM file_table")
         .into_diagnostic()?;
     let result_set = prepared_statement

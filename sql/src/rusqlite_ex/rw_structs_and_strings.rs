@@ -30,7 +30,7 @@ struct Record {
 
 /// Create a SQLite database, a schema, write data to it, and read it back. The data is a
 /// struct containing some JSON data. Parse the raw JSON string into a JSON object.
-pub fn run_db(db_connection: &Connection) -> miette::Result<()> {
+pub fn run_db(connection: &Connection) -> miette::Result<()> {
     println!(
         "{}",
         "Running rw_structs_and_strings::run_db"
@@ -40,7 +40,7 @@ pub fn run_db(db_connection: &Connection) -> miette::Result<()> {
     );
 
     // Create table.
-    db_connection
+    connection
         .execute(
             (format!(
                 "CREATE TABLE IF NOT EXISTS {DATA_TABLE_NAME} (
@@ -62,7 +62,7 @@ pub fn run_db(db_connection: &Connection) -> miette::Result<()> {
     };
 
     // Insert person into table.
-    db_connection
+    connection
         .execute(
             format!("INSERT INTO {DATA_TABLE_NAME} (id, name, data) VALUES (?1, ?2, ?3)").as_str(),
             params![record.id, record.name, record.raw_json_data],
@@ -70,7 +70,7 @@ pub fn run_db(db_connection: &Connection) -> miette::Result<()> {
         .into_diagnostic()?;
 
     // Read data from the table.
-    let mut prepared_statement = db_connection
+    let mut prepared_statement = connection
         .prepare(format!("SELECT id, name, data FROM {DATA_TABLE_NAME}").as_str())
         .into_diagnostic()?;
     let result_set = prepared_statement

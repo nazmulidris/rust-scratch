@@ -12,6 +12,8 @@
   - [2. Add Linux packages (sqlite-dev) and Diesel CLI](#2-add-linux-packages-sqlite-dev-and-diesel-cli)
   - [3. Use the Diesel CLI to create database file and migrations](#3-use-the-diesel-cli-to-create-database-file-and-migrations)
   - [4. Write SQL migrations, then run them to create tables and generate schema.rs](#4-write-sql-migrations-then-run-them-to-create-tables-and-generate-schemars)
+    - [4.1. Location of the generated schema.rs file](#41-location-of-the-generated-schemars-file)
+    - [4.2. For the current migration, change the up.sql file and run it again](#42-for-the-current-migration-change-the-upsql-file-and-run-it-again)
   - [5. Use the script, Luke](#5-use-the-script-luke)
     - [5.1. Instead of raw SQL, write Rust for migrations](#51-instead-of-raw-sql-write-rust-for-migrations)
     - [5.2. Include migrations in the final binary](#52-include-migrations-in-the-final-binary)
@@ -152,8 +154,30 @@ diesel migration run --database-url=diesel.db
 diesel migration redo --database-url=diesel.db
 ```
 
+#### 4.1. Location of the generated schema.rs file
+
 This will also generate the `schema.rs` file in the `src` directory. This file will have the Rust
-representation of the tables in the database.
+representation of the tables in the database. You can change the location of this file by changing
+the `diesel.toml` file and setting the path for the `print_schema:file` key. Here's an example:
+
+```toml
+[print_schema]
+file = "src/diesel_sqlite_ex/schema.rs"
+```
+
+#### 4.2. For the current migration, change the up.sql file and run it again
+
+If you want to change the current migration, you can edit the `up.sql` file and then run the
+migration again. You can do this as many times as you want, without having to create a new
+migration. This will simply regenerate the `schema.rs` file.
+
+Here's how you can do that:
+
+```sh
+# Edit the up.sql file.
+# Run the migration again.
+diesel migration run --database-url=diesel.db
+```
 
 ### 5. Use the script, Luke
 
@@ -185,11 +209,11 @@ When preparing your app for use in production, you may want to run your migratio
 application's initialization phase. You may also want to include the migration scripts as a part of
 your code, to avoid having to copy them to your deployment location/image etc.
 
-You can also include the migrations in the final binary of the application you're building by using
-the
-[`diesel_migration` crate's `embed_migrations!` macro](https://docs.rs/diesel_migrations/2.2.0/diesel_migrations/macro.embed_migrations.html).
-This way there is no manual setup required to run the migrations and can be handled by the binary
-itself.
+You can also include the migrations in the final binary of the application you're building
+by using the [`diesel_migration` crate's `embed_migrations!`
+macro](https://docs.rs/diesel_migrations/2.2.0/diesel_migrations/macro.embed_migrations.html).
+This way there is no manual setup required to run the migrations and can be handled by the
+binary itself.
 
 ### 6. Diesel and Rust
 
@@ -199,12 +223,11 @@ this in Rust:
 
 ```rust
 use diesel::prelude::*;
-use diesel::sqlite::SqliteConnection;
+use miette::*;
 
-fn establish_connection() -> SqliteConnection {
-    let database_url = "diesel.db"; // Specify your database URL here as `path/to/your/database.db`
-    SqliteConnection::establish(&database_url)
-        .expect(&format!("Error connecting to {}", database_url))
+/// Specify your database URL, eg: "path/to/your/database.db".
+pub fn create_connection(database_url: &str) -> Result<SqliteConnection> {
+    SqliteConnection::establish(database_url).into_diagnostic()
 }
 ```
 

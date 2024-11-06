@@ -15,6 +15,16 @@
  *   limitations under the License.
  */
 
-fn main() {
-    println!("TODO: diesel_sqlite_ex.rs");
+use crossterm::style::Stylize as _;
+use sql::diesel_sqlite_ex::{general_ops, DATABASE_URL};
+
+fn main() -> miette::Result<()> {
+    println!(
+        "{}",
+        "Running diesel_sqlite_ex".magenta().bold().underlined()
+    );
+
+    let connection = general_ops::create_connection(DATABASE_URL);
+
+    Ok(())
 }

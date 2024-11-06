@@ -21,9 +21,9 @@ use sql::rusqlite_ex::{rw_files, rw_structs_and_strings};
 
 fn main() -> miette::Result<()> {
     // Connect to SQLite database.
-    let db_connection =
+    let connection =
         Connection::open(sql::rusqlite_ex::constants::SQLITE_FILE).into_diagnostic()?;
-    rw_structs_and_strings::run_db(&db_connection)?;
-    rw_files::run_db(&db_connection)?;
+    rw_structs_and_strings::run_db(&connection)?;
+    rw_files::run_db(&connection)?;
     Ok(())
 }
