@@ -29,21 +29,22 @@
 //! it greatly improves the generated compiler error messages.
 
 use diesel::prelude::*;
+use std::borrow::Cow;
 
-#[derive(Queryable, Selectable)]
+#[derive(Queryable, Selectable, Insertable, AsChangeset)]
 #[diesel(table_name = crate::diesel_sqlite_ex::schema::data_table)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct DataTableRecord {
-    pub id: String,
-    pub name: String,
-    pub data: String,
+pub struct DataTableRecord<'a> {
+    pub id: Cow<'a, str>,
+    pub name: Cow<'a, str>,
+    pub data: Cow<'a, str>,
 }
 
-#[derive(Queryable, Selectable)]
+#[derive(Queryable, Selectable, Insertable)]
 #[diesel(table_name = crate::diesel_sqlite_ex::schema::file_table)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct FileTableRecord {
-    pub id: String,
-    pub name: String,
-    pub data: Vec<u8>,
+pub struct FileTableRecord<'a> {
+    pub id: Cow<'a, str>,
+    pub name: Cow<'a, str>,
+    pub data: Cow<'a, Vec<u8>>,
 }

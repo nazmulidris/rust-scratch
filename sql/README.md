@@ -55,6 +55,11 @@ It does the following:
 The main instructions are from the
 [official getting started guide](https://diesel.rs/guides/getting-started.html) for use with SQLite.
 
+### Why Diesel?
+
+[Here](https://users.rust-lang.org/t/which-one-to-use-postgres-vs-sqlx/63680/6) are some
+reasons to use Diesel over SQLx.
+
 ### 1. Add the Cargo dependencies
 
 Here are the commands to add the required dependencies in `Cargo.toml`:
@@ -94,6 +99,11 @@ We are going to use the 3rd option. Here are the commands to setup the database 
 ```sh
 diesel setup --database-url=diesel.db
 ```
+
+This command actually creates the database file. The `diesel.db` file is created in the
+current directory. If the migrations are already present (as can be gleaned from the
+`diesel.toml` file), then the `schema.rs` file is generated and the `diesel.db` file is
+generated.
 
 ### 4. Write SQL migrations, then run them to create tables and generate schema.rs
 
@@ -153,6 +163,9 @@ diesel migration run --database-url=diesel.db
 # This executes the `down.sql`, then `up.sql`.
 diesel migration redo --database-url=diesel.db
 ```
+
+The commands above will create a `diesel.db` file in the current directory if it does not
+exist.
 
 #### 4.1. Location of the generated schema.rs file
 
@@ -217,6 +230,8 @@ binary itself.
 
 ### 6. Diesel and Rust
 
+#### The connection
+
 We can just specify the path to the database directly when needed, instead of using the
 `DATABASE_URL` environment variable (and using `.env` and and `dotenvy` crate). Here's an example of
 this in Rust:
@@ -230,6 +245,27 @@ pub fn create_connection(database_url: &str) -> Result<SqliteConnection> {
     SqliteConnection::establish(database_url).into_diagnostic()
 }
 ```
+
+#### Automatically run migrations
+
+Let's say that the `diesel.db` file is not present, since you haven't done any of the following:
+- Run the `diesel_setup.fish` script file.
+- Run the `diesel setup` command.
+- Run the `diesel migration run` command.
+
+In this case your application will not work, since the database file is not present. You
+can automatically run the migrations when the application starts, if the database file is
+not present, it will be created.
+
+// TODO: Add code to automatically run migrations <https://gemini.google.com/app/5f1b885c0db4e4f4>
+
+#### CRUD operations
+
+This [example](https://diesel.rs/guides/getting-started.html) demonstrates how to do CRUD
+operations with Diesel and Sqlite. The
+[example](https://github.com/nazmulidris/rust-scratch/blob/main/sql/src/diesel_sqlite_ex/diesel_impl.rs)
+provides examples of implementing CRUD on two different tables, one that holds structured
+JSON text data, and another that holds binary data.
 
 ## VSCode and SQLite extension
 
