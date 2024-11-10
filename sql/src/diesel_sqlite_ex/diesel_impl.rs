@@ -41,11 +41,20 @@ pub mod data_table_ops {
         DataTableRecord, /* from models */
     };
 
+    /// # Get the timestamp for current time in UTC
+    /// - [chrono::Utc::now()] returns a [chrono::DateTime::naive_utc()] which is a [chrono::NaiveDateTime].
+    ///
+    /// # Convert the timestamp in the database to a [chrono::DateTime]
+    /// - Use [chrono::DateTime::from_naive_utc_and_offset] with the following args:
+    ///   1. [chrono::NaiveDateTime] from the previous step.
+    ///   2. `0` offset for the timezone.
     pub fn insert_a_few_records(connection: &mut SqliteConnection) -> Result<()> {
+        let timestamp = chrono::Utc::now().naive_utc();
         let new_record = DataTableRecord {
             id: r3bl_core::generate_friendly_random_id().into(),
             name: petname::petname(2, " ").unwrap_or("John Doe".into()).into(),
             data: r#"{"key":"value"}"#.into(),
+            created_at: timestamp,
         };
 
         let inserted_record = diesel::insert_into(data_table::table)
@@ -55,11 +64,12 @@ pub mod data_table_ops {
             .into_diagnostic()?;
 
         println!(
-            "{} {}, {}, {}",
-            "Inserted record:".magenta(),
+            "{} ⴾ {}, {}, {}, {}",
+            "Inserted record".magenta(),
             inserted_record.id,
             inserted_record.name,
-            inserted_record.data
+            inserted_record.data,
+            inserted_record.created_at
         );
 
         Ok(())
@@ -77,11 +87,13 @@ pub mod data_table_ops {
 
         for (index, record) in result_set.iter().enumerate() {
             println!(
-                "{}: {}, {}, {}",
+                "{} ⴾ {}, {}, {}, {}",
                 format!("Row #{}", (index + 1)).to_string().cyan(),
                 record.id,
                 record.name,
-                record.data
+                record.data,
+                // Format options: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
+                record.created_at.format("around %I:%M%P UTC on %b %-d")
             );
         }
 
@@ -113,11 +125,15 @@ pub mod data_table_ops {
 
             // Print the updated record.
             println!(
-                "{} {}, {}, {}",
-                "Updated record:".yellow(),
+                "{} ⴾ {}, {}, {}, {}",
+                "Updated record".yellow(),
                 updated_record.id,
                 updated_record.name,
-                updated_record.data
+                updated_record.data,
+                // Format options: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
+                updated_record
+                    .created_at
+                    .format("around %I:%M%P UTC on %b %-d")
             );
         } else {
             println!("{}", "No records to update".yellow());

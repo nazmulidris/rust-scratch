@@ -26,7 +26,12 @@ petname = "2.0.2"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
 
 diesel = { version = "2.2.4", features = [
+  # For SQLite support.
   "sqlite",
   # The enables returning clauses for SQLite 3.35 and later.
   "returning_clauses_for_sqlite_3_35",
+  # For timestamp support.
+  "chrono",
 ] }
+
+chrono = "0.4"

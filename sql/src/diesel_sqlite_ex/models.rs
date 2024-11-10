@@ -38,6 +38,7 @@ pub struct DataTableRecord<'a> {
     pub id: Cow<'a, str>,
     pub name: Cow<'a, str>,
     pub data: Cow<'a, str>,
+    pub created_at: chrono::NaiveDateTime,
 }
 
 #[derive(Queryable, Selectable, Insertable)]
@@ -47,4 +48,5 @@ pub struct FileTableRecord<'a> {
     pub id: Cow<'a, str>,
     pub name: Cow<'a, str>,
     pub data: Cow<'a, Vec<u8>>,
+    pub created_at: chrono::NaiveDateTime,
 }
