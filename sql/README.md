@@ -8,16 +8,22 @@
 - [Introduction](#introduction)
 - [rusqlite and SQLite example](#rusqlite-and-sqlite-example)
 - [diesel and SQLite example](#diesel-and-sqlite-example)
+  - [Why Diesel?](#why-diesel)
   - [1. Add the Cargo dependencies](#1-add-the-cargo-dependencies)
   - [2. Add Linux packages (sqlite-dev) and Diesel CLI](#2-add-linux-packages-sqlite-dev-and-diesel-cli)
   - [3. Use the Diesel CLI to create database file and migrations](#3-use-the-diesel-cli-to-create-database-file-and-migrations)
   - [4. Write SQL migrations, then run them to create tables and generate schema.rs](#4-write-sql-migrations-then-run-them-to-create-tables-and-generate-schemars)
-    - [4.1. Location of the generated schema.rs file](#41-location-of-the-generated-schemars-file)
-    - [4.2. For the current migration, change the up.sql file and run it again](#42-for-the-current-migration-change-the-upsql-file-and-run-it-again)
+    - [4.1 What is the difference between `redo` and `run`?](#41-what-is-the-difference-between-redo-and-run)
+    - [4.2. Location of the generated schema.rs file](#42-location-of-the-generated-schemars-file)
+    - [4.3. For the current migration, change the up.sql file and run it again](#43-for-the-current-migration-change-the-upsql-file-and-run-it-again)
   - [5. Use the script, Luke](#5-use-the-script-luke)
     - [5.1. Instead of raw SQL, write Rust for migrations](#51-instead-of-raw-sql-write-rust-for-migrations)
     - [5.2. Include migrations in the final binary](#52-include-migrations-in-the-final-binary)
-  - [6. Diesel and Rust](#6-diesel-and-rust)
+  - [6. Add a new migration that changes existing tables by adding a new column and preserve data](#6-add-a-new-migration-that-changes-existing-tables-by-adding-a-new-column-and-preserve-data)
+  - [7. Diesel and Rust](#7-diesel-and-rust)
+    - [The connection](#the-connection)
+    - [Automatically run migrations](#automatically-run-migrations)
+    - [CRUD operations](#crud-operations)
 - [VSCode and SQLite extension](#vscode-and-sqlite-extension)
 - [History](#history)
 
@@ -57,8 +63,8 @@ The main instructions are from the
 
 ### Why Diesel?
 
-[Here](https://users.rust-lang.org/t/which-one-to-use-postgres-vs-sqlx/63680/6) are some
-reasons to use Diesel over SQLx.
+[Here](https://users.rust-lang.org/t/which-one-to-use-postgres-vs-sqlx/63680/6) are some reasons to
+use Diesel over SQLx.
 
 ### 1. Add the Cargo dependencies
 
@@ -92,18 +98,17 @@ There are a few ways to run `diesel setup`. The `path/to/your/database.db` is th
    `DATABASE_URL=diesel.db diesel setup`.
 
 3. You can use the `--database-url` flag to specify the path to the database directly. For example:
-   `diesel setup --database-url=diesel.db`.
+   `diesel --database-url=diesel.db setup`.
 
 We are going to use the 3rd option. Here are the commands to setup the database file.
 
 ```sh
-diesel setup --database-url=diesel.db
+diesel --database-url=diesel.db setup
 ```
 
-This command actually creates the database file. The `diesel.db` file is created in the
-current directory. If the migrations are already present (as can be gleaned from the
-`diesel.toml` file), then the `schema.rs` file is generated and the `diesel.db` file is
-generated.
+This command actually creates the database file. The `diesel.db` file is created in the current
+directory. If the migrations are already present (as can be gleaned from the `diesel.toml` file),
+then the `schema.rs` file is generated and the `diesel.db` file is generated.
 
 ### 4. Write SQL migrations, then run them to create tables and generate schema.rs
 
@@ -117,7 +122,7 @@ Inside this folder, there will be one folder, for the migration called `create_t
 will look like `<timestamp>_create_tables` and will contain an `up.sql` and `down.sql` file.
 
 ```sh
-diesel migration generate --database-url=diesel.db create_tables
+diesel --database-url=diesel.db migration generate create_tables
 ```
 
 Migrations allow us to evolve the database schema over time. Each migration consists of an `up.sql`
@@ -137,14 +142,15 @@ Here's the `up.sql`:
 
 ```sql
 create table if not exists data_table (
-  id text primary key,
+  id text primary key not null,
   name text not null,
   data text not null
 );
+
 create table if not exists file_table (
-  id text primary key,
+  id text primary key not null,
   name text not null,
-  data blob not null
+  data text not null
 );
 ```
 
@@ -152,6 +158,7 @@ Here's the `down.sql`:
 
 ```sql
 drop table if exists data_table;
+
 drop table if exists file_table;
 ```
 
@@ -159,15 +166,33 @@ Then execute the migrations:
 
 ```sh
 # This executes the `up.sql` file.
-diesel migration run --database-url=diesel.db
+diesel --database-url=diesel.db migration run
 # This executes the `down.sql`, then `up.sql`.
-diesel migration redo --database-url=diesel.db
+diesel --database-url=diesel.db migration redo
 ```
 
-The commands above will create a `diesel.db` file in the current directory if it does not
-exist.
+The commands above will create a `diesel.db` file in the current directory if it does not exist.
 
-#### 4.1. Location of the generated schema.rs file
+#### 4.1 What is the difference between redo and run?
+
+- `redo` will run the `down.sql` and then the `up.sql` file.
+- `run` will only run the `up.sql` file.
+
+> Both commands will preserve any existing data in the `diesel.db` file. Migrations
+> will not destroy the data in the tables, unless you explicitly write SQL to do so.
+
+Let's say you have `run` the migration and then you make a change to `up.sql` above, and add a new
+column. If you run `run` again you will **not** see these changes in your `schema.rs` file!
+
+You could run `redo`, which will run `down.sql` and then `up.sql`, and this should drop
+the table from the `diesel.db` file and then recreate it with the new column.
+
+However, in this scenario it might be best to create a new migration and not modify the
+existing one. This way you can keep track of the changes you made to the database schema
+over time. Once you create the [new migration](#6-add-a-new-migration-that-changes-existing-tables-by-adding-a-new-column-and-preserve-data),
+you can run `diesel --database-url=diesel.db migration run` to apply the changes.
+
+#### 4.2. Location of the generated schema.rs file
 
 This will also generate the `schema.rs` file in the `src` directory. This file will have the Rust
 representation of the tables in the database. You can change the location of this file by changing
@@ -178,7 +203,7 @@ the `diesel.toml` file and setting the path for the `print_schema:file` key. Her
 file = "src/diesel_sqlite_ex/schema.rs"
 ```
 
-#### 4.2. For the current migration, change the up.sql file and run it again
+#### 4.3. For the current migration, change the up.sql file and run it again
 
 If you want to change the current migration, you can edit the `up.sql` file and then run the
 migration again. You can do this as many times as you want, without having to create a new
@@ -189,7 +214,7 @@ Here's how you can do that:
 ```sh
 # Edit the up.sql file.
 # Run the migration again.
-diesel migration run --database-url=diesel.db
+diesel --database-url=diesel.db migration run
 ```
 
 ### 5. Use the script, Luke
@@ -222,13 +247,81 @@ When preparing your app for use in production, you may want to run your migratio
 application's initialization phase. You may also want to include the migration scripts as a part of
 your code, to avoid having to copy them to your deployment location/image etc.
 
-You can also include the migrations in the final binary of the application you're building
-by using the [`diesel_migration` crate's `embed_migrations!`
-macro](https://docs.rs/diesel_migrations/2.2.0/diesel_migrations/macro.embed_migrations.html).
-This way there is no manual setup required to run the migrations and can be handled by the
-binary itself.
+You can also include the migrations in the final binary of the application you're building by using
+the
+[`diesel_migration` crate's `embed_migrations!` macro](https://docs.rs/diesel_migrations/2.2.0/diesel_migrations/macro.embed_migrations.html).
+This way there is no manual setup required to run the migrations and can be handled by the binary
+itself.
 
-### 6. Diesel and Rust
+### 6. Add a new migration that changes existing tables by adding a new column and preserve data
+
+Let's say you have everything working so far, and you want to alter the existing tables by
+adding a new column, there are few things to keep in mind:
+
+- There's might be data in the tables, which are in the `diesel.db` file.
+- You want to preserve this data when you add a new column.
+- When you add a new column, you have to backfill the data in the existing rows which were
+  created when this column didn't exist.
+
+Here are the steps to create a new migration to alter existing tables by adding a new
+column `created_at`:
+
+1. Create a new migration using:
+
+   ```sh
+   diesel --database-url=diesel.db migration generate add_new_column_to_both_tables
+   ```
+
+2. Populate `up.sql` file in the new migration with the following SQL:
+
+   ```sql
+   -- Add a new column created_at to data_table. This can't be current_timestamp because
+   -- SQLite doesn't support that. The default value must be a constant.
+   alter table
+      data_table
+   add
+      column created_at timestamp not null default '1900-01-01 12:12:12';
+
+   -- Add a new column created_at to file_table. This can't be current_timestamp because
+   -- SQLite doesn't support that. The default value must be a constant.
+   alter table
+      file_table
+   add
+      column created_at timestamp not null default '1900-01-01 12:12:12';
+
+   -- Update the created_at column in data_table if needed (it is needed if the row's date is
+   -- hard coded to '1900-01-01 12:12:12'.
+   update
+      data_table
+   set
+      created_at = current_timestamp
+   where
+      created_at is '1900-01-01 12:12:12';
+   ```
+
+3. Populate the `down.sql` file in the new migration with the following SQL:
+
+   ```sql
+   -- Drop the created_at column from data_table.
+   alter table
+      data_table
+   drop
+      column created_at;
+
+   -- Drop the created_at column from file_table.
+   alter table
+      file_table
+   drop
+      column created_at;
+   ```
+
+4. Finally run:
+
+   ```sh1
+   diesel --database-url=diesel.db migration run
+   ```
+
+### 7. Diesel and Rust
 
 #### The connection
 
@@ -249,23 +342,24 @@ pub fn create_connection(database_url: &str) -> Result<SqliteConnection> {
 #### Automatically run migrations
 
 Let's say that the `diesel.db` file is not present, since you haven't done any of the following:
+
 - Run the `diesel_setup.fish` script file.
 - Run the `diesel setup` command.
 - Run the `diesel migration run` command.
 
-In this case your application will not work, since the database file is not present. You
-can automatically run the migrations when the application starts, if the database file is
-not present, it will be created.
+In this case your application will not work, since the database file is not present. You can
+automatically run the migrations when the application starts, if the database file is not present,
+it will be created.
 
 // TODO: Add code to automatically run migrations <https://gemini.google.com/app/5f1b885c0db4e4f4>
 
 #### CRUD operations
 
-This [example](https://diesel.rs/guides/getting-started.html) demonstrates how to do CRUD
-operations with Diesel and Sqlite. The
+This [example](https://diesel.rs/guides/getting-started.html) demonstrates how to do CRUD operations
+with Diesel and Sqlite. The
 [example](https://github.com/nazmulidris/rust-scratch/blob/main/sql/src/diesel_sqlite_ex/diesel_impl.rs)
-provides examples of implementing CRUD on two different tables, one that holds structured
-JSON text data, and another that holds binary data.
+provides examples of implementing CRUD on two different tables, one that holds structured JSON text
+data, and another that holds binary data.
 
 ## VSCode and SQLite extension
 

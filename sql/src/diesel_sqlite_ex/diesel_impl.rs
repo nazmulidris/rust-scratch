@@ -35,7 +35,6 @@ pub mod general_ops {
 }
 
 pub mod data_table_ops {
-
     use super::*;
     use crate::diesel_sqlite_ex::{
         data_table,      /* from schema */
@@ -90,8 +89,10 @@ pub mod data_table_ops {
     }
 
     pub fn update_first_record(connection: &mut SqliteConnection) -> Result<()> {
+        // Query to get the first record without using created_at.
         let maybe_first_record = data_table::table
-            .first::<DataTableRecord>(connection)
+            .select(DataTableRecord::as_select())
+            .first(connection)
             .optional() // This won't throw error if no records are found.
             .into_diagnostic()?;
 
@@ -127,7 +128,7 @@ pub mod data_table_ops {
 
     pub fn delete_last_record(connection: &mut SqliteConnection) -> Result<()> {
         // TODO: implement this method.
-        todo!()
+        Ok(())
     }
 }
 

@@ -7,5 +7,5 @@ create table if not exists data_table (
 create table if not exists file_table (
   id text primary key not null,
   name text not null,
-  data blob not null
+  data text not null
 );
