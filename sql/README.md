@@ -21,10 +21,10 @@
     - [5.2. Include migrations in the final binary](#52-include-migrations-in-the-final-binary)
   - [6. Add a new migration that changes existing tables by adding a new column and preserve data](#6-add-a-new-migration-that-changes-existing-tables-by-adding-a-new-column-and-preserve-data)
   - [7. Diesel and Rust](#7-diesel-and-rust)
-    - [The connection](#the-connection)
-    - [Automatically run migrations](#automatically-run-migrations)
+    - [Create a connection](#create-a-connection)
     - [CRUD operations](#crud-operations)
     - [Timestamps](#timestamps)
+    - [Automatically run migrations](#automatically-run-migrations)
 - [VSCode and SQLite extension](#vscode-and-sqlite-extension)
 - [History](#history)
 
@@ -35,9 +35,8 @@
 This crate is an exploration of SQL in Rust. All the examples use SQLite as the database.
 However, the driver / ORM used is different in each example.
 
-1. [rusqlite and SQLite example](#rusqlite-and-sqlite-example)
-2. [diesel and SQLite example](#diesel-and-sqlite-example)
-3. [sqlx and SQLite example](#sqlx-and-sqlite-example)
+1. [`rusqlite` and SQLite example](#rusqlite-and-sqlite-example)
+2. [`diesel` and SQLite example](#diesel-and-sqlite-example)
 
 ## rusqlite and SQLite example
 
@@ -47,36 +46,40 @@ The `rusqlite` library is a low-level SQLite driver for Rust.
 - And it bundles the SQLite C library, so there is no need to install `sqlite3` on the
   system.
 
-To run this example, use:
-
-```sh
-cargo run --bin rusqlite_ex
-```
-
 The primary use case that this example addresses is storing an application's settings that
 are a mix of binary and JSON formatted text data. Using the filesystem naively where we
 have a separate file for each, can cause problems in scenarios where multiple processes of
 this binary run concurrently. Instead we will use a SQLite database to store this data.
 
-This example works with 2 tables. One contains JSON Text formatted data, and the other
-contains binary data that's read for a file. This is meant to demonstrate how to work with
-JSON encoded data and binary data in SQLite using Rust.
+This example works with 2 tables:
 
-It does the following:
+1. One contains JSON Text formatted data, and the
+2. The other contains binary data that's read for a file.
+
+This is meant to demonstrate how to work with JSON encoded data and binary data in SQLite
+using Rust. The example
+[here](https://github.com/nazmulidris/rust-scratch/blob/main/sql/src/bin/rusqlite_ex.rs)
+does the following:
 
 - This will create a `rusqlite.db` file in the current directory.
 - It will use the `rusqlite` Rust crate to interact with it to perform some simple CRUD
   operations on the database.
 - The code is very simple, there is no ORM, or SQL syntax checking, or migrations. The SQL
   is just written as Rust strings.
-- Review the code
-  [here](https://github.com/nazmulidris/rust-scratch/blob/main/sql/src/bin/rusqlite_ex.rs).
+
+To run this example, use:
+
+```sh
+cargo run --bin rusqlite_ex
+```
 
 ## diesel and SQLite example
 
-The main instructions are from the
-[official getting started guide](https://diesel.rs/guides/getting-started.html) for use
-with SQLite.
+The `diesel` library is a high-level ORM for Rust.
+
+> The main instructions are from the
+> [`diesel` official getting started guide](https://diesel.rs/guides/getting-started.html)
+> for use with SQLite.
 
 In this example we will work with Rust, Diesel, and SQLite to setup databases, using
 migrations, and do CRUD operations in Rust code. Here are the details:
@@ -379,37 +382,32 @@ Diesel, SQLite and Rust.
 
 ### 7. Diesel and Rust
 
-#### The connection
+#### Create a connection
 
 We can just specify the path to the database directly when needed, instead of using the
-`DATABASE_URL` environment variable (and using `.env` and and `dotenvy` crate). Here's an
-example of this in Rust:
+`DATABASE_URL` environment variable (and using `.env` and and `dotenvy` crate). There are
+a few ways in which you can specify the database URL:
+
+- `path/to/your/file.db` - Save the database file in the given path.
+- `file://file.db` - Save the database file in given path.
+- `:memory:` - Create an in-memory database.
+
+Here's an example of this in Rust:
 
 ```rust
 use diesel::prelude::*;
 use miette::*;
 
-/// Specify your database URL, eg: "path/to/your/database.db".
+/// Specify your database URL, eg:
+/// - `path/to/your/file.db` - Save the database file in the given path.
+/// - `file://file.db` - Save the database file in given path.
+/// - `:memory:` - Create an in-memory database.
+///
+/// See [SqliteConnection] for more details.
 pub fn create_connection(database_url: &str) -> Result<SqliteConnection> {
-    SqliteConnection::establish(database_url).into_diagnostic()
+   SqliteConnection::establish(database_url).into_diagnostic()
 }
 ```
-
-#### Automatically run migrations
-
-Let's say that the `diesel.db` file is not present, since you haven't done any of the
-following:
-
-- Run the `diesel_setup.fish` script file.
-- Run the `diesel setup` command.
-- Run the `diesel migration run` command.
-
-In this case your application will not work, since the database file is not present. You
-can automatically run the migrations when the application starts, if the database file is
-not present, it will be created.
-
-// TODO: Add code to automatically run migrations
-<https://gemini.google.com/app/5f1b885c0db4e4f4>
 
 #### CRUD operations
 
@@ -466,6 +464,75 @@ In the code, you can handle timestamps as follows:
     ```rust
     record.created_at.format("around %I:%M%P UTC on %b %-d")
     ```
+
+#### Automatically run migrations
+
+Let's say that the `diesel.db` file is not present, since you have **NOT** done any of the
+following:
+
+- Run the `diesel_setup.fish` script file.
+- Run the `diesel setup` command.
+- Run the `diesel migration run` command.
+
+Or a `diesel.db` file is present, and you just added a new migration **BUT** you didn't
+run it yet.
+
+In this case your application will not work, since the database file is not present, or it
+is out of date 😮.
+
+Thankfully, you can have the migrations run automatically when the application starts, if
+the database file is not present, it will be created. If the database file is old, it will
+be updated to the latest version 🎉.
+
+In order to make this happen you have to do the following things.
+
+1. Add the `diesel_migrations` crate to your `Cargo.toml` file:
+
+   ```toml
+   # For automatic migrations.
+   diesel_migrations = { version = "2.2.0", features = ["sqlite"] }
+   ```
+
+2. Add a procedural macro and this function:
+
+   ```rust
+   use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+   pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
+   pub fn try_run_migrations(
+       connection: &mut SqliteConnection,
+   ) -> std::result::Result<
+       Vec<diesel::migration::MigrationVersion<'_>>,
+       Box<dyn std::error::Error + Send + Sync>,
+   > {
+       connection.run_pending_migrations(MIGRATIONS)
+   }
+   ```
+
+3. Finally, to your `main.rs` file, or whatever file and function you want to run before
+   any database operations are run in your binary, call the function above. For example:
+
+   ```rust
+   let connection = &mut general_ops::create_connection(DATABASE_URL)?;
+   if migration_ops::try_run_migrations(connection).is_err() {
+       println!("Error running migrations");
+       miette::bail!("Error running migrations");
+   }
+   ```
+
+4. Optionally, you can add a `build.rs` file at the root of your project to get around
+   current limitations in Rust's `proc-macro` API. There is currently no way to signal
+   that a specific proc macro should be rerun if some external file changes or is added.
+   Which means that `embed_migrations!` cannot regenerate the list of embedded migrations
+   if **ONLY** the migrations are changed. To get around this you can add the following to
+   your `build.rs` file:
+
+   ```rust
+   fn main() {
+      println!("cargo:rerun-if-changed=migrations");
+   }
+   ```
+
+That's it! Now your application will automatically run migrations when it starts 🚀.
 
 ## VSCode and SQLite extension
 

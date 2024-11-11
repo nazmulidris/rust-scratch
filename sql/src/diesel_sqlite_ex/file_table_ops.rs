@@ -15,4 +15,5 @@
  *   limitations under the License.
  */
 
-pub const DATABASE_URL: &str = "diesel.db";
+// TODO: implement this
+use crate::diesel_sqlite_ex::schema::file_table::dsl::*;

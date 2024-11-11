@@ -34,4 +34,8 @@ diesel = { version = "2.2.4", features = [
   "chrono",
 ] }
 
+# For SQL timestamp col type support.
 chrono = "0.4"
+
+# For automatic migrations.
+diesel_migrations = { version = "2.2.0", features = ["sqlite"] }

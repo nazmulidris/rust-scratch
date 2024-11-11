@@ -16,7 +16,7 @@
  */
 
 use crossterm::style::Stylize as _;
-use sql::diesel_sqlite_ex::{data_table_ops, general_ops, DATABASE_URL};
+use sql::diesel_sqlite_ex::{data_table_ops, db_support, DATABASE_URL};
 
 fn main() -> miette::Result<()> {
     println!(
@@ -24,7 +24,12 @@ fn main() -> miette::Result<()> {
         "Running diesel_sqlite_ex".magenta().bold().underlined()
     );
 
-    let connection = &mut general_ops::create_connection(DATABASE_URL)?;
+    let connection = &mut db_support::create_connection(DATABASE_URL)?;
+
+    if db_support::try_run_migrations(connection).is_err() {
+        println!("Error running migrations");
+        miette::bail!("Error running migrations");
+    }
 
     data_table_ops::insert_a_few_records(connection)?;
     data_table_ops::update_first_record(connection)?;
