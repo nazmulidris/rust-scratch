@@ -86,12 +86,15 @@ pub mod data_table_ops {
         println!("{} {}", "Number of records:".green(), result_set.len());
 
         for (index, record) in result_set.iter().enumerate() {
+            let json_data: serde_json::Value =
+                serde_json::from_str(&record.data).into_diagnostic()?;
+
             println!(
-                "{} ⴾ {}, {}, {}, {}",
+                "{} ⴾ {}, {}, {:?}, {}",
                 format!("Row #{}", (index + 1)).to_string().cyan(),
                 record.id,
                 record.name,
-                record.data,
+                json_data,
                 // Format options: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
                 record.created_at.format("around %I:%M%P UTC on %b %-d")
             );
@@ -143,7 +146,41 @@ pub mod data_table_ops {
     }
 
     pub fn delete_last_record(connection: &mut SqliteConnection) -> Result<()> {
-        // TODO: implement this method.
+        // Query to get the last record without using created_at.
+        let maybe_last_record = data_table::table
+            .select(DataTableRecord::as_select())
+            .order(data_table::id.desc())
+            .first(connection)
+            .optional() // This won't throw error if no records are found.
+            .into_diagnostic()?;
+
+        // Only delete the last record if it exists.
+        if let Some(last_record) = maybe_last_record {
+            // Save the ID for later.
+            let id = last_record.id.as_ref();
+
+            // Delete the record from the database.
+            let deleted_record = diesel::delete(data_table::table.find(id))
+                .returning(DataTableRecord::as_returning())
+                .get_result(connection)
+                .into_diagnostic()?;
+
+            // Print the deleted record.
+            println!(
+                "{} ⴾ {}, {}, {}, {}",
+                "Deleted record".red(),
+                deleted_record.id,
+                deleted_record.name,
+                deleted_record.data,
+                // Format options: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
+                deleted_record
+                    .created_at
+                    .format("around %I:%M%P UTC on %b %-d")
+            );
+        } else {
+            println!("{}", "No records to delete".yellow());
+        }
+
         Ok(())
     }
 }
