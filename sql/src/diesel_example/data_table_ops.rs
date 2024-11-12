@@ -15,10 +15,7 @@
  *   limitations under the License.
  */
 
-use crate::diesel_sqlite_ex::{
-    data_table,      /* from schema */
-    DataTableRecord, /* from models */
-};
+use super::{db_support, models::DataTableRecord, schema::data_table};
 use crossterm::style::Stylize;
 use diesel::prelude::*;
 use diesel::{
@@ -26,41 +23,50 @@ use diesel::{
     SqliteExpressionMethods,
 };
 use miette::{IntoDiagnostic, Result};
+use r3bl_core::ok;
 
+/// Generate 2 records, and insert them into [data_table].
+///
 /// # Get the timestamp for current time in UTC
-/// - [chrono::Utc::now()] returns a [chrono::DateTime::naive_utc()] which is a [chrono::NaiveDateTime].
+///
+/// - [chrono::Utc::now()] returns a [chrono::DateTime::naive_utc()] which is a
+///   [chrono::NaiveDateTime].
 ///
 /// # Convert the timestamp in the database to a [chrono::DateTime]
+///
 /// - Use [chrono::DateTime::from_naive_utc_and_offset] with the following args:
 ///   1. [chrono::NaiveDateTime] from the previous step.
 ///   2. `0` offset for the timezone.
 pub fn insert_a_few_records(connection: &mut SqliteConnection) -> Result<()> {
-    let new_records = {
-        let timestamp = chrono::Utc::now().naive_utc();
-        vec![
-            DataTableRecord {
-                id: r3bl_core::generate_friendly_random_id().into(),
-                name: petname::petname(2, " ").unwrap_or("John Doe".into()).into(),
-                data: r#"{"key":"value1"}"#.into(),
-                created_at: timestamp,
-            },
-            DataTableRecord {
-                id: r3bl_core::generate_friendly_random_id().into(),
-                name: petname::petname(2, " ").unwrap_or("Jane Doe".into()).into(),
-                data: r#"{"key":"value2"}"#.into(),
-                created_at: timestamp,
-            },
-        ]
-    };
+    let timestamp = chrono::Utc::now().naive_utc();
+    let new_records = vec![
+        DataTableRecord {
+            id: r3bl_core::generate_friendly_random_id().into(),
+            name: petname::petname(2, " ").unwrap_or("John Doe".into()).into(),
+            data: r#"{"key":"value1"}"#.into(),
+            created_at: timestamp,
+        },
+        DataTableRecord {
+            id: r3bl_core::generate_friendly_random_id().into(),
+            name: petname::petname(2, " ").unwrap_or("Jane Doe".into()).into(),
+            data: r#"{"key":"value2"}"#.into(),
+            created_at: timestamp,
+        },
+    ];
 
     let num_records_inserted = diesel::insert_into(data_table::table)
         .values(&new_records) // Insert these structs into the table.
         .execute(connection) // Execute the insert query.
         .into_diagnostic()?;
 
-    // Fetch the inserted records manually.
+    // Manually load the 2 records that were just inserted.
     let inserted_records = data_table::table
-        .order(data_table::id.desc())
+        .order(
+            /*`desc()` stands for "descending" order, which means the results will be
+            sorted from the highest value to the lowest (for dates or timestamps, this is from
+            newest to oldest). */
+            data_table::created_at.desc(),
+        )
         .limit(num_records_inserted as i64)
         .load::<DataTableRecord>(connection)
         .into_diagnostic()?;
@@ -76,55 +82,33 @@ pub fn insert_a_few_records(connection: &mut SqliteConnection) -> Result<()> {
         );
     }
 
-    Ok(())
+    ok!()
 }
 
-pub fn print_all_records(connection: &mut SqliteConnection) -> Result<()> {
-    let result_set = data_table::table
-        .filter(data_table::id.is_not("1")) // Doesn't exclude anything, just an example.
-        .limit(100) // Limit the number of records to fetch.
-        .select(DataTableRecord::as_select())
-        .load(connection)
-        .into_diagnostic()?;
-
-    println!("{} {}", "Number of records:".green(), result_set.len());
-
-    for (index, record) in result_set.iter().enumerate() {
-        // Convert the String containing JSON to a serde_json::Value.
-        let json_data: serde_json::Value = serde_json::from_str(&record.data).into_diagnostic()?;
-
-        println!(
-            "{} ⴾ {}, {}, {:?}, {}",
-            format!("Row #{}", (index + 1)).to_string().cyan(),
-            record.id,
-            record.name,
-            json_data,
-            // Format options: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
-            record.created_at.format("around %I:%M%P UTC on %b %-d")
-        );
-    }
-
-    Ok(())
-}
-
+/// Update the first record in the [data_table] by adding `*` to [DataTableRecord::name].
+/// Note that the "first" record is determined by the order in which the records are
+/// stored. To enforce a specific order, you can use the `ORDER BY` clause.
 pub fn update_first_record(connection: &mut SqliteConnection) -> Result<()> {
-    // Query to get the first record without using created_at.
+    // Get the first record ordered by created_at.
     let maybe_first_record = data_table::table
-        .select(DataTableRecord::as_select())
-        .first(connection)
-        .optional() // This won't throw error if no records are found.
+        .order(
+            /*`desc()` stands for "descending" order, which means the results will be
+            sorted from the highest value to the lowest (for dates or timestamps, this is from
+            newest to oldest). */
+            data_table::created_at.desc(),
+        )
+        .limit(1)
+        .get_result::<DataTableRecord>(connection)
+        .optional()
         .into_diagnostic()?;
 
     // Only update the first record if it exists.
     if let Some(mut first_record) = maybe_first_record {
-        // Save the ID for later.
-        let id = first_record.id.as_ref();
-
         // Update the name field by appending a '*' to it.
         first_record.name = format!("{}{}", first_record.name, "*").into();
 
         // Update the record in the database.
-        let updated_record = diesel::update(data_table::table.find(id))
+        let updated_record = diesel::update(data_table::table.find(&first_record.id))
             .set(&first_record)
             .returning(DataTableRecord::as_returning())
             .get_result(connection)
@@ -146,25 +130,30 @@ pub fn update_first_record(connection: &mut SqliteConnection) -> Result<()> {
         println!("{}", "No records to update".yellow());
     }
 
-    Ok(())
+    ok!()
 }
 
+/// Delete the last record in the [data_table]. Note that the "last" record is determined
+/// by the order in which the records are stored. To enforce a specific order, you can use
+/// the `ORDER BY` clause.
 pub fn delete_last_record(connection: &mut SqliteConnection) -> Result<()> {
-    // Query to get the last record without using created_at.
+    // Get the last record ordered by created_at.
     let maybe_last_record = data_table::table
-        .select(DataTableRecord::as_select())
-        .order(data_table::id.desc())
-        .first(connection)
-        .optional() // This won't throw error if no records are found.
+        .order(
+            /*`asc()` stands for "ascending" order, which means the results will be
+            sorted from the lowest value to the highest (for dates or timestamps, this is from
+            oldest to newest). */
+            data_table::created_at.asc(),
+        )
+        .limit(1)
+        .get_result::<DataTableRecord>(connection)
+        .optional()
         .into_diagnostic()?;
 
     // Only delete the last record if it exists.
     if let Some(last_record) = maybe_last_record {
-        // Save the ID for later.
-        let id = last_record.id.as_ref();
-
         // Delete the record from the database.
-        let deleted_record = diesel::delete(data_table::table.find(id))
+        let deleted_record = diesel::delete(data_table::table.find(last_record.id))
             .returning(DataTableRecord::as_returning())
             .get_result(connection)
             .into_diagnostic()?;
@@ -185,5 +174,34 @@ pub fn delete_last_record(connection: &mut SqliteConnection) -> Result<()> {
         println!("{}", "No records to delete".yellow());
     }
 
-    Ok(())
+    ok!()
+}
+
+/// Print all records in the [data_table]:
+/// - `id`
+/// - `name`
+/// - formatted [serde_json::Value]
+/// - human readable `created_at`
+pub fn print_all_records(connection: &mut SqliteConnection) -> Result<()> {
+    let result_set = data_table::table
+        .filter(data_table::id.is_not("1")) // Doesn't exclude anything, just an example.
+        .limit(100) // Limit the number of records to fetch.
+        .select(DataTableRecord::as_select())
+        .load(connection)
+        .into_diagnostic()?;
+
+    println!("{} {}", "Number of records:".green(), result_set.len());
+
+    for (index, record) in result_set.iter().enumerate() {
+        println!(
+            "{} ⴾ {}, {}, {:?}, {}",
+            format!("Row #{}", (index + 1)).to_string().cyan(),
+            record.id,
+            record.name,
+            db_support::convert_string_to_json(&record.data),
+            db_support::format_datetime(record.created_at)
+        );
+    }
+
+    ok!()
 }

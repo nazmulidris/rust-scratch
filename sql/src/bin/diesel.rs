@@ -15,15 +15,7 @@
  *   limitations under the License.
  */
 
-use miette::IntoDiagnostic as _;
-use rusqlite::Connection;
-use sql::rusqlite_ex::{rw_files, rw_structs_and_strings};
-
 fn main() -> miette::Result<()> {
-    // Connect to SQLite database.
-    let connection =
-        Connection::open(sql::rusqlite_ex::constants::SQLITE_FILE).into_diagnostic()?;
-    rw_structs_and_strings::run_db(&connection)?;
-    rw_files::run_db(&connection)?;
-    Ok(())
+    sql::diesel_example::entry_point::run()?;
+    r3bl_core::ok!()
 }

@@ -15,6 +15,5 @@
  *   limitations under the License.
  */
 
-// Attach sources.
-pub mod diesel_example;
-pub mod rusqlite_example;
+pub const DATABASE_URL: &str = "diesel.db";
+pub const FILENAME_TO_READ: &str = "Cargo.toml";

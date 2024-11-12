@@ -15,5 +15,14 @@
  *   limitations under the License.
  */
 
-// TODO: implement this
-use crate::diesel_sqlite_ex::schema::file_table::dsl::*;
+use super::{constants::SQLITE_FILE, rw_files, rw_structs_and_strings};
+use miette::IntoDiagnostic as _;
+use rusqlite::Connection;
+
+pub fn run() -> miette::Result<()> {
+    // Connect to SQLite database.
+    let connection = Connection::open(SQLITE_FILE).into_diagnostic()?;
+    rw_structs_and_strings::run_db(&connection)?;
+    rw_files::run_db(&connection)?;
+    Ok(())
+}

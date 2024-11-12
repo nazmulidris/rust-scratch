@@ -15,26 +15,38 @@
  *   limitations under the License.
  */
 
+use super::{
+    constants::DATABASE_URL,
+    data_table_ops,
+    db_support::{create_connection, try_run_migrations},
+    file_table_ops,
+};
 use crossterm::style::Stylize as _;
-use sql::diesel_sqlite_ex::{data_table_ops, db_support, DATABASE_URL};
 
-fn main() -> miette::Result<()> {
+pub fn run() -> miette::Result<()> {
     println!(
         "{}",
         "Running diesel_sqlite_ex".magenta().bold().underlined()
     );
 
-    let connection = &mut db_support::create_connection(DATABASE_URL)?;
+    let connection = &mut create_connection(DATABASE_URL)?;
 
-    if db_support::try_run_migrations(connection).is_err() {
+    if try_run_migrations(connection).is_err() {
         println!("Error running migrations");
         miette::bail!("Error running migrations");
     }
 
+    println!("{}", "Running data_table_ops".magenta().bold().underlined());
     data_table_ops::insert_a_few_records(connection)?;
     data_table_ops::update_first_record(connection)?;
     data_table_ops::delete_last_record(connection)?;
     data_table_ops::print_all_records(connection)?;
+
+    println!("{}", "Running file_table_ops".magenta().bold().underlined());
+    file_table_ops::insert_a_few_records(connection)?;
+    file_table_ops::update_first_record(connection)?;
+    file_table_ops::delete_last_record(connection)?;
+    file_table_ops::print_all_records(connection)?;
 
     Ok(())
 }

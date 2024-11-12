@@ -15,10 +15,19 @@
  *   limitations under the License.
  */
 
+//! Here are a list of descriptions of what each of the annotations see in the Diesel
+//! derive macros below.
+//!
 //! [Queryable] generates all the code needed the load the annotated struct from a SQL
 //! query.
 //!
 //! [Selectable] generates all the code needed to create a select clause based on the
+//! struct and table annotation.
+//!
+//! [Insertable] generates all the code needed to create an insert clause based on the
+//! struct and table annotation.
+//!
+//! [AsChangeset] generates all the code needed to create an update clause based on the
 //! struct and table annotation.
 //!
 //! The attribute
@@ -32,7 +41,7 @@ use diesel::prelude::*;
 use std::borrow::Cow;
 
 #[derive(Queryable, Selectable, Insertable, AsChangeset)]
-#[diesel(table_name = crate::diesel_sqlite_ex::schema::data_table)]
+#[diesel(table_name = crate::diesel_example::schema::data_table)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct DataTableRecord<'a> {
     pub id: Cow<'a, str>,
@@ -41,8 +50,8 @@ pub struct DataTableRecord<'a> {
     pub created_at: chrono::NaiveDateTime,
 }
 
-#[derive(Queryable, Selectable, Insertable)]
-#[diesel(table_name = crate::diesel_sqlite_ex::schema::file_table)]
+#[derive(Queryable, Selectable, Insertable, AsChangeset)]
+#[diesel(table_name = crate::diesel_example::schema::file_table)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct FileTableRecord<'a> {
     pub id: Cow<'a, str>,

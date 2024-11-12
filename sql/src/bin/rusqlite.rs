@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-// Attach.
-pub mod constants;
-pub mod rw_files;
-pub mod rw_structs_and_strings;
+fn main() -> miette::Result<()> {
+    sql::rusqlite_example::entry_point::run()?;
+    r3bl_core::ok!()
+}

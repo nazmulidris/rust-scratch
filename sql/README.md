@@ -66,11 +66,12 @@ does the following:
   operations on the database.
 - The code is very simple, there is no ORM, or SQL syntax checking, or migrations. The SQL
   is just written as Rust strings.
+- There are 2 tables, one containing JSON text data, and the other containing binary data.
 
 To run this example, use:
 
 ```sh
-cargo run --bin rusqlite_ex
+cargo run --bin rusqlite
 ```
 
 ## diesel and SQLite example
@@ -91,6 +92,22 @@ migrations, and do CRUD operations in Rust code. Here are the details:
    data, and then update the models to reflect the changes.
 5. Finally, we will automate these migrations so that they don't have to be run manually.
    And they will be done in your binary target when it starts.
+
+The example
+[here](https://github.com/nazmulidris/rust-scratch/blob/main/sql/src/bin/diesel_sqlite_ex.rs)
+does the following:
+
+- This will create a `diesel.db` file in the current directory. It runs migrations as well
+  programmatically when the binary runs, at the very start.
+- It will use the `diesel` Rust crate (and ORM) to interact with it to perform some simple
+  CRUD operations on the database.
+- There are 2 tables, one containing JSON text data, and the other containing binary data.
+
+To run this example, use:
+
+```sh
+cargo run --bin diesel
+```
 
 ### Why Diesel and not SQLx?
 

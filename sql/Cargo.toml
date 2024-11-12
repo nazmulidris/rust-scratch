@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "rusqlite_ex"
-path = "src/bin/rusqlite_ex.rs"
+name = "rusqlite"
+path = "src/bin/rusqlite.rs"
 
 [[bin]]
-name = "diesel_sqlite_ex"
-path = "src/bin/diesel_sqlite_ex.rs"
+name = "diesel"
+path = "src/bin/diesel.rs"
 
 [dependencies]
 r3bl_core = "0.10.0"

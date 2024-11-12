@@ -18,6 +18,7 @@
 use diesel::prelude::*;
 use diesel::SqliteConnection;
 use miette::{IntoDiagnostic, Result};
+use r3bl_core::StringLength;
 
 /// Specify your database URL, eg:
 /// - `path/to/your/file.db` - Save the database file in the given path.
@@ -45,3 +46,28 @@ pub fn try_run_migrations(
     connection.run_pending_migrations(MIGRATIONS)
 }
 
+/// Format the given timestamp into a human-readable string.
+/// Format options list: <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>
+pub fn format_datetime(timestamp: chrono::NaiveDateTime) -> String {
+    timestamp.format("around %I:%M%P UTC on %b %-d").to_string()
+}
+
+pub fn get_current_timestamp() -> chrono::NaiveDateTime {
+    chrono::Utc::now().naive_utc()
+}
+
+/// Convert the given string into a JSON object.
+pub fn convert_string_to_json(string: &str) -> miette::Result<serde_json::Value> {
+    serde_json::from_str(string).into_diagnostic()
+}
+
+/// Calculate the SHA256 hash of the given string.
+pub fn get_sha_for_bytes(slice_bytes: &[u8]) -> u32 {
+    let content_as_string = String::from_utf8_lossy(slice_bytes);
+    StringLength::calculate_sha256(content_as_string.as_ref())
+}
+
+/// Read the contents of the file_path into a byte array (Vec<u8>).
+pub fn try_read_bytes_from_file(file_path: &str) -> miette::Result<Vec<u8>> {
+    std::fs::read(file_path).into_diagnostic()
+}
