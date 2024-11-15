@@ -35,7 +35,4 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(
-    data_table,
-    file_table,
-);
+diesel::allow_tables_to_appear_in_same_query!(data_table, file_table,);
