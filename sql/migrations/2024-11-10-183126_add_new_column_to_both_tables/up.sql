@@ -20,3 +20,10 @@ set
   created_at = current_timestamp
 where
   created_at is '1900-01-01 12:12:12';
+
+update
+  file_table
+set
+  created_at = current_timestamp
+where
+  created_at is '1900-01-01 12:12:12';

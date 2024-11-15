@@ -200,7 +200,7 @@ create table if not exists data_table (
 create table if not exists file_table (
   id text primary key not null,
   name text not null,
-  data text not null
+  data blob not null
 );
 ```
 
@@ -223,6 +223,10 @@ diesel --database-url=diesel.db migration redo
 
 The commands above will create a `diesel.db` file in the current directory if it does not
 exist.
+
+Note that the `redo` command does not work unless the `run` command has been executed at
+least once. Just to be safe, it is also best to delete the `diesel.db` file in order to do
+a total reset; then run `run` and then `redo`.
 
 #### 4.1 What is the difference between redo and run?
 
@@ -345,10 +349,17 @@ column `created_at`:
    add
       column created_at timestamp not null default '1900-01-01 12:12:12';
 
-   -- Update the created_at column in data_table if needed (it is needed if the row's date is
-   -- hard coded to '1900-01-01 12:12:12'.
+   -- Update the created_at column in data_table & file_table if needed (it is needed if the
+   -- row's date is hard coded to '1900-01-01 12:12:12'.
    update
       data_table
+   set
+      created_at = current_timestamp
+   where
+      created_at is '1900-01-01 12:12:12';
+
+   update
+      file_table
    set
       created_at = current_timestamp
    where

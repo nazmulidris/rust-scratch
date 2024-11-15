@@ -139,13 +139,13 @@ pub fn update_first_record(connection: &mut SqliteConnection) -> Result<()> {
 pub fn delete_last_record(connection: &mut SqliteConnection) -> Result<()> {
     // Get the last record ordered by created_at.
     let maybe_last_record = data_table::table
-        .order(
-            /*`asc()` stands for "ascending" order, which means the results will be
-            sorted from the lowest value to the highest (for dates or timestamps, this is from
-            oldest to newest). */
-            data_table::created_at.asc(),
-        )
-        .limit(1)
+    .order(
+        /*`desc()` stands for "descending" order, which means the results will be
+        sorted from the highest value to the lowest (for dates or timestamps, this is from
+        newest to oldest). */
+        data_table::created_at.desc(),
+    )
+    .limit(1)
         .get_result::<DataTableRecord>(connection)
         .optional()
         .into_diagnostic()?;
