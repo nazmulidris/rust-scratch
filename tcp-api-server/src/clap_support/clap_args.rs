@@ -22,6 +22,8 @@ use std::fmt::Display;
 const DEFAULT_PORT_NUM: u16 = 3000;
 const DEFAULT_ADDRESS_STR: &str = "127.0.0.1";
 
+/// More info on the color strings format, from [color_print] docs:
+/// - <https://docs.rs/color-print/latest/color_print/index.html>
 #[derive(Parser, Debug)]
 #[clap(
     author = "Nazmul Idris <idris@developerlife.com>",
@@ -44,7 +46,7 @@ pub struct CLIArg {
     #[arg(
         short = 'a',
         long = "address", // Can't colorize this. Won't match when the user types it in.
-        name = color_print::cstr!("Address to <bright-green,bold>connect</> or <bright-red,bold>listen</> to"),
+        name = color_print::cstr!("Address to <bright-green,bold>connect</> or <bg:black,bright-green,bold,underline>listen</> to"),
         global = true,
         default_value = DEFAULT_ADDRESS_STR
     )]
@@ -53,7 +55,7 @@ pub struct CLIArg {
     #[arg(
         short = 'p',
         long = "port", // Can't colorize this. Won't match when the user types it in.
-        name = color_print::cstr!("Port to <bright-green,bold>connect</> or <bright-red,bold>listen</> to"),
+        name = color_print::cstr!("Port to <bright-green,bold>connect</> or <bg:black,bright-green,bold,underline>listen</> to"),
         global = true,
         default_value_t = DEFAULT_PORT_NUM,
     )]
@@ -110,7 +112,7 @@ pub enum CLISubcommand {
     #[command(
         name = "server", // Can't colorize this. Won't match when the user types it in.
         short_flag = 's',
-        long_about = color_print::cstr!("Start a TCP <bright-red,bold>server</> at the given <bright-cyan,bold>address</> and <bright-cyan,bold>port</>")
+        long_about = color_print::cstr!("Start a TCP <bg:black,bright-green,bold,underline>server</> at the given <bright-cyan,bold>address</> and <bright-cyan,bold>port</>")
     )]
     Server,
     #[command(
