@@ -22,7 +22,7 @@ use crate::{
 use crossterm::style::Stylize;
 use kv::Store;
 use miette::{miette, IntoDiagnostic};
-use r3bl_rs_utils_core::{
+use r3bl_core::{
     friendly_random_id, get_from_bucket, insert_into_bucket, iterate_bucket,
     load_or_create_bucket_from_store, load_or_create_store, remove_from_bucket, KVBucket,
 };
@@ -508,9 +508,7 @@ pub mod test_handle_client_message {
         ServerMessage, CHANNEL_SIZE,
     };
     use miette::IntoDiagnostic;
-    use r3bl_rs_utils_core::{
-        insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store,
-    };
+    use r3bl_core::{insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store};
     use tempfile::tempdir;
     use tokio::{io::BufWriter, sync::broadcast};
 

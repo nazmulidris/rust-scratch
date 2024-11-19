@@ -17,7 +17,7 @@
 
 use clap::Parser;
 use miette::IntoDiagnostic;
-use r3bl_rs_utils_core::{
+use r3bl_core::{
     setup_default_miette_global_report_handler, tracing_logging, ColorWheel, ColorWheelConfig,
     ColorWheelSpeed, DisplayPreference, GradientGenerationPolicy, TextColorizationPolicy,
     TracingConfig, UnicodeString,
@@ -27,6 +27,7 @@ use tcp_api_server::{
     clap_args::{self, CLISubcommand},
     convert_args_into_writer_config, jaeger_setup,
 };
+use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 const ERROR_REPORT_HANDLER_FOOTER:&str = "If you believe this is a bug, please report it: https://github.com/nazmulidris/rust-scratch/issues";
@@ -111,7 +112,7 @@ async fn main() -> miette::Result<()> {
     // Create a tracing config based on whether this is server or client.
     let tracing_config = match &cli_args.subcommand {
         CLISubcommand::Server => {
-            let level = cli_args.tracing_log_level;
+            let level_filter: LevelFilter = cli_args.tracing_log_level.into();
             let file_path_and_prefix = format!(
                 "{}_{}.log",
                 cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
@@ -123,11 +124,11 @@ async fn main() -> miette::Result<()> {
                     file_path_and_prefix,
                     DisplayPreference::Stdout,
                 ),
-                level,
+                level_filter,
             }
         }
         CLISubcommand::Client => {
-            let level = cli_args.tracing_log_level;
+            let level_filter: LevelFilter = cli_args.tracing_log_level.into();
             let file_path_and_prefix = format!(
                 "{}_{}.log",
                 cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
@@ -145,7 +146,7 @@ async fn main() -> miette::Result<()> {
                     file_path_and_prefix,
                     display_preference,
                 ),
-                level,
+                level_filter,
             }
         }
     };

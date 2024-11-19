@@ -18,8 +18,8 @@
 use crate::{byte_io, Buffer, CLIArg, MessageValue, MyClientMessage, MyServerMessage};
 use crossterm::style::Stylize;
 use miette::{Context, IntoDiagnostic};
-use r3bl_rs_utils_core::{generate_friendly_random_id, SharedWriter};
-use r3bl_terminal_async::{ReadlineEvent, Spinner, SpinnerStyle, StdMutex, TerminalAsync};
+use r3bl_core::{generate_friendly_random_id, SharedWriter, StdMutex};
+use r3bl_terminal_async::{ReadlineEvent, Spinner, SpinnerStyle, TerminalAsync};
 use std::{
     io::{stderr, Write},
     ops::ControlFlow,
