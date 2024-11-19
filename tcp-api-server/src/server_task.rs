@@ -15,6 +15,7 @@
  *   limitations under the License.
  */
 
+use crate::handshake;
 use crate::{
     byte_io, protocol::ServerMessage, CLIArg, ClientMessage, MessageKey, MessageValue,
     MyClientMessage, MyServerMessage, CHANNEL_SIZE,
@@ -32,7 +33,7 @@ use std::sync::{
 };
 use tokio::{
     io::{AsyncWrite, BufReader, BufWriter},
-    net::{TcpListener, TcpStream},
+    net::TcpListener,
     sync::broadcast::{self},
 };
 use tracing::{debug, error, info, instrument};
@@ -95,13 +96,24 @@ pub async fn server_main_event_loop(cli_args: CLIArg) -> miette::Result<()> {
                 // Start task to handle a connection. Note that there might be n of these
                 // tasks spawned where n is the number of connected clients.
                 tokio::spawn(async move {
+                    // Get reader and writer from TCP stream.
+                    let (mut read_half, mut write_half) = client_tcp_stream.into_split();
+
+                    // Ensure that you are connecting to the correct client. Handle
+                    // timeout and invalid handshake.
+                    if let Err(err) = handshake::try_accept_or_timeout(&mut read_half, &mut write_half).await {
+                        tracing::error!(%err, "Problem with handshake");
+                        return;
+                    };
+
                     // Increment the connected client count.
                     safe_connected_client_count_clone.fetch_add(1, Ordering::SeqCst);
 
                     let client_id = friendly_random_id::generate_friendly_random_id();
                     let result_handle_client_task = handle_client_task::event_loop(
                         &client_id,
-                        client_tcp_stream,
+                        read_half,
+                        write_half,
                         sender_inter_client_broadcast_channel_clone,
                         shutdown_sender_clone.clone(),
                         store_clone.clone(),
@@ -169,6 +181,9 @@ pub async fn server_main_event_loop(cli_args: CLIArg) -> miette::Result<()> {
 }
 
 pub mod handle_client_task {
+    use r3bl_core::ok;
+    use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
+
     use super::*;
 
     /// This has an infinite loop, so you might want to call it in a spawn block. Server
@@ -178,7 +193,8 @@ pub mod handle_client_task {
     #[instrument(name = "handle_client_task:event_loop", skip_all, fields(%client_id))]
     pub async fn event_loop(
         client_id: &str,
-        client_tcp_stream: TcpStream,
+        read_half: OwnedReadHalf,
+        write_half: OwnedWriteHalf,
         sender_inter_client_broadcast_channel: broadcast::Sender<InterClientMessage>,
         shutdown_sender: broadcast::Sender<()>,
         store: Store,
@@ -193,8 +209,6 @@ pub mod handle_client_task {
         let mut receiver_inter_client_broadcast_channel =
             sender_inter_client_broadcast_channel.subscribe();
 
-        // Get reader and writer from TCP stream.
-        let (read_half, write_half) = client_tcp_stream.into_split();
         let mut buf_reader = BufReader::new(read_half);
         let mut buf_writer = BufWriter::new(write_half);
 
@@ -260,7 +274,7 @@ pub mod handle_client_task {
             }
         }
 
-        Ok(())
+        ok!()
     }
 
     #[instrument(skip_all, fields(?client_message))]

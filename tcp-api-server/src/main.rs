@@ -106,7 +106,7 @@ async fn main() -> miette::Result<()> {
     // Setup terminal_async.
     let maybe_terminal_async = match cli_args.subcommand {
         CLISubcommand::Server => None,
-        CLISubcommand::Client => TerminalAsync::try_new("> ").await?,
+        CLISubcommand::Client => TerminalAsync::try_new("ⴾ ").await?,
     };
 
     // Create a tracing config based on whether this is server or client.

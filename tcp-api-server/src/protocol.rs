@@ -20,15 +20,143 @@
 //! generics `K` and `V` are used to specify the exact type of the key and value used in
 //! the messages by whatever module is using this protocol.
 
-use std::str::FromStr;
-
 use miette::IntoDiagnostic;
+use r3bl_core::ok;
 use serde::{Deserialize, Serialize};
-
-/// Size (number of bytes) to read from the stream to get the length prefix.
-pub type LengthPrefixType = u64;
-pub type Buffer = Vec<u8>;
+use std::str::FromStr;
+use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader, BufWriter};
+use tokio::time::timeout;
+
+/// Type alias for type to read from the stream to get the length prefix.
+pub type LengthPrefixType = u64;
+/// Type alias for the payload buffer type.
+pub type Buffer = Vec<u8>;
+
+pub mod protocol_constants {
+    use super::*;
+
+    pub const MAGIC_NUMBER: u64 = 0xDEADBEEFCAFEBABE;
+    pub const PROTOCOL_VERSION: u64 = 1;
+    pub const TIMEOUT_DURATION: Duration = Duration::from_secs(1);
+    pub const MAX_PAYLOAD_SIZE: u64 = 10_000_000;
+}
+
+/// Extend the protocol to validate that it is connecting to the correct type of server,
+/// by implementing the following handshake mechanism:
+///
+/// # Client side - [handshake::try_connect]
+/// 1. The client **writes** a "magic number" or protocol identifier, and version number
+///    as the first message when establishing a connection.
+/// 2. This number is then **read** back from the server to ensure that it is valid.
+///
+/// # Server side - [handshake::try_accept]
+/// 1. The server **reads** the magic number and protocol version number, and checks to
+///    make sure they are valid.
+/// 2. It then **writes** the magic number back to the client (for it to validate).
+pub mod handshake {
+    use super::*;
+
+    /// Client side handshake.
+    pub async fn try_connect_or_timeout<W: AsyncWrite + Unpin, R: AsyncRead + Unpin>(
+        read_half: &mut R,
+        write_half: &mut W,
+    ) -> miette::Result<()> {
+        let result = timeout(
+            protocol_constants::TIMEOUT_DURATION,
+            try_connect(read_half, write_half),
+        )
+        .await;
+
+        match result {
+            Ok(Err(handshake_err)) => {
+                miette::bail!("Handshake failed due to: {}", handshake_err.root_cause())
+            }
+            Err(_elapsed_err) => {
+                miette::bail!("Handshake timed out")
+            }
+            _ => {
+                ok!()
+            }
+        }
+    }
+
+    async fn try_connect<W: AsyncWrite + Unpin, R: AsyncRead + Unpin>(
+        read_half: &mut R,
+        write_half: &mut W,
+    ) -> miette::Result<()> {
+        // Send the magic number.
+        write_half
+            .write_u64(protocol_constants::MAGIC_NUMBER)
+            .await
+            .into_diagnostic()?;
+
+        // Send the protocol version.
+        write_half
+            .write_u64(protocol_constants::PROTOCOL_VERSION)
+            .await
+            .into_diagnostic()?;
+
+        // Flush the buffer.
+        write_half.flush().await.into_diagnostic()?;
+
+        // Read the magic number back from the server.
+        let received_magic_number = read_half.read_u64().await.into_diagnostic()?;
+        if received_magic_number != protocol_constants::MAGIC_NUMBER {
+            miette::bail!("Invalid protocol magic number")
+        }
+
+        ok!()
+    }
+
+    /// Server side handshake.
+    pub async fn try_accept_or_timeout<W: AsyncWrite + Unpin, R: AsyncRead + Unpin>(
+        read_half: &mut R,
+        write_half: &mut W,
+    ) -> miette::Result<()> {
+        let result = timeout(
+            protocol_constants::TIMEOUT_DURATION,
+            try_accept(read_half, write_half),
+        )
+        .await
+        .into_diagnostic();
+
+        match result {
+            Ok(handshake_result) => match handshake_result {
+                Ok(_) => ok!(),
+                Err(handshake_err) => {
+                    miette::bail!("Handshake failed due to: {}", handshake_err.root_cause())
+                }
+            },
+            Err(_elapsed_err) => miette::bail!("Handshake timed out"),
+        }
+    }
+
+    async fn try_accept<W: AsyncWrite + Unpin, R: AsyncRead + Unpin>(
+        read_half: &mut R,
+        write_half: &mut W,
+    ) -> miette::Result<()> {
+        // Read and validate the magic number.
+        let received_magic_number = read_half.read_u64().await.into_diagnostic()?;
+        if received_magic_number != protocol_constants::MAGIC_NUMBER {
+            miette::bail!("Invalid protocol magic number")
+        }
+
+        // Read and validate the protocol version.
+        let received_protocol_version = read_half.read_u64().await.into_diagnostic()?;
+        if received_protocol_version != protocol_constants::PROTOCOL_VERSION {
+            miette::bail!("Invalid protocol version")
+        }
+
+        // Write the magic number back to the client.
+        write_half
+            .write_u64(protocol_constants::MAGIC_NUMBER)
+            .await
+            .into_diagnostic()?;
+
+        ok!()
+    }
+}
 
 pub mod byte_io {
     use super::*;
@@ -73,6 +201,11 @@ pub mod byte_io {
     ) -> miette::Result<T> {
         // Read the length prefix number of bytes.
         let size_of_payload = buf_reader.read_u64().await.into_diagnostic()?;
+
+        if size_of_payload > protocol_constants::MAX_PAYLOAD_SIZE {
+            // Adjust this threshold as needed
+            miette::bail!("Payload size is too large")
+        }
 
         // Read the payload.
         let mut payload_buffer = vec![0; size_of_payload as usize];
@@ -136,8 +269,7 @@ impl<K: Default, V: Default> ClientMessage<K, V> {
 
         // If input has a space, then split it and use the first part as the command.
         let parts: Vec<&str> = input.split_whitespace().collect();
-        // Same as: input.parse::<protocol::ClientMessage>();
-        let client_message = ClientMessage::<K, V>::from_str(parts[0])?;
+        let client_message = ClientMessage::<K, V>::from_str(parts[0])?; // Same as: input.parse::<ClientMessage<K,V>>()?;
         let rest = if parts.len() > 1 {
             parts[1..].join(" ")
         } else {

@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-use crate::{byte_io, Buffer, CLIArg, MessageValue, MyClientMessage, MyServerMessage};
+use crate::{byte_io, handshake, Buffer, CLIArg, MessageValue, MyClientMessage, MyServerMessage};
 use crossterm::style::Stylize;
 use miette::{Context, IntoDiagnostic};
 use r3bl_core::{generate_friendly_random_id, SharedWriter, StdMutex};
@@ -88,7 +88,10 @@ pub async fn client_main(
     info!("Connected to server on {}", &address);
 
     // Get reader and writer from TCP stream.
-    let (read_half, write_half) = tcp_stream.into_split();
+    let (mut read_half, mut write_half) = tcp_stream.into_split();
+
+    // Ensure that you are connecting to the correct server.
+    handshake::try_connect_or_timeout(&mut read_half, &mut write_half).await?;
 
     // Reserve a space for the client_id. This is set for this entire client task.
     let safe_client_id = Arc::new(StdMutex::new(DEFAULT_CLIENT_ID.to_string()));
@@ -517,14 +520,14 @@ pub mod monitor_tcp_conn_task {
     ///   output.
     #[instrument(name = "monitor_tcp_conn_task:event_loop", skip_all, fields(client_id))]
     pub async fn event_loop(
-        buf_reader: OwnedReadHalf,
+        read_half: OwnedReadHalf,
         mut shared_writer: SharedWriter,
         shutdown_sender: broadcast::Sender<()>,
         safe_client_id: Arc<StdMutex<String>>,
     ) -> miette::Result<()> {
         info!("Entering loop");
 
-        let mut buf_reader = BufReader::new(buf_reader);
+        let mut buf_reader = BufReader::new(read_half);
         let mut shutdown_receiver = shutdown_sender.subscribe();
         loop {
             tokio::select! {
