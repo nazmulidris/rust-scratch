@@ -1,6 +1,4 @@
 # tcp-api-server
-<a id="markdown-tcp-api-server" name="tcp-api-server"></a>
-
 
 ```
 ░░░░░ ░░░░ ░░░░░   ░░░░░ ░░░░░ ░    ░░░░░ ░░░░ ░░░░░  ░░   ░ ░░░░ ░░░░░
@@ -13,22 +11,24 @@
 <!-- Install app from: https://flathub.org/apps/io.github.nokse22.asciidraw -->
 <!-- Get glyphs from: https://github.com/r3bl-org/r3bl-ts-utils/blob/main/src/tui-figures/symbols.ts -->
 
-<!-- TOC -->
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Mental models](#mental-models)
-- [Tokio tracing usage](#tokio-tracing-usage)
-- [Run the server and client](#run-the-server-and-client)
-  - [Run Jaeger in Docker](#run-jaeger-in-docker)
-  - [To see help for the command](#to-see-help-for-the-command)
-  - [To run the server on the default port on localhost:](#to-run-the-server-on-the-default-port-on-localhost)
-  - [To run the client on the default port on localhost](#to-run-the-client-on-the-default-port-on-localhost)
-  - [Automatically compile](#automatically-compile)
+**Table of Contents**
 
-<!-- /TOC -->
+- [tcp-api-server](#tcp-api-server)
+  - [Mental models](#mental-models)
+  - [Tokio tracing usage](#tokio-tracing-usage)
+  - [Run the server and client](#run-the-server-and-client)
+    - [Run Jaeger in Docker](#run-jaeger-in-docker)
+    - [To see help for the command](#to-see-help-for-the-command)
+    - [To run the server on the default port on localhost:](#to-run-the-server-on-the-default-port-on-localhost)
+    - [To run the client on the default port on localhost](#to-run-the-client-on-the-default-port-on-localhost)
+    - [Automatically compile](#automatically-compile)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Mental models
-<a id="markdown-mental-models" name="mental-models"></a>
-
 
 ```
 ┌──────────────────┐ ┌────────────────────────────────────┐ ┌─────────────────────────────┐
@@ -57,9 +57,9 @@ the client at any time. Comparing this to the web, it would be akin to a websock
 ![image](./main_diagram.drawio_2.svg)
 
 ## Tokio tracing usage
-<a id="markdown-tokio-tracing-usage" name="tokio-tracing-usage"></a>
 
 Code:
+
 - [`r3bl_terminal_async` tracing setup](https://github.com/r3bl-org/r3bl-open-core/blob/nazmulidris/otel/terminal_async/src/public_api/tracing_setup.rs)
 - [`r3bl_terminal_async` jaeger & otel setup](https://github.com/r3bl-org/r3bl-open-core/blob/nazmulidris/otel/terminal_async/src/public_api/jaeger_setup.rs#L1)
 - [use tracing setup in this project](https://github.com/nazmulidris/rust-scratch/tree/main/tcp-api-server)
@@ -94,10 +94,10 @@ mod client_task {
     `info!()` call 🎉.
   - If you use the `client_id` field in multiple `#[instrument..]` attributes in functions
     (that are in the call chain), then this will show up multiple times in the log output
-    (when using `info!`, `debug!`, etc) of the leaf function in the call chain. So when you
-    see the same fields showing up multiple times in the output from `info!`, `debug!`, etc,
-    then you know that you have to remove that field from the `#[instrument..]` attribute
-    somewhere in the call chain (that the span covers).
+    (when using `info!`, `debug!`, etc) of the leaf function in the call chain. So when
+    you see the same fields showing up multiple times in the output from `info!`,
+    `debug!`, etc, then you know that you have to remove that field from the
+    `#[instrument..]` attribute somewhere in the call chain (that the span covers).
 
 - You have to be careful about how to use
   [`[#instrument]`](https://docs.rs/tracing/latest/tracing/attr.instrument.html) attribute
@@ -106,49 +106,42 @@ mod client_task {
   `#[instrument(fields(foo))]` attribute is used.
 
 ## Run the server and client
-<a id="markdown-run-the-server-and-client" name="run-the-server-and-client"></a>
 
 ### Run Jaeger in Docker
-<a id="markdown-run-jaeger-in-docker" name="run-jaeger-in-docker"></a>
 
 Do the following before running the server or client.
 
 1. Run `docker compose up -d` to start the Jaeger backend. Alternatively you can run
-   `docker run -d -p16686:16686 -p4317:4317 -e COLLECTOR_OTLP_ENABLED=true
-   jaegertracing/all-in-one:latest`
+   `docker run -d -p16686:16686 -p4317:4317 -e COLLECTOR_OTLP_ENABLED=true jaegertracing/all-in-one:latest`
 2. Open: <http://localhost:16686/search>
 3. Run the server or client.
 4. When you're done running the server or client, run `docker compose down` to stop the
    Jaeger backend.
 
-> 1) You can use `docker stats` to see the currently running containers.
-> 2) Here's a [full Rust
->    example](https://github.com/open-telemetry/opentelemetry-rust/blob/main/examples/tracing-jaeger/src/main.rs)
+> 1. You can use `docker stats` to see the currently running containers.
+> 2. Here's a
+>    [full Rust example](https://github.com/open-telemetry/opentelemetry-rust/blob/main/examples/tracing-jaeger/src/main.rs)
 >    of using Jaeger tracing.
 
 ### To see help for the command
-<a id="markdown-to-see-help-for-the-command" name="to-see-help-for-the-command"></a>
 
 ```sh
 cargo run -- --help
 ```
 
 ### To run the server on the default port on localhost:
-<a id="markdown-to-run-the-server-on-the-default-port-on-localhost%3A" name="to-run-the-server-on-the-default-port-on-localhost%3A"></a>
 
 ```sh
 cargo run -- server
 ```
 
 ### To run the client on the default port on localhost
-<a id="markdown-to-run-the-client-on-the-default-port-on-localhost" name="to-run-the-client-on-the-default-port-on-localhost"></a>
 
 ```sh
 cargo run -- client
 ```
 
 ### Automatically compile
-<a id="markdown-automatically-compile" name="automatically-compile"></a>
 
 You can also run this [`cargo-watch`](https://crates.io/crates/cargo-watch) command to
 automatically recompile and run the server when the code changes:
