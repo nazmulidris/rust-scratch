@@ -478,51 +478,14 @@ mod generate_server_message {
 }
 
 #[cfg(test)]
-pub mod test_fixtures {
-    use crate::Buffer;
-    use std::io::Result;
-    use std::pin::Pin;
-    use std::task::{Context, Poll};
-    use tokio::io::AsyncWrite;
-
-    /// A mock struct for the [tokio::net::TcpStream].
-    /// - Alternative to [tokio_test::io::Builder::new()].
-    /// - The difference is that [MockTcpStreamWrite] allows access to the expected write
-    ///   buffer.
-    pub struct MockTcpStreamWrite {
-        pub expected_write: Buffer,
-    }
-
-    /// Implement the [AsyncWrite] trait for the mock struct.
-    impl AsyncWrite for MockTcpStreamWrite {
-        fn poll_write(
-            mut self: Pin<&mut Self>,
-            _cx: &mut Context<'_>,
-            buf: &[u8],
-        ) -> Poll<Result<usize>> {
-            self.expected_write.extend_from_slice(buf);
-            Poll::Ready(Ok(buf.len()))
-        }
-
-        fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<()>> {
-            Poll::Ready(Ok(()))
-        }
-
-        fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<()>> {
-            Poll::Ready(Ok(()))
-        }
-    }
-}
-
-#[cfg(test)]
 pub mod test_handle_client_message {
     use crate::{
-        handle_client_task::handle_client_message, server_task::generate_server_message,
-        test_fixtures::MockTcpStreamWrite, Buffer, ClientMessage, Data, InterClientMessage,
-        ServerMessage, CHANNEL_SIZE,
+        handle_client_task::handle_client_message, protocol, server_task::generate_server_message,
+        Buffer, ClientMessage, Data, InterClientMessage, ServerMessage, CHANNEL_SIZE,
     };
     use miette::IntoDiagnostic;
     use r3bl_core::{insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store};
+    use r3bl_test_fixtures::MockTcpStream;
     use tempfile::tempdir;
     use tokio::{io::BufWriter, sync::broadcast};
 
@@ -538,16 +501,8 @@ pub mod test_handle_client_message {
         let data = &Data::default();
         insert_into_bucket(&bucket, key.to_string(), data.clone())?;
 
-        // Get the bytes that are expected to be sent to the client (not including the
-        // length prefix).
-        let expected_payload_bytes = {
-            let item_vec = vec![(key.to_string(), data.clone())];
-            let server_message = ServerMessage::GetAll(item_vec);
-            bincode::serialize(&server_message).into_diagnostic()?
-        };
-
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStreamWrite {
+        let writer = MockTcpStream {
             expected_write: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
@@ -566,11 +521,21 @@ pub mod test_handle_client_message {
         // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
 
         // Assert the actual bytes w/ the expected bytes.
-        let mut result_vec: Buffer = vec![];
-        let length_prefix = expected_payload_bytes.len() as u64;
-        let length_prefix_bytes = length_prefix.to_be_bytes();
-        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
-        result_vec.extend(expected_payload_bytes);
+        let result_vec = {
+            let expected_payload = {
+                let item_vec = vec![(key.to_string(), data.clone())];
+                let server_message = ServerMessage::GetAll(item_vec);
+
+                bincode::serialize(&server_message).into_diagnostic()?
+            };
+            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let mut result_vec: Buffer = vec![];
+            let length_prefix = expected_payload.len() as u64;
+            let length_prefix_bytes = length_prefix.to_be_bytes();
+            result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+            result_vec.extend(expected_payload);
+            result_vec
+        };
 
         assert_eq!(buf_writer.get_ref().expected_write, result_vec);
 
@@ -582,15 +547,8 @@ pub mod test_handle_client_message {
         let dir = tempdir().expect("Failed to create temp dir");
         let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
 
-        // Get the bytes that are expected to be sent to the client (not including the
-        // length prefix).
-        let expected_payload_bytes = {
-            let server_message = ServerMessage::<String, Data>::Insert(true);
-            bincode::serialize(&server_message).into_diagnostic()?
-        };
-
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStreamWrite {
+        let writer = MockTcpStream {
             expected_write: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
@@ -609,11 +567,19 @@ pub mod test_handle_client_message {
         // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
 
         // Assert the actual bytes w/ the expected bytes.
-        let mut result_vec: Buffer = vec![];
-        let length_prefix = expected_payload_bytes.len() as u64;
-        let length_prefix_bytes = length_prefix.to_be_bytes();
-        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
-        result_vec.extend(expected_payload_bytes);
+        let result_vec = {
+            let expected_payload = {
+                let server_message = ServerMessage::<String, Data>::Insert(true);
+                bincode::serialize(&server_message).into_diagnostic()?
+            };
+            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let mut result_vec: Buffer = vec![];
+            let length_prefix = expected_payload.len() as u64;
+            let length_prefix_bytes = length_prefix.to_be_bytes();
+            result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+            result_vec.extend(expected_payload);
+            result_vec
+        };
 
         assert_eq!(buf_writer.get_ref().expected_write, result_vec);
 
@@ -629,15 +595,8 @@ pub mod test_handle_client_message {
         )?;
         insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
 
-        // Get the bytes that are expected to be sent to the client (not including the
-        // length prefix).
-        let expected_payload_bytes = {
-            let server_message = ServerMessage::<String, Data>::Remove(true);
-            bincode::serialize(&server_message).into_diagnostic()?
-        };
-
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStreamWrite {
+        let writer = MockTcpStream {
             expected_write: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
@@ -656,11 +615,19 @@ pub mod test_handle_client_message {
         // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
 
         // Assert the actual bytes w/ the expected bytes.
-        let mut result_vec: Buffer = vec![];
-        let length_prefix = expected_payload_bytes.len() as u64;
-        let length_prefix_bytes = length_prefix.to_be_bytes();
-        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
-        result_vec.extend(expected_payload_bytes);
+        let result_vec = {
+            let expected_payload = {
+                let server_message = ServerMessage::<String, Data>::Remove(true);
+                bincode::serialize(&server_message).into_diagnostic()?
+            };
+            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let mut result_vec: Buffer = vec![];
+            let length_prefix = expected_payload.len() as u64;
+            let length_prefix_bytes = length_prefix.to_be_bytes();
+            result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+            result_vec.extend(expected_payload);
+            result_vec
+        };
 
         assert_eq!(buf_writer.get_ref().expected_write, result_vec);
 
@@ -680,16 +647,8 @@ pub mod test_handle_client_message {
         let data = &Data::default();
         insert_into_bucket(&bucket, key.to_string(), data.clone())?;
 
-        // Get the bytes that are expected to be sent to the client (not including the
-        // length prefix).
-        let expected_payload_bytes = {
-            let it = Some(data.clone());
-            let server_message = ServerMessage::<String, Data>::Get(it);
-            bincode::serialize(&server_message).into_diagnostic()?
-        };
-
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStreamWrite {
+        let writer = MockTcpStream {
             expected_write: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
@@ -708,11 +667,20 @@ pub mod test_handle_client_message {
         // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
 
         // Assert the actual bytes w/ the expected bytes.
-        let mut result_vec: Buffer = vec![];
-        let length_prefix = expected_payload_bytes.len() as u64;
-        let length_prefix_bytes = length_prefix.to_be_bytes();
-        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
-        result_vec.extend(expected_payload_bytes);
+        let result_vec = {
+            let expected_payload = {
+                let it = Some(data.clone());
+                let server_message = ServerMessage::<String, Data>::Get(it);
+                bincode::serialize(&server_message).into_diagnostic()?
+            };
+            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let mut result_vec: Buffer = vec![];
+            let length_prefix = expected_payload.len() as u64;
+            let length_prefix_bytes = length_prefix.to_be_bytes();
+            result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+            result_vec.extend(expected_payload);
+            result_vec
+        };
 
         assert_eq!(buf_writer.get_ref().expected_write, result_vec);
 
@@ -728,15 +696,8 @@ pub mod test_handle_client_message {
         )?;
         insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
 
-        // Get the bytes that are expected to be sent to the client (not including the
-        // length prefix).
-        let expected_payload_bytes = {
-            let server_message = ServerMessage::<String, Data>::Clear(true);
-            bincode::serialize(&server_message).into_diagnostic()?
-        };
-
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStreamWrite {
+        let writer = MockTcpStream {
             expected_write: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
@@ -755,11 +716,19 @@ pub mod test_handle_client_message {
         // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
 
         // Assert the actual bytes w/ the expected bytes.
-        let mut result_vec: Buffer = vec![];
-        let length_prefix = expected_payload_bytes.len() as u64;
-        let length_prefix_bytes = length_prefix.to_be_bytes();
-        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
-        result_vec.extend(expected_payload_bytes);
+        let result_vec = {
+            let expected_payload = {
+                let server_message = ServerMessage::<String, Data>::Clear(true);
+                bincode::serialize(&server_message).into_diagnostic()?
+            };
+            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let mut result_vec: Buffer = vec![];
+            let length_prefix = expected_payload.len() as u64;
+            let length_prefix_bytes = length_prefix.to_be_bytes();
+            result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+            result_vec.extend(expected_payload);
+            result_vec
+        };
 
         assert_eq!(buf_writer.get_ref().expected_write, result_vec);
 
@@ -775,15 +744,8 @@ pub mod test_handle_client_message {
         )?;
         insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
 
-        // Get the bytes that are expected to be sent to the client (not including the
-        // length prefix).
-        let expected_payload_bytes = {
-            let server_message = ServerMessage::<String, Data>::Size(1);
-            bincode::serialize(&server_message).into_diagnostic()?
-        };
-
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStreamWrite {
+        let writer = MockTcpStream {
             expected_write: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
@@ -802,11 +764,19 @@ pub mod test_handle_client_message {
         // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
 
         // Assert the actual bytes w/ the expected bytes.
-        let mut result_vec: Buffer = vec![];
-        let length_prefix = expected_payload_bytes.len() as u64;
-        let length_prefix_bytes = length_prefix.to_be_bytes();
-        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
-        result_vec.extend(expected_payload_bytes);
+        let result_vec = {
+            let expected_payload = {
+                let server_message = ServerMessage::<String, Data>::Size(1);
+                bincode::serialize(&server_message).into_diagnostic()?
+            };
+            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let mut result_vec: Buffer = vec![];
+            let length_prefix = expected_payload.len() as u64;
+            let length_prefix_bytes = length_prefix.to_be_bytes();
+            result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+            result_vec.extend(expected_payload);
+            result_vec
+        };
 
         assert_eq!(buf_writer.get_ref().expected_write, result_vec);
 
@@ -824,16 +794,8 @@ pub mod test_handle_client_message {
         let mut receiver_2 = sender.subscribe();
         let expected_count = 1; // There are 2 receivers, but the sender is not counted.
 
-        // Get the bytes that are expected to be sent to the client (not including the
-        // length prefix).
-        let expected_payload_bytes = {
-            let server_message =
-                ServerMessage::<String, Data>::BroadcastToOthersAck(expected_count);
-            bincode::serialize(&server_message).into_diagnostic()?
-        };
-
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStreamWrite {
+        let writer = MockTcpStream {
             expected_write: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
@@ -866,11 +828,20 @@ pub mod test_handle_client_message {
         // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
 
         // Assert the actual bytes w/ the expected bytes.
-        let mut result_vec: Buffer = vec![];
-        let length_prefix = expected_payload_bytes.len() as u64;
-        let length_prefix_bytes = length_prefix.to_be_bytes();
-        result_vec.extend_from_slice(length_prefix_bytes.as_ref());
-        result_vec.extend(expected_payload_bytes);
+        let result_vec = {
+            let expected_payload = {
+                let server_message =
+                    ServerMessage::<String, Data>::BroadcastToOthersAck(expected_count);
+                bincode::serialize(&server_message).into_diagnostic()?
+            };
+            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let mut result_vec: Buffer = vec![];
+            let length_prefix = expected_payload.len() as u64;
+            let length_prefix_bytes = length_prefix.to_be_bytes();
+            result_vec.extend_from_slice(length_prefix_bytes.as_ref());
+            result_vec.extend(expected_payload);
+            result_vec
+        };
 
         assert_eq!(buf_writer.get_ref().expected_write, result_vec);
 
