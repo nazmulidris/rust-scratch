@@ -6,6 +6,7 @@
     "BOOKM",
     "CBOR",
     "dialoguer",
+    "flate",
     "geohashing",
     "getall",
     "indicatif",

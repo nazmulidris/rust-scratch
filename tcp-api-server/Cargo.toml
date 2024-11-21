@@ -23,6 +23,9 @@ serde_json = { version = "1.0.133" }
 # Convert Rust structs to and from binary representation.
 bincode = { version = "1.3.3" }
 
+# Compression for the protocol.
+flate2 = "1.0.35"
+
 # Enum to string generation.
 strum = "0.26.3"
 strum_macros = "0.26.4"

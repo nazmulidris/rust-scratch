@@ -20,9 +20,11 @@
 //! generics `K` and `V` are used to specify the exact type of the key and value used in
 //! the messages by whatever module is using this protocol.
 
+use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 use miette::IntoDiagnostic;
 use r3bl_core::ok;
 use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
 use std::str::FromStr;
 use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader, BufWriter};
@@ -30,8 +32,9 @@ use tokio::time::timeout;
 
 /// Type alias for type to read from the stream to get the length prefix.
 pub type LengthPrefixType = u64;
-/// Type alias for the payload buffer type.
-pub type Buffer = Vec<u8>;
+/// Type aliases for the payload buffer type.
+pub type Buffer = Vec<BufferAtom>;
+pub type BufferAtom = u8;
 
 pub mod protocol_constants {
     use super::*;
@@ -40,6 +43,44 @@ pub mod protocol_constants {
     pub const PROTOCOL_VERSION: u64 = 1;
     pub const TIMEOUT_DURATION: Duration = Duration::from_secs(1);
     pub const MAX_PAYLOAD_SIZE: u64 = 10_000_000;
+}
+
+pub mod compression {
+    use super::*;
+
+    /// Compress the payload using the [flate2] crate.
+    pub fn compress(data: &[BufferAtom]) -> miette::Result<Buffer> {
+        let uncompressed_size = data.len();
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(data).into_diagnostic()?;
+        let it = encoder.finish().into_diagnostic();
+        let compressed_size = it.as_ref().map(|it| it.len()).unwrap_or(0);
+        tracing::info!(
+            "Compression: {:.2} kb -> {:.2} kb ({:.2}%)",
+            uncompressed_size as f64 / 1000.0,
+            compressed_size as f64 / 1000.0,
+            (compressed_size as f64 / uncompressed_size as f64) * 100.0
+        );
+        it
+    }
+
+    /// Decompress the payload using the [flate2] crate.
+    pub fn decompress(data: &[BufferAtom]) -> miette::Result<Buffer> {
+        let compressed_size = data.len();
+        let mut decoder = GzDecoder::new(data);
+        let mut decompressed_data = Vec::new();
+        decoder
+            .read_to_end(&mut decompressed_data)
+            .into_diagnostic()?;
+        let uncompressed_size = decompressed_data.len();
+        tracing::info!(
+            "Decompression: {:.2} kb -> {:.2} kb ({:.2}%)",
+            uncompressed_size as f64 / 1000.0,
+            compressed_size as f64 / 1000.0,
+            (compressed_size as f64 / uncompressed_size as f64) * 100.0
+        );
+        Ok(decompressed_data)
+    }
 }
 
 /// Extend the protocol to validate that it is connecting to the correct type of server,
@@ -172,6 +213,9 @@ pub mod byte_io {
         // Try to serialize the data.
         let payload_buffer = bincode::serialize(data).into_diagnostic()?;
 
+        // Compress the payload.
+        let payload_buffer = compression::compress(&payload_buffer)?;
+
         // Write the length prefix number of bytes.
         let payload_size = payload_buffer.len();
         buf_writer
@@ -202,6 +246,7 @@ pub mod byte_io {
         // Read the length prefix number of bytes.
         let size_of_payload = buf_reader.read_u64().await.into_diagnostic()?;
 
+        // Ensure that the payload size is within the expected range.
         if size_of_payload > protocol_constants::MAX_PAYLOAD_SIZE {
             // Adjust this threshold as needed
             miette::bail!("Payload size is too large")
@@ -213,6 +258,9 @@ pub mod byte_io {
             .read_exact(&mut payload_buffer)
             .await
             .into_diagnostic()?;
+
+        // Decompress the payload.
+        let payload_buffer = compression::decompress(&payload_buffer)?;
 
         // Deserialize the payload.
         let payload: T = bincode::deserialize(&payload_buffer).into_diagnostic()?;
