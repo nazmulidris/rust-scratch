@@ -199,6 +199,37 @@ pub mod handshake {
     }
 }
 
+#[cfg(test)]
+mod tests_handshake {
+    use super::*;
+
+    /// A “channel” is created by [tokio::io::duplex] that can be used as in-memory IO
+    /// types.
+    ///
+    /// Given a "channel":
+    /// 1. Writing to the first of the pairs will allow that data to be read from the
+    ///    other.
+    /// 2. Writing to the other pair will allow that data to be read from the first.
+    #[tokio::test]
+    async fn test_handshake() {
+        let (client_stream, server_stream) = tokio::io::duplex(1024);
+
+        let (mut client_read, mut client_write) = tokio::io::split(client_stream);
+        let client_handshake =
+            handshake::try_connect_or_timeout(&mut client_read, &mut client_write);
+
+        let (mut server_read, mut server_write) = tokio::io::split(server_stream);
+        let server_handshake =
+            handshake::try_accept_or_timeout(&mut server_read, &mut server_write);
+
+        let (client_handshake_result, server_handshake_result) =
+            tokio::join!(client_handshake, server_handshake);
+
+        assert!(client_handshake_result.is_ok());
+        assert!(server_handshake_result.is_ok());
+    }
+}
+
 pub mod byte_io {
     use super::*;
 
