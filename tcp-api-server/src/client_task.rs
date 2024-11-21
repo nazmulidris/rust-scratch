@@ -43,7 +43,7 @@ const DELAY_UNIT: Duration = Duration::from_millis(DELAY_MS);
 const ARTIFICIAL_UI_DELAY: Duration = Duration::from_millis(DELAY_MS * 10);
 
 #[instrument(skip_all)]
-pub async fn client_main(
+pub async fn client_entry_point(
     cli_args: CLIArg,
     mut terminal_async: TerminalAsync,
 ) -> miette::Result<()> {
