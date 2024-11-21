@@ -181,12 +181,10 @@ async fn main() -> miette::Result<()> {
 
     // Run the server or client.
     match cli_args.subcommand {
-        CLISubcommand::Server => {
-            tcp_api_server::server_task::server_main_event_loop(cli_args).await?
-        }
+        CLISubcommand::Server => tcp_api_server::server_task::server_entry_point(cli_args).await?,
         CLISubcommand::Client => {
             if let Some(terminal_async) = maybe_terminal_async {
-                tcp_api_server::client_task::client_main(cli_args, terminal_async).await?
+                tcp_api_server::client_task::client_entry_point(cli_args, terminal_async).await?
             }
         }
     }

@@ -43,7 +43,7 @@ use tracing::{debug, error, info, instrument};
 pub(super) type InterClientMessage = (String, MessageValue);
 
 #[instrument(skip_all)]
-pub async fn server_main_event_loop(cli_args: CLIArg) -> miette::Result<()> {
+pub async fn server_entry_point(cli_args: CLIArg) -> miette::Result<()> {
     let address = cli_args.address;
     let port = cli_args.port;
 
