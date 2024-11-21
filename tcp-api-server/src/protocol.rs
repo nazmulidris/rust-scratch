@@ -300,11 +300,45 @@ pub mod byte_io {
     }
 }
 
+#[cfg(test)]
+mod tests_byte_io {
+    use super::*;
+
+    /// A “channel” is created by [tokio::io::duplex] that can be used as in-memory IO
+    /// types.
+    ///
+    /// Given a "channel":
+    /// 1. Writing to the first of the pairs will allow that data to be read from the
+    ///    other.
+    /// 2. Writing to the other pair will allow that data to be read from the first.
+    #[tokio::test]
+    async fn test_byte_io() {
+        let (client_stream, server_stream) = tokio::io::duplex(1024);
+
+        let (_client_read, mut client_write) = tokio::io::split(client_stream);
+        let (mut server_read, _server_write) = tokio::io::split(server_stream);
+
+        for sent_payload in test_fixtures::get_all_client_messages() {
+            byte_io::try_write(&mut BufWriter::new(&mut client_write), &sent_payload)
+                .await
+                .unwrap();
+
+            let received_payload: ClientMessage<String, String> =
+                byte_io::try_read(&mut BufReader::new(&mut server_read))
+                    .await
+                    .unwrap();
+
+            assert_eq!(received_payload, sent_payload);
+        }
+    }
+}
+
+/// These are messages that the client can send to the server.
+///
 /// More info:
 /// - <https://docs.rs/strum_macros/latest/strum_macros/derive.EnumString.html>
 /// - <https://docs.rs/strum_macros/latest/strum_macros/derive.Display.html>
 /// - <https://docs.rs/strum_macros/latest/strum_macros/derive.EnumIter.html>
-///
 #[derive(
     Clone,
     Debug,
@@ -316,8 +350,6 @@ pub mod byte_io {
     strum_macros::EnumIter,
     strum_macros::Display,
 )]
-
-/// These are messages that the client can send to the server.
 pub enum ClientMessage<K: Default, V: Default> {
     #[default]
     #[strum(ascii_case_insensitive)]
@@ -437,6 +469,11 @@ mod tests_command_to_from_string {
 #[cfg(test)]
 mod test_fixtures {
     use super::*;
+
+    pub fn get_all_client_messages() -> Vec<ClientMessage<String, String>> {
+        use strum::IntoEnumIterator as _;
+        ClientMessage::iter().collect()
+    }
 
     #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
     pub struct TestPayload {
