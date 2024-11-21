@@ -1614,6 +1614,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "r3bl_ansi_color"
+version = "0.7.0"
+source = "git+https://github.com/r3bl-org/r3bl-open-core#a6aefd8e81b0354c9b53fd7b48426f30f05d4a87"
+dependencies = [
+ "is_ci",
+]
+
+[[package]]
 name = "r3bl_core"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1630,7 +1638,43 @@ dependencies = [
  "miette",
  "nom",
  "pretty_assertions",
- "r3bl_ansi_color",
+ "r3bl_ansi_color 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand",
+ "serde",
+ "serde_json",
+ "sha2",
+ "size-of",
+ "strip-ansi",
+ "strum",
+ "strum_macros",
+ "thiserror 1.0.69",
+ "time",
+ "tokio",
+ "tracing",
+ "tracing-appender",
+ "tracing-core",
+ "tracing-subscriber",
+ "unicode-segmentation",
+ "unicode-width 0.2.0",
+]
+
+[[package]]
+name = "r3bl_core"
+version = "0.10.0"
+source = "git+https://github.com/r3bl-org/r3bl-open-core#a6aefd8e81b0354c9b53fd7b48426f30f05d4a87"
+dependencies = [
+ "async-stream",
+ "bincode",
+ "chrono",
+ "colorgrad",
+ "crossterm",
+ "futures-core",
+ "futures-util",
+ "kv",
+ "miette",
+ "nom",
+ "pretty_assertions",
+ "r3bl_ansi_color 0.7.0 (git+https://github.com/r3bl-org/r3bl-open-core)",
  "rand",
  "serde",
  "serde_json",
@@ -1659,7 +1703,7 @@ dependencies = [
  "paste",
  "proc-macro2",
  "quote",
- "r3bl_core",
+ "r3bl_core 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 2.0.87",
 ]
 
@@ -1675,8 +1719,8 @@ dependencies = [
  "futures-util",
  "miette",
  "pretty_assertions",
- "r3bl_ansi_color",
- "r3bl_core",
+ "r3bl_ansi_color 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r3bl_core 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "r3bl_tui",
  "r3bl_tuify",
  "strum",
@@ -1692,6 +1736,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "r3bl_test_fixtures"
+version = "0.1.0"
+source = "git+https://github.com/r3bl-org/r3bl-open-core#a6aefd8e81b0354c9b53fd7b48426f30f05d4a87"
+dependencies = [
+ "async-stream",
+ "futures-core",
+ "futures-util",
+ "miette",
+ "pretty_assertions",
+ "r3bl_core 0.10.0 (git+https://github.com/r3bl-org/r3bl-open-core)",
+ "strip-ansi-escapes",
+ "strum",
+ "strum_macros",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-test",
+ "tracing",
+ "tracing-appender",
+ "tracing-core",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "r3bl_tui"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1704,8 +1771,8 @@ dependencies = [
  "miette",
  "nom",
  "pretty_assertions",
- "r3bl_ansi_color",
- "r3bl_core",
+ "r3bl_ansi_color 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r3bl_core 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "r3bl_macro",
  "rand",
  "serde",
@@ -1732,8 +1799,8 @@ checksum = "997600a2c33a4dc7344c0fedf72bc160c0e233e1be6cecd4ea1052d8a78ebb83"
 dependencies = [
  "clap",
  "crossterm",
- "r3bl_ansi_color",
- "r3bl_core",
+ "r3bl_ansi_color 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r3bl_core 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "reedline",
  "serde",
  "serde_json",
@@ -2267,8 +2334,9 @@ dependencies = [
  "opentelemetry-semantic-conventions",
  "opentelemetry_sdk",
  "pretty_assertions",
- "r3bl_core",
+ "r3bl_core 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "r3bl_terminal_async",
+ "r3bl_test_fixtures",
  "r3bl_tui",
  "rand",
  "serde",
