@@ -1,0 +1,37 @@
+[package]
+name = "tls"
+version = "0.1.0"
+edition = "2021"
+
+# Mark the `cert` binary as the default.
+default-run = "cert"
+
+[[bin]]
+name = "cert"
+path = "src/bin/cert.rs"
+
+[[bin]]
+name = "server"
+path = "src/bin/server.rs"
+
+[[bin]]
+name = "client"
+path = "src/bin/client.rs"
+
+[dependencies]
+# TLS dependencies.
+rustls = "0.23.18"
+tokio-rustls = "0.26.0"
+rustls-pki-types = "1.10.0"
+rustls-pemfile = "2.2.0"
+webpki-roots = "0.26.7"
+
+# Tokio dependencies.
+tokio = { version = "1.41.1", features = ["full"] }
+tracing = "0.1.40"
+
+# Error handling.
+miette = "7.2.0"
+
+# Terminal color output.
+crossterm = "0.28.1"

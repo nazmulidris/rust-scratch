@@ -1,0 +1,16 @@
+{
+  "cSpell.words": [
+    "CFSSL",
+    "cfssljson",
+    "gencert",
+    "initca",
+    "noout",
+    "pemfile",
+    "Pkcs",
+    "popd",
+    "pushd",
+    "realpath",
+    "rustls",
+    "webpki"
+  ]
+}
