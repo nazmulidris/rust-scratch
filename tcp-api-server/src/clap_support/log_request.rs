@@ -45,7 +45,8 @@ pub enum LogClapArg {
     None,
 }
 
-/// Handle converting parsed command line arguments (via `clap` crate) into a [LogArgClap].
+/// Handle converting parsed command line arguments (via `clap` crate) into a
+/// [LogClapArg].
 impl FromStr for LogClapArg {
     type Err = String;
 
@@ -60,7 +61,7 @@ impl FromStr for LogClapArg {
     }
 }
 
-/// Tests for LogArgClap FromStr.
+/// Tests for [LogClapArg] FromStr.
 #[cfg(test)]
 mod test_from_str {
     use super::*;

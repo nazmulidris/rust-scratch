@@ -1616,7 +1616,7 @@ dependencies = [
 [[package]]
 name = "r3bl_ansi_color"
 version = "0.7.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core#a6aefd8e81b0354c9b53fd7b48426f30f05d4a87"
+source = "git+https://github.com/r3bl-org/r3bl-open-core#9417dcb9716465b761ab705b1e4e80a32eba431c"
 dependencies = [
  "is_ci",
 ]
@@ -1661,7 +1661,7 @@ dependencies = [
 [[package]]
 name = "r3bl_core"
 version = "0.10.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core#a6aefd8e81b0354c9b53fd7b48426f30f05d4a87"
+source = "git+https://github.com/r3bl-org/r3bl-open-core#9417dcb9716465b761ab705b1e4e80a32eba431c"
 dependencies = [
  "async-stream",
  "bincode",
@@ -1738,7 +1738,7 @@ dependencies = [
 [[package]]
 name = "r3bl_test_fixtures"
 version = "0.1.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core#a6aefd8e81b0354c9b53fd7b48426f30f05d4a87"
+source = "git+https://github.com/r3bl-org/r3bl-open-core#9417dcb9716465b761ab705b1e4e80a32eba431c"
 dependencies = [
  "async-stream",
  "futures-core",

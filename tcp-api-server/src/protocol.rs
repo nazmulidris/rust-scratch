@@ -86,12 +86,12 @@ pub mod compression {
 /// Extend the protocol to validate that it is connecting to the correct type of server,
 /// by implementing the following handshake mechanism:
 ///
-/// # Client side - [handshake::try_connect]
+/// # Client side - [handshake::try_connect_or_timeout]
 /// 1. The client **writes** a "magic number" or protocol identifier, and version number
 ///    as the first message when establishing a connection.
 /// 2. This number is then **read** back from the server to ensure that it is valid.
 ///
-/// # Server side - [handshake::try_accept]
+/// # Server side - [handshake::try_accept_or_timeout]
 /// 1. The server **reads** the magic number and protocol version number, and checks to
 ///    make sure they are valid.
 /// 2. It then **writes** the magic number back to the client (for it to validate).
@@ -202,23 +202,20 @@ pub mod handshake {
 #[cfg(test)]
 mod tests_handshake {
     use super::*;
+    use r3bl_test_fixtures::{get_mock_socket_halves, MockSocket};
 
-    /// A “channel” is created by [tokio::io::duplex] that can be used as in-memory IO
-    /// types.
-    ///
-    /// Given a "channel":
-    /// 1. Writing to the first of the pairs will allow that data to be read from the
-    ///    other.
-    /// 2. Writing to the other pair will allow that data to be read from the first.
     #[tokio::test]
     async fn test_handshake() {
-        let (client_stream, server_stream) = tokio::io::duplex(1024);
+        let MockSocket {
+            mut client_read,
+            mut client_write,
+            mut server_read,
+            mut server_write,
+        } = get_mock_socket_halves();
 
-        let (mut client_read, mut client_write) = tokio::io::split(client_stream);
         let client_handshake =
             handshake::try_connect_or_timeout(&mut client_read, &mut client_write);
 
-        let (mut server_read, mut server_write) = tokio::io::split(server_stream);
         let server_handshake =
             handshake::try_accept_or_timeout(&mut server_read, &mut server_write);
 
@@ -303,20 +300,16 @@ pub mod byte_io {
 #[cfg(test)]
 mod tests_byte_io {
     use super::*;
+    use r3bl_test_fixtures::{get_mock_socket_halves, MockSocket};
 
-    /// A “channel” is created by [tokio::io::duplex] that can be used as in-memory IO
-    /// types.
-    ///
-    /// Given a "channel":
-    /// 1. Writing to the first of the pairs will allow that data to be read from the
-    ///    other.
-    /// 2. Writing to the other pair will allow that data to be read from the first.
     #[tokio::test]
     async fn test_byte_io() {
-        let (client_stream, server_stream) = tokio::io::duplex(1024);
-
-        let (_client_read, mut client_write) = tokio::io::split(client_stream);
-        let (mut server_read, _server_write) = tokio::io::split(server_stream);
+        let MockSocket {
+            client_read: _,
+            mut client_write,
+            mut server_read,
+            server_write: _,
+        } = get_mock_socket_halves();
 
         for sent_payload in test_fixtures::get_all_client_messages() {
             byte_io::try_write(&mut BufWriter::new(&mut client_write), &sent_payload)

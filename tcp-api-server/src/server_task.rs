@@ -485,7 +485,7 @@ pub mod test_handle_client_message {
     };
     use miette::IntoDiagnostic;
     use r3bl_core::{insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store};
-    use r3bl_test_fixtures::MockTcpStream;
+    use r3bl_test_fixtures::MockAsyncStream;
     use tempfile::tempdir;
     use tokio::{io::BufWriter, sync::broadcast};
 
@@ -502,8 +502,8 @@ pub mod test_handle_client_message {
         insert_into_bucket(&bucket, key.to_string(), data.clone())?;
 
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStream {
-            expected_write: Vec::new(),
+        let writer = MockAsyncStream {
+            expected_buffer: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
 
@@ -518,7 +518,7 @@ pub mod test_handle_client_message {
         )
         .await?;
 
-        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_buffer);
 
         // Assert the actual bytes w/ the expected bytes.
         let result_vec = {
@@ -537,7 +537,7 @@ pub mod test_handle_client_message {
             result_vec
         };
 
-        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+        assert_eq!(buf_writer.get_ref().expected_buffer, result_vec);
 
         Ok(())
     }
@@ -548,8 +548,8 @@ pub mod test_handle_client_message {
         let store = load_or_create_store(Some(&dir.path().to_string_lossy().to_string()))?;
 
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStream {
-            expected_write: Vec::new(),
+        let writer = MockAsyncStream {
+            expected_buffer: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
 
@@ -564,7 +564,7 @@ pub mod test_handle_client_message {
         )
         .await?;
 
-        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_buffer);
 
         // Assert the actual bytes w/ the expected bytes.
         let result_vec = {
@@ -581,7 +581,7 @@ pub mod test_handle_client_message {
             result_vec
         };
 
-        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+        assert_eq!(buf_writer.get_ref().expected_buffer, result_vec);
 
         Ok(())
     }
@@ -596,8 +596,8 @@ pub mod test_handle_client_message {
         insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
 
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStream {
-            expected_write: Vec::new(),
+        let writer = MockAsyncStream {
+            expected_buffer: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
 
@@ -612,7 +612,7 @@ pub mod test_handle_client_message {
         )
         .await?;
 
-        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_buffer);
 
         // Assert the actual bytes w/ the expected bytes.
         let result_vec = {
@@ -629,7 +629,7 @@ pub mod test_handle_client_message {
             result_vec
         };
 
-        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+        assert_eq!(buf_writer.get_ref().expected_buffer, result_vec);
 
         Ok(())
     }
@@ -648,8 +648,8 @@ pub mod test_handle_client_message {
         insert_into_bucket(&bucket, key.to_string(), data.clone())?;
 
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStream {
-            expected_write: Vec::new(),
+        let writer = MockAsyncStream {
+            expected_buffer: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
 
@@ -664,7 +664,7 @@ pub mod test_handle_client_message {
         )
         .await?;
 
-        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_buffer);
 
         // Assert the actual bytes w/ the expected bytes.
         let result_vec = {
@@ -682,7 +682,7 @@ pub mod test_handle_client_message {
             result_vec
         };
 
-        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+        assert_eq!(buf_writer.get_ref().expected_buffer, result_vec);
 
         Ok(())
     }
@@ -697,8 +697,8 @@ pub mod test_handle_client_message {
         insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
 
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStream {
-            expected_write: Vec::new(),
+        let writer = MockAsyncStream {
+            expected_buffer: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
 
@@ -713,7 +713,7 @@ pub mod test_handle_client_message {
         )
         .await?;
 
-        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_buffer);
 
         // Assert the actual bytes w/ the expected bytes.
         let result_vec = {
@@ -730,7 +730,7 @@ pub mod test_handle_client_message {
             result_vec
         };
 
-        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+        assert_eq!(buf_writer.get_ref().expected_buffer, result_vec);
 
         Ok(())
     }
@@ -745,8 +745,8 @@ pub mod test_handle_client_message {
         insert_into_bucket(&bucket, "foo".to_string(), Data::default())?;
 
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStream {
-            expected_write: Vec::new(),
+        let writer = MockAsyncStream {
+            expected_buffer: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
 
@@ -761,7 +761,7 @@ pub mod test_handle_client_message {
         )
         .await?;
 
-        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_buffer);
 
         // Assert the actual bytes w/ the expected bytes.
         let result_vec = {
@@ -778,7 +778,7 @@ pub mod test_handle_client_message {
             result_vec
         };
 
-        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+        assert_eq!(buf_writer.get_ref().expected_buffer, result_vec);
 
         Ok(())
     }
@@ -795,8 +795,8 @@ pub mod test_handle_client_message {
         let expected_count = 1; // There are 2 receivers, but the sender is not counted.
 
         // Create a mock writer (for the write half of the TcpStream).
-        let writer = MockTcpStream {
-            expected_write: Vec::new(),
+        let writer = MockAsyncStream {
+            expected_buffer: Vec::new(),
         };
         let mut buf_writer = BufWriter::new(writer);
 
@@ -825,7 +825,7 @@ pub mod test_handle_client_message {
             assert_eq!(sent_data, Data::default());
         }
 
-        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_write);
+        // println!("actual bytes  : {:?}", buf_writer.get_ref().expected_buffer);
 
         // Assert the actual bytes w/ the expected bytes.
         let result_vec = {
@@ -843,7 +843,7 @@ pub mod test_handle_client_message {
             result_vec
         };
 
-        assert_eq!(buf_writer.get_ref().expected_write, result_vec);
+        assert_eq!(buf_writer.get_ref().expected_buffer, result_vec);
 
         Ok(())
     }
