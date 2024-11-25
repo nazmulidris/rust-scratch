@@ -22,7 +22,7 @@
 //! | Function                                         | Description                                         |
 //! |--------------------------------------------------|-----------------------------------------------------|
 //! | [certificate_ops::client_create_root_cert_store] | CA certificate and root store.                      |
-//! | [tls_ops::client_tls_connect]                    | Client code to connect to the server securely.      |
+//! | [tls_ops::try_create_client_tls_connect]         | Client code to connect to the server securely.      |
 //!
 //! # Server
 //!
@@ -39,20 +39,41 @@ use rustls::{
     ClientConfig, RootCertStore, ServerConfig,
 };
 use rustls_pemfile::{self, read_one, Item};
-use std::sync::Arc;
-use std::{io::BufReader, iter};
-use tokio_rustls::TlsAcceptor;
+use std::{io::BufReader, iter, sync::Arc};
+use tokio_rustls::{TlsAcceptor /* server */, TlsConnector /* client */};
 
 pub mod tls_ops {
-
     use super::*;
 
-    // TODO: impl this
-    pub fn client_tls_connect() -> miette::Result<()> {
+    /// Try to create a [tokio_rustls::TlsConnector] that can be used by your client to
+    /// connect to the server securely.
+    ///
+    /// 1. Typically you might use [tokio::net::TcpStream::connect] to connect to the
+    ///    server and get a "insecure" [tokio::net::TcpStream].
+    /// 2. Instead use the [tokio_rustls::TlsConnector] (created by this function) to
+    ///    convert that "insecure" stream into a "secure" stream. And then use that
+    ///    "secure" stream to communicate with the server.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use crate::tls::tls_ops::try_create_client_tls_connect;
+    /// async fn client() {
+    ///     let connector = try_create_client_tls_connect().unwrap();
+    ///     let stream = tokio::net::TcpStream::connect("localhost:8080").await.unwrap();
+    ///     let server_name = rustls::pki_types::ServerName::try_from("localhost").unwrap();
+    ///     let secure_stream = connector.connect(server_name, stream).await.unwrap();
+    ///     unimplemented!("Use the secure_stream to communicate with the server");
+    /// }
+    /// ```
+    pub fn try_create_client_tls_connect() -> miette::Result<TlsConnector> {
         let root_cert_store = certificate_ops::client_create_root_cert_store()?;
-        let client_config = ClientConfig::builder();
-
-        todo!()
+        let client_config = ClientConfig::builder()
+            .with_root_certificates(root_cert_store)
+            .with_no_client_auth();
+        let client_config = Arc::new(client_config);
+        let tls_connector = TlsConnector::from(client_config);
+        Ok(tls_connector)
     }
 
     /// Try to create a [tokio_rustls::TlsAcceptor] that can be used by your server to
@@ -73,7 +94,7 @@ pub mod tls_ops {
     ///     let (stream, _) = listener.accept().await.unwrap();
     ///     let acceptor = try_create_server_tls_acceptor().await.unwrap();
     ///     let secure_stream = acceptor.accept(stream).await.unwrap();
-    ///     todo!("Use the secure_stream to communicate with the client");
+    ///     unimplemented!("Use the secure_stream to communicate with the client");
     /// }
     /// ```
     pub async fn try_create_server_tls_acceptor() -> miette::Result<TlsAcceptor> {
@@ -84,8 +105,8 @@ pub mod tls_ops {
             .with_single_cert(server_cert_chain, server_key)
             .into_diagnostic()?;
         let server_config = Arc::new(server_config);
-        let tokio_tls_acceptor = TlsAcceptor::from(server_config);
-        Ok(tokio_tls_acceptor)
+        let tls_acceptor = TlsAcceptor::from(server_config);
+        Ok(tls_acceptor)
     }
 }
 
