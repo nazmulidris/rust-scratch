@@ -32,23 +32,31 @@
 //! | [certificate_ops::server_load_cert]   | Server certificate signed by CA certificate.              |
 //! | [tls_ops::server_tls_accept]          | Server code to accept secure connections from the client. |
 
-use miette::IntoDiagnostic;
+use miette::IntoDiagnostic as _;
+use rustls::ServerConfig;
 use rustls::{
-    pki_types::{CertificateDer, PrivatePkcs1KeyDer},
+    pki_types::{CertificateDer, PrivateKeyDer},
     RootCertStore,
 };
-use rustls_pemfile;
-use rustls_pemfile::{read_one, Item};
+use rustls_pemfile::{self, read_one, Item};
 use std::{io::BufReader, iter};
 
 pub mod tls_ops {
+    use super::*;
+
     // TODO: impl this
     pub fn client_tls_connect() {
         todo!()
     }
 
     // TODO: impl this
-    pub fn server_tls_accept() {
+    pub fn server_tls_accept() -> miette::Result<()> {
+        let server_cert_chain = crate::tls::certificate_ops::server_load_server_cert_chain()?;
+        let server_key = crate::tls::certificate_ops::server_load_single_key()?;
+        let server_config = ServerConfig::builder()
+            .with_no_client_auth()
+            .with_single_cert(server_cert_chain, server_key)
+            .into_diagnostic()?;
         todo!()
     }
 }
@@ -59,34 +67,41 @@ pub mod certificate_ops {
     /// This is the private key that the server uses.
     /// - It is in the `PKCS#1` format.
     /// - The [binary_data::SERVER_KEY_PEM] holds the contents of the `server-key.pem` file.
-    pub fn server_load_key() -> miette::Result<PrivatePkcs1KeyDer<'static>> {
+    pub fn server_load_single_key() -> miette::Result<PrivateKeyDer<'static>> {
         if let Some(key) =
             certificate_ops::load_key_from_pem_data(binary_data::SERVER_KEY_PEM).pop()
         {
             Ok(key)
         } else {
-            miette::bail!("No keys found in the server-key.pem file");
+            miette::bail!(
+                "No keys found in the {} file",
+                binary_data::SERVER_KEY_PEM_FILENAME
+            );
         }
     }
 
     /// - This is the server certificate that the server uses.
     /// - The [binary_data::SERVER_CERT_PEM] holds the contents of the `server.pem` file.
-    pub fn server_load_cert() -> miette::Result<CertificateDer<'static>> {
-        if let Some(cert) =
-            certificate_ops::load_certs_from_pem_data(binary_data::SERVER_CERT_PEM).pop()
-        {
-            Ok(cert)
-        } else {
-            miette::bail!("No certificates found in the server.pem file");
+    pub fn server_load_server_cert_chain() -> miette::Result<Vec<CertificateDer<'static>>> {
+        let cert_vec = certificate_ops::load_certs_from_pem_data(binary_data::SERVER_CERT_PEM);
+        if cert_vec.is_empty() {
+            miette::bail!(
+                "No certificates found in the {} file",
+                binary_data::SERVER_CERT_PEM_FILENAME
+            );
         }
+        Ok(cert_vec)
     }
 
     /// - This is the CA certificate that the client uses to verify the server certificate.
-    /// - The [binary_data::CLIENT_CA_CERT_PEM] holds the contents of the `ca.pem` file.
-    pub fn client_load_ca_certs() -> miette::Result<Vec<CertificateDer<'static>>> {
-        let certs = certificate_ops::load_certs_from_pem_data(binary_data::CLIENT_CA_CERT_PEM);
+    /// - The [binary_data::CA_CERT_PEM] holds the contents of the `ca.pem` file.
+    pub fn client_load_ca_cert_chain() -> miette::Result<Vec<CertificateDer<'static>>> {
+        let certs = certificate_ops::load_certs_from_pem_data(binary_data::CA_CERT_PEM);
         if certs.is_empty() {
-            miette::bail!("No CA certificates found in the ca.pem file");
+            miette::bail!(
+                "No CA certificates found in the {} file",
+                binary_data::CA_CERT_PEM_FILENAME
+            );
         }
         Ok(certs)
     }
@@ -94,7 +109,7 @@ pub mod certificate_ops {
     /// This function creates a [RootCertStore] that contains the CA certificates
     pub fn create_root_cert_store() -> miette::Result<RootCertStore> {
         let mut root_store = RootCertStore::empty();
-        for cert in client_load_ca_certs()? {
+        for cert in client_load_ca_cert_chain()? {
             root_store.add(cert).into_diagnostic()?;
         }
         Ok(root_store)
@@ -115,13 +130,13 @@ pub mod certificate_ops {
     ///    ```
     ///
     /// API Docs: <https://docs.rs/rustls-pemfile/latest/rustls_pemfile/>
-    pub fn load_key_from_pem_data(key_data: &[u8]) -> Vec<PrivatePkcs1KeyDer<'static>> {
+    pub fn load_key_from_pem_data(key_data: &[u8]) -> Vec<PrivateKeyDer<'static>> {
         let mut reader = BufReader::new(key_data);
-        let mut return_value = vec![];
+        let mut return_value: Vec<PrivateKeyDer> = vec![];
         for item in iter::from_fn(|| read_one(&mut reader).transpose()) {
             match item {
                 Ok(Item::Pkcs1Key(key)) => {
-                    return_value.push(key);
+                    return_value.push(PrivateKeyDer::Pkcs1(key));
                 }
                 _ => continue,
             }
@@ -151,15 +166,21 @@ pub mod binary_data {
     /// - This is the private key that the server uses.
     /// - It is generated using the self-signed CA certificate.
     pub const SERVER_KEY_PEM: &[u8] = include_bytes!("../certs/generated/server-key.pem");
+    /// For error messages.
+    pub const SERVER_KEY_PEM_FILENAME: &str = "server-key.pem";
 
     /// - Embed the `server.pem` file into the binary.
     /// - This is the server certificate that the server uses.
     /// - It is generated using the self-signed CA certificate.
     pub const SERVER_CERT_PEM: &[u8] = include_bytes!("../certs/generated/server.pem");
+    /// For error messages.
+    pub const SERVER_CERT_PEM_FILENAME: &str = "server.pem";
 
     /// - Embed the `ca.pem` file into the binary.
     /// - This is the CA certificate that the client uses to verify the server
     ///   certificate.
     /// - It is generated using the self-signed CA certificate.
-    pub const CLIENT_CA_CERT_PEM: &[u8] = include_bytes!("../certs/generated/ca.pem");
+    pub const CA_CERT_PEM: &[u8] = include_bytes!("../certs/generated/ca.pem");
+    /// For error messages.
+    pub const CA_CERT_PEM_FILENAME: &str = "ca.pem";
 }
