@@ -19,19 +19,20 @@
 //!
 //! # Client
 //!
-//! | Function                                | Description                                         |
-//! |-----------------------------------------|-----------------------------------------------------|
-//! | [certificate_ops::client_load_ca_certs] | CA certificate.                                     |
-//! | [tls_ops::client_tls_connect]           | Client code to connect to the server securely.      |
+//! | Function                                     | Description                                         |
+//! |----------------------------------------------|-----------------------------------------------------|
+//! | [certificate_ops::client_load_ca_cert_chain] | CA certificate.                                     |
+//! | [tls_ops::client_tls_connect]                | Client code to connect to the server securely.      |
 //!
 //! # Server
 //!
-//! | Function                              | Description                                               |
-//! |---------------------------------------|-----------------------------------------------------------|
-//! | [certificate_ops::server_load_key]    | Private key.                                              |
-//! | [certificate_ops::server_load_cert]   | Server certificate signed by CA certificate.              |
-//! | [tls_ops::server_tls_accept]          | Server code to accept secure connections from the client. |
+//! | Function                                         | Description                                               |
+//! |--------------------------------------------------|-----------------------------------------------------------|
+//! | [certificate_ops::server_load_single_key]        | Private key.                                              |
+//! | [certificate_ops::server_load_server_cert_chain] | Server certificate signed by CA certificate.              |
+//! | [tls_ops::try_create_server_tls_acceptor]        | Server code to accept secure connections from the client. |
 
+use crate::tls;
 use miette::IntoDiagnostic as _;
 use rustls::ServerConfig;
 use rustls::{
@@ -39,7 +40,9 @@ use rustls::{
     RootCertStore,
 };
 use rustls_pemfile::{self, read_one, Item};
+use std::sync::Arc;
 use std::{io::BufReader, iter};
+use tokio_rustls::TlsAcceptor;
 
 pub mod tls_ops {
     use super::*;
@@ -49,15 +52,37 @@ pub mod tls_ops {
         todo!()
     }
 
-    // TODO: impl this
-    pub fn server_tls_accept() -> miette::Result<()> {
-        let server_cert_chain = crate::tls::certificate_ops::server_load_server_cert_chain()?;
-        let server_key = crate::tls::certificate_ops::server_load_single_key()?;
+    /// Try to create a [tokio_rustls::TlsAcceptor] that can be used by your server to
+    /// accept secure connections from the client.
+    ///
+    /// 1. Typically you might use [tokio::net::TcpListener::bind] to accept connections
+    ///    and get a "unsecure" [tokio::net::TcpStream].
+    /// 2. Instead use the [tokio_rustls::TlsAcceptor] (created by this function) to
+    ///    convert that "unsecure" stream into a "secure" stream. And then use that
+    ///    "secure" stream to communicate with your clients.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use crate::tls::tls_ops::try_create_server_tls_acceptor;
+    /// async fn server() {
+    ///     let listener = tokio::net::TcpListener::bind("localhost:8080").await.unwrap();
+    ///     let (stream, _) = listener.accept().await.unwrap();
+    ///     let acceptor = try_create_server_tls_acceptor().await.unwrap();
+    ///     let secure_stream = acceptor.accept(stream).await.unwrap();
+    ///     todo!("Use the secure_stream to communicate with the client");
+    /// }
+    /// ```
+    pub async fn try_create_server_tls_acceptor() -> miette::Result<TlsAcceptor> {
+        let server_cert_chain = tls::certificate_ops::server_load_server_cert_chain()?;
+        let server_key = tls::certificate_ops::server_load_single_key()?;
         let server_config = ServerConfig::builder()
             .with_no_client_auth()
             .with_single_cert(server_cert_chain, server_key)
             .into_diagnostic()?;
-        todo!()
+        let server_config = Arc::new(server_config);
+        let tokio_tls_acceptor = TlsAcceptor::from(server_config);
+        Ok(tokio_tls_acceptor)
     }
 }
 
