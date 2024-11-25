@@ -17,7 +17,7 @@
 
 use crossterm::style::Stylize as _;
 use tls::certificate_ops::{
-    create_root_cert_store, server_load_server_cert_chain, server_load_single_key,
+    client_create_root_cert_store, server_load_server_cert_chain, server_load_single_key,
 };
 
 // TODO: as the last step, convert the fish scripts into Rust code
@@ -36,7 +36,7 @@ fn main() -> miette::Result<()> {
     );
 
     // Create the root certificate store.
-    let root_store = create_root_cert_store()?;
+    let root_store = client_create_root_cert_store()?;
     println!(
         "{}: {:?}",
         "Root certificate store".blue().underlined(),

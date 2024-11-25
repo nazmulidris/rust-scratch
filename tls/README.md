@@ -1,18 +1,17 @@
-# TLS with Tokio, Rust, and rustls
+# TLS with Tokio, Rust, rustls and cfssl
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Introduction](#introduction)
 - [TLS primer](#tls-primer)
-- [First, configure the certificates](#first-configure-the-certificates)
-  - [Scripts](#scripts)
+- [Rust and TLS primer](#rust-and-tls-primer)
+- [First, create the certificates by running gen-certs.fish](#first-create-the-certificates-by-running-gen-certsfish)
   - [Tools used by the scripts (CFSSL)](#tools-used-by-the-scripts-cfssl)
   - [Configuration files](#configuration-files)
   - [Run the scripts and generate the certificates](#run-the-scripts-and-generate-the-certificates)
     - [Examine the generated certificates](#examine-the-generated-certificates)
 - [Second, write and run the code](#second-write-and-run-the-code)
-- [References](#references)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -33,10 +32,11 @@ network. It ensures:
 - Integrity: Data cannot be altered without detection.
 - Authentication: The identities of the parties involved can be verified.
 
-It consists of both symmetric and asymmetric encryption algorithms. Here's a
-brief overview of both:
+It consists of both symmetric and asymmetric encryption algorithms. Here's a brief
+overview of both:
 
 **Symmetric Encryption:**
+
 - Definition: Uses the same key for both encryption and decryption.
 - Examples: AES (Advanced Encryption Standard), DES (Data Encryption Standard).
 - Benefits:
@@ -48,6 +48,7 @@ brief overview of both:
     other mechanism (like asymmetric encryption).
 
 **Asymmetric Encryption:**
+
 - Definition: Uses a pair of keys (public and private) for encryption and decryption.
 - Examples: RSA, ECC (Elliptic Curve Cryptography).
 - Benefits:
@@ -63,31 +64,45 @@ transferred over the connection.
 
 Additionally the following are required to make the communication secure between the
 client and server:
+
 1. The client needs to have the CA certificate in case you are using self-signed
    certificates.
 2. The server needs to have both the server certificate and the private key.
 
 Here's an overview of how TLS works:
-- **Handshake**: The client and server perform a handshake to establish a secure connection.
-  During this process:
+
+- **Handshake**: The client and server perform a handshake to establish a secure
+  connection. During this process:
   - The client and server agree on the TLS version and cipher suites to use.
   - The server presents its digital certificate, which contains its public key.
   - The client verifies the server's certificate against trusted Certificate Authorities
     (CAs).
   - The client generates a random session key, encrypts it with the server's public key,
     and sends it to the server.
-- **Session Key**: Once the server receives the encrypted session key, it decrypts it using
-  its private key. Both parties now have the same session key, which is used for symmetric
-  encryption of the data transmitted during the session.
-- **Data Transmission**: All data sent between the client and server is encrypted using the
-  session key, ensuring confidentiality and integrity.
+- **Session Key**: Once the server receives the encrypted session key, it decrypts it
+  using its private key. Both parties now have the same session key, which is used for
+  symmetric encryption of the data transmitted during the session.
+- **Data Transmission**: All data sent between the client and server is encrypted using
+  the session key, ensuring confidentiality and integrity.
 
-Rust has 2 main implementations for TLS:
-1. `rustls`: A modern, safe, and fast TLS library written in Rust. This does not have any
-   dependencies on OpenSSL, or any C code, or any OS specific code. It is a pure Rust
-   implementation.
-2. `native-tls`: A thin wrapper around the platform's native TLS implementation. It uses
-   OpenSSL on Unix-like systems and SChannel on Windows.
+## Rust and TLS primer
+
+Now that we know more about TLS, how do we access it in Rust? Rust has 2 main
+implementations for TLS:
+
+1. [`rustls`](https://docs.rs/rustls/latest/rustls/): A modern, safe, and fast TLS library
+   written in Rust. This does not have any dependencies on OpenSSL, or any C code, or any
+   OS specific code. It is a pure Rust implementation.
+
+   - This [video](https://www.youtube.com/watch?v=eVuKCu6BMBQ&list=WL&index=6) goes over
+     the process of writing Rust code using `tokio` and `rustls`.
+   - This
+     [repo](https://github.com/dionysus-oss/netrusting/blob/c5364a2e31ef3871b8e968364c575f6f0d7cd8b8/rcat/README.md)
+     has a good example of how to use `tokio` and `rustls` together.
+
+2. [`native-tls`](https://docs.rs/tokio-native-tls/latest/tokio_native_tls/): A thin
+   wrapper around the platform's native TLS implementation. It uses OpenSSL on Unix-like
+   systems and SChannel on Windows.
 
 ## First, create the certificates by running gen-certs.fish
 
@@ -105,6 +120,8 @@ All the scripts and certificate related files are in the `certs` folder:
 - Learn more about the tool in this
   [blog post](https://blog.cloudflare.com/introducing-cfssl/).
 - You can get the prebuilt binaries [here](https://github.com/cloudflare/cfssl/releases).
+- This [video](https://www.youtube.com/watch?v=iqBXe80QaGw&list=WL&index=2&t=13s) goes
+  over the process of setting up TLS with CFSSL.
 
 ### Configuration files
 
@@ -132,26 +149,26 @@ cd certs
 
 Running this script will generate the following files:
 
-1. Generate root certificate (CA) and sign it. The `ca` string in the filenames
-    comes from the `cfssl gencert ... | cfssljson -bare ca` command. If you change the
-    string `ca` in the command, it will change the filenames that are produced.
+1. Generate root certificate (CA) and sign it. The `ca` string in the filenames comes from
+   the `cfssl gencert ... | cfssljson -bare ca` command. If you change the string `ca` in
+   the command, it will change the filenames that are produced.
 
-  | File         | Description                              |
-  | ------------ | ---------------------------------------- |
-  | `ca.csr`     | Certificate signing request              |
-  | `ca-key.pem` | Private key                              |
-  | `ca.pem`     | Public key; used in the Rust client code |
+| File         | Description                              |
+| ------------ | ---------------------------------------- |
+| `ca.csr`     | Certificate signing request              |
+| `ca-key.pem` | Private key                              |
+| `ca.pem`     | Public key; used in the Rust client code |
 
 2. Generate server certificate (and private key) and sign it with the CA. The `server`
    string in the filenames comes from the `cfssl gencert ... | cfssljson -bare server`
    command. If you change the string `server` in the command, it will change the filenames
    that are produced.
 
-  | File             | Description                               |
-  | ---------------- | ----------------------------------------- |
-  | `server.csr`     | Certificate signing request               |
-  | `server-key.pem` | Private key; used in the Rust server code |
-  | `server.pem`     | Public key; used in the Rust server code  |
+| File             | Description                               |
+| ---------------- | ----------------------------------------- |
+| `server.csr`     | Certificate signing request               |
+| `server-key.pem` | Private key; used in the Rust server code |
+| `server.pem`     | Public key; used in the Rust server code  |
 
 #### Examine the generated certificates
 
@@ -202,15 +219,3 @@ If the certificate is valid, you will see the following output: `generated/serve
 ## Second, write and run the code
 
 // TODO: Write this section.
-
-## References
-
-All of these links (video & repo) are related to the same project:
-
-- This [video](https://www.youtube.com/watch?v=iqBXe80QaGw&list=WL&index=2&t=13s) goes
-  over the process of setting up TLS with CFSSL.
-- This [video](https://www.youtube.com/watch?v=eVuKCu6BMBQ&list=WL&index=6) goes over the
-  process of writing Rust code using `tokio` and `rustls`.
-- This
-  [repo](https://github.com/dionysus-oss/netrusting/blob/c5364a2e31ef3871b8e968364c575f6f0d7cd8b8/rcat/README.md)
-  has a good example of how to use `tokio` and `rustls` together.

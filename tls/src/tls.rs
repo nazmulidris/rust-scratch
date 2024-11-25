@@ -19,10 +19,10 @@
 //!
 //! # Client
 //!
-//! | Function                                     | Description                                         |
-//! |----------------------------------------------|-----------------------------------------------------|
-//! | [certificate_ops::client_load_ca_cert_chain] | CA certificate.                                     |
-//! | [tls_ops::client_tls_connect]                | Client code to connect to the server securely.      |
+//! | Function                                         | Description                                         |
+//! |--------------------------------------------------|-----------------------------------------------------|
+//! | [certificate_ops::client_create_root_cert_store] | CA certificate and root store.                      |
+//! | [tls_ops::client_tls_connect]                    | Client code to connect to the server securely.      |
 //!
 //! # Server
 //!
@@ -34,10 +34,9 @@
 
 use crate::tls;
 use miette::IntoDiagnostic as _;
-use rustls::ServerConfig;
 use rustls::{
     pki_types::{CertificateDer, PrivateKeyDer},
-    RootCertStore,
+    ClientConfig, RootCertStore, ServerConfig,
 };
 use rustls_pemfile::{self, read_one, Item};
 use std::sync::Arc;
@@ -45,10 +44,14 @@ use std::{io::BufReader, iter};
 use tokio_rustls::TlsAcceptor;
 
 pub mod tls_ops {
+
     use super::*;
 
     // TODO: impl this
-    pub fn client_tls_connect() {
+    pub fn client_tls_connect() -> miette::Result<()> {
+        let root_cert_store = certificate_ops::client_create_root_cert_store()?;
+        let client_config = ClientConfig::builder();
+
         todo!()
     }
 
@@ -56,9 +59,9 @@ pub mod tls_ops {
     /// accept secure connections from the client.
     ///
     /// 1. Typically you might use [tokio::net::TcpListener::bind] to accept connections
-    ///    and get a "unsecure" [tokio::net::TcpStream].
+    ///    and get a "insecure" [tokio::net::TcpStream].
     /// 2. Instead use the [tokio_rustls::TlsAcceptor] (created by this function) to
-    ///    convert that "unsecure" stream into a "secure" stream. And then use that
+    ///    convert that "insecure" stream into a "secure" stream. And then use that
     ///    "secure" stream to communicate with your clients.
     ///
     /// # Examples
@@ -118,9 +121,18 @@ pub mod certificate_ops {
         Ok(cert_vec)
     }
 
+    /// This function creates a [RootCertStore] that contains the CA certificates
+    pub fn client_create_root_cert_store() -> miette::Result<RootCertStore> {
+        let mut root_store = RootCertStore::empty();
+        for cert in client_load_ca_cert_chain()? {
+            root_store.add(cert).into_diagnostic()?;
+        }
+        Ok(root_store)
+    }
+
     /// - This is the CA certificate that the client uses to verify the server certificate.
     /// - The [binary_data::CA_CERT_PEM] holds the contents of the `ca.pem` file.
-    pub fn client_load_ca_cert_chain() -> miette::Result<Vec<CertificateDer<'static>>> {
+    fn client_load_ca_cert_chain() -> miette::Result<Vec<CertificateDer<'static>>> {
         let certs = certificate_ops::load_certs_from_pem_data(binary_data::CA_CERT_PEM);
         if certs.is_empty() {
             miette::bail!(
@@ -131,14 +143,6 @@ pub mod certificate_ops {
         Ok(certs)
     }
 
-    /// This function creates a [RootCertStore] that contains the CA certificates
-    pub fn create_root_cert_store() -> miette::Result<RootCertStore> {
-        let mut root_store = RootCertStore::empty();
-        for cert in client_load_ca_cert_chain()? {
-            root_store.add(cert).into_diagnostic()?;
-        }
-        Ok(root_store)
-    }
     /// Here are a few ways to determine what the PEM file contains:
     ///
     /// 1. Look inside the `PEM` file to see what the header is, eg:
@@ -155,7 +159,7 @@ pub mod certificate_ops {
     ///    ```
     ///
     /// API Docs: <https://docs.rs/rustls-pemfile/latest/rustls_pemfile/>
-    pub fn load_key_from_pem_data(key_data: &[u8]) -> Vec<PrivateKeyDer<'static>> {
+    fn load_key_from_pem_data(key_data: &[u8]) -> Vec<PrivateKeyDer<'static>> {
         let mut reader = BufReader::new(key_data);
         let mut return_value: Vec<PrivateKeyDer> = vec![];
         for item in iter::from_fn(|| read_one(&mut reader).transpose()) {
@@ -170,7 +174,7 @@ pub mod certificate_ops {
     }
 
     /// It is in the `DER-encoded X.509` format for certificates.
-    pub fn load_certs_from_pem_data(pem_data: &[u8]) -> Vec<CertificateDer<'static>> {
+    fn load_certs_from_pem_data(pem_data: &[u8]) -> Vec<CertificateDer<'static>> {
         let mut reader = BufReader::new(pem_data);
         let mut return_value = vec![];
         for item in iter::from_fn(|| read_one(&mut reader).transpose()) {
