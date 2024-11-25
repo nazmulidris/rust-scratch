@@ -18,6 +18,8 @@
 use crossterm::style::Stylize as _;
 use tls::certificate_ops::{create_root_cert_store, server_load_cert, server_load_key};
 
+// TODO: as the last step, convert the fish scripts into Rust code
+
 fn main() -> miette::Result<()> {
     // Load the server keys (from server-key.pem).
     let server_key = server_load_key()?;
