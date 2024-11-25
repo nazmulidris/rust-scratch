@@ -35,3 +35,6 @@ miette = "7.2.0"
 
 # Terminal color output.
 crossterm = "0.28.1"
+
+# R3BL niceties.
+r3bl_core = "0.10.0"

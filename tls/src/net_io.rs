@@ -15,6 +15,24 @@
  *   limitations under the License.
  */
 
-fn main() {
-    // TODO: impl the client -> from rcat::tls.rs::tls_connect()
+use tokio::io::{AsyncRead, AsyncWrite};
+
+pub const HOST: &str = "0.0.0.0";
+pub const PORT: u16 = 8080;
+
+pub async fn read_write<R, W>(mut reader: R, mut writer: W)
+where
+    R: AsyncRead + Unpin + Send + 'static,
+    W: AsyncWrite + Unpin + Send + 'static,
+{
+    let client_read =
+        tokio::spawn(async move { tokio::io::copy(&mut reader, &mut tokio::io::stdout()).await });
+
+    let client_write =
+        tokio::spawn(async move { tokio::io::copy(&mut tokio::io::stdin(), &mut writer).await });
+
+    tokio::select! {
+        _ = client_read => {}
+        _ = client_write => {}
+    }
 }

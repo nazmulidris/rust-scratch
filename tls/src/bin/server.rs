@@ -15,6 +15,62 @@
  *   limitations under the License.
  */
 
-fn main() {
-    println!("TODO: server");
+use crossterm::style::Stylize;
+use miette::IntoDiagnostic;
+use r3bl_core::ok;
+use tls::net_io;
+use tokio::{io::split, net::TcpListener};
+
+#[tokio::main]
+async fn main() -> miette::Result<()> {
+    let addr = format!("{}:{}", net_io::HOST, net_io::PORT);
+    let tls_acceptor = tls::tls_ops::try_create_server_tls_acceptor().await?;
+    let listener = TcpListener::bind(addr.as_str()).await.into_diagnostic()?;
+
+    println!(
+        "{} {} {} {}",
+        "Starting".yellow().italic(),
+        "secure".yellow().italic().bold().underlined(),
+        "server at:".yellow().italic(),
+        addr.as_str().blue().underlined()
+    );
+
+    // Handle SIGINT while waiting for incoming connection, before accepting it. This is a
+    // background task that will run until the program exits. Even after the connection is
+    // accepted, this will continue to run and exit the program when Ctrl+C is pressed.
+    tokio::spawn(async {
+        _ = tokio::signal::ctrl_c().await;
+        println!(
+            "{} {} {}",
+            "Received".red().italic(),
+            "SIGINT".red().italic(),
+            "while waiting for incoming connection".blue()
+        );
+        std::process::exit(0);
+    });
+
+    // Accept incoming TLS connection; accept() is "blocking".
+    let (stream, _) = listener.accept().await.into_diagnostic()?;
+    let secure_stream = tls_acceptor.accept(stream).await.into_diagnostic()?;
+    let (reader, writer) = split(secure_stream);
+
+    println!(
+        "{} {} {}",
+        "Accepted".green().italic(),
+        "secure".green().italic().bold().underlined(),
+        "connection".green().italic()
+    );
+
+    // Read from client and write to client until either:
+    // - Ctrl+C pressed by user.
+    // - client side of connection sends EOF or fails.
+    net_io::read_write(reader, writer).await;
+
+    println!(
+        "{} {}",
+        "Exiting".yellow().italic(),
+        "server".yellow().italic()
+    );
+
+    ok!()
 }

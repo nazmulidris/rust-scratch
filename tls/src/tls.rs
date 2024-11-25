@@ -34,6 +34,7 @@
 
 use crate::tls;
 use miette::IntoDiagnostic as _;
+use r3bl_core::ok;
 use rustls::{
     pki_types::{CertificateDer, PrivateKeyDer},
     ClientConfig, RootCertStore, ServerConfig,
@@ -43,6 +44,8 @@ use std::{io::BufReader, iter, sync::Arc};
 use tokio_rustls::{TlsAcceptor /* server */, TlsConnector /* client */};
 
 pub mod tls_ops {
+    use r3bl_core::ok;
+
     use super::*;
 
     /// Try to create a [tokio_rustls::TlsConnector] that can be used by your client to
@@ -73,7 +76,7 @@ pub mod tls_ops {
             .with_no_client_auth();
         let client_config = Arc::new(client_config);
         let tls_connector = TlsConnector::from(client_config);
-        Ok(tls_connector)
+        ok!(tls_connector)
     }
 
     /// Try to create a [tokio_rustls::TlsAcceptor] that can be used by your server to
@@ -106,7 +109,7 @@ pub mod tls_ops {
             .into_diagnostic()?;
         let server_config = Arc::new(server_config);
         let tls_acceptor = TlsAcceptor::from(server_config);
-        Ok(tls_acceptor)
+        ok!(tls_acceptor)
     }
 }
 
@@ -120,7 +123,7 @@ pub mod certificate_ops {
         if let Some(key) =
             certificate_ops::load_key_from_pem_data(binary_data::SERVER_KEY_PEM).pop()
         {
-            Ok(key)
+            ok!(key)
         } else {
             miette::bail!(
                 "No keys found in the {} file",
@@ -139,7 +142,7 @@ pub mod certificate_ops {
                 binary_data::SERVER_CERT_PEM_FILENAME
             );
         }
-        Ok(cert_vec)
+        ok!(cert_vec)
     }
 
     /// This function creates a [RootCertStore] that contains the CA certificates
@@ -148,7 +151,7 @@ pub mod certificate_ops {
         for cert in client_load_ca_cert_chain()? {
             root_store.add(cert).into_diagnostic()?;
         }
-        Ok(root_store)
+        ok!(root_store)
     }
 
     /// - This is the CA certificate that the client uses to verify the server certificate.
@@ -161,7 +164,7 @@ pub mod certificate_ops {
                 binary_data::CA_CERT_PEM_FILENAME
             );
         }
-        Ok(certs)
+        ok!(certs)
     }
 
     /// Here are a few ways to determine what the PEM file contains:

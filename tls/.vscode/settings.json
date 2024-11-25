@@ -9,6 +9,7 @@
     "Pkcs",
     "popd",
     "pushd",
+    "rcat",
     "realpath",
     "rustls",
     "webpki"

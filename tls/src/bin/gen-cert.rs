@@ -16,6 +16,7 @@
  */
 
 use crossterm::style::Stylize as _;
+use r3bl_core::ok;
 use tls::certificate_ops::{
     client_create_root_cert_store, server_load_server_cert_chain, server_load_single_key,
 };
@@ -43,5 +44,5 @@ fn main() -> miette::Result<()> {
         root_store
     );
 
-    Ok(())
+    ok!()
 }

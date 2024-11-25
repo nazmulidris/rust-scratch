@@ -17,6 +17,8 @@
 
 // Attach.
 pub mod tls;
+pub mod net_io;
 
 // Re-export.
 pub use tls::*;
+pub use net_io::*;
