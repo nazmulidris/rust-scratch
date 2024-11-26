@@ -72,7 +72,14 @@ async fn main() -> miette::Result<()> {
     - Ctrl+C pressed by user.
     - client side of connection sends EOF or fails.
     */
-    net_io::read_write(reader, writer).await;
+    net_io::read_write(reader, writer).await?;
+
+    // Close all connections and exit.
+    println!(
+        "{} {}",
+        "Closing".yellow().italic(),
+        "all connections".yellow().italic()
+    );
 
     println!(
         "{} {}",

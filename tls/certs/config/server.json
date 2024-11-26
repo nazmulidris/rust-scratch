@@ -2,7 +2,7 @@
   "CN": "server",
   "hosts": [
     "localhost",
-    "r3bl-base.com"
+    "r3bl.com"
   ],
   "key": {
     "algo": "rsa",

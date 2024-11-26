@@ -19,6 +19,7 @@ use crossterm::style::Stylize as _;
 use miette::IntoDiagnostic;
 use r3bl_core::ok;
 use tls::net_io;
+use tokio::io::split;
 
 #[tokio::main]
 async fn main() -> miette::Result<()> {
@@ -54,12 +55,13 @@ async fn main() -> miette::Result<()> {
 
     // Upgrade to secure connection.
     let tls_connector = tls::tls_ops::try_create_client_tls_connect()?;
-    let server_name =
-        rustls::pki_types::ServerName::try_from(net_io::constants::SERVER_NAME).into_diagnostic()?;
+    let server_name = rustls::pki_types::ServerName::try_from(net_io::constants::SERVER_NAME)
+        .into_diagnostic()?;
     let secure_stream = tls_connector
         .connect(server_name, stream)
         .await
         .into_diagnostic()?;
+    let (reader, writer) = split(secure_stream);
 
     println!(
         "{} {} {}",
@@ -68,11 +70,17 @@ async fn main() -> miette::Result<()> {
         "to server".green().italic()
     );
 
-    // Read and write to the server.
+    /*
+    Read from client and write to client until either:
+    - Ctrl+C pressed by user.
+    - client side of connection sends EOF or fails.
+    */
+    net_io::read_write(reader, writer).await?;
+
     println!(
         "{} {}",
-        "Reading from client".green().italic(),
-        "and writing to server".green().italic()
+        "Exiting".yellow().italic(),
+        "client".yellow().italic()
     );
 
     ok!()

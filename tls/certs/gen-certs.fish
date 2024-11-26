@@ -51,6 +51,7 @@ function display_status
     echo (set_color green)"🎉 Generated certificates in the "(set_color yellow)(realpath .)" directory."(set_color normal)
     echo (set_color blue)"🔍 Verifying certificates..."(set_color normal)
 
+    openssl x509 -noout -text -in $ca_pem_file
     openssl x509 -noout -text -in $server_pem_file
     openssl verify -CAfile $ca_pem_file $server_pem_file
 

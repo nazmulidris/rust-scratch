@@ -3,12 +3,12 @@ name = "tls"
 version = "0.1.0"
 edition = "2021"
 
-# Mark the `gen-cert` binary as the default.
-default-run = "gen-cert"
+# Mark the `gen-certs` binary as the default.
+default-run = "gen-certs"
 
 [[bin]]
-name = "gen-cert"
-path = "src/bin/gen-cert.rs"
+name = "gen-certs"
+path = "src/bin/gen-certs.rs"
 
 [[bin]]
 name = "server"
@@ -22,13 +22,10 @@ path = "src/bin/client.rs"
 # TLS dependencies.
 rustls = "0.23.18"
 tokio-rustls = "0.26.0"
-rustls-pki-types = "1.10.0"
 rustls-pemfile = "2.2.0"
-webpki-roots = "0.26.7"
 
 # Tokio dependencies.
 tokio = { version = "1.41.1", features = ["full"] }
-tracing = "0.1.40"
 
 # Error handling.
 miette = "7.2.0"
@@ -36,5 +33,7 @@ miette = "7.2.0"
 # Terminal color output.
 crossterm = "0.28.1"
 
-# R3BL niceties.
+# R3BL awesomeness.
 r3bl_core = "0.10.0"
+r3bl_test_fixtures = "0.1.0" # Used to simulate user input into the terminal when running client and server.
+futures-util = "0.3.31"      # Async streams.

@@ -21,7 +21,7 @@ use tls::certificate_ops::{
     client_create_root_cert_store, server_load_server_cert_chain, server_load_single_key,
 };
 
-// TODO: as the last step, convert the fish scripts into Rust code
+// TODO: as the last step, convert the fish scripts into Rust code, currently this is "check-cert.rs"
 
 fn main() -> miette::Result<()> {
     // Load the server keys (from server-key.pem).
