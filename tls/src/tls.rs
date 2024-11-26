@@ -62,10 +62,15 @@ pub mod tls_ops {
     /// ```no_run
     /// use crate::tls::tls_ops::try_create_client_tls_connect;
     /// async fn client() {
-    ///     let connector = try_create_client_tls_connect().unwrap();
-    ///     let stream = tokio::net::TcpStream::connect("localhost:8080").await.unwrap();
-    ///     let server_name = rustls::pki_types::ServerName::try_from("localhost").unwrap();
-    ///     let secure_stream = connector.connect(server_name, stream).await.unwrap();
+    ///     // Typical code to connect to the server insecurely.
+    ///     let (host, port) = ("localhost", 8080);
+    ///     let addr = format!("{}:{}", host, port);
+    ///     let stream = tokio::net::TcpStream::connect(addr).await.unwrap();
+    ///     // Use the TlsConnector to connect to the server securely.
+    ///     let tls_connector = try_create_client_tls_connect().unwrap();
+    ///     let server_cert_cn = "server";
+    ///     let server_name = rustls::pki_types::ServerName::try_from(server_cert_cn).unwrap();
+    ///     let secure_stream = tls_connector.connect(server_name, stream).await.unwrap();
     ///     unimplemented!("Use the secure_stream to communicate with the server");
     /// }
     /// ```
@@ -93,14 +98,18 @@ pub mod tls_ops {
     /// ```no_run
     /// use crate::tls::tls_ops::try_create_server_tls_acceptor;
     /// async fn server() {
-    ///     let listener = tokio::net::TcpListener::bind("localhost:8080").await.unwrap();
-    ///     let (stream, _) = listener.accept().await.unwrap();
-    ///     let acceptor = try_create_server_tls_acceptor().await.unwrap();
-    ///     let secure_stream = acceptor.accept(stream).await.unwrap();
+    ///     // Typical code to accept connections insecurely.
+    ///     let (host, port) = ("localhost", 8080);
+    ///     let addr = format!("{}:{}", host, port);
+    ///     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    ///     let (stream, _) = listener.accept().await.unwrap(); // Blocking call.
+    ///     // Use the TlsAcceptor to accept secure connections.
+    ///     let tls_acceptor = try_create_server_tls_acceptor().unwrap();
+    ///     let secure_stream = tls_acceptor.accept(stream).await.unwrap();
     ///     unimplemented!("Use the secure_stream to communicate with the client");
     /// }
     /// ```
-    pub async fn try_create_server_tls_acceptor() -> miette::Result<TlsAcceptor> {
+    pub fn try_create_server_tls_acceptor() -> miette::Result<TlsAcceptor> {
         let server_cert_chain = tls::certificate_ops::server_load_server_cert_chain()?;
         let server_key = tls::certificate_ops::server_load_single_key()?;
         let server_config = ServerConfig::builder()

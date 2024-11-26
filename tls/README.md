@@ -123,13 +123,104 @@ All the scripts and certificate related files are in the `certs` folder:
 - This [video](https://www.youtube.com/watch?v=iqBXe80QaGw&list=WL&index=2&t=13s) goes
   over the process of setting up TLS with CFSSL.
 
-### Configuration files
+### Configuration files deep dive
 
 There are 3 JSON files that are used to generate the certificates:
 
-- `ca-config.json`: The configuration for the CA.
-- `ca-csr.json`: The Certificate Signing Request (CSR) for the CA.
-- `server.json`: The configuration for the server certificate.
+**`ca-config.json`**: The configuration for the CA.
+- The main node is `signing` which has the `profiles` node. You can have multiple
+  profiles. In this case, I create a single profile named `server`, which is a name I
+  just made up.
+  - The node named `server`, which is a made up name of a profile, is used to generate
+    the server certificate. This is a name that I created, it is not a reserved keyword,
+    it has no special meaning. It is used in the `cfssl gencert ... -profile=server server.json`
+    command and used to tie all the generated files together.
+    - The `expiry` node sets the expiration date for a certificate. I changed it 10 years
+      or `87600h`.
+    - The `usages` node sets the key usage for the certificate. I set it to `signing`,
+      `key encipherment`, `server auth`, and `client auth`.
+  - Here's an example:
+  ```json
+  {
+    "signing": {
+      "default": {
+        "expiry": "87600h"
+      },
+      "profiles": {
+        "server": {
+          "expiry": "87600h",
+          "usages": [
+            "signing",
+            "key encipherment",
+            "server auth"
+          ]
+        }
+      }
+    }
+  }
+  ```
+
+**`server.json`**: The configuration for the server certificate. This is related to the
+`server` profile above. The CA will sign the server certificate using the `server`
+profile.
+- The `CN` node is the Common Name for this certificate. I set it to `server`. This has
+  no special meaning. It is set to ensure that the `cfssl gencert -ca ca.pem ...`
+  commands to generate the certificates work and can find the information related to the
+  `server`, which matches the profile name.
+- The `key` node sets the key size and type. I set it to `2048` bits and `rsa`. This is
+  important.
+- The `hosts` node sets the DNS names and IP addresses for the certificate. This is really
+  important. The client will use a `ServerName` in Rust code to connect to the server.
+  That name must match whatever is in the `hosts` array. You can just add another name
+  there which can be parsed as a DNS name or an IP address. In my case, I have `localhost`
+  and `r3bl-base` (which is just made up). However, in the Rust client code to connect to
+  the server, I can create a
+  [`ServerName`](https://docs.rs/rustls-pki-types/latest/rustls_pki_types/enum.ServerName.html)
+  using either `"localhost"` or `"r3bl-base"`.
+- Here's an example:
+  ```json
+  {
+    "CN": "server",
+    "hosts": [
+      "localhost", "r3bl-base"
+    ],
+    "key": {
+      "algo": "rsa",
+      "size": 2048
+    },
+    "names": [
+      {
+        "C": "US",
+        "ST": "Texas",
+        "L": "Austin"
+      }
+    ]
+  }
+  ```
+
+**`ca-csr.json`**: The Certificate Signing Request (CSR) for the CA.
+- The `CN` node is the Common Name for the CA. I set it to `ca`. This has no special
+  meaning. It is just to make sure that the `cfssl gencert -initca ca-csr.json` commands
+  to generate the certificates work and can find the information related to the CA.
+- The `key` node sets the key size and type. I set it to `2048` bits and `rsa`. This is
+  important.
+- Here's an example:
+  ```json
+  {
+    "CN": "ca",
+    "key": {
+      "algo": "rsa",
+      "size": 2048
+    },
+    "names": [
+      {
+        "C": "US",
+        "ST": "Texas",
+        "L": "Austin"
+      }
+    ]
+  }
+  ```
 
 Each of these files are modified from some default values to the desired values. They all
 started life using the following commands:

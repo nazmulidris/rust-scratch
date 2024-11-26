@@ -17,8 +17,11 @@
 
 use tokio::io::{AsyncRead, AsyncWrite};
 
-pub const HOST: &str = "0.0.0.0";
-pub const PORT: u16 = 8080;
+pub mod constants {
+    pub const HOST: &str = "localhost";
+    pub const PORT: u16 = 8080;
+    pub const SERVER_NAME: &str = "r3bl-base.com";
+}
 
 pub async fn read_write<R, W>(mut reader: R, mut writer: W)
 where
