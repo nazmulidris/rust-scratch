@@ -3,8 +3,12 @@ name = "tls"
 version = "0.1.0"
 edition = "2021"
 
-# Mark the `gen-certs` binary as the default.
-default-run = "gen-certs"
+# Mark the `check-certs` binary as the default.
+default-run = "check-certs"
+
+[[bin]]
+name = "check-certs"
+path = "src/bin/check-certs.rs"
 
 [[bin]]
 name = "gen-certs"

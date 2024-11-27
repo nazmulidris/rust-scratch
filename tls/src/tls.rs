@@ -44,8 +44,6 @@ use std::{io::BufReader, iter, sync::Arc};
 use tokio_rustls::{TlsAcceptor /* server */, TlsConnector /* client */};
 
 pub mod tls_ops {
-    use r3bl_core::ok;
-
     use super::*;
 
     /// Try to create a [tokio_rustls::TlsConnector] that can be used by your client to

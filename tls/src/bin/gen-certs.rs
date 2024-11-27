@@ -15,34 +15,11 @@
  *   limitations under the License.
  */
 
-use crossterm::style::Stylize as _;
-use r3bl_core::ok;
-use tls::certificate_ops::{
-    client_create_root_cert_store, server_load_server_cert_chain, server_load_single_key,
-};
-
 // TODO: as the last step, convert the fish scripts into Rust code, currently this is "check-cert.rs"
 
+use r3bl_core::ok;
+
 fn main() -> miette::Result<()> {
-    // Load the server keys (from server-key.pem).
-    let server_key = server_load_single_key()?;
-    println!("{}: {:?}", "Server key".blue().underlined(), server_key);
-
-    // Load the server certificate (from server.pem).
-    let server_cert = server_load_server_cert_chain()?;
-    println!(
-        "{}: {:?}",
-        "Server certificate".blue().underlined(),
-        server_cert
-    );
-
-    // Create the root certificate store.
-    let root_store = client_create_root_cert_store()?;
-    println!(
-        "{}: {:?}",
-        "Root certificate store".blue().underlined(),
-        root_store
-    );
-
+    println!("TODO: convert the fish scripts into Rust code");
     ok!()
 }
