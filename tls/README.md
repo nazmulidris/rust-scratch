@@ -135,7 +135,7 @@ There are 3 JSON files that are used to generate the certificates:
   - The node named `server`, which is a made up name of a profile, is used to generate the
     server certificate. This is a name that I created, it is not a reserved keyword, it
     has no special meaning. It is used in the
-    `cfssl gencert ... -profile=server server.json` command and used to tie all the
+    `cfssl gencert ... -profile=server server-csr.json` command and used to tie all the
     generated files together.
     - The `expiry` node sets the expiration date for a certificate. I changed it 10 years
       or `87600h`.
@@ -158,7 +158,7 @@ There are 3 JSON files that are used to generate the certificates:
   }
   ```
 
-**`server.json`**: The configuration for the server certificate. This is related to the
+**`server-csr.json`**: The configuration for the server certificate. This is related to the
 `server` profile above. The CA will sign the server certificate using the `server`
 profile.
 
@@ -225,7 +225,7 @@ started life using the following commands:
 
 - `./cfssl print-defaults config > ca-config.json`
 - `./cfssl print-defaults csr > ca-csr.json`
-- `./cfssl print-defaults csr > server.json`
+- `./cfssl print-defaults csr > server-csr.json`
 
 ### Run the scripts and generate the certificates
 
@@ -286,7 +286,7 @@ openssl x509 -noout -text -in generated/server.pem
 ```
 
 Look for the following lines which confirm that this is a server certificate, and some
-other configuration properties provided in the `server.json` file:
+other configuration properties provided in the `server-csr.json` file:
 
 | Field                                          | Description                                  |
 | ---------------------------------------------- | -------------------------------------------- |
@@ -295,7 +295,7 @@ other configuration properties provided in the `server.json` file:
 | `Not After : ...`                              | Expiration date                              |
 | `CA:FALSE`                                     | Not a root certificate                       |
 | `TLS Web Server Authentication`                | Extended Key Usage for server authentication |
-| `DNS:localhost, IP Address:127.0.0.1`          | This is from `server.json`. The Rust client code uses this in `ServerName` to make a TLS connection |
+| `DNS:localhost, IP Address:127.0.0.1`          | This is from `server-csr.json`. The Rust client code uses this in `ServerName` to make a TLS connection |
 
 3. Finally verify the server certificate against the CA certificate:
 
@@ -318,7 +318,7 @@ Here's the mental model for doing this.
       reside the CA (certificate authority) certificate chain, that we have generated (the
       `ca.pem` file).
     - The client will also need to know the server's hostname, which is used to verify the
-      server's certificate. This has to match the `hosts` entry in the `server.json`
+      server's certificate. This has to match the `hosts` entry in the `server-csr.json`
       config file. This entry has to be in the form of a `ServerName` in the Rust code,
       which is a DNS or IP address parsable format.
 

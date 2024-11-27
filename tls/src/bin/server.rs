@@ -18,12 +18,12 @@
 use crossterm::style::Stylize;
 use miette::IntoDiagnostic;
 use r3bl_core::ok;
-use tls::net_io;
+use tls::common_io;
 use tokio::{io::split, net::TcpListener};
 
 #[tokio::main]
 async fn main() -> miette::Result<()> {
-    let addr = format!("{}:{}", net_io::constants::HOST, net_io::constants::PORT);
+    let addr = format!("{}:{}", common_io::constants::HOST, common_io::constants::PORT);
     println!(
         "{} {} {} {}",
         "Starting".yellow().italic(),
@@ -72,7 +72,7 @@ async fn main() -> miette::Result<()> {
     - Ctrl+C pressed by user.
     - client side of connection sends EOF or fails.
     */
-    net_io::read_write(reader, writer).await?;
+    common_io::read_write(reader, writer).await?;
 
     // Close all connections and exit.
     println!(

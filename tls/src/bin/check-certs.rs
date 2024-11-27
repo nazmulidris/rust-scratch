@@ -17,21 +17,22 @@
 
 use crossterm::style::Stylize as _;
 use r3bl_core::ok;
-use tls::certificate_ops::{
-    client_create_root_cert_store, server_load_server_cert_chain, server_load_single_key,
+use tls::{
+    certificate_ops::server_load_server_cert_chain, key_ops::server_load_single_private_key,
+    root_cert_store_ops::client_create_root_cert_store,
 };
 
 fn main() -> miette::Result<()> {
     // Load the server keys (from server-key.pem).
-    let server_key = server_load_single_key()?;
+    let server_key = server_load_single_private_key()?;
     println!("{}: {:?}", "Server key".blue().underlined(), server_key);
 
     // Load the server certificate (from server.pem).
-    let server_cert = server_load_server_cert_chain()?;
+    let server_cert_chain = server_load_server_cert_chain()?;
     println!(
         "{}: {:?}",
         "Server certificate".blue().underlined(),
-        server_cert
+        server_cert_chain
     );
 
     // Create the root certificate store.

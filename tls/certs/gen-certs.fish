@@ -1,9 +1,9 @@
 #!/usr/bin/env fish
 
 # These are all the config files that drive the creation of the certificates (CA and server).
-set config_file_ca_csr ../config/ca-csr.json
 set config_file_ca ../config/ca-config.json
-set config_file_server ../config/server.json
+set config_file_ca_csr ../config/ca-csr.json
+set config_file_server ../config/server-csr.json
 
 # These are the values (which are defined inside the config files above).
 set config_value_ca_cn ca # Eg: `ca`

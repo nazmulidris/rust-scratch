@@ -19,16 +19,16 @@
 //!
 //! # Client
 //!
-//! | Function                                         | Description                                         |
-//! |--------------------------------------------------|-----------------------------------------------------|
-//! | [certificate_ops::client_create_root_cert_store] | CA certificate and root store.                      |
-//! | [tls_ops::try_create_client_tls_connect]         | Client code to connect to the server securely.      |
+//! | Function                                             | Description                                         |
+//! |------------------------------------------------------|-----------------------------------------------------|
+//! | [root_cert_store_ops::client_create_root_cert_store] | CA certificate and root store.                      |
+//! | [tls_ops::try_create_client_tls_connector]           | Client code to connect to the server securely.      |
 //!
 //! # Server
 //!
 //! | Function                                         | Description                                               |
 //! |--------------------------------------------------|-----------------------------------------------------------|
-//! | [certificate_ops::server_load_single_key]        | Private key.                                              |
+//! | [key_ops::server_load_single_private_key]        | Private key.                                              |
 //! | [certificate_ops::server_load_server_cert_chain] | Server certificate signed by CA certificate.              |
 //! | [tls_ops::try_create_server_tls_acceptor]        | Server code to accept secure connections from the client. |
 
@@ -58,22 +58,22 @@ pub mod tls_ops {
     /// # Examples
     ///
     /// ```no_run
-    /// use crate::tls::tls_ops::try_create_client_tls_connect;
+    /// use crate::tls::tls_ops::try_create_client_tls_connector;
     /// async fn client() {
     ///     // Typical code to connect to the server insecurely.
     ///     let (host, port) = ("localhost", 8080);
     ///     let addr = format!("{}:{}", host, port);
     ///     let stream = tokio::net::TcpStream::connect(addr).await.unwrap();
     ///     // Use the TlsConnector to connect to the server securely.
-    ///     let tls_connector = try_create_client_tls_connect().unwrap();
+    ///     let tls_connector = try_create_client_tls_connector().unwrap();
     ///     let server_cert_cn = "server";
     ///     let server_name = rustls::pki_types::ServerName::try_from(server_cert_cn).unwrap();
     ///     let secure_stream = tls_connector.connect(server_name, stream).await.unwrap();
     ///     unimplemented!("Use the secure_stream to communicate with the server");
     /// }
     /// ```
-    pub fn try_create_client_tls_connect() -> miette::Result<TlsConnector> {
-        let root_cert_store = certificate_ops::client_create_root_cert_store()?;
+    pub fn try_create_client_tls_connector() -> miette::Result<TlsConnector> {
+        let root_cert_store = root_cert_store_ops::client_create_root_cert_store()?;
         let client_config = ClientConfig::builder()
             .with_root_certificates(root_cert_store)
             .with_no_client_auth();
@@ -109,10 +109,10 @@ pub mod tls_ops {
     /// ```
     pub fn try_create_server_tls_acceptor() -> miette::Result<TlsAcceptor> {
         let server_cert_chain = tls::certificate_ops::server_load_server_cert_chain()?;
-        let server_key = tls::certificate_ops::server_load_single_key()?;
+        let server_private_key = tls::key_ops::server_load_single_private_key()?;
         let server_config = ServerConfig::builder()
             .with_no_client_auth()
-            .with_single_cert(server_cert_chain, server_key)
+            .with_single_cert(server_cert_chain, server_private_key)
             .into_diagnostic()?;
         let server_config = Arc::new(server_config);
         let tls_acceptor = TlsAcceptor::from(server_config);
@@ -120,16 +120,29 @@ pub mod tls_ops {
     }
 }
 
-pub mod certificate_ops {
+pub mod root_cert_store_ops {
     use super::*;
 
+    /// This function creates a [RootCertStore] that contains the CA certificates
+    pub fn client_create_root_cert_store() -> miette::Result<RootCertStore> {
+        let mut root_cert_store = RootCertStore::empty();
+        for cert in certificate_ops::client_load_ca_cert_chain()? {
+            root_cert_store.add(cert).into_diagnostic()?;
+        }
+        ok!(root_cert_store)
+    }
+}
+
+pub mod key_ops {
+    use super::*;
+
+    /// `server-key.pem` -> `PKCS#1` format for private keys. Private key for server.
+    ///
     /// This is the private key that the server uses.
     /// - It is in the `PKCS#1` format.
     /// - The [binary_data::SERVER_KEY_PEM] holds the contents of the `server-key.pem` file.
-    pub fn server_load_single_key() -> miette::Result<PrivateKeyDer<'static>> {
-        if let Some(key) =
-            certificate_ops::load_key_from_pem_data(binary_data::SERVER_KEY_PEM).pop()
-        {
+    pub fn server_load_single_private_key() -> miette::Result<PrivateKeyDer<'static>> {
+        if let Some(key) = load_private_key_from_pem_data(binary_data::SERVER_KEY_PEM).pop() {
             ok!(key)
         } else {
             miette::bail!(
@@ -137,41 +150,6 @@ pub mod certificate_ops {
                 binary_data::SERVER_KEY_PEM_FILENAME
             );
         }
-    }
-
-    /// - This is the server certificate that the server uses.
-    /// - The [binary_data::SERVER_CERT_PEM] holds the contents of the `server.pem` file.
-    pub fn server_load_server_cert_chain() -> miette::Result<Vec<CertificateDer<'static>>> {
-        let cert_vec = certificate_ops::load_certs_from_pem_data(binary_data::SERVER_CERT_PEM);
-        if cert_vec.is_empty() {
-            miette::bail!(
-                "No certificates found in the {} file",
-                binary_data::SERVER_CERT_PEM_FILENAME
-            );
-        }
-        ok!(cert_vec)
-    }
-
-    /// This function creates a [RootCertStore] that contains the CA certificates
-    pub fn client_create_root_cert_store() -> miette::Result<RootCertStore> {
-        let mut root_store = RootCertStore::empty();
-        for cert in client_load_ca_cert_chain()? {
-            root_store.add(cert).into_diagnostic()?;
-        }
-        ok!(root_store)
-    }
-
-    /// - This is the CA certificate that the client uses to verify the server certificate.
-    /// - The [binary_data::CA_CERT_PEM] holds the contents of the `ca.pem` file.
-    fn client_load_ca_cert_chain() -> miette::Result<Vec<CertificateDer<'static>>> {
-        let certs = certificate_ops::load_certs_from_pem_data(binary_data::CA_CERT_PEM);
-        if certs.is_empty() {
-            miette::bail!(
-                "No CA certificates found in the {} file",
-                binary_data::CA_CERT_PEM_FILENAME
-            );
-        }
-        ok!(certs)
     }
 
     /// Here are a few ways to determine what the PEM file contains:
@@ -190,21 +168,57 @@ pub mod certificate_ops {
     ///    ```
     ///
     /// API Docs: <https://docs.rs/rustls-pemfile/latest/rustls_pemfile/>
-    fn load_key_from_pem_data(key_data: &[u8]) -> Vec<PrivateKeyDer<'static>> {
+    fn load_private_key_from_pem_data(key_data: &[u8]) -> Vec<PrivateKeyDer<'static>> {
         let mut reader = BufReader::new(key_data);
-        let mut return_value: Vec<PrivateKeyDer> = vec![];
+        let mut return_keys: Vec<PrivateKeyDer> = vec![];
         for item in iter::from_fn(|| read_one(&mut reader).transpose()) {
             match item {
                 Ok(Item::Pkcs1Key(key)) => {
-                    return_value.push(PrivateKeyDer::Pkcs1(key));
+                    return_keys.push(PrivateKeyDer::Pkcs1(key));
                 }
                 _ => continue,
             }
         }
-        return_value
+        return_keys
+    }
+}
+
+pub mod certificate_ops {
+    use super::*;
+
+    /// `server.pem` -> `X.509` format for certificates. Certificate for server, issued by CA.
+    ///
+    /// - This is the server certificate that the server uses.
+    /// - The [binary_data::SERVER_CERT_PEM] holds the contents of the `server.pem` file.
+    pub fn server_load_server_cert_chain() -> miette::Result<Vec<CertificateDer<'static>>> {
+        let return_certs = certificate_ops::load_certs_from_pem_data(binary_data::SERVER_CERT_PEM);
+        if return_certs.is_empty() {
+            miette::bail!(
+                "No certificates found in the {} file",
+                binary_data::SERVER_CERT_PEM_FILENAME
+            );
+        }
+        ok!(return_certs)
     }
 
-    /// It is in the `DER-encoded X.509` format for certificates.
+    /// `ca.pem` -> `X.509` format for certificates. Certificate for CA, issued by itself.
+    ///
+    /// - This is the CA certificate that the client uses to verify the server certificate.
+    /// - The [binary_data::CA_CERT_PEM] holds the contents of the `ca.pem` file.
+    pub fn client_load_ca_cert_chain() -> miette::Result<Vec<CertificateDer<'static>>> {
+        let return_certs = certificate_ops::load_certs_from_pem_data(binary_data::CA_CERT_PEM);
+        if return_certs.is_empty() {
+            miette::bail!(
+                "No CA certificates found in the {} file",
+                binary_data::CA_CERT_PEM_FILENAME
+            );
+        }
+        ok!(return_certs)
+    }
+
+    /// It is in the `PEM-encoded X.509` format for certificates. While the data is from a
+    /// PEM encoded file, `rustls` loads this into a the [CertificateDer] struct. PEM file
+    /// format is human readable and Base64 encoded. DER format is binary.
     fn load_certs_from_pem_data(pem_data: &[u8]) -> Vec<CertificateDer<'static>> {
         let mut reader = BufReader::new(pem_data);
         let mut return_value = vec![];
