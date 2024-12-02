@@ -24,20 +24,35 @@ path = "src/bin/client.rs"
 
 [dependencies]
 # TLS dependencies.
-rustls = "0.23.18"
+rustls = "0.23.19"
 tokio-rustls = "0.26.0"
 rustls-pemfile = "2.2.0"
 
 # Tokio dependencies.
-tokio = { version = "1.41.1", features = ["full"] }
+tokio = { version = "1.42.0", features = ["full"] }
+
+# Tokio tracing dependencies.
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
 
 # Error handling.
-miette = "7.2.0"
+miette = "7.4.0"
 
 # Terminal color output.
 crossterm = "0.28.1"
 
+# Strum dependencies.
+strum = "0.26.3"
+strum_macros = "0.26.4"
+
 # R3BL awesomeness.
-r3bl_core = "0.10.0"
-r3bl_test_fixtures = "0.1.0" # Used to simulate user input into the terminal when running client and server.
-futures-util = "0.3.31"      # Async streams.
+r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core" } # Use the latest version of the r3bl_core library (not yet released on crates.io).
+r3bl_test_fixtures = "0.1.0"                                       # Used to simulate user input into the terminal when running client and server.
+futures-util = "0.3.31"                                            # Async streams.
+
+# Dynamically name variables in declarative macros.
+paste = "1.0.15"
+
+# HTTP client library.
+reqwest = { version = "0.12.9", features = ["json"] }
+serde_json = "1.0.133"
