@@ -1,5 +1,6 @@
 {
   "cSpell.words": [
+    "Bufs",
     "CFSSL",
     "cfssljson",
     "gencert",
@@ -11,6 +12,8 @@
     "pushd",
     "rcat",
     "realpath",
+    "replacen",
+    "reqwest",
     "rustls",
     "webpki"
   ]
