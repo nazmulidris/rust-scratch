@@ -46,9 +46,12 @@ strum = "0.26.3"
 strum_macros = "0.26.4"
 
 # R3BL awesomeness.
-r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core" } # Use the latest version of the r3bl_core library (not yet released on crates.io).
-r3bl_test_fixtures = "0.1.0"                                       # Used to simulate user input into the terminal when running client and server.
 futures-util = "0.3.31"                                            # Async streams.
+r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core" } # Use latest version for `create_global_singleton!`
+
+# Use latest version for: `create_temp_dir()`, `gen_input_stream_with_delay()`
+r3bl_test_fixtures = { git = "https://github.com/r3bl-org/r3bl-open-core" } # Stable, but not released
+# r3bl_test_fixtures = { path = "/home/nazmul/github/r3bl-open-core/test_fixtures" } # Unstable, active development
 
 # Dynamically name variables in declarative macros.
 paste = "1.0.15"

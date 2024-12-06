@@ -1427,16 +1427,7 @@ dependencies = [
 [[package]]
 name = "r3bl_ansi_color"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed5be50e9547e995b93be1515a1a257f6ff66e90af407dac913edf70d04bdbd2"
-dependencies = [
- "is_ci",
-]
-
-[[package]]
-name = "r3bl_ansi_color"
-version = "0.7.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core#2b01bc601729ca3210d638d03a1ae901d13ce69b"
+source = "git+https://github.com/r3bl-org/r3bl-open-core#8cfbe57b4a818d710606ac1e84ae6dbd5cc9a99f"
 dependencies = [
  "is_ci",
 ]
@@ -1444,44 +1435,7 @@ dependencies = [
 [[package]]
 name = "r3bl_core"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a14940d2a5b75add398236067c19a773c518c12f5c8033d17605e941aecfece5"
-dependencies = [
- "async-stream",
- "bincode",
- "chrono",
- "colorgrad",
- "crossterm",
- "futures-core",
- "futures-util",
- "kv",
- "miette",
- "nom",
- "pretty_assertions",
- "r3bl_ansi_color 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand",
- "serde",
- "serde_json",
- "sha2",
- "size-of",
- "strip-ansi",
- "strum",
- "strum_macros",
- "thiserror",
- "time",
- "tokio",
- "tracing",
- "tracing-appender",
- "tracing-core",
- "tracing-subscriber",
- "unicode-segmentation",
- "unicode-width 0.2.0",
-]
-
-[[package]]
-name = "r3bl_core"
-version = "0.10.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core#2b01bc601729ca3210d638d03a1ae901d13ce69b"
+source = "git+https://github.com/r3bl-org/r3bl-open-core#8cfbe57b4a818d710606ac1e84ae6dbd5cc9a99f"
 dependencies = [
  "async-stream",
  "bincode",
@@ -1495,7 +1449,7 @@ dependencies = [
  "nom",
  "paste",
  "pretty_assertions",
- "r3bl_ansi_color 0.7.0 (git+https://github.com/r3bl-org/r3bl-open-core)",
+ "r3bl_ansi_color",
  "rand",
  "serde",
  "serde_json",
@@ -1518,20 +1472,21 @@ dependencies = [
 [[package]]
 name = "r3bl_test_fixtures"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea7ce76ae4b586dc8d50f4752a455fd31ed704276c0c3c3ad9148e6aff4577a0"
+source = "git+https://github.com/r3bl-org/r3bl-open-core#8cfbe57b4a818d710606ac1e84ae6dbd5cc9a99f"
 dependencies = [
  "async-stream",
+ "crossterm",
  "futures-core",
  "futures-util",
  "miette",
  "pretty_assertions",
- "r3bl_core 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r3bl_core",
  "strip-ansi-escapes",
  "strum",
  "strum_macros",
  "thiserror",
  "tokio",
+ "tokio-test",
  "tracing",
  "tracing-appender",
  "tracing-core",
@@ -2208,7 +2163,7 @@ dependencies = [
  "futures-util",
  "miette",
  "paste",
- "r3bl_core 0.10.0 (git+https://github.com/r3bl-org/r3bl-open-core)",
+ "r3bl_core",
  "r3bl_test_fixtures",
  "reqwest",
  "rustls",
@@ -2271,6 +2226,30 @@ dependencies = [
  "rustls",
  "rustls-pki-types",
  "tokio",
+]
+
+[[package]]
+name = "tokio-stream"
+version = "0.1.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eca58d7bba4a75707817a2c44174253f9236b2d5fbd055602e9d5c07c139a047"
+dependencies = [
+ "futures-core",
+ "pin-project-lite",
+ "tokio",
+]
+
+[[package]]
+name = "tokio-test"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2468baabc3311435b55dd935f702f42cd1b8abb7e754fb7dfb16bd36aa88f9f7"
+dependencies = [
+ "async-stream",
+ "bytes",
+ "futures-core",
+ "tokio",
+ "tokio-stream",
 ]
 
 [[package]]
