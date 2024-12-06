@@ -156,13 +156,15 @@ mod tests_directory_stack {
     use directory::{mkdir, MkdirOptions};
     use directory_stack::Stack;
     use path::pwd;
+    use r3bl_test_fixtures::create_temp_dir;
 
     #[test]
     fn test_pushd_and_popd() {
-        let dir_stack = Stack::get_mut_singleton().unwrap();
+        // Create the root temp dir.
+        let root = create_temp_dir().unwrap();
 
-        // Create a temporary directory.
-        let tmp_root_dir = env::temp_dir().join("test_pushd_and_pop");
+        // Use mkdir to create a new directory.
+        let tmp_root_dir = root.join("test_pushd_and_popd");
         mkdir(
             &tmp_root_dir,
             MkdirOptions::CreateIntermediateFoldersOnlyIfNotExists,
@@ -174,6 +176,7 @@ mod tests_directory_stack {
         let og_cwd = pwd().unwrap();
 
         // Push the temporary directory onto the stack and change to it.
+        let dir_stack = Stack::get_mut_singleton().unwrap();
         let cwd_before_pushd = dir_stack
             .lock()
             .unwrap()
@@ -190,9 +193,6 @@ mod tests_directory_stack {
         // Pop stack again.
         let it = dir_stack.lock().unwrap().popd().unwrap();
         assert!(it.is_none());
-
-        // Clean up.
-        fs::remove_dir_all(tmp_root_dir).unwrap();
     }
 }
 
@@ -241,11 +241,15 @@ pub mod directory {
 mod tests_directory {
     use super::*;
     use directory::{mkdir, MkdirOptions};
+    use r3bl_test_fixtures::create_temp_dir;
 
     #[test]
     fn test_create_clean_new_dir() {
+        // Create the root temp dir.
+        let root = create_temp_dir().unwrap();
+
         // Create a temporary directory.
-        let tmp_root_dir = env::temp_dir().join("test_create_clean_new_dir");
+        let tmp_root_dir = root.join("test_create_clean_new_dir");
         mkdir(
             &tmp_root_dir,
             MkdirOptions::CreateIntermediateFoldersOnlyIfNotExists,
@@ -281,9 +285,6 @@ mod tests_directory {
         .unwrap();
         assert!(new_folder.exists());
         assert!(!file_path.exists());
-
-        // Clean up.
-        fs::remove_dir_all(tmp_root_dir).unwrap();
     }
 }
 
@@ -339,10 +340,12 @@ pub mod path {
 mod tests_path {
     use super::*;
     use path::pwd;
+    use r3bl_test_fixtures::create_temp_dir;
 
     #[test]
     fn test_pwd() {
-        let root = env::temp_dir();
+        // Create the root temp dir.
+        let root = create_temp_dir().unwrap();
 
         let new_dir = root.join("test_pwd");
         fs::create_dir_all(&new_dir).unwrap();
@@ -351,28 +354,35 @@ mod tests_path {
         let pwd = pwd().unwrap();
         assert!(pwd.exists());
         assert_eq!(pwd, new_dir);
-
-        fs::remove_dir_all(&new_dir).unwrap();
     }
 
     #[test]
     fn test_fq_path_relative_to_pwd() {
-        let root = env::temp_dir();
+        // Create the root temp dir.
+        let root = create_temp_dir().unwrap();
 
         let sub_path = "test_fq_path_relative_to_pwd";
         let new_dir = root.join(sub_path);
         fs::create_dir_all(&new_dir).unwrap();
 
         env::set_current_dir(&root).unwrap();
-        let fq_path = path::fq_path_relative_to_pwd(sub_path).unwrap();
-        assert!(fq_path.exists());
 
-        fs::remove_dir_all(&new_dir).unwrap();
+        println!("Current directory set to: {}", root);
+        println!("Current directory is    : {}", pwd().unwrap().display());
+
+        let fq_path = path::fq_path_relative_to_pwd(sub_path).unwrap();
+
+        println!("Sub directory created at: {}", fq_path.display());
+        println!("Sub directory exists    : {}", fq_path.exists());
+
+        assert!(fq_path.exists());
     }
 
     #[test]
     fn test_path_as_string() {
-        let root = env::temp_dir();
+        // Create the root temp dir.
+        let root = create_temp_dir().unwrap();
+
         env::set_current_dir(&root).unwrap();
 
         let fq_path = path::fq_path_relative_to_pwd("some_folder").unwrap();
@@ -383,7 +393,8 @@ mod tests_path {
 
     #[test]
     fn test_file_exists() {
-        let root = env::temp_dir();
+        // Create the root temp dir.
+        let root = create_temp_dir().unwrap();
 
         let new_dir = root.join("test_file_exists_dir");
         fs::create_dir_all(&new_dir).unwrap();
@@ -403,7 +414,8 @@ mod tests_path {
 
     #[test]
     fn test_folder_exists() {
-        let root = env::temp_dir();
+        // Create the root temp dir.
+        let root = create_temp_dir().unwrap();
 
         let new_dir = root.join("test_folder_exists_dir");
         fs::create_dir_all(&new_dir).unwrap();
@@ -500,10 +512,12 @@ pub mod download {
 mod tests_download {
     use super::*;
     use download::download_file_overwrite_existing;
+    use r3bl_test_fixtures::create_temp_dir;
 
     #[tokio::test]
     async fn test_download_file_overwrite_existing() {
-        let root = env::temp_dir();
+        // Create the root temp dir.
+        let root = create_temp_dir().unwrap();
 
         let new_dir = root.join("test_download_file_overwrite_existing");
         fs::create_dir_all(&new_dir).unwrap();
@@ -530,10 +544,6 @@ mod tests_download {
         let meta_data = destination_file.metadata().unwrap();
         let new_file_size = meta_data.len();
         assert_eq!(og_file_size, new_file_size);
-
-        fs::remove_file(&destination_file).unwrap();
-
-        fs::remove_dir_all(&new_dir).unwrap();
     }
 }
 
@@ -564,10 +574,12 @@ pub mod permissions {
 mod tests_permissions {
     use super::*;
     use permissions::set_file_executable;
+    use r3bl_test_fixtures::create_temp_dir;
 
     #[test]
     fn test_set_file_executable() {
-        let root = env::temp_dir();
+        // Create the root temp dir.
+        let root = create_temp_dir().unwrap();
 
         let new_dir = root.join("test_set_file_executable");
         fs::create_dir_all(&new_dir).unwrap();
@@ -586,26 +598,24 @@ mod tests_permissions {
         //   the mode.
         // - The assertion checks if the permission bits match 0o755.
         assert_eq!(lhs.mode() & 0o777, 0o755);
-
-        fs::remove_dir_all(&new_dir).unwrap();
     }
 
     #[test]
     fn test_set_file_executable_on_non_file() {
-        let root = env::temp_dir();
+        // Create the root temp dir.
+        let root = create_temp_dir().unwrap();
 
         let new_dir = root.join("test_set_file_executable_on_non_file");
         fs::create_dir_all(&new_dir).unwrap();
 
         let result = set_file_executable(&new_dir);
         assert!(result.is_err());
-
-        fs::remove_dir_all(&new_dir).unwrap();
     }
 
     #[test]
     fn test_set_file_executable_on_non_existent_file() {
-        let root = env::temp_dir();
+        // Create the root temp dir.
+        let root = create_temp_dir().unwrap();
 
         let new_dir = root.join("test_set_file_executable_on_non_existent_file");
         fs::create_dir_all(&new_dir).unwrap();
@@ -613,7 +623,5 @@ mod tests_permissions {
         let non_existent_file = new_dir.join("non_existent_file.sh");
         let result = set_file_executable(&non_existent_file);
         assert!(result.is_err());
-
-        fs::remove_dir_all(&new_dir).unwrap();
     }
 }
