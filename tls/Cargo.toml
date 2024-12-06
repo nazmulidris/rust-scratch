@@ -25,7 +25,7 @@ path = "src/bin/client.rs"
 [dependencies]
 # TLS dependencies.
 rustls = "0.23.19"
-tokio-rustls = "0.26.0"
+tokio-rustls = "0.26.1"
 rustls-pemfile = "2.2.0"
 
 # Tokio dependencies.
@@ -37,6 +37,7 @@ tracing-subscriber = "0.3.19"
 
 # Error handling.
 miette = "7.4.0"
+thiserror = "2.0.6"
 
 # Terminal color output.
 crossterm = "0.28.1"
@@ -48,14 +49,16 @@ strum_macros = "0.26.4"
 # R3BL awesomeness.
 futures-util = "0.3.31"                                            # Async streams.
 r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core" } # Use latest version for `create_global_singleton!`
+#r3bl_core = { path = "/home/nazmul/github/r3bl-open-core/core" } # Unstable, active development
+paste = "1.0.15" # Dynamically name variables in declarative macros (required for `create_global_singleton!`).
 
 # Use latest version for: `create_temp_dir()`, `gen_input_stream_with_delay()`
 r3bl_test_fixtures = { git = "https://github.com/r3bl-org/r3bl-open-core" } # Stable, but not released
 # r3bl_test_fixtures = { path = "/home/nazmul/github/r3bl-open-core/test_fixtures" } # Unstable, active development
 
-# Dynamically name variables in declarative macros.
-paste = "1.0.15"
-
 # HTTP client library.
 reqwest = { version = "0.12.9", features = ["json"] }
 serde_json = "1.0.133"
+
+# Run tests in serial.
+serial_test = "3.2.0"
