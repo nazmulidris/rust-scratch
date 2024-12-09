@@ -23,7 +23,11 @@ use tokio::{io::split, net::TcpListener};
 
 #[tokio::main]
 async fn main() -> miette::Result<()> {
-    let addr = format!("{}:{}", common_io::constants::HOST, common_io::constants::PORT);
+    let addr = format!(
+        "{}:{}",
+        common_io::constants::HOST,
+        common_io::constants::PORT
+    );
     println!(
         "{} {} {} {}",
         "Starting".yellow().italic(),

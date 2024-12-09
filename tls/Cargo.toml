@@ -24,20 +24,41 @@ path = "src/bin/client.rs"
 
 [dependencies]
 # TLS dependencies.
-rustls = "0.23.18"
-tokio-rustls = "0.26.0"
+rustls = "0.23.19"
+tokio-rustls = "0.26.1"
 rustls-pemfile = "2.2.0"
 
 # Tokio dependencies.
-tokio = { version = "1.41.1", features = ["full"] }
+tokio = { version = "1.42.0", features = ["full"] }
+
+# Tokio tracing dependencies.
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
 
 # Error handling.
-miette = "7.2.0"
+miette = "7.4.0"
+thiserror = "2.0.6"
 
 # Terminal color output.
 crossterm = "0.28.1"
 
+# Strum dependencies.
+strum = "0.26.3"
+strum_macros = "0.26.4"
+
 # R3BL awesomeness.
-r3bl_core = "0.10.0"
-r3bl_test_fixtures = "0.1.0" # Used to simulate user input into the terminal when running client and server.
-futures-util = "0.3.31"      # Async streams.
+futures-util = "0.3.31"                                            # Async streams.
+r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core" } # Use latest version for `create_global_singleton!`
+#r3bl_core = { path = "/home/nazmul/github/r3bl-open-core/core" } # Unstable, active development
+paste = "1.0.15" # Dynamically name variables in declarative macros (required for `create_global_singleton!`).
+
+# Use latest version for: `create_temp_dir()`, `gen_input_stream_with_delay()`
+r3bl_test_fixtures = { git = "https://github.com/r3bl-org/r3bl-open-core" } # Stable, but not released
+# r3bl_test_fixtures = { path = "/home/nazmul/github/r3bl-open-core/test_fixtures" } # Unstable, active development
+
+# HTTP client library.
+reqwest = { version = "0.12.9", features = ["json"] }
+serde_json = "1.0.133"
+
+# Run tests in serial.
+serial_test = "3.2.0"
