@@ -83,12 +83,101 @@ async fn main() -> miette::Result<()> {
     download_cfssl_binaries(dir_stack).await?;
 
     // 00: remove comments below
-    // generate_certs_using_cfssl_bin(dir_stack, &my_path)?;
+    generate_certs_using_cfssl_bin(dir_stack, &my_path)?;
 
     // 00: remove comments below
     // display_status_using_openssl_bin(dir_stack, &my_path)?;
 
     tracing_debug!("pwd at end", fs_path::try_pwd());
+
+    ok!()
+}
+
+/// This function expects the `pwd` to be the root directory of the crate.
+fn generate_certs_using_cfssl_bin(
+    dir_stack: &mut Arc<Mutex<DirStack>>,
+    my_path: &str,
+) -> miette::Result<()> {
+    // Pushd into the `certs/generated` directory. Generate CA and server certificates.
+    _ = dir_stack
+        .lock()
+        .unwrap()
+        .try_pushd(fs_paths!(with_empty_root => CERTS_DIR => GENERATED_DIR))?;
+
+    // Generate root certificate (CA) and sign it.
+    Command::new("cfssl")
+        .args(["gencert", "-initca", "../config/ca-csr.json"])
+        .output()
+        .expect("Failed to execute cfssl gencert for CA");
+
+    Command::new("cfssljson")
+        .args(["-bare", "ca"])
+        .output()
+        .expect("Failed to execute cfssljson for CA");
+
+    // Generate server certificate (and private key) and sign it with the CA.
+    Command::new("cfssl")
+        .args([
+            "gencert",
+            "-ca",
+            "ca.pem",
+            "-ca-key",
+            "ca-key.pem",
+            "-config",
+            "../config/ca-config.json",
+            "-profile",
+            "server",
+            "../config/server-csr.json",
+        ])
+        .output()
+        .expect("Failed to execute cfssl gencert for server");
+
+    Command::new("cfssljson")
+        .args(["-bare", "server"])
+        .output()
+        .expect("Failed to execute cfssljson for server");
+
+    ok!()
+}
+
+// 00: if openssl is not installed, then handle install it using brew (add to scripting.rs)
+/// This function expects the `pwd` to be the root directory of the crate.
+fn display_status_using_openssl_bin(
+    dir_stack: &mut Arc<Mutex<DirStack>>,
+    my_path: &str,
+) -> miette::Result<()> {
+    // Pushd into the `certs/generated` directory. Generate CA and server certificates.
+    _ = dir_stack
+        .lock()
+        .unwrap()
+        .try_pushd(fs_paths!(with_empty_root => CERTS_DIR => GENERATED_DIR))?;
+
+    println!(
+        "\x1b[32m🎉 Generated certificates in the \x1b[33m{}\x1b[0m directory.",
+        env::current_dir().unwrap().display()
+    );
+    println!("\x1b[34m🔍 Verifying certificates...\x1b[0m");
+
+    Command::new("openssl")
+        .args(["x509", "-noout", "-text", "-in", "ca.pem"])
+        .status()
+        .expect("Failed to execute openssl for CA");
+
+    Command::new("openssl")
+        .args(["x509", "-noout", "-text", "-in", "server.pem"])
+        .status()
+        .expect("Failed to execute openssl for server");
+
+    let status = Command::new("openssl")
+        .args(["verify", "-CAfile", "ca.pem", "server.pem"])
+        .status()
+        .expect("Failed to execute openssl verify");
+
+    if status.success() {
+        println!("\x1b[32m🎉 Certificates are valid\x1b[0m");
+    } else {
+        println!("\x1b[31m❗ Certificates are invalid\x1b[0m");
+    }
 
     ok!()
 }
@@ -193,99 +282,6 @@ async fn download_cfssl_binaries(dir_stack: &mut Arc<Mutex<DirStack>>) -> miette
         CFSSLJSON_BIN.magenta(),
         fs_path::try_pwd()?.display().to_string().magenta()
     );
-
-    ok!()
-}
-
-/// This function expects the `pwd` to be the root directory of the crate.
-fn generate_certs_using_cfssl_bin(
-    dir_stack: &mut Arc<Mutex<DirStack>>,
-    my_path: &str,
-) -> miette::Result<()> {
-    // Pushd into the `certs/generated` directory. Generate CA and server certificates.
-    _ = dir_stack
-        .lock()
-        .unwrap()
-        .try_pushd(fs_paths!(with_empty_root => CERTS_DIR => GENERATED_DIR))?;
-
-    tracing::debug!("pwd after pushd" = ?fs_path::try_pwd());
-
-    // Generate root certificate (CA) and sign it.
-    Command::new("cfssl")
-        .args(["gencert", "-initca", "../config/ca-csr.json"])
-        .output()
-        .expect("Failed to execute cfssl gencert for CA");
-
-    Command::new("cfssljson")
-        .args(["-bare", "ca"])
-        .output()
-        .expect("Failed to execute cfssljson for CA");
-
-    // Generate server certificate (and private key) and sign it with the CA.
-    Command::new("cfssl")
-        .args([
-            "gencert",
-            "-ca",
-            "ca.pem",
-            "-ca-key",
-            "ca-key.pem",
-            "-config",
-            "../config/ca-config.json",
-            "-profile",
-            "server",
-            "../config/server-csr.json",
-        ])
-        .output()
-        .expect("Failed to execute cfssl gencert for server");
-
-    Command::new("cfssljson")
-        .args(["-bare", "server"])
-        .output()
-        .expect("Failed to execute cfssljson for server");
-
-    ok!()
-}
-
-// 00: if openssl is not installed, then handle install it using brew (add to scripting.rs)
-/// This function expects the `pwd` to be the root directory of the crate.
-fn display_status_using_openssl_bin(
-    dir_stack: &mut Arc<Mutex<DirStack>>,
-    my_path: &str,
-) -> miette::Result<()> {
-    // Pushd into the `certs/generated` directory. Generate CA and server certificates.
-    _ = dir_stack
-        .lock()
-        .unwrap()
-        .try_pushd(fs_paths!(with_empty_root => CERTS_DIR => GENERATED_DIR))?;
-
-    tracing::debug!("pwd after pushd" = ?fs_path::try_pwd());
-
-    println!(
-        "\x1b[32m🎉 Generated certificates in the \x1b[33m{}\x1b[0m directory.",
-        env::current_dir().unwrap().display()
-    );
-    println!("\x1b[34m🔍 Verifying certificates...\x1b[0m");
-
-    Command::new("openssl")
-        .args(["x509", "-noout", "-text", "-in", "ca.pem"])
-        .status()
-        .expect("Failed to execute openssl for CA");
-
-    Command::new("openssl")
-        .args(["x509", "-noout", "-text", "-in", "server.pem"])
-        .status()
-        .expect("Failed to execute openssl for server");
-
-    let status = Command::new("openssl")
-        .args(["verify", "-CAfile", "ca.pem", "server.pem"])
-        .status()
-        .expect("Failed to execute openssl verify");
-
-    if status.success() {
-        println!("\x1b[32m🎉 Certificates are valid\x1b[0m");
-    } else {
-        println!("\x1b[31m❗ Certificates are invalid\x1b[0m");
-    }
 
     ok!()
 }
