@@ -35,6 +35,46 @@ use thiserror::Error;
 // 00: add brew_install mod
 // 00: add apt_install mod
 
+/// Use this macro instead of [tracing::debug!] to make the output easier to read.
+/// - It simply applies a display width to the message [debug::TRACING_MSG_WIDTH]
+///   characters).
+/// - This ensures that the first message is always this width, its clipped if too long,
+///   and padded with spaces if too short.
+///
+/// More info: <https://doc.rust-lang.org/std/fmt/index.html>
+///
+/// This works hand in hand with [debug::tracing_init] to ensure that the output is
+/// formatted with minimal noise.
+#[macro_export]
+macro_rules! tracing_debug {
+    ($msg:expr, $($tokens:expr),*) => {
+        let _max_display_width = $crate::debug::TRACING_MSG_WIDTH;
+        tracing::debug!(
+            "{:_max_display_width$} = {:?}",
+            $msg,
+            $($tokens),*
+        );
+    };
+}
+
+pub mod debug {
+    pub const TRACING_MSG_WIDTH: usize = 16;
+
+    /// Works with [tracing_debug!] to initialize the tracing subscriber to output the
+    /// least amount of noise (no line number, target, file, etc).
+    pub fn tracing_init() {
+        tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::DEBUG)
+            .pretty()
+            .compact()
+            .with_file(false)
+            .with_target(false)
+            .with_line_number(false)
+            .without_time()
+            .init();
+    }
+}
+
 /// Use this macro to make it more ergonomic to work with [PathBuf]s.
 ///
 /// # Example - create a new path
@@ -450,7 +490,7 @@ pub mod directory_stack {
             // Push the old cwd to the stack.
             self.inner.push(old_dir.clone());
 
-            tracing::debug!("pwd after pushd" = ?fs_path::try_pwd());
+            tracing_debug!("pwd after pushd", fs_path::try_pwd());
 
             ok!((old_dir, DirStackDropHandle))
         }
@@ -467,7 +507,7 @@ pub mod directory_stack {
             // Change cwd for current process (if any).
             if let Some(ref prev_dir) = maybe_prev_dir {
                 try_change_directory(prev_dir.clone())?;
-                tracing::debug!("pwd after popd" = ?fs_path::try_pwd());
+                tracing_debug!("pwd after popd", fs_path::try_pwd());
             }
 
             ok!(maybe_prev_dir)
@@ -1144,7 +1184,10 @@ pub mod environment {
             OS_SPECIFIC_ENV_PATH_SEPARATOR,
             path
         );
-        tracing::debug!("my_path" = %format!("{:.50}{}", add_to_path, "...<clip>".red()));
+        tracing_debug!(
+            "my_path",
+            format!("{:.50}{}", add_to_path, "...<clip>".red())
+        );
         ok!(add_to_path)
     }
 
