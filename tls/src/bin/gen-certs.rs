@@ -78,7 +78,7 @@ async fn main() -> miette::Result<()> {
     tracing::debug!("pwd at start" = ?fs_path::try_pwd());
 
     // Add to PATH (./certs/bin).
-    let path_to_cfssl_bin = tls::fs_paths!( with_root: try_pwd()?, CERTS_DIR, BIN_DIR );
+    let path_to_cfssl_bin = tls::fs_paths!(with_root => try_pwd()? => CERTS_DIR => BIN_DIR);
     let my_path = environment::try_get_path_prefixed(path_to_cfssl_bin)?;
 
     let dir_stack = &mut DirStack::get_mut_singleton()?;
@@ -95,14 +95,14 @@ async fn main() -> miette::Result<()> {
 }
 
 async fn download_cfssl_binaries(dir_stack: &mut Arc<Mutex<DirStack>>) -> miette::Result<()> {
-    let bin_folder = fs_paths!(new: CERTS_DIR, BIN_DIR);
+    let bin_folder = fs_paths!(with_empty_root => CERTS_DIR => BIN_DIR);
     with!(
         &bin_folder,
         as root,
         run {
             // Early return if the `certs/bin` directory & files exist.
-            let cfssl_file = fs_paths!(with_root: root, CFSSL_BIN);
-            let cfssljson_file = fs_paths!(with_root: root, CFSSLJSON_BIN);
+            let cfssl_file = fs_paths!(with_root => root => CFSSL_BIN);
+            let cfssljson_file = fs_paths!(with_root => root => CFSSLJSON_BIN);
             if fs_paths_exist!(&root, &cfssl_file, &cfssljson_file) {
                 println!(
                     "🎉 {} and {} binaries already exist.",
@@ -207,7 +207,7 @@ fn generate_certs_using_cfssl_bin(
     _ = dir_stack
         .lock()
         .unwrap()
-        .try_pushd(fs_paths!(new: CERTS_DIR, GENERATED_DIR))?;
+        .try_pushd(fs_paths!(with_empty_root => CERTS_DIR => GENERATED_DIR))?;
 
     tracing::debug!("pwd after pushd" = ?fs_path::try_pwd());
 
@@ -257,7 +257,7 @@ fn display_status_using_openssl_bin(
     _ = dir_stack
         .lock()
         .unwrap()
-        .try_pushd(fs_paths!(new: CERTS_DIR, GENERATED_DIR))?;
+        .try_pushd(fs_paths!(with_empty_root => CERTS_DIR => GENERATED_DIR))?;
 
     tracing::debug!("pwd after pushd" = ?fs_path::try_pwd());
 
