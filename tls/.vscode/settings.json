@@ -9,6 +9,7 @@
     "pemfile",
     "Pkcs",
     "popd",
+    "printenv",
     "pushd",
     "rcat",
     "realpath",

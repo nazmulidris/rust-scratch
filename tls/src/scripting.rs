@@ -34,30 +34,174 @@ use thiserror::Error;
 // 00: add brew_install mod
 // 00: add apt_install mod
 
+/// This macro to create a [std::process::Command] that receives a set of arguments and
+/// returns it.
+///
+/// # Example of command and args
+///
+/// ```
+/// use tls::create_command;
+/// use std::process::Command;
+///
+/// let mut command = create_command!(
+///     command => "echo",
+///     args => "Hello, world!",
+/// );
+/// let output = command.output().expect("Failed to execute command");
+/// assert!(output.status.success());
+/// assert_eq!(String::from_utf8_lossy(&output.stdout), "Hello, world!\n");
+/// ```
+///
+/// # Example of command, env, and args
+///
+/// ```
+/// use tls::create_command;
+/// use tls::environment;
+/// use std::process::Command;
+///
+/// let my_path = "/usr/bin";
+/// let env_vec = environment::get_path_envs(my_path);
+/// let mut command = create_command!(
+///     command => "printenv",
+///     envs => env_vec,
+///     args => "PATH",
+/// );
+/// let output = command.output().expect("Failed to execute command");
+/// assert!(output.status.success());
+/// assert_eq!(String::from_utf8_lossy(&output.stdout), "/usr/bin\n");
+/// ```
+///
+/// # Example of command, env, args, and stdin
+///
+/// ```
+/// use tls::create_command;
+/// use tls::environment;
+/// use std::process::{Command, Stdio};
+///
+/// let my_path = "/usr/bin";
+/// let env_vec = environment::get_path_envs(my_path);
+/// let mut command = create_command!(
+///     command => "cat",
+///     envs => env_vec,
+///     stdin => Stdio::piped(),
+///     args => "/etc/passwd",
+/// );
+/// let output = command.output().expect("Failed to execute command");
+/// assert!(output.status.success());
+/// assert!(!output.stdout.is_empty());
+/// ```
+#[macro_export]
+macro_rules! create_command {
+    // Variant that receives a command and args.
+    (command=> $cmd:expr, args=> $($args:expr),* $(,)?) => {{
+        let mut it = std::process::Command::new($cmd);
+        $(
+            it.arg($args);
+        )*
+        it
+    }};
+
+    // Variant that receives a command, env (vec), and args.
+    (command=> $cmd:expr, envs=> $envs:expr, args=> $($args:expr),* $(,)?) => {{
+        let mut it = std::process::Command::new($cmd);
+        it.envs($envs);
+        $(
+            it.arg($args);
+        )*
+        it
+    }};
+
+    // Variant that receives a command, env (vec), piped stdin, and args.
+    (command=> $cmd:expr, envs=> $envs:expr, stdin=> $stdin:expr, args=> $($args:expr),* $(,)?) => {{
+        let mut it = std::process::Command::new($cmd);
+        it.envs($envs);
+        it.stdin($stdin);
+        $(
+            it.arg($args);
+        )*
+        it
+    }};
+}
+
 /// Use this macro instead of [tracing::debug!] to make the output easier to read.
+///
 /// - It simply applies a display width to the message [debug::TRACING_MSG_WIDTH]
 ///   characters).
 /// - This ensures that the first message is always this width, its clipped if too long,
 ///   and padded with spaces if too short.
 ///
+/// # Arguments
+/// 1. The first argument is the message that will be displayed. This can be any type that
+///    implements the [Display] trait.
+/// 2. The second argument is the body of the message. This can be any type that
+///    implements the [Debug] trait.
+///
 /// More info: <https://doc.rust-lang.org/std/fmt/index.html>
 ///
 /// This works hand in hand with [debug::tracing_init] to ensure that the output is
 /// formatted with minimal noise.
+///
+/// # Example
+///
+/// ```
+/// use tls::tracing_debug;
+/// tracing_debug!(
+///     "Hello, wor .. 20 ch!", // Must implement Display trait.
+///     "Body has more space .... will be clipped to 50 ch!" // Must implement Debug trait.
+/// );
+/// ```
+///
+/// Here's what the [tracing::debug!] macro looks like:
+///
+/// ```
+/// use tracing::debug;
+/// tracing::debug!("{:10} = {:20}", "bar", "donkey");
+/// ```
 #[macro_export]
 macro_rules! tracing_debug {
-    ($msg:expr, $($tokens:expr),*) => {
-        let _max_display_width = $crate::debug::TRACING_MSG_WIDTH;
-        tracing::debug!(
-            "{:_max_display_width$} = {:?}",
-            $msg,
-            $($tokens),*
-        );
+    ($msg:expr, $body:expr) => {
+        let (_msg_display_trunc, _body_debug_trunc) =
+            $crate::tracing_debug_impl::prepare_tracing_debug(&$msg, &$body);
+        tracing::debug!("{} = {}", _msg_display_trunc, _body_debug_trunc);
     };
 }
 
+pub mod tracing_debug_impl {
+    pub fn prepare_tracing_debug(
+        msg: &impl std::fmt::Display,
+        body: &impl std::fmt::Debug,
+    ) -> (String, String) {
+        let msg_display = format!("{}", msg);
+        let body_debug = format!("{:?}", body);
+        let msg_display_trunc = truncate_or_pad(&msg_display, crate::debug::TRACING_MSG_WIDTH);
+        let body_debug_trunc = truncate_or_pad(&body_debug, crate::debug::TRACING_BODY_WIDTH);
+        (msg_display_trunc, body_debug_trunc)
+    }
+
+    pub fn truncate_or_pad(string: &str, width: usize) -> String {
+        if string.len() > width {
+            string.chars().take(width).collect()
+        } else {
+            let mut padded_string = string.to_string();
+            padded_string.push_str(&" ".repeat(width - string.len()));
+            padded_string
+        }
+    }
+
+    #[test]
+    fn test_truncate_or_pad() {
+        let long_string = "Hello, world!";
+        let short_string = "Hi!";
+        let width = 10;
+
+        assert_eq!(truncate_or_pad(long_string, width), "Hello, wor");
+        assert_eq!(truncate_or_pad(short_string, width), "Hi!       ");
+    }
+}
+
 pub mod debug {
-    pub const TRACING_MSG_WIDTH: usize = 16;
+    pub const TRACING_MSG_WIDTH: usize = 25;
+    pub const TRACING_BODY_WIDTH: usize = 70;
 
     /// Works with [tracing_debug!] to initialize the tracing subscriber to output the
     /// least amount of noise (no line number, target, file, etc).
@@ -998,6 +1142,22 @@ pub mod environment {
         Path,
     }
 
+    /// Returns the PATH environment variable as a vector of tuples.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tls::environment::get_path_envs;
+    /// let path_envs = get_path_envs("/usr/bin");
+    /// let expected = vec![
+    ///     ("PATH".to_string(), "/usr/bin".to_string())
+    /// ];
+    /// assert_eq!(path_envs, expected);
+    /// ```
+    pub fn get_path_envs(path: &str) -> Vec<(String, String)> {
+        vec![(environment::EnvKeys::Path.to_string(), path.to_string())]
+    }
+
     pub fn try_get(key: EnvKeys) -> miette::Result<String> {
         env::var(key.to_string()).into_diagnostic()
     }
@@ -1008,16 +1168,13 @@ pub mod environment {
 
     pub fn try_get_path_prefixed(prefix_path: impl AsRef<Path>) -> miette::Result<String> {
         let path = try_get_path_from_env()?;
-        let add_to_path = format!(
+        let add_to_path: String = format!(
             "{}{}{}",
             prefix_path.as_ref().display(),
             OS_SPECIFIC_ENV_PATH_SEPARATOR,
             path
         );
-        tracing_debug!(
-            "my_path",
-            format!("{:.50}{}", add_to_path, "...<clip>".red())
-        );
+        tracing_debug!("my_path", add_to_path);
         ok!(add_to_path)
     }
 
