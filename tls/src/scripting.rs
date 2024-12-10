@@ -43,11 +43,11 @@ use thiserror::Error;
 /// use tls::fs_paths;
 /// use std::path::{PathBuf, Path};
 ///
-/// let my_path = fs_paths![new: "usr/bin"];
-/// assert_eq!(my_path, PathBuf::from("usr/bin"));
+/// let my_path = fs_paths![with_empty_root => "usr/bin" => "bash"];
+/// assert_eq!(my_path, PathBuf::from("usr/bin/bash"));
 ///
-/// let my_path = fs_paths![new: "usr", "bin"];
-/// assert_eq!(my_path, PathBuf::from("usr/bin"));
+/// let my_path = fs_paths![with_empty_root => "usr" => "bin" => "bash"];
+/// assert_eq!(my_path, PathBuf::from("usr/bin/bash"));
 /// ```
 ///
 /// # Example - join to an existing path
@@ -56,18 +56,18 @@ use thiserror::Error;
 /// use tls::fs_paths;
 /// use std::path::{PathBuf, Path};
 ///
-/// let root_path = PathBuf::from("/home/user");
-/// let my_path = fs_paths![with_root: root_path, "Downloads", "rust"];
+/// let root = PathBuf::from("/home/user");
+/// let my_path = fs_paths![with_root => root => "Downloads" => "rust"];
 /// assert_eq!(my_path, PathBuf::from("/home/user/Downloads/rust"));
 ///
-/// let root_path = PathBuf::from("/home/user");
-/// let my_path = fs_paths![with_root: root_path, "Downloads", "rust"];
+/// let root = PathBuf::from("/home/user");
+/// let my_path = fs_paths![with_root => root => "Downloads" => "rust"];
 /// assert_eq!(my_path, PathBuf::from("/home/user/Downloads/rust"));
 /// ```
 #[macro_export]
 macro_rules! fs_paths {
     // Join to an existing root path.
-    (with_root: $path:expr, $($x:expr),*) => {{
+    (with_root=> $path:expr=> $($x:expr)=>*) => {{
         let mut it = $path.clone();
         $(
             it = it.join($x);
@@ -76,7 +76,7 @@ macro_rules! fs_paths {
     }};
 
     // Create a new path w/ no pre-existing root.
-    (new: $($x:expr),*) => {{
+    (with_empty_root=> $($x:expr)=>*) => {{
         use std::path::{PathBuf};
         let mut it = PathBuf::new();
         $(
@@ -99,8 +99,8 @@ macro_rules! fs_paths {
 /// use r3bl_test_fixtures::create_temp_dir;
 ///
 /// let temp_dir = create_temp_dir().unwrap();
-/// let path_1 = fs_paths![with_root: temp_dir, "some_dir"];
-/// let path_2 = fs_paths![with_root: temp_dir, "another_dir"];
+/// let path_1 = fs_paths![with_root => temp_dir => "some_dir"];
+/// let path_2 = fs_paths![with_root => temp_dir => "another_dir"];
 ///
 /// assert!(!fs_paths_exist!(path_1, path_2));
 /// ```
@@ -487,7 +487,7 @@ pub mod directory_stack {
             let root = create_temp_dir().unwrap();
 
             // Use mkdir to create a new directory.
-            let tmp_root_dir = fs_paths!(with_root: root, "test_pushd_and_auto_popd_on_drop");
+            let tmp_root_dir = fs_paths!(with_root=> root => "test_pushd_and_auto_popd_on_drop");
             try_mkdir(
                 &tmp_root_dir,
                 MkdirOptions::CreateIntermediateDirectoriesOnlyIfNotExists,
@@ -586,12 +586,13 @@ pub mod directory_change {
                 let root = create_temp_dir().unwrap();
 
                 // Create a new temporary directory.
-                let new_tmp_dir = fs_paths!(with_root: root, "test_change_dir_permissions_errors");
+                let new_tmp_dir =
+                    fs_paths!(with_root=> root => "test_change_dir_permissions_errors");
                 fs::create_dir_all(&new_tmp_dir).unwrap();
                 assert!(new_tmp_dir.exists());
 
                 // Create a directory with no permissions for user.
-                let no_permissions_dir = fs_paths!(with_root: new_tmp_dir, "no_permissions_dir");
+                let no_permissions_dir = fs_paths!(with_root=> new_tmp_dir => "no_permissions_dir");
                 fs::create_dir_all(&no_permissions_dir).unwrap();
                 let mut permissions = fs::metadata(&no_permissions_dir).unwrap().permissions();
                 permissions.set_mode(0o000);
@@ -616,7 +617,7 @@ pub mod directory_change {
                 let root = create_temp_dir().unwrap();
 
                 // Create a new temporary directory.
-                let new_tmp_dir = fs_paths!(with_root: root, "test_change_dir_happy_path");
+                let new_tmp_dir = fs_paths!(with_root=> root => "test_change_dir_happy_path");
                 fs::create_dir_all(&new_tmp_dir).unwrap();
                 assert!(new_tmp_dir.exists());
 
@@ -636,12 +637,12 @@ pub mod directory_change {
                 let root = create_temp_dir().unwrap();
 
                 // Create a new temporary directory.
-                let new_tmp_dir = fs_paths!(with_root: root, "test_change_dir_non_existent");
+                let new_tmp_dir = fs_paths!(with_root=> root => "test_change_dir_non_existent");
                 fs::create_dir_all(&new_tmp_dir).unwrap();
                 assert!(new_tmp_dir.exists());
 
                 // Try to change to a non-existent directory.
-                let non_existent_dir = fs_paths!(with_root: new_tmp_dir, "non_existent_dir");
+                let non_existent_dir = fs_paths!(with_root=> new_tmp_dir => "non_existent_dir");
                 let result = try_change_directory(&non_existent_dir);
                 assert!(result.is_err());
                 assert!(matches!(result, Err(FsOpError::DirectoryDoesNotExist(_))));
@@ -658,12 +659,12 @@ pub mod directory_change {
                 let root = create_temp_dir().unwrap();
 
                 // Create a new temporary directory.
-                let new_tmp_dir = fs_paths!(with_root: root, "test_change_dir_invalid_name");
+                let new_tmp_dir = fs_paths!(with_root=> root => "test_change_dir_invalid_name");
                 fs::create_dir_all(&new_tmp_dir).unwrap();
                 assert!(new_tmp_dir.exists());
 
                 // Try to change to a directory with an invalid name.
-                let invalid_name_dir = fs_paths!(with_root: new_tmp_dir, "invalid_name_dir\0");
+                let invalid_name_dir = fs_paths!(with_root=> new_tmp_dir => "invalid_name_dir\0");
                 let result = try_change_directory(&invalid_name_dir);
                 assert!(result.is_err());
                 println!("✅ err: {:?}", result);
@@ -765,11 +766,11 @@ pub mod directory_create {
                 let root = create_temp_dir().unwrap();
 
                 // Create a temporary directory.
-                let tmp_root_dir = fs_paths!(with_root: root, "test_create_clean_new_dir");
+                let tmp_root_dir = fs_paths!(with_root=> root => "test_create_clean_new_dir");
                 try_mkdir(&tmp_root_dir, CreateIntermediateDirectories).unwrap();
 
                 // Create a new directory inside the temporary directory.
-                let new_dir = fs_paths!(with_root: tmp_root_dir, "new_dir");
+                let new_dir = fs_paths!(with_root=> tmp_root_dir => "new_dir");
                 try_mkdir(&new_dir, CreateIntermediateDirectories).unwrap();
                 assert!(new_dir.exists());
 
@@ -944,7 +945,7 @@ pub mod fs_path {
                 println!("Current directory set to: {}", root);
                 println!("Current directory is    : {}", try_pwd().unwrap().display());
 
-                let fq_path = fs_paths!(with_root: try_pwd().unwrap(), sub_path);
+                let fq_path = fs_paths!(with_root=> try_pwd().unwrap() => sub_path);
 
                 println!("Sub directory created at: {}", fq_path.display());
                 println!("Sub directory exists    : {}", fq_path.exists());
@@ -960,7 +961,7 @@ pub mod fs_path {
 
                 env::set_current_dir(&root).unwrap();
 
-                let fq_path = fs_paths!(with_root: try_pwd().unwrap(), "some_dir");
+                let fq_path = fs_paths!(with_root=> try_pwd().unwrap() => "some_dir");
                 let fq_path_str = fs_path::path_as_string(&fq_path);
 
                 assert_eq!(fq_path_str, fq_path.display().to_string());
