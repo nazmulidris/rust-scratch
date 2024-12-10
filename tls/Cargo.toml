@@ -50,6 +50,7 @@ strum_macros = "0.26.4"
 futures-util = "0.3.31"                                            # Async streams.
 r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core" } # Use latest version for `create_global_singleton!`
 #r3bl_core = { path = "/home/nazmul/github/r3bl-open-core/core" } # Unstable, active development
+r3bl_ansi_color = "0.7.0"
 paste = "1.0.15" # Dynamically name variables in declarative macros (required for `create_global_singleton!`).
 
 # Use latest version for: `create_temp_dir()`, `gen_input_stream_with_delay()`
