@@ -1464,6 +1464,15 @@ dependencies = [
 [[package]]
 name = "r3bl_ansi_color"
 version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed5be50e9547e995b93be1515a1a257f6ff66e90af407dac913edf70d04bdbd2"
+dependencies = [
+ "is_ci",
+]
+
+[[package]]
+name = "r3bl_ansi_color"
+version = "0.7.0"
 source = "git+https://github.com/r3bl-org/r3bl-open-core#25e2e5367cf9e42aeec3aad95665f532a6ecf916"
 dependencies = [
  "is_ci",
@@ -1486,7 +1495,7 @@ dependencies = [
  "nom",
  "paste",
  "pretty_assertions",
- "r3bl_ansi_color",
+ "r3bl_ansi_color 0.7.0 (git+https://github.com/r3bl-org/r3bl-open-core)",
  "rand",
  "serde",
  "serde_json",
@@ -2260,6 +2269,7 @@ dependencies = [
  "futures-util",
  "miette",
  "paste",
+ "r3bl_ansi_color 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "r3bl_core",
  "r3bl_test_fixtures",
  "reqwest",

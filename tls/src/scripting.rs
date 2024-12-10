@@ -16,10 +16,9 @@
  */
 
 use crossterm::style::Stylize as _;
-use directory_change::try_change_directory;
 use miette::Diagnostic;
 use miette::IntoDiagnostic;
-use r3bl_core::{create_global_singleton, ok};
+use r3bl_core::ok;
 use std::{
     env,
     fmt::Display,
@@ -187,8 +186,7 @@ pub type FsOpResult<T> = miette::Result<T, FsOpError>;
 /// It also ensures that the test is run serially.
 ///
 /// Be careful when manipulating the current working directory in tests using
-/// [env::set_current_dir] or [directory_stack::DirStack], as it can affect other tests
-/// that run in parallel.
+/// [env::set_current_dir] as it can affect other tests that run in parallel.
 #[macro_export]
 macro_rules! serial_preserve_pwd_test {
     ($name:ident, $block:block) => {
@@ -343,9 +341,16 @@ pub mod github_api {
     mod tests_github_api {
         use super::*;
         use github_api::{try_get_latest_release_tag_from_github, UrlBuilder};
+        use r3bl_ansi_color::{is_fully_uninteractive_terminal, TTYResult};
 
+        /// Do not run this in CI/CD since it makes API calls to github.com.
         #[tokio::test]
         async fn test_get_latest_tag_from_github() {
+            // This is for CI/CD.
+            if let TTYResult::IsNotInteractive = is_fully_uninteractive_terminal() {
+                return;
+            }
+
             let org = "cloudflare";
             let repo = "cfssl";
             let tag = try_get_latest_release_tag_from_github(org, repo)
@@ -416,181 +421,6 @@ pub mod github_api {
                 "https://api.github.com/repos/cloudflare/cfssl/releases/latest_tag_name/v"
             );
         }
-    }
-}
-
-pub mod directory_stack {
-    use super::*;
-
-    create_global_singleton!(DirStack, GLOBAL_DIR_STACK);
-
-    /// Do not instantiate this struct directly. Use [DirStack::get_mut_singleton]
-    /// instead.
-    ///
-    /// A stack-based directory manager that allows pushing and popping directories to
-    /// change the current working directory of the process. It is inspired by the
-    /// [`pushd`](https://fishshell.com/docs/current/cmds/pushd.html) and
-    /// [`popd`](https://fishshell.com/docs/current/cmds/popd.html) commands in `fish`
-    /// shell.
-    ///
-    /// Even though this code is thread safe, the semantics of manipulating a single
-    /// global pwd might not be something that you want to do. Here's an example
-    /// demonstrating this for just two threads:
-    /// 1. Thread 1 pushes directory A and it takes 500 ms to complete.
-    /// 2. Thread 2 starts with a 10 ms delay, and pushes directory B and it takes 1000 ms
-    ///    to complete.
-    /// 3. Since the process working directory (pwd) is set globally for a the process it
-    ///    will change a lot over time, and this is probably not what you wanted to
-    ///    happen:
-    ///   - 0ms: directory A
-    ///   - 10ms: directory B
-    ///   - 510ms directory A
-    ///   - 1000ms: OG directory
-    /// 4. This is why all the tests that change the pwd or need to use it are wrapped in
-    ///    this macro [serial_preserve_pwd_test].
-    #[derive(Debug, Clone, Default)]
-    pub struct DirStack {
-        pub inner: Vec<PathBuf>,
-    }
-
-    pub struct DirStackDropHandle;
-
-    impl Drop for DirStackDropHandle {
-        fn drop(&mut self) {
-            if let Ok(dir_stack) = DirStack::get_mut_singleton() {
-                _ = dir_stack.lock().unwrap().try_popd();
-            }
-        }
-    }
-
-    impl DirStack {
-        /// Pushes the current directory onto the stack and changes the current working
-        /// directory to the specified path.
-        ///
-        /// Returns the previous directory that was on the stack, and a
-        /// [DirStackDropHandle] that will automatically pop the directory from the stack
-        /// and change back to it when it goes out of scope.
-        pub fn try_pushd(
-            &mut self,
-            dest_dir: impl AsRef<Path>,
-        ) -> FsOpResult<(PathBuf, DirStackDropHandle)> {
-            // Save the current directory.
-            let old_dir = fs_path::try_pwd()?;
-
-            // Assert that dest_dir directory exists.
-            if !fs_path::try_directory_exists(dest_dir.as_ref())? {
-                return FsOpResult::Err(FsOpError::DirectoryDoesNotExist(fs_path::path_as_string(
-                    dest_dir.as_ref(),
-                )));
-            }
-
-            // Change cwd for current process.
-            directory_change::try_change_directory(dest_dir)?;
-
-            // Push the old cwd to the stack.
-            self.inner.push(old_dir.clone());
-
-            tracing_debug!("pwd after pushd", fs_path::try_pwd());
-
-            ok!((old_dir, DirStackDropHandle))
-        }
-
-        /// Pops the top directory from the stack and changes the current working
-        /// directory to that directory if it exists. This is a private function that can
-        /// only be invoked by the [DirStackDropHandle] when it goes out of scope.
-        ///
-        /// Returns the directory that was popped from the stack.
-        fn try_popd(&mut self) -> FsOpResult<Option<PathBuf>> {
-            // Get the previous directory from the stack (if any).
-            let maybe_prev_dir = self.inner.pop();
-
-            // Change cwd for current process (if any).
-            if let Some(ref prev_dir) = maybe_prev_dir {
-                try_change_directory(prev_dir.clone())?;
-                tracing_debug!("pwd after popd", fs_path::try_pwd());
-            }
-
-            ok!(maybe_prev_dir)
-        }
-    }
-
-    #[cfg(test)]
-    mod tests_directory_stack {
-        use super::*;
-        use directory_create::{try_mkdir, MkdirOptions};
-        use directory_stack::DirStack;
-        use fs_path::try_pwd;
-        use r3bl_test_fixtures::create_temp_dir;
-
-        serial_preserve_pwd_test!(test_pushd_and_auto_popd_on_drop, {
-            // Create the root temp dir.
-            let root = create_temp_dir().unwrap();
-
-            // Use mkdir to create a new directory.
-            let tmp_root_dir = fs_paths!(with_root=> root => "test_pushd_and_auto_popd_on_drop");
-            try_mkdir(
-                &tmp_root_dir,
-                MkdirOptions::CreateIntermediateDirectoriesOnlyIfNotExists,
-            )
-            .unwrap();
-            assert!(tmp_root_dir.exists());
-
-            // Save the current directory.
-            let initial_pwd = try_pwd().unwrap();
-
-            // Push the temporary directory onto the stack and change to it.
-            let dir_stack_singleton = DirStack::get_mut_singleton().unwrap();
-            let (cwd_before_pushd, dir_stack_drop_handle) = dir_stack_singleton
-                .lock()
-                .unwrap()
-                .try_pushd(tmp_root_dir.clone())
-                .unwrap();
-            assert_eq!(try_pwd().unwrap(), tmp_root_dir);
-
-            // Drop the DirStackDropHandle to pop the directory from the stack and change back
-            // to the original directory.
-            drop(dir_stack_drop_handle);
-            assert_eq!(try_pwd().unwrap(), initial_pwd);
-            assert_eq!(cwd_before_pushd, initial_pwd);
-        });
-
-        serial_preserve_pwd_test!(test_pushd_and_popd, {
-            with_saved_pwd!({
-                // Create the root temp dir.
-                let root = create_temp_dir().unwrap();
-
-                // Use mkdir to create a new directory.
-                let tmp_root_dir = root.join("test_pushd_and_popd");
-                try_mkdir(
-                    &tmp_root_dir,
-                    MkdirOptions::CreateIntermediateDirectoriesOnlyIfNotExists,
-                )
-                .unwrap();
-                assert!(tmp_root_dir.exists());
-
-                // Save the current directory.
-                let initial_pwd = try_pwd().unwrap();
-
-                // Push the temporary directory onto the stack and change to it.
-                let dir_stack = DirStack::get_mut_singleton().unwrap();
-                let (cwd_before_pushd, _dir_stack_drop_handle) = dir_stack
-                    .lock()
-                    .unwrap()
-                    .try_pushd(tmp_root_dir.clone())
-                    .unwrap();
-                assert_eq!(try_pwd().unwrap(), tmp_root_dir);
-
-                // Pop the directory from the stack and change back to the original directory.
-                let it = dir_stack.lock().unwrap().try_popd().unwrap();
-                assert_eq!(try_pwd().unwrap(), initial_pwd);
-                assert_eq!(it.clone().unwrap(), cwd_before_pushd);
-                assert_eq!(it.unwrap(), initial_pwd);
-
-                // Pop stack again.
-                let it = dir_stack.lock().unwrap().try_popd().unwrap();
-                assert!(it.is_none());
-            });
-        });
     }
 }
 
