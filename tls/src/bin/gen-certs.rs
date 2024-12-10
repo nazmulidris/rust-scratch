@@ -25,6 +25,7 @@ use std::{
 };
 use strum_macros::{Display, EnumString};
 use tls::{
+    debug,
     directory_stack::DirStack,
     fs_path::{self, try_pwd},
     fs_paths, fs_paths_exist,
@@ -34,6 +35,7 @@ use tls::{
         download::try_download_file_overwrite_existing,
         environment, github_api, permissions,
     },
+    tracing_debug,
 };
 
 pub mod constants {
@@ -68,14 +70,9 @@ async fn main() -> miette::Result<()> {
     }
 
     // Setup tracing.
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
-        .pretty()
-        .compact()
-        .without_time()
-        .init();
+    debug::tracing_init();
 
-    tracing::debug!("pwd at start" = ?fs_path::try_pwd());
+    tracing_debug!("pwd at start", fs_path::try_pwd());
 
     // Add to PATH (./certs/bin).
     let path_to_cfssl_bin = tls::fs_paths!(with_root => try_pwd()? => CERTS_DIR => BIN_DIR);
@@ -90,6 +87,8 @@ async fn main() -> miette::Result<()> {
 
     // 00: remove comments below
     // display_status_using_openssl_bin(dir_stack, &my_path)?;
+
+    tracing_debug!("pwd at end", fs_path::try_pwd());
 
     ok!()
 }
