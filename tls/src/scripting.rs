@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-use crate::tracing_debug;
+use crate::{command, tracing_debug};
 use crossterm::style::Stylize as _;
 use fs_path::{FsOpError, FsOpResult};
 use http_client::create_client_with_user_agent;
@@ -31,9 +31,92 @@ use std::{
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
-// 00: add brew_install mod
-// 00: add apt_install mod
 // 00: move this file into the r3bl-open-core monorepo (as a new crate `r3bl_scripting` in the workspace)
+
+pub mod apt_install {
+    use super::*;
+
+    /// Here are some examples of using `dpkg-query` to check if a package is installed:
+    ///
+    /// ```fish
+    /// set package_name "openssl"
+    /// dpkg-query -s $package_name
+    /// echo $status
+    /// if test $status -eq 0
+    ///     echo "True if package is installed"
+    /// else
+    ///     echo "False if package is not installed"
+    /// end
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use tls::apt_install::check_if_package_is_installed;
+    /// let package_name = "bash";
+    /// let is_installed = check_if_package_is_installed(package_name).unwrap();
+    /// assert!(is_installed);
+    /// ```
+    ///
+    /// ```no_run
+    /// use tls::apt_install::install_package;
+    /// let package_name = "does_not_exist";
+    /// assert!(install_package(package_name).is_err());
+    /// ```
+    pub fn check_if_package_is_installed(package_name: &str) -> miette::Result<bool> {
+        let output = command!(
+            program => "dpkg-query",
+            args => "-s", package_name
+        )
+        .output()
+        .into_diagnostic()?;
+        ok!(output.status.success())
+    }
+
+    pub fn install_package(package_name: &str) -> miette::Result<()> {
+        let command = command!(
+            program => "sudo",
+            args => "apt", "install", "-y", package_name
+        )
+        .output()
+        .into_diagnostic()?;
+        if command.status.success() {
+            ok!()
+        } else {
+            miette::bail!(
+                "Failed to install package: {:?} with sudo apt",
+                String::from_utf8_lossy(&command.stderr)
+            );
+        }
+    }
+
+    #[cfg(test)]
+    mod tests_apt_install {
+        use super::*;
+        use r3bl_ansi_color::{is_fully_uninteractive_terminal, TTYResult};
+
+        #[test]
+        fn test_check_if_package_is_installed() {
+            // This is for CI/CD.
+            if let TTYResult::IsNotInteractive = is_fully_uninteractive_terminal() {
+                return;
+            }
+            let package_name = "bash";
+            let is_installed = check_if_package_is_installed(package_name).unwrap();
+            assert!(is_installed);
+        }
+
+        #[test]
+        fn test_install_package() {
+            // This is for CI/CD.
+            if let TTYResult::IsNotInteractive = is_fully_uninteractive_terminal() {
+                return;
+            }
+            let package_name = "does_not_exist";
+            assert!(install_package(package_name).is_err());
+        }
+    }
+}
 
 pub mod command_runner {
     use super::*;
@@ -73,6 +156,29 @@ pub mod command_runner {
     /// let output = command.output().expect("Failed to execute command");
     /// assert!(output.status.success());
     /// assert_eq!(String::from_utf8_lossy(&output.stdout), "/usr/bin\n");
+    /// ```
+    ///
+    /// # Examples of using the [Run] trait, and [std::process::Output].
+    ///
+    /// ```
+    /// use tls::command;
+    /// use tls::command_runner::Run;
+    ///
+    /// let output = command!(
+    ///    program => "echo",
+    ///    args => "Hello, world!",
+    /// )
+    /// .output()
+    /// .unwrap();
+    /// assert!(output.status.success());
+    ///
+    /// let run_bytes = command!(
+    ///   program => "echo",
+    ///   args => "Hello, world!",
+    /// )
+    /// .run()
+    /// .unwrap();
+    /// assert_eq!(String::from_utf8_lossy(&run_bytes), "Hello, world!\n");
     /// ```
     #[macro_export]
     macro_rules! command {

@@ -22,6 +22,7 @@ use r3bl_core::{ok, with};
 use std::{env, path::Path};
 use strum_macros::{Display, EnumString};
 use tls::{
+    apt_install::{check_if_package_is_installed, install_package},
     command,
     command_runner::{pipe, Run},
     directory_change,
@@ -57,6 +58,7 @@ pub mod constants {
 
     pub const CFSSL_BIN: &str = "cfssl";
     pub const CFSSLJSON_BIN: &str = "cfssljson";
+    pub const OPENSSL_BIN: &str = "openssl";
 
     #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
     pub const OS_ARCH: &str = "linux_amd64";
@@ -102,7 +104,7 @@ async fn main() -> miette::Result<()> {
 
     download_cfssl_binaries_if_needed(&root_dir).await?;
     generate_certs_using_cfssl_bin(&root_dir, &amended_path_envs)?;
-    install_openssl_if_needed();
+    install_openssl_if_needed()?;
     display_status_using_openssl_bin(&root_dir, &amended_path_envs)?;
 
     tracing_debug!("pwd at end", fs_path::try_pwd());
@@ -110,9 +112,17 @@ async fn main() -> miette::Result<()> {
     ok!()
 }
 
-// 00: if openssl is not installed, then handle install it using brew (add to scripting.rs)
-fn install_openssl_if_needed() {
+fn install_openssl_if_needed() -> miette::Result<()> {
     tracing_debug!("install openssl if needed", fs_path::try_pwd());
+    if check_if_package_is_installed(OPENSSL_BIN)? {
+        println!("🎉 {} is already installed.", OPENSSL_BIN.blue());
+    } else {
+        //install using install_package()
+        println!("📦 Installing {} using apt...", OPENSSL_BIN.blue());
+        install_package(OPENSSL_BIN)?;
+        println!("🎉 {} installed successfully.", OPENSSL_BIN.blue());
+    }
+    ok!()
 }
 
 fn generate_certs_using_cfssl_bin(
@@ -203,7 +213,7 @@ fn display_status_using_openssl_bin(
 
         // Display CA certificate.
         let ca_cert_bytes = command!(
-            program => "openssl",
+            program => OPENSSL_BIN,
             envs => amended_path_envs,
             args => "x509",
                     "-noout",
@@ -218,7 +228,7 @@ fn display_status_using_openssl_bin(
 
         // Display server certificate.
         let server_cert_bytes = command!(
-            program => "openssl",
+            program => OPENSSL_BIN,
             envs => amended_path_envs,
             args => "x509",
                     "-noout",
@@ -233,7 +243,7 @@ fn display_status_using_openssl_bin(
 
         // Verify that the server certificate is signed by the CA.
         _ = command!(
-            program => "openssl",
+            program => OPENSSL_BIN,
             envs => amended_path_envs,
             args => "verify",
                     "-CAfile", CA_PEM_FILE,
