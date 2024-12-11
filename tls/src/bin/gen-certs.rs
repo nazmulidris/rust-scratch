@@ -19,11 +19,11 @@ use constants::*;
 
 use crossterm::style::Stylize as _;
 use r3bl_core::{ok, with};
-use std::{env, path::Path, process::Command};
+use std::{env, path::Path};
 use strum_macros::{Display, EnumString};
 use tls::{
     command,
-    command_runner::pipe,
+    command_runner::{pipe, Run},
     directory_change,
     environment::{EnvKeys, EnvVarsSlice},
     fs_path::{self, try_pwd},
@@ -110,7 +110,11 @@ async fn main() -> miette::Result<()> {
     ok!()
 }
 
-// 00: make sure this works; parameterize everything & use constants mod above
+// 00: if openssl is not installed, then handle install it using brew (add to scripting.rs)
+fn install_openssl_if_needed() {
+    tracing_debug!("install openssl if needed", fs_path::try_pwd());
+}
+
 fn generate_certs_using_cfssl_bin(
     root_dir: &Path,
     amended_path_envs: EnvVarsSlice,
@@ -188,48 +192,62 @@ fn generate_certs_using_cfssl_bin(
     })
 }
 
-// 00: get this working
 fn display_status_using_openssl_bin(
     root_dir: &Path,
     amended_path_envs: EnvVarsSlice,
 ) -> miette::Result<()> {
+    tracing_debug!("verify certificates", fs_path::try_pwd());
     with_saved_pwd!({
         // Pushd into the `certs/generated` directory. Generate CA and server certificates.
-        directory_change::try_cd(fs_paths!(with_empty_root => CERTS_DIR => GENERATED_DIR))?;
+        directory_change::try_cd(fs_paths!(with_root: root_dir => CERTS_DIR => GENERATED_DIR))?;
 
+        // Display CA certificate.
+        let ca_cert_bytes = command!(
+            program => "openssl",
+            envs => amended_path_envs,
+            args => "x509",
+                    "-noout",
+                    "-text",
+                    "-in", CA_PEM_FILE,
+        )
+        .run()?;
         println!(
-            "\x1b[32m🎉 Generated certificates in the \x1b[33m{}\x1b[0m directory.",
-            env::current_dir().unwrap().display()
+            "🎉 CA certificate size: {} bytes",
+            ca_cert_bytes.len().to_string().blue()
         );
-        println!("\x1b[34m🔍 Verifying certificates...\x1b[0m");
 
-        Command::new("openssl")
-            .args(["x509", "-noout", "-text", "-in", "ca.pem"])
-            .status()
-            .expect("Failed to execute openssl for CA");
+        // Display server certificate.
+        let server_cert_bytes = command!(
+            program => "openssl",
+            envs => amended_path_envs,
+            args => "x509",
+                    "-noout",
+                    "-text",
+                    "-in", SERVER_PEM_FILE,
+        )
+        .run()?;
+        println!(
+            "🎉 Server certificate size: {} bytes",
+            server_cert_bytes.len().to_string().blue()
+        );
 
-        Command::new("openssl")
-            .args(["x509", "-noout", "-text", "-in", "server.pem"])
-            .status()
-            .expect("Failed to execute openssl for server");
-
-        let status = Command::new("openssl")
-            .args(["verify", "-CAfile", "ca.pem", "server.pem"])
-            .status()
-            .expect("Failed to execute openssl verify");
-
-        if status.success() {
-            println!("\x1b[32m🎉 Certificates are valid\x1b[0m");
-        } else {
-            println!("\x1b[31m❗ Certificates are invalid\x1b[0m");
-        }
+        // Verify that the server certificate is signed by the CA.
+        _ = command!(
+            program => "openssl",
+            envs => amended_path_envs,
+            args => "verify",
+                    "-CAfile", CA_PEM_FILE,
+                    SERVER_PEM_FILE,
+        )
+        .run()?;
+        println!(
+            "🎉 Server certificate is signed by CA {}",
+            "verified".green()
+        );
 
         ok!()
     })
 }
-
-// 00: if openssl is not installed, then handle install it using brew (add to scripting.rs)
-fn install_openssl_if_needed() {}
 
 async fn download_cfssl_binaries_if_needed(root_dir: &Path) -> miette::Result<()> {
     tracing_debug!("download binaries", fs_path::try_pwd());

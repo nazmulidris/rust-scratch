@@ -98,6 +98,16 @@ pub mod command_runner {
         }};
     }
 
+    pub trait Run {
+        fn run(&mut self) -> miette::Result<Vec<u8>>;
+    }
+
+    impl Run for Command {
+        fn run(&mut self) -> miette::Result<Vec<u8>> {
+            run(self)
+        }
+    }
+
     pub fn run(command: &mut Command) -> miette::Result<Vec<u8>> {
         let output = command.output().into_diagnostic()?;
         if output.status.success() {
