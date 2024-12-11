@@ -33,6 +33,7 @@ use thiserror::Error;
 
 // 00: add brew_install mod
 // 00: add apt_install mod
+// 00: make it easy to pipe 2 commands together (like duct crate's pipe())
 
 /// This macro to create a [std::process::Command] that receives a set of arguments and
 /// returns it.
