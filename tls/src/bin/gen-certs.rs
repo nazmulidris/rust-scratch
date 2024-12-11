@@ -22,6 +22,7 @@ use r3bl_core::{ok, with};
 use std::{
     env,
     io::Write as _,
+    path::PathBuf,
     process::{Child, Command, Stdio},
 };
 use strum_macros::{Display, EnumString};
@@ -42,6 +43,14 @@ pub mod constants {
     pub const CERTS_DIR: &str = "certs";
     pub const BIN_DIR: &str = "bin";
     pub const GENERATED_DIR: &str = "generated";
+    pub const CONFIG_DIR: &str = "config";
+
+    pub const CONFIG_FILE_CA: &str = "ca-config.json";
+    pub const CONFIG_FILE_CA_CSR: &str = "ca-csr.json";
+    pub const CONFIG_FILE_SERVER_CSR: &str = "server-csr.json";
+
+    pub const CONFIG_VALUE_CA_CN: &str = "ca";
+    pub const CONFIG_VALUE_SERVER_CN: &str = "server";
 
     pub const CFSSL_BIN: &str = "cfssl";
     pub const CFSSLJSON_BIN: &str = "cfssljson";
@@ -98,53 +107,70 @@ async fn main() -> miette::Result<()> {
 /// This function expects the `pwd` to be the root directory of the crate.
 fn generate_certs_using_cfssl_bin(my_path: &str) -> miette::Result<()> {
     with_saved_pwd!({
+        let fq_root = try_pwd()?;
+
         // Pushd into the `certs/generated` directory. Generate CA and server certificates.
         directory_change::try_change_directory(
             fs_paths!(with_empty_root => CERTS_DIR => GENERATED_DIR),
         )?;
 
-        // Generate root certificate (CA) and sign it.
-        let cfssl_stdout_string: String = {
-            let output = create_command!(
-                command => "cfssl",
+        fn generate_root_cert_ca_and_private_key(
+            fq_root: PathBuf,
+            my_path: &str,
+        ) -> miette::Result<()> {
+            let config_file_ca_csr =
+                fs_paths!(with_root => fq_root => CERTS_DIR => CONFIG_DIR => CONFIG_FILE_CA_CSR);
+
+            // Generate root certificate (CA) and sign it.
+            let cfssl_stdout_string: String = {
+                let output = create_command!(
+                    command => CFSSL_BIN,
+                    envs => environment::get_path_envs(my_path),
+                    args => "gencert", "-initca", config_file_ca_csr,
+                )
+                .output()
+                .into_diagnostic()?
+                .stdout;
+                String::from_utf8_lossy(&output).to_string()
+            };
+
+            tracing_debug!("cfssl gencert for CA output", cfssl_stdout_string);
+
+            // Spawn the `cfssljson` process and pipe the output of `cfssl` to it.
+            let mut cfssljson_child_handle: Child = create_command!(
+                command => CFSSLJSON_BIN,
                 envs => environment::get_path_envs(my_path),
-                args => "gencert", "-initca", "../config/ca-csr.json",
+                stdin => Stdio::piped(),
+                args => "-bare", CONFIG_VALUE_CA_CN,
             )
-            .output()
-            .into_diagnostic()?
-            .stdout;
-            String::from_utf8_lossy(&output).to_string()
-        };
+            .spawn()
+            .into_diagnostic()?;
+            if let Some(mut stdin) = cfssljson_child_handle.stdin.take() {
+                stdin
+                    .write_all(cfssl_stdout_string.as_bytes())
+                    .into_diagnostic()?;
+            }
 
-        tracing_debug!("cfssl gencert for CA output", cfssl_stdout_string);
+            // Wait for the child process to finish and get the output.
+            let cfssljson_output_status = cfssljson_child_handle
+                .wait_with_output()
+                .into_diagnostic()?
+                .status;
 
-        // Spawn the `cfssljson` process and pipe the output of `cfssl` to it.
-        let mut cfssljson_child_handle: Child = create_command!(
-            command => "cfssljson",
-            envs => environment::get_path_envs(my_path),
-            stdin => Stdio::piped(),
-            args => "-bare", "ca",
-        )
-        .spawn()
-        .into_diagnostic()?;
-        if let Some(mut stdin) = cfssljson_child_handle.stdin.take() {
-            stdin
-                .write_all(cfssl_stdout_string.as_bytes())
-                .into_diagnostic()?;
+            if cfssljson_output_status.success() {
+                println!("🎉 Generated CA certificate");
+            } else {
+                miette::bail!("Failed to generate CA certificate using cfssl, cfssljson");
+            }
+
+            ok!()
         }
 
-        // Wait for the child process to finish and get the output.
-        let cfssljson_output_status = cfssljson_child_handle
-            .wait_with_output()
-            .into_diagnostic()?
-            .status;
-
-        if cfssljson_output_status.success() {
-            println!("🎉 Generated CA certificate");
-        } else {
-            println!("❗ Failed to generate CA certificate");
-            miette::bail!("Failed to generate CA certificate using cfssl, cfssljson");
+        fn generate_server_cert_and_private_key_and_sign_it_with_ca() -> miette::Result<()> {
+            todo!()
         }
+
+        generate_root_cert_ca_and_private_key(fq_root, my_path)?;
 
         ok!()
     })
