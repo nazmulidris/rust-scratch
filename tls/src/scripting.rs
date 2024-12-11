@@ -60,11 +60,11 @@ pub mod command_runner {
     ///
     /// ```
     /// use tls::command;
-    /// use tls::environment;
+    /// use tls::environment::{self, EnvKeys};
     /// use std::process::Command;
     ///
     /// let my_path = "/usr/bin";
-    /// let env_vars = environment::get_path_env_vars(my_path);
+    /// let env_vars = environment::get_env_vars(EnvKeys::Path, my_path);
     /// let mut command = command!(
     ///     program => "printenv",
     ///     envs => env_vars,
@@ -208,7 +208,7 @@ pub mod tracing_debug_helper {
         ($msg:expr, $body:expr) => {
             let (_msg_display_trunc, _body_debug_trunc) =
                 $crate::tracing_debug_helper::prepare_tracing_debug(&$msg, &$body);
-            tracing::debug!("├ {} ⴾ {} ┤", _msg_display_trunc, _body_debug_trunc);
+            tracing::debug!("├ {} ❯ {} ┤", _msg_display_trunc, _body_debug_trunc);
         };
     }
 
@@ -1108,9 +1108,9 @@ pub mod environment {
     /// # Example
     ///
     /// ```
-    /// use tls::environment::get_path_env_vars;
+    /// use tls::environment::{get_env_vars, EnvKeys};
     ///
-    /// let path_envs = get_path_env_vars("/usr/bin");
+    /// let path_envs = get_env_vars(EnvKeys::Path, "/usr/bin");
     /// let expected = vec![
     ///     ("PATH".to_string(), "/usr/bin".to_string())
     /// ];
@@ -1122,29 +1122,25 @@ pub mod environment {
     /// The returned value can also be passed around as a `&[(String, String)]`.
     ///
     /// ```
-    /// use tls::environment::{get_path_env_vars, EnvVars, EnvVarsSlice};
+    /// use tls::environment::{get_env_vars, EnvVars, EnvVarsSlice, EnvKeys};
     ///
-    /// let path_envs: EnvVars = get_path_env_vars("/usr/bin");
+    /// let path_envs: EnvVars = get_env_vars(EnvKeys::Path, "/usr/bin");
     /// let path_envs_ref: EnvVarsSlice = &path_envs;
     /// let path_envs_ref_2 = path_envs.as_slice();
     /// let path_envs_ref_clone = path_envs_ref.to_owned();
     /// assert_eq!(path_envs_ref, path_envs_ref_clone);
     /// assert_eq!(path_envs_ref, path_envs_ref_2);
     /// ```
-    pub fn get_path_env_vars(path: &str) -> EnvVars {
-        vec![(environment::EnvKeys::Path.to_string(), path.to_string())]
+    pub fn get_env_vars(key: EnvKeys, path: &str) -> EnvVars {
+        vec![(key.to_string(), path.to_string())]
     }
 
     pub fn try_get(key: EnvKeys) -> miette::Result<String> {
         env::var(key.to_string()).into_diagnostic()
     }
 
-    pub fn try_get_path_from_env() -> miette::Result<String> {
-        try_get(EnvKeys::Path)
-    }
-
     pub fn try_get_path_prefixed(prefix_path: impl AsRef<Path>) -> miette::Result<String> {
-        let path = try_get_path_from_env()?;
+        let path = try_get(EnvKeys::Path)?;
         let add_to_path: String = format!(
             "{}{}{}",
             prefix_path.as_ref().display(),
@@ -1161,7 +1157,7 @@ pub mod environment {
 
         #[test]
         fn test_try_get_path_from_env() {
-            let path = environment::try_get_path_from_env().unwrap();
+            let path = environment::try_get(EnvKeys::Path).unwrap();
             assert!(!path.is_empty());
         }
 
@@ -1173,14 +1169,14 @@ pub mod environment {
 
         #[test]
         fn test_get_path_envs() {
-            let path_envs = environment::get_path_env_vars("/usr/bin");
+            let path_envs = environment::get_env_vars(EnvKeys::Path, "/usr/bin");
             let expected = vec![("PATH".to_string(), "/usr/bin".to_string())];
             assert_eq!(path_envs, expected);
         }
 
         #[test]
         fn test_get_path() {
-            let path = environment::try_get_path_from_env().unwrap();
+            let path = environment::try_get(EnvKeys::Path).unwrap();
             assert!(!path.is_empty());
         }
 
