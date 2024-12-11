@@ -25,7 +25,7 @@ use tls::{
     command,
     command_runner::pipe,
     directory_change,
-    environment::EnvVarsSlice,
+    environment::{EnvKeys, EnvVarsSlice},
     fs_path::{self, try_pwd},
     fs_paths, fs_paths_exist,
     scripting::{
@@ -93,7 +93,7 @@ async fn main() -> miette::Result<()> {
             let path_to_cfssl_bin = tls::fs_paths!(with_root: fq_pwd => CERTS_DIR => BIN_DIR);
             environment::try_get_path_prefixed(path_to_cfssl_bin)?
         };
-        environment::get_path_env_vars(&amended_env_path)
+        environment::get_env_vars(EnvKeys::Path, &amended_env_path)
     };
 
     download_cfssl_binaries(&root_dir).await?;
