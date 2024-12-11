@@ -27,7 +27,7 @@ use std::{
 };
 use strum_macros::{Display, EnumString};
 use tls::{
-    create_command, debug, directory_change,
+    create_command, directory_change,
     fs_path::{self, try_pwd},
     fs_paths, fs_paths_exist,
     github_api::{Separator, UrlBuilder},
@@ -36,7 +36,7 @@ use tls::{
         download::try_download_file_overwrite_existing,
         environment, github_api, permissions,
     },
-    tracing_debug, with_saved_pwd,
+    tracing_debug, tracing_debug_helper, with_saved_pwd,
 };
 
 pub mod constants {
@@ -79,7 +79,7 @@ async fn main() -> miette::Result<()> {
     }
 
     // Setup tracing.
-    debug::tracing_init();
+    tracing_debug_helper::tracing_init();
 
     tracing_debug!("pwd at start", fs_path::try_pwd());
 
@@ -114,6 +114,7 @@ fn generate_certs_using_cfssl_bin(my_path: &str) -> miette::Result<()> {
             fs_paths!(with_empty_root => CERTS_DIR => GENERATED_DIR),
         )?;
 
+        // 00: convert this so it uses pipe() and run()
         fn generate_root_cert_ca_and_private_key(
             fq_root: PathBuf,
             my_path: &str,
@@ -123,39 +124,34 @@ fn generate_certs_using_cfssl_bin(my_path: &str) -> miette::Result<()> {
 
             // Generate root certificate (CA) and sign it.
             let cfssl_stdout_string: String = {
-                let output = create_command!(
+                let mut command: Command = create_command!(
                     command => CFSSL_BIN,
                     envs => environment::get_path_envs(my_path),
                     args => "gencert", "-initca", config_file_ca_csr,
-                )
-                .output()
-                .into_diagnostic()?
-                .stdout;
+                );
+                let output = command.output().into_diagnostic()?.stdout;
                 String::from_utf8_lossy(&output).to_string()
             };
 
             tracing_debug!("cfssl gencert for CA output", cfssl_stdout_string);
 
             // Spawn the `cfssljson` process and pipe the output of `cfssl` to it.
-            let mut cfssljson_child_handle: Child = create_command!(
+            let mut command: Command = create_command!(
                 command => CFSSLJSON_BIN,
                 envs => environment::get_path_envs(my_path),
-                stdin => Stdio::piped(),
                 args => "-bare", CONFIG_VALUE_CA_CN,
-            )
-            .spawn()
-            .into_diagnostic()?;
-            if let Some(mut stdin) = cfssljson_child_handle.stdin.take() {
+            );
+            command.stdin(Stdio::piped());
+
+            let mut child_handle: Child = command.spawn().into_diagnostic()?;
+            if let Some(mut stdin) = child_handle.stdin.take() {
                 stdin
                     .write_all(cfssl_stdout_string.as_bytes())
                     .into_diagnostic()?;
             }
 
             // Wait for the child process to finish and get the output.
-            let cfssljson_output_status = cfssljson_child_handle
-                .wait_with_output()
-                .into_diagnostic()?
-                .status;
+            let cfssljson_output_status = child_handle.wait_with_output().into_diagnostic()?.status;
 
             if cfssljson_output_status.success() {
                 println!("🎉 Generated CA certificate");
@@ -171,6 +167,7 @@ fn generate_certs_using_cfssl_bin(my_path: &str) -> miette::Result<()> {
         }
 
         generate_root_cert_ca_and_private_key(fq_root, my_path)?;
+        generate_server_cert_and_private_key_and_sign_it_with_ca()?;
 
         ok!()
     })

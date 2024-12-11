@@ -15,9 +15,11 @@
  *   limitations under the License.
  */
 
+use crate::tracing_debug;
 use crossterm::style::Stylize as _;
-use miette::Diagnostic;
-use miette::IntoDiagnostic;
+use fs_path::{FsOpError, FsOpResult};
+use http_client::create_client_with_user_agent;
+use miette::{Diagnostic, IntoDiagnostic};
 use r3bl_core::ok;
 use std::{
     env,
@@ -27,155 +29,168 @@ use std::{
     ops::{AddAssign, Deref},
     os::unix::fs::PermissionsExt as _,
     path::{Path, PathBuf},
+    process::{Child, Command, Stdio},
 };
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
 // 00: add brew_install mod
 // 00: add apt_install mod
-// 00: make it easy to pipe 2 commands together (like duct crate's pipe())
 
-/// This macro to create a [std::process::Command] that receives a set of arguments and
-/// returns it.
-///
-/// # Example of command and args
-///
-/// ```
-/// use tls::create_command;
-/// use std::process::Command;
-///
-/// let mut command = create_command!(
-///     command => "echo",
-///     args => "Hello, world!",
-/// );
-/// let output = command.output().expect("Failed to execute command");
-/// assert!(output.status.success());
-/// assert_eq!(String::from_utf8_lossy(&output.stdout), "Hello, world!\n");
-/// ```
-///
-/// # Example of command, env, and args
-///
-/// ```
-/// use tls::create_command;
-/// use tls::environment;
-/// use std::process::Command;
-///
-/// let my_path = "/usr/bin";
-/// let env_vec = environment::get_path_envs(my_path);
-/// let mut command = create_command!(
-///     command => "printenv",
-///     envs => env_vec,
-///     args => "PATH",
-/// );
-/// let output = command.output().expect("Failed to execute command");
-/// assert!(output.status.success());
-/// assert_eq!(String::from_utf8_lossy(&output.stdout), "/usr/bin\n");
-/// ```
-///
-/// # Example of command, env, args, and stdin
-///
-/// ```
-/// use tls::create_command;
-/// use tls::environment;
-/// use std::process::{Command, Stdio};
-///
-/// let my_path = "/usr/bin";
-/// let env_vec = environment::get_path_envs(my_path);
-/// let mut command = create_command!(
-///     command => "cat",
-///     envs => env_vec,
-///     stdin => Stdio::piped(),
-///     args => "/etc/passwd",
-/// );
-/// let output = command.output().expect("Failed to execute command");
-/// assert!(output.status.success());
-/// assert!(!output.stdout.is_empty());
-/// ```
-#[macro_export]
-macro_rules! create_command {
-    // Variant that receives a command and args.
-    (command=> $cmd:expr, args=> $($args:expr),* $(,)?) => {{
-        let mut it = std::process::Command::new($cmd);
-        $(
-            it.arg($args);
-        )*
-        it
-    }};
+pub mod command_runner {
+    use super::*;
 
-    // Variant that receives a command, env (vec), and args.
-    (command=> $cmd:expr, envs=> $envs:expr, args=> $($args:expr),* $(,)?) => {{
-        let mut it = std::process::Command::new($cmd);
-        it.envs($envs);
-        $(
-            it.arg($args);
-        )*
-        it
-    }};
+    /// This macro to create a [std::process::Command] that receives a set of arguments and
+    /// returns it.
+    ///
+    /// # Example of command and args
+    ///
+    /// ```
+    /// use tls::create_command;
+    /// use std::process::Command;
+    ///
+    /// let mut command = create_command!(
+    ///     command => "echo",
+    ///     args => "Hello, world!",
+    /// );
+    /// let output = command.output().expect("Failed to execute command");
+    /// assert!(output.status.success());
+    /// assert_eq!(String::from_utf8_lossy(&output.stdout), "Hello, world!\n");
+    /// ```
+    ///
+    /// # Example of command, env, and args
+    ///
+    /// ```
+    /// use tls::create_command;
+    /// use tls::environment;
+    /// use std::process::Command;
+    ///
+    /// let my_path = "/usr/bin";
+    /// let env_vec = environment::get_path_envs(my_path);
+    /// let mut command = create_command!(
+    ///     command => "printenv",
+    ///     envs => env_vec,
+    ///     args => "PATH",
+    /// );
+    /// let output = command.output().expect("Failed to execute command");
+    /// assert!(output.status.success());
+    /// assert_eq!(String::from_utf8_lossy(&output.stdout), "/usr/bin\n");
+    /// ```
+    #[macro_export]
+    macro_rules! create_command {
+        // Variant that receives a command and args.
+        (command=> $cmd:expr, args=> $($args:expr),* $(,)?) => {{
+            let mut it = std::process::Command::new($cmd);
+            $(
+                it.arg($args);
+            )*
+            it
+        }};
 
-    // Variant that receives a command, env (vec), piped stdin, and args.
-    (command=> $cmd:expr, envs=> $envs:expr, stdin=> $stdin:expr, args=> $($args:expr),* $(,)?) => {{
-        let mut it = std::process::Command::new($cmd);
-        it.envs($envs);
-        it.stdin($stdin);
-        $(
-            it.arg($args);
-        )*
-        it
-    }};
+        // Variant that receives a command, env (vec), and args.
+        (command=> $cmd:expr, envs=> $envs:expr, args=> $($args:expr),* $(,)?) => {{
+            let mut it = std::process::Command::new($cmd);
+            it.envs($envs);
+            $(
+                it.arg($args);
+            )*
+            it
+        }};
+    }
+
+    // 00: make sure this works; write tests
+    pub fn run(command: &mut Command) -> miette::Result<Vec<u8>> {
+        let output = command.output().into_diagnostic()?;
+        if output.status.success() {
+            ok!(output.stdout)
+        } else {
+            miette::bail!(
+                "Failed to execute command: {:?}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+    }
+
+    // 00: make sure this works; write tests
+    pub fn pipe(command_one: &mut Command, command_two: &mut Command) -> miette::Result<String> {
+        // Run the first command & get the output.
+        let command_one_output_bytes = run(command_one)?;
+
+        // Set up the second command to accept piped input from the first command.
+        let command_two = command_two.stdin(Stdio::piped());
+
+        // Spawn the second command as a child process.
+        let mut child_handle: Child = command_two.spawn().into_diagnostic()?;
+        if let Some(mut child_stdin) = child_handle.stdin.take() {
+            child_stdin
+                .write_all(&command_one_output_bytes)
+                .into_diagnostic()?;
+        }
+
+        let child_output = child_handle.wait_with_output().into_diagnostic()?;
+
+        if child_output.status.success() {
+            ok!(String::from_utf8_lossy(&child_output.stdout).to_string())
+        } else {
+            miette::bail!("Failed to execute command: {:?}", child_output.stderr);
+        }
+    }
 }
 
-/// Use this macro instead of [tracing::debug!] to make the output easier to read.
-///
-/// - It simply applies a display width to the message [debug::TRACING_MSG_WIDTH]
-///   characters).
-/// - This ensures that the first message is always this width, its clipped if too long,
-///   and padded with spaces if too short.
-///
-/// # Arguments
-/// 1. The first argument is the message that will be displayed. This can be any type that
-///    implements the [Display] trait.
-/// 2. The second argument is the body of the message. This can be any type that
-///    implements the [Debug] trait.
-///
-/// More info: <https://doc.rust-lang.org/std/fmt/index.html>
-///
-/// This works hand in hand with [debug::tracing_init] to ensure that the output is
-/// formatted with minimal noise.
-///
-/// # Example
-///
-/// ```
-/// use tls::tracing_debug;
-/// tracing_debug!(
-///     "Hello, wor .. 20 ch!", // Must implement Display trait.
-///     "Body has more space .... will be clipped to 50 ch!" // Must implement Debug trait.
-/// );
-/// ```
-///
-/// Here's what the [tracing::debug!] macro looks like:
-///
-/// ```
-/// use tracing::debug;
-/// tracing::debug!("{:10} = {:20}", "bar", "donkey");
-/// ```
-#[macro_export]
-macro_rules! tracing_debug {
-    ($msg:expr, $body:expr) => {
-        let (_msg_display_trunc, _body_debug_trunc) =
-            $crate::tracing_debug_impl::prepare_tracing_debug(&$msg, &$body);
-        tracing::debug!("{} = {}", _msg_display_trunc, _body_debug_trunc);
-    };
-}
+pub mod tracing_debug_helper {
+    /// Use this macro instead of [tracing::debug!] to make the output easier to read.
+    ///
+    /// - It simply applies a display width to the message [debug::TRACING_MSG_WIDTH]
+    ///   characters).
+    /// - This ensures that the first message is always this width, its clipped if too long,
+    ///   and padded with spaces if too short.
+    ///
+    /// # Arguments
+    /// 1. The first argument is the message that will be displayed. This can be any type that
+    ///    implements the [Display] trait.
+    /// 2. The second argument is the body of the message. This can be any type that
+    ///    implements the [Debug] trait.
+    ///
+    /// More info: <https://doc.rust-lang.org/std/fmt/index.html>
+    ///
+    /// This works hand in hand with [debug::tracing_init] to ensure that the output is
+    /// formatted with minimal noise.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tls::tracing_debug;
+    /// tracing_debug!(
+    ///     "Hello, wor .. 20 ch!", // Must implement Display trait.
+    ///     "Body has more space .... will be clipped to 50 ch!" // Must implement Debug trait.
+    /// );
+    /// ```
+    ///
+    /// Here's what the [tracing::debug!] macro looks like:
+    ///
+    /// ```
+    /// use tracing::debug;
+    /// tracing::debug!("{:10} = {:20}", "bar", "donkey");
+    /// ```
+    #[macro_export]
+    macro_rules! tracing_debug {
+        ($msg:expr, $body:expr) => {
+            let (_msg_display_trunc, _body_debug_trunc) =
+                $crate::tracing_debug_helper::prepare_tracing_debug(&$msg, &$body);
+            tracing::debug!("{} = {}", _msg_display_trunc, _body_debug_trunc);
+        };
+    }
 
-pub mod tracing_debug_impl {
     pub fn prepare_tracing_debug(
         msg: &impl std::fmt::Display,
         body: &impl std::fmt::Debug,
     ) -> (String, String) {
         let msg_display = format!("{}", msg);
         let body_debug = format!("{:?}", body);
-        let msg_display_trunc = truncate_or_pad(&msg_display, crate::debug::TRACING_MSG_WIDTH);
-        let body_debug_trunc = truncate_or_pad(&body_debug, crate::debug::TRACING_BODY_WIDTH);
+        let msg_display_trunc =
+            truncate_or_pad(&msg_display, crate::tracing_debug_helper::TRACING_MSG_WIDTH);
+        let body_debug_trunc =
+            truncate_or_pad(&body_debug, crate::tracing_debug_helper::TRACING_BODY_WIDTH);
         (msg_display_trunc, body_debug_trunc)
     }
 
@@ -198,9 +213,7 @@ pub mod tracing_debug_impl {
         assert_eq!(truncate_or_pad(long_string, width), "Hello, wor");
         assert_eq!(truncate_or_pad(short_string, width), "Hi!       ");
     }
-}
 
-pub mod debug {
     pub const TRACING_MSG_WIDTH: usize = 25;
     pub const TRACING_BODY_WIDTH: usize = 70;
 
@@ -217,146 +230,6 @@ pub mod debug {
             .without_time()
             .init();
     }
-}
-
-/// Use this macro to make it more ergonomic to work with [PathBuf]s.
-///
-/// # Example - create a new path
-///
-/// ```
-/// use tls::fs_paths;
-/// use std::path::{PathBuf, Path};
-///
-/// let my_path = fs_paths![with_empty_root => "usr/bin" => "bash"];
-/// assert_eq!(my_path, PathBuf::from("usr/bin/bash"));
-///
-/// let my_path = fs_paths![with_empty_root => "usr" => "bin" => "bash"];
-/// assert_eq!(my_path, PathBuf::from("usr/bin/bash"));
-/// ```
-///
-/// # Example - join to an existing path
-///
-/// ```
-/// use tls::fs_paths;
-/// use std::path::{PathBuf, Path};
-///
-/// let root = PathBuf::from("/home/user");
-/// let my_path = fs_paths![with_root => root => "Downloads" => "rust"];
-/// assert_eq!(my_path, PathBuf::from("/home/user/Downloads/rust"));
-///
-/// let root = PathBuf::from("/home/user");
-/// let my_path = fs_paths![with_root => root => "Downloads" => "rust"];
-/// assert_eq!(my_path, PathBuf::from("/home/user/Downloads/rust"));
-/// ```
-#[macro_export]
-macro_rules! fs_paths {
-    // Join to an existing root path.
-    (with_root=> $path:expr=> $($x:expr)=>*) => {{
-        let mut it = $path.clone();
-        $(
-            it = it.join($x);
-        )*
-        it
-    }};
-
-    // Create a new path w/ no pre-existing root.
-    (with_empty_root=> $($x:expr)=>*) => {{
-        use std::path::{PathBuf};
-        let mut it = PathBuf::new();
-        $(
-            it = it.join($x);
-        )*
-        it
-    }}
-}
-
-/// Use this macro to ensure that all the paths provided exist on the filesystem, in which
-/// case it will return true If any of the paths do not exist, the function will return
-/// false. No error will be returned in case any of the paths are invalid or there aren't
-/// enough permissions to check if the paths exist.
-///
-/// # Example
-///
-/// ```
-/// use tls::fs_paths_exist;
-/// use tls::fs_paths;
-/// use r3bl_test_fixtures::create_temp_dir;
-///
-/// let temp_dir = create_temp_dir().unwrap();
-/// let path_1 = fs_paths![with_root => temp_dir => "some_dir"];
-/// let path_2 = fs_paths![with_root => temp_dir => "another_dir"];
-///
-/// assert!(!fs_paths_exist!(path_1, path_2));
-/// ```
-#[macro_export]
-macro_rules! fs_paths_exist {
-    ($($x:expr),*) => {'block: {
-        $(
-            if !std::fs::metadata($x).is_ok() {
-                break 'block false;
-            };
-        )*
-        true
-    }};
-}
-
-#[derive(Debug, Error, Diagnostic)]
-pub enum FsOpError {
-    #[error("File does not exist: {0}")]
-    FileDoesNotExist(String),
-
-    #[error("Directory does not exist: {0}")]
-    DirectoryDoesNotExist(String),
-
-    #[error("File already exists: {0}")]
-    FileAlreadyExists(String),
-
-    #[error("Directory already exists: {0}")]
-    DirectoryAlreadyExists(String),
-
-    #[error("Insufficient permissions: {0}")]
-    PermissionDenied(String),
-
-    #[error("Invalid name: {0}")]
-    InvalidName(String),
-
-    #[error("Failed to perform fs operation directory: {0}")]
-    IoError(#[from] std::io::Error),
-}
-
-pub type FsOpResult<T> = miette::Result<T, FsOpError>;
-
-/// This macro is used to wrap a block with code that saves the current working directory,
-/// runs the block of code for the test, and then restores the original working directory.
-/// It also ensures that the test is run serially.
-///
-/// Be careful when manipulating the current working directory in tests using
-/// [env::set_current_dir] as it can affect other tests that run in parallel.
-#[macro_export]
-macro_rules! serial_preserve_pwd_test {
-    ($name:ident, $block:block) => {
-        #[serial_test::serial]
-        #[test]
-        fn $name() {
-            with_saved_pwd!($block);
-        }
-    };
-}
-
-/// This macro is used to wrap a block with code that saves the current working directory,
-/// runs the block of code for the test, and then restores the original working directory.
-///
-/// Use this in conjunction with [serial_test::serial] in order to make sure that multiple
-/// threads are not changing the current working directory at the same time (even with
-/// this macro). In other words, use this macro [serial_preserve_pwd_test!] for tests.
-#[macro_export]
-macro_rules! with_saved_pwd {
-    ($block:block) => {{
-        let og_pwd = env::current_dir().unwrap();
-        let result = { $block };
-        env::set_current_dir(og_pwd).unwrap();
-        result
-    }};
 }
 
 pub mod http_client {
@@ -572,6 +445,39 @@ pub mod github_api {
 pub mod directory_change {
     use super::*;
 
+    /// This macro is used to wrap a block with code that saves the current working directory,
+    /// runs the block of code for the test, and then restores the original working directory.
+    /// It also ensures that the test is run serially.
+    ///
+    /// Be careful when manipulating the current working directory in tests using
+    /// [env::set_current_dir] as it can affect other tests that run in parallel.
+    #[macro_export]
+    macro_rules! serial_preserve_pwd_test {
+        ($name:ident, $block:block) => {
+            #[serial_test::serial]
+            #[test]
+            fn $name() {
+                $crate::with_saved_pwd!($block);
+            }
+        };
+    }
+
+    /// This macro is used to wrap a block with code that saves the current working directory,
+    /// runs the block of code for the test, and then restores the original working directory.
+    ///
+    /// Use this in conjunction with [serial_test::serial] in order to make sure that multiple
+    /// threads are not changing the current working directory at the same time (even with
+    /// this macro). In other words, use this macro [serial_preserve_pwd_test!] for tests.
+    #[macro_export]
+    macro_rules! with_saved_pwd {
+        ($block:block) => {{
+            let og_pwd = env::current_dir().unwrap();
+            let result = { $block };
+            env::set_current_dir(og_pwd).unwrap();
+            result
+        }};
+    }
+
     /// Change cwd for current process.
     pub fn try_change_directory(new_dir: impl AsRef<Path>) -> FsOpResult<()> {
         match env::set_current_dir(new_dir.as_ref()) {
@@ -591,8 +497,11 @@ pub mod directory_change {
 
     #[cfg(test)]
     mod tests_directory_change {
+        use crate::fs_paths;
+
         use super::*;
         use directory_change::try_change_directory;
+        use fs_path::FsOpError;
         use r3bl_test_fixtures::create_temp_dir;
 
         serial_preserve_pwd_test!(test_try_change_directory_permissions_errors, {
@@ -772,6 +681,7 @@ pub mod directory_create {
     #[cfg(test)]
     mod tests_directory_create {
         use super::*;
+        use crate::{fs_paths, serial_preserve_pwd_test, with_saved_pwd};
         use directory_create::{try_mkdir, MkdirOptions::*};
         use r3bl_test_fixtures::create_temp_dir;
 
@@ -817,6 +727,113 @@ pub mod directory_create {
 ///   [here](https://rust-lang.github.io/rust-clippy/master/index.html#ptr_arg).
 pub mod fs_path {
     use super::*;
+
+    /// Use this macro to make it more ergonomic to work with [PathBuf]s.
+    ///
+    /// # Example - create a new path
+    ///
+    /// ```
+    /// use tls::fs_paths;
+    /// use std::path::{PathBuf, Path};
+    ///
+    /// let my_path = fs_paths![with_empty_root => "usr/bin" => "bash"];
+    /// assert_eq!(my_path, PathBuf::from("usr/bin/bash"));
+    ///
+    /// let my_path = fs_paths![with_empty_root => "usr" => "bin" => "bash"];
+    /// assert_eq!(my_path, PathBuf::from("usr/bin/bash"));
+    /// ```
+    ///
+    /// # Example - join to an existing path
+    ///
+    /// ```
+    /// use tls::fs_paths;
+    /// use std::path::{PathBuf, Path};
+    ///
+    /// let root = PathBuf::from("/home/user");
+    /// let my_path = fs_paths![with_root => root => "Downloads" => "rust"];
+    /// assert_eq!(my_path, PathBuf::from("/home/user/Downloads/rust"));
+    ///
+    /// let root = PathBuf::from("/home/user");
+    /// let my_path = fs_paths![with_root => root => "Downloads" => "rust"];
+    /// assert_eq!(my_path, PathBuf::from("/home/user/Downloads/rust"));
+    /// ```
+    #[macro_export]
+    macro_rules! fs_paths {
+        // Join to an existing root path.
+        (with_root=> $path:expr=> $($x:expr)=>*) => {{
+            let mut it = $path.clone();
+            $(
+                it = it.join($x);
+            )*
+            it
+        }};
+
+        // Create a new path w/ no pre-existing root.
+        (with_empty_root=> $($x:expr)=>*) => {{
+            use std::path::{PathBuf};
+            let mut it = PathBuf::new();
+            $(
+                it = it.join($x);
+            )*
+            it
+        }}
+    }
+
+    /// Use this macro to ensure that all the paths provided exist on the filesystem, in which
+    /// case it will return true If any of the paths do not exist, the function will return
+    /// false. No error will be returned in case any of the paths are invalid or there aren't
+    /// enough permissions to check if the paths exist.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tls::fs_paths_exist;
+    /// use tls::fs_paths;
+    /// use r3bl_test_fixtures::create_temp_dir;
+    ///
+    /// let temp_dir = create_temp_dir().unwrap();
+    /// let path_1 = fs_paths![with_root => temp_dir => "some_dir"];
+    /// let path_2 = fs_paths![with_root => temp_dir => "another_dir"];
+    ///
+    /// assert!(!fs_paths_exist!(path_1, path_2));
+    /// ```
+    #[macro_export]
+    macro_rules! fs_paths_exist {
+        ($($x:expr),*) => {'block: {
+            $(
+                if !std::fs::metadata($x).is_ok() {
+                    break 'block false;
+                };
+            )*
+            true
+        }};
+    }
+
+    #[derive(Debug, Error, Diagnostic)]
+    pub enum FsOpError {
+        #[error("File does not exist: {0}")]
+        FileDoesNotExist(String),
+
+        #[error("Directory does not exist: {0}")]
+        DirectoryDoesNotExist(String),
+
+        #[error("File already exists: {0}")]
+        FileAlreadyExists(String),
+
+        #[error("Directory already exists: {0}")]
+        DirectoryAlreadyExists(String),
+
+        #[error("Insufficient permissions: {0}")]
+        PermissionDenied(String),
+
+        #[error("Invalid name: {0}")]
+        InvalidName(String),
+
+        #[error("Failed to perform fs operation directory: {0}")]
+        IoError(#[from] std::io::Error),
+    }
+
+    pub type FsOpResult<T> = miette::Result<T, FsOpError>;
 
     /// Checks whether the directory exist. If won't provide any errors if there are
     /// permissions issues or the directory is invalid. Use [try_directory_exists] if you
@@ -897,6 +914,7 @@ pub mod fs_path {
     #[cfg(test)]
     mod tests_fs_path {
         use super::*;
+        use crate::{serial_preserve_pwd_test, with_saved_pwd};
         use fs_path::try_pwd;
         use r3bl_test_fixtures::create_temp_dir;
 
@@ -1201,7 +1219,6 @@ pub mod environment {
 
 pub mod download {
     use super::*;
-    use http_client::create_client_with_user_agent;
 
     pub async fn try_download_file_overwrite_existing(
         source_url: &str,
