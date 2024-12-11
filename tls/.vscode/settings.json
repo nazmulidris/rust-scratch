@@ -1,5 +1,6 @@
 {
   "cSpell.words": [
+    "Bufs",
     "CFSSL",
     "cfssljson",
     "gencert",
@@ -8,9 +9,12 @@
     "pemfile",
     "Pkcs",
     "popd",
+    "printenv",
     "pushd",
     "rcat",
     "realpath",
+    "replacen",
+    "reqwest",
     "rustls",
     "webpki"
   ]
