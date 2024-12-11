@@ -250,7 +250,9 @@ pub mod tracing_debug_helper {
 
     pub fn truncate_or_pad_from_right(string: &str, width: usize) -> String {
         if string.len() > width {
-            string.chars().take(width).collect()
+            let mut truncated_string: String = string.chars().take(width - 3).collect();
+            truncated_string.push_str("...");
+            truncated_string
         } else {
             let mut padded_string = string.to_string();
             padded_string.push_str(&" ".repeat(width - string.len()));
@@ -260,7 +262,9 @@ pub mod tracing_debug_helper {
 
     pub fn truncate_or_pad_from_left(string: &str, width: usize) -> String {
         if string.len() > width {
-            string.chars().skip(string.len() - width).collect()
+            let mut truncated_string: String = "...".to_string();
+            truncated_string.extend(string.chars().skip(string.len() - width + 3));
+            truncated_string
         } else {
             let mut padded_string = " ".repeat(width - string.len());
             padded_string.push_str(string);
@@ -278,7 +282,7 @@ pub mod tracing_debug_helper {
             let short_string = "Hi!";
             let width = 10;
 
-            assert_eq!(truncate_or_pad_from_right(long_string, width), "Hello, wor");
+            assert_eq!(truncate_or_pad_from_right(long_string, width), "Hello, ...");
             assert_eq!(
                 truncate_or_pad_from_right(short_string, width),
                 "Hi!       "
@@ -291,7 +295,7 @@ pub mod tracing_debug_helper {
             let short_string = "Hi!";
             let width = 10;
 
-            assert_eq!(truncate_or_pad_from_left(long_string, width), "lo, world!");
+            assert_eq!(truncate_or_pad_from_left(long_string, width), "... world!");
             assert_eq!(truncate_or_pad_from_left(short_string, width), "       Hi!");
         }
     }

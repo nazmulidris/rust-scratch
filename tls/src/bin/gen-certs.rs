@@ -51,6 +51,10 @@ pub mod constants {
     pub const CONFIG_VALUE_CA_CN: &str = "ca";
     pub const CONFIG_VALUE_SERVER_CN: &str = "server";
 
+    pub const CA_PEM_FILE: &str = "ca.pem";
+    pub const CA_KEY_PEM_FILE: &str = "ca-key.pem";
+    pub const SERVER_PEM_FILE: &str = "server.pem";
+
     pub const CFSSL_BIN: &str = "cfssl";
     pub const CFSSLJSON_BIN: &str = "cfssljson";
 
@@ -96,8 +100,9 @@ async fn main() -> miette::Result<()> {
         environment::get_env_vars(EnvKeys::Path, &amended_env_path)
     };
 
-    download_cfssl_binaries(&root_dir).await?;
+    download_cfssl_binaries_if_needed(&root_dir).await?;
     generate_certs_using_cfssl_bin(&root_dir, &amended_path_envs)?;
+    install_openssl_if_needed();
     display_status_using_openssl_bin(&root_dir, &amended_path_envs)?;
 
     tracing_debug!("pwd at end", fs_path::try_pwd());
@@ -110,9 +115,17 @@ fn generate_certs_using_cfssl_bin(
     root_dir: &Path,
     amended_path_envs: EnvVarsSlice,
 ) -> miette::Result<()> {
+    tracing_debug!("generate certs", fs_path::try_pwd());
     // Pushd into the `certs/generated` directory. Generate CA and server certificates.
     with_saved_pwd!({
-        directory_change::try_cd(fs_paths!(with_root: root_dir => CERTS_DIR => GENERATED_DIR))?;
+        let generated_dir = fs_paths!(with_root: root_dir => CERTS_DIR => GENERATED_DIR);
+        let generated_dir_display_string =
+            truncate_or_pad_from_left(&generated_dir.display().to_string(), TRACING_MSG_WIDTH)
+                .magenta();
+
+        // Create the generated directory if it does not exist.
+        directory_create::try_mkdir(&generated_dir, MkdirOptions::CreateIntermediateDirectories)?;
+        directory_change::try_cd(&generated_dir)?;
 
         // Generate root certificate (CA) and sign it.
         //
@@ -133,7 +146,11 @@ fn generate_certs_using_cfssl_bin(
                 args => "-bare", CONFIG_VALUE_CA_CN,
             ),
         )?;
-        println!("🎉 Generated CA certificate");
+
+        println!(
+            "🎉 Generated CA certificate & key in {}",
+            generated_dir_display_string.clone().magenta()
+        );
 
         // Generate server certificate (and private key) and sign it with the CA.
         //
@@ -146,13 +163,32 @@ fn generate_certs_using_cfssl_bin(
         // - server.csr: certificate signing request
         // - server-key.pem: private key; used in the Rust server code
         // - server.pem: public key; used in the Rust server code
-        todo!();
+        pipe(
+            &mut command!(
+                program => CFSSL_BIN,
+                envs => amended_path_envs,
+                args => "gencert",
+                        "-ca", CA_PEM_FILE,
+                        "-ca-key", CA_KEY_PEM_FILE,
+                        "-config", fs_paths!(with_root: root_dir => CERTS_DIR => CONFIG_DIR => CONFIG_FILE_CA),
+                        "-profile", CONFIG_VALUE_SERVER_CN, fs_paths!(with_root: root_dir => CERTS_DIR => CONFIG_DIR => CONFIG_FILE_SERVER_CSR),
+            ),
+            &mut command!(
+                program => CFSSLJSON_BIN,
+                envs => amended_path_envs,
+                args => "-bare", CONFIG_VALUE_SERVER_CN,
+            ),
+        )?;
+        println!(
+            "🎉 Generated server certificate (issued by CA) & key in {}",
+            generated_dir_display_string.clone().magenta()
+        );
 
         ok!()
     })
 }
 
-// 00: if openssl is not installed, then handle install it using brew (add to scripting.rs)
+// 00: get this working
 fn display_status_using_openssl_bin(
     root_dir: &Path,
     amended_path_envs: EnvVarsSlice,
@@ -192,7 +228,11 @@ fn display_status_using_openssl_bin(
     })
 }
 
-async fn download_cfssl_binaries(root_dir: &Path) -> miette::Result<()> {
+// 00: if openssl is not installed, then handle install it using brew (add to scripting.rs)
+fn install_openssl_if_needed() {}
+
+async fn download_cfssl_binaries_if_needed(root_dir: &Path) -> miette::Result<()> {
+    tracing_debug!("download binaries", fs_path::try_pwd());
     with_saved_pwd!({
         let bin_folder = fs_paths!(with_root: root_dir => CERTS_DIR => BIN_DIR);
         with!(
@@ -208,7 +248,7 @@ async fn download_cfssl_binaries(root_dir: &Path) -> miette::Result<()> {
                     let cfssljson_file_trunc_left =
                         truncate_or_pad_from_left(&cfssljson_file.display().to_string(), TRACING_MSG_WIDTH);
                     println!(
-                        "🎉 ...{} and ...{} binaries already exist.",
+                        "🎉 {} and {} binaries already exist.",
                         cfssl_file_trunc_left.magenta(),
                         cfssljson_file_trunc_left.magenta(),
                     );
@@ -284,8 +324,8 @@ async fn download_cfssl_binaries(root_dir: &Path) -> miette::Result<()> {
         // Display success message.
         println!(
             "🎉 Downloaded {} and {} executable binaries to: {}",
-            CFSSL_BIN.magenta(),
-            CFSSLJSON_BIN.magenta(),
+            CFSSL_BIN.blue(),
+            CFSSLJSON_BIN.blue(),
             fs_path::try_pwd()?.display().to_string().magenta()
         );
 
