@@ -28,7 +28,6 @@ use tls::{
     environment::EnvVarsSlice,
     fs_path::{self, try_pwd},
     fs_paths, fs_paths_exist,
-    github_api::{Separator, UrlBuilder},
     scripting::{
         directory_create::{self, MkdirOptions},
         download::try_download_file_overwrite_existing,
@@ -98,10 +97,7 @@ async fn main() -> miette::Result<()> {
     };
 
     download_cfssl_binaries(&root_dir).await?;
-
     generate_certs_using_cfssl_bin(&root_dir, &amended_path_envs)?;
-
-    // 00: remove comments below
     display_status_using_openssl_bin(&root_dir, &amended_path_envs)?;
 
     tracing_debug!("pwd at end", fs_path::try_pwd());
@@ -234,35 +230,29 @@ async fn download_cfssl_binaries(root_dir: &Path) -> miette::Result<()> {
         let (cfssl_bin_url, cfssljson_bin_url) = {
             let org = &GithubLocation::Org.to_string();
             let repo = &GithubLocation::Repo.to_string();
-            let release_version =
-                &github_api::try_get_latest_release_tag_from_github(org, repo).await?;
+            let ver = &github_api::try_get_latest_release_tag_from_github(org, repo).await?;
 
-            let root_url = UrlBuilder::default()
-                + "https://github.com/"
-                + org
-                + Separator::ForwardSlash
-                + repo
-                + "/releases/download";
+            let root = format!(
+                "https://github.com/{org}/{repo}/releases/download",
+                org = org,
+                repo = repo
+            );
 
-            let cfssl_bin_url = &root_url
-                + "/v"
-                + release_version
-                + Separator::ForwardSlash
-                + CFSSL_BIN
-                + Separator::Underscore
-                + release_version
-                + Separator::Underscore
-                + OS_ARCH;
+            let cfssl_bin_url = format!(
+                "{root}/v{ver}/{bin}_{ver}_{os}",
+                root = root,
+                ver = ver,
+                bin = CFSSL_BIN,
+                os = OS_ARCH
+            );
 
-            let cfssljson_bin_url = &root_url
-                + "/v"
-                + release_version
-                + Separator::ForwardSlash
-                + CFSSLJSON_BIN
-                + Separator::Underscore
-                + release_version
-                + Separator::Underscore
-                + OS_ARCH;
+            let cfssljson_bin_url = format!(
+                "{root}/v{ver}/{bin}_{ver}_{os}",
+                root = root,
+                ver = ver,
+                bin = CFSSLJSON_BIN,
+                os = OS_ARCH
+            );
 
             // Print the latest URLs of the binaries.
             println!("🌐 URLs of latest versions of binaries...");

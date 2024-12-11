@@ -22,11 +22,8 @@ use http_client::create_client_with_user_agent;
 use miette::{Diagnostic, IntoDiagnostic};
 use r3bl_core::ok;
 use std::{
-    env,
-    fmt::Display,
-    fs,
+    env, fs,
     io::{ErrorKind, Write as _},
-    ops::{AddAssign, Deref},
     os::unix::fs::PermissionsExt as _,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
@@ -211,7 +208,7 @@ pub mod tracing_debug_helper {
         ($msg:expr, $body:expr) => {
             let (_msg_display_trunc, _body_debug_trunc) =
                 $crate::tracing_debug_helper::prepare_tracing_debug(&$msg, &$body);
-            tracing::debug!("{} = {}", _msg_display_trunc, _body_debug_trunc);
+            tracing::debug!("├ {} ⴾ {} ┤", _msg_display_trunc, _body_debug_trunc);
         };
     }
 
@@ -321,8 +318,6 @@ pub mod http_client {
 }
 
 pub mod github_api {
-    use std::ops::Add;
-
     use super::*;
 
     pub mod constants {
@@ -361,75 +356,10 @@ pub mod github_api {
         ok!(tag_name.to_owned())
     }
 
-    /// A simple URL builder that allows chaining strings together to build a URL. The URL
-    /// is built by concatenating the strings together. To generate the final URL, call
-    /// `to_string()` from the [Display] trait, which is implemented for [UrlBuilder].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use tls::github_api::{UrlBuilder, Separator};
-    /// let url_builder = UrlBuilder::default()
-    ///    + "https://" + "api.github.com" + Separator::ForwardSlash + "repos"
-    ///    + Separator::ForwardSlash + "cloudflare" + Separator::Underscore + "cfssl";
-    /// assert_eq!(url_builder.to_string(), "https://api.github.com/repos/cloudflare_cfssl");
-    /// ```
-    #[derive(Debug, Default, Clone)]
-    pub struct UrlBuilder {
-        pub inner: Vec<String>,
-    }
-
-    #[derive(Debug, Display, EnumString)]
-    pub enum Separator {
-        #[strum(serialize = "_")]
-        Underscore,
-        #[strum(serialize = "/")]
-        ForwardSlash,
-    }
-
-    impl<T: Display> Add<T> for &UrlBuilder {
-        type Output = UrlBuilder;
-
-        fn add(self, rhs: T) -> Self::Output {
-            let mut it = self.clone();
-            it.inner.push(rhs.to_string());
-            it
-        }
-    }
-
-    impl<T: Display> Add<T> for UrlBuilder {
-        type Output = Self;
-
-        fn add(mut self, rhs: T) -> Self {
-            self.inner.push(rhs.to_string());
-            self
-        }
-    }
-
-    impl<T: Display> AddAssign<T> for UrlBuilder {
-        fn add_assign(&mut self, rhs: T) {
-            self.inner.push(rhs.to_string());
-        }
-    }
-
-    impl Deref for UrlBuilder {
-        type Target = Vec<String>;
-
-        fn deref(&self) -> &Self::Target {
-            &self.inner
-        }
-    }
-
-    impl Display for UrlBuilder {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{}", self.inner.join(""))
-        }
-    }
-
     #[cfg(test)]
     mod tests_github_api {
         use super::*;
-        use github_api::{try_get_latest_release_tag_from_github, UrlBuilder};
+        use github_api::try_get_latest_release_tag_from_github;
         use r3bl_ansi_color::{is_fully_uninteractive_terminal, TTYResult};
 
         /// Do not run this in CI/CD since it makes API calls to github.com.
@@ -447,68 +377,6 @@ pub mod github_api {
                 .unwrap();
             assert!(!tag.is_empty());
             println!("Latest tag: {}", tag.magenta());
-        }
-
-        #[test]
-        fn test_url_builder_add_ref() {
-            let url_builder_root = UrlBuilder::default();
-            let url_builder_1 = &url_builder_root + "https://r3bl.com";
-            let url_builder_2 = &url_builder_root + "/blog";
-            assert_eq!(url_builder_1.to_string(), "https://r3bl.com");
-            assert_eq!(url_builder_2.to_string(), "/blog");
-        }
-
-        #[test]
-        fn test_url_builder_add() {
-            let url_builder = UrlBuilder::default();
-            let url_builder = url_builder
-                + "https://"
-                + "api.github.com"
-                + github_api::Separator::ForwardSlash
-                + "repos"
-                + github_api::Separator::ForwardSlash
-                + "cloudflare"
-                + github_api::Separator::ForwardSlash
-                + "cfssl"
-                + github_api::Separator::ForwardSlash
-                + "releases"
-                + github_api::Separator::ForwardSlash
-                + "latest"
-                + github_api::Separator::Underscore
-                + "tag_name"
-                + github_api::Separator::ForwardSlash
-                + "v";
-
-            assert_eq!(
-                url_builder.to_string(),
-                "https://api.github.com/repos/cloudflare/cfssl/releases/latest_tag_name/v"
-            );
-        }
-
-        #[test]
-        fn test_url_builder_add_assign() {
-            let mut url_builder = UrlBuilder::default();
-            url_builder += "https://";
-            url_builder += "api.github.com";
-            url_builder += github_api::Separator::ForwardSlash;
-            url_builder += "repos";
-            url_builder += github_api::Separator::ForwardSlash;
-            url_builder += "cloudflare";
-            url_builder += github_api::Separator::ForwardSlash;
-            url_builder += "cfssl";
-            url_builder += github_api::Separator::ForwardSlash;
-            url_builder += "releases";
-            url_builder += github_api::Separator::ForwardSlash;
-            url_builder += "latest";
-            url_builder += github_api::Separator::Underscore;
-            url_builder += "tag_name";
-            url_builder += github_api::Separator::ForwardSlash;
-            url_builder += "v";
-
-            assert_eq!(
-                url_builder.to_string(),
-                "https://api.github.com/repos/cloudflare/cfssl/releases/latest_tag_name/v"
-            );
         }
     }
 }
