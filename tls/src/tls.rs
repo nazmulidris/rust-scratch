@@ -142,10 +142,13 @@ pub mod key_ops {
     ///
     /// This is the private key that the server uses.
     /// - It is in the `PKCS#1` format.
-    /// - The [binary_data::get_server_key_pem] holds the contents of the `server-key.pem`
-    ///   file.
+    /// - The [binary_data::get_server_key_pem_for_server_binary] holds the contents of
+    ///   the `server-key.pem` file.
     pub fn server_load_single_private_key() -> miette::Result<PrivateKeyDer<'static>> {
-        if let Some(key) = load_private_key_from_pem_data(binary_data::get_server_key_pem()).pop() {
+        if let Some(key) =
+            load_private_key_from_pem_data(binary_data::get_server_key_pem_for_server_binary())
+                .pop()
+        {
             ok!(key)
         } else {
             miette::bail!(
@@ -193,11 +196,12 @@ pub mod certificate_ops {
     /// CA.
     ///
     /// - This is the server certificate that the server uses.
-    /// - The [binary_data::get_server_cert_pem] holds the contents of the `server.pem`
-    ///   file.
+    /// - The [binary_data::get_server_cert_pem_for_server_binary] holds the contents of
+    ///   the `server.pem` file.
     pub fn server_load_server_cert_chain() -> miette::Result<Vec<CertificateDer<'static>>> {
-        let return_certs =
-            certificate_ops::load_certs_from_pem_data(binary_data::get_server_cert_pem());
+        let return_certs = certificate_ops::load_certs_from_pem_data(
+            binary_data::get_server_cert_pem_for_server_binary(),
+        );
         if return_certs.is_empty() {
             miette::bail!(
                 "No certificates found in the {} file",
@@ -211,10 +215,12 @@ pub mod certificate_ops {
     ///
     /// - This is the CA certificate that the client uses to verify the server
     ///   certificate.
-    /// - The [binary_data::get_ca_cert_pem] holds the contents of the `ca.pem` file.
+    /// - The [binary_data::get_ca_cert_pem_for_client_binary] holds the contents of the
+    ///   `ca.pem` file.
     pub fn client_load_ca_cert_chain() -> miette::Result<Vec<CertificateDer<'static>>> {
-        let return_certs =
-            certificate_ops::load_certs_from_pem_data(binary_data::get_ca_cert_pem());
+        let return_certs = certificate_ops::load_certs_from_pem_data(
+            binary_data::get_ca_cert_pem_for_client_binary(),
+        );
         if return_certs.is_empty() {
             miette::bail!(
                 "No CA certificates found in the {} file",
@@ -256,39 +262,39 @@ pub mod binary_data {
     use super::*;
 
     /// - Embed the `server-key.pem` file into the binary.
-    /// - This is the private key that the server uses.
+    /// - This is the private key that the **SERVER** uses.
     /// - It is generated using the self-signed CA certificate.
     static SERVER_KEY_PEM: OnceLock<Vec<u8>> = OnceLock::new();
     /// For error messages and file loading.
     pub const SERVER_KEY_PEM_FILENAME: &str = "certs/generated/server-key.pem";
     /// Actually load the bytes at runtime (once).
-    pub fn get_server_key_pem() -> &'static Vec<u8> {
+    pub fn get_server_key_pem_for_server_binary() -> &'static Vec<u8> {
         SERVER_KEY_PEM.get_or_init(|| {
             fs::read(SERVER_KEY_PEM_FILENAME).expect("Failed to read server-key.pem")
         })
     }
 
     /// - Embed the `server.pem` file into the binary.
-    /// - This is the server certificate that the server uses.
+    /// - This is the server certificate that the **SERVER** uses.
     /// - It is generated using the self-signed CA certificate.
     static SERVER_CERT_PEM: OnceLock<Vec<u8>> = OnceLock::new();
     /// For error messages and file loading.
-    pub const SERVER_CERT_PEM_FILENAME: &str = "/certs/generated/server.pem";
+    pub const SERVER_CERT_PEM_FILENAME: &str = "certs/generated/server.pem";
     /// Actually load the bytes at runtime (once).
-    pub fn get_server_cert_pem() -> &'static Vec<u8> {
+    pub fn get_server_cert_pem_for_server_binary() -> &'static Vec<u8> {
         SERVER_CERT_PEM
             .get_or_init(|| fs::read(SERVER_CERT_PEM_FILENAME).expect("Failed to read server.pem"))
     }
 
     /// - Embed the `ca.pem` file into the binary.
-    /// - This is the CA certificate that the client uses to verify the server
+    /// - This is the CA certificate that the **CLIENT** uses to verify the server
     ///   certificate.
     /// - It is generated using the self-signed CA certificate.
     static CA_CERT_PEM: OnceLock<Vec<u8>> = OnceLock::new();
     /// For error messages and file loading.
     pub const CA_CERT_PEM_FILENAME: &str = "certs/generated/ca.pem";
     /// Actually load the bytes at runtime (once).
-    pub fn get_ca_cert_pem() -> &'static Vec<u8> {
+    pub fn get_ca_cert_pem_for_client_binary() -> &'static Vec<u8> {
         CA_CERT_PEM.get_or_init(|| fs::read(CA_CERT_PEM_FILENAME).expect("Failed to read ca.pem"))
     }
 }
