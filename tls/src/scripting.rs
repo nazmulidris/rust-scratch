@@ -15,9 +15,11 @@
  *   limitations under the License.
  */
 
+use crate::tracing_debug;
 use crossterm::style::Stylize as _;
-use miette::Diagnostic;
-use miette::IntoDiagnostic;
+use fs_path::{FsOpError, FsOpResult};
+use http_client::create_client_with_user_agent;
+use miette::{Diagnostic, IntoDiagnostic};
 use r3bl_core::ok;
 use std::{
     env,
@@ -27,182 +29,196 @@ use std::{
     ops::{AddAssign, Deref},
     os::unix::fs::PermissionsExt as _,
     path::{Path, PathBuf},
+    process::{Child, Command, Stdio},
 };
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
 // 00: add brew_install mod
 // 00: add apt_install mod
-// 00: make it easy to pipe 2 commands together (like duct crate's pipe())
+// 00: move this file into the r3bl-open-core monorepo (as a new crate `r3bl_scripting` in the workspace)
 
-/// This macro to create a [std::process::Command] that receives a set of arguments and
-/// returns it.
-///
-/// # Example of command and args
-///
-/// ```
-/// use tls::create_command;
-/// use std::process::Command;
-///
-/// let mut command = create_command!(
-///     command => "echo",
-///     args => "Hello, world!",
-/// );
-/// let output = command.output().expect("Failed to execute command");
-/// assert!(output.status.success());
-/// assert_eq!(String::from_utf8_lossy(&output.stdout), "Hello, world!\n");
-/// ```
-///
-/// # Example of command, env, and args
-///
-/// ```
-/// use tls::create_command;
-/// use tls::environment;
-/// use std::process::Command;
-///
-/// let my_path = "/usr/bin";
-/// let env_vec = environment::get_path_envs(my_path);
-/// let mut command = create_command!(
-///     command => "printenv",
-///     envs => env_vec,
-///     args => "PATH",
-/// );
-/// let output = command.output().expect("Failed to execute command");
-/// assert!(output.status.success());
-/// assert_eq!(String::from_utf8_lossy(&output.stdout), "/usr/bin\n");
-/// ```
-///
-/// # Example of command, env, args, and stdin
-///
-/// ```
-/// use tls::create_command;
-/// use tls::environment;
-/// use std::process::{Command, Stdio};
-///
-/// let my_path = "/usr/bin";
-/// let env_vec = environment::get_path_envs(my_path);
-/// let mut command = create_command!(
-///     command => "cat",
-///     envs => env_vec,
-///     stdin => Stdio::piped(),
-///     args => "/etc/passwd",
-/// );
-/// let output = command.output().expect("Failed to execute command");
-/// assert!(output.status.success());
-/// assert!(!output.stdout.is_empty());
-/// ```
-#[macro_export]
-macro_rules! create_command {
-    // Variant that receives a command and args.
-    (command=> $cmd:expr, args=> $($args:expr),* $(,)?) => {{
-        let mut it = std::process::Command::new($cmd);
-        $(
-            it.arg($args);
-        )*
-        it
-    }};
+pub mod command_runner {
+    use super::*;
 
-    // Variant that receives a command, env (vec), and args.
-    (command=> $cmd:expr, envs=> $envs:expr, args=> $($args:expr),* $(,)?) => {{
-        let mut it = std::process::Command::new($cmd);
-        it.envs($envs);
-        $(
-            it.arg($args);
-        )*
-        it
-    }};
+    /// This macro to create a [std::process::Command] that receives a set of arguments and
+    /// returns it.
+    ///
+    /// # Example of command and args
+    ///
+    /// ```
+    /// use tls::command;
+    /// use std::process::Command;
+    ///
+    /// let mut command = command!(
+    ///     program => "echo",
+    ///     args => "Hello, world!",
+    /// );
+    /// let output = command.output().expect("Failed to execute command");
+    /// assert!(output.status.success());
+    /// assert_eq!(String::from_utf8_lossy(&output.stdout), "Hello, world!\n");
+    /// ```
+    ///
+    /// # Example of command, env, and args
+    ///
+    /// ```
+    /// use tls::command;
+    /// use tls::environment;
+    /// use std::process::Command;
+    ///
+    /// let my_path = "/usr/bin";
+    /// let env_vars = environment::get_path_env_vars(my_path);
+    /// let mut command = command!(
+    ///     program => "printenv",
+    ///     envs => env_vars,
+    ///     args => "PATH",
+    /// );
+    /// let output = command.output().expect("Failed to execute command");
+    /// assert!(output.status.success());
+    /// assert_eq!(String::from_utf8_lossy(&output.stdout), "/usr/bin\n");
+    /// ```
+    #[macro_export]
+    macro_rules! command {
+        // Variant that receives a command and args.
+        (program=> $cmd:expr, args=> $($args:expr),* $(,)?) => {{
+            let mut it = std::process::Command::new($cmd);
+            $(
+                it.arg($args);
+            )*
+            it
+        }};
 
-    // Variant that receives a command, env (vec), piped stdin, and args.
-    (command=> $cmd:expr, envs=> $envs:expr, stdin=> $stdin:expr, args=> $($args:expr),* $(,)?) => {{
-        let mut it = std::process::Command::new($cmd);
-        it.envs($envs);
-        it.stdin($stdin);
-        $(
-            it.arg($args);
-        )*
-        it
-    }};
-}
-
-/// Use this macro instead of [tracing::debug!] to make the output easier to read.
-///
-/// - It simply applies a display width to the message [debug::TRACING_MSG_WIDTH]
-///   characters).
-/// - This ensures that the first message is always this width, its clipped if too long,
-///   and padded with spaces if too short.
-///
-/// # Arguments
-/// 1. The first argument is the message that will be displayed. This can be any type that
-///    implements the [Display] trait.
-/// 2. The second argument is the body of the message. This can be any type that
-///    implements the [Debug] trait.
-///
-/// More info: <https://doc.rust-lang.org/std/fmt/index.html>
-///
-/// This works hand in hand with [debug::tracing_init] to ensure that the output is
-/// formatted with minimal noise.
-///
-/// # Example
-///
-/// ```
-/// use tls::tracing_debug;
-/// tracing_debug!(
-///     "Hello, wor .. 20 ch!", // Must implement Display trait.
-///     "Body has more space .... will be clipped to 50 ch!" // Must implement Debug trait.
-/// );
-/// ```
-///
-/// Here's what the [tracing::debug!] macro looks like:
-///
-/// ```
-/// use tracing::debug;
-/// tracing::debug!("{:10} = {:20}", "bar", "donkey");
-/// ```
-#[macro_export]
-macro_rules! tracing_debug {
-    ($msg:expr, $body:expr) => {
-        let (_msg_display_trunc, _body_debug_trunc) =
-            $crate::tracing_debug_impl::prepare_tracing_debug(&$msg, &$body);
-        tracing::debug!("{} = {}", _msg_display_trunc, _body_debug_trunc);
-    };
-}
-
-pub mod tracing_debug_impl {
-    pub fn prepare_tracing_debug(
-        msg: &impl std::fmt::Display,
-        body: &impl std::fmt::Debug,
-    ) -> (String, String) {
-        let msg_display = format!("{}", msg);
-        let body_debug = format!("{:?}", body);
-        let msg_display_trunc = truncate_or_pad(&msg_display, crate::debug::TRACING_MSG_WIDTH);
-        let body_debug_trunc = truncate_or_pad(&body_debug, crate::debug::TRACING_BODY_WIDTH);
-        (msg_display_trunc, body_debug_trunc)
+        // Variant that receives a command, env (vec), and args.
+        (program=> $cmd:expr, envs=> $envs:expr, args=> $($args:expr),* $(,)?) => {{
+            let mut it = std::process::Command::new($cmd);
+            it.envs($envs.to_owned());
+            // The following is equivalent to the line above:
+            // it.envs($envs.iter().map(|(k, v)| (k.as_str(), v.as_str())));
+            $(
+                it.arg($args);
+            )*
+            it
+        }};
     }
 
-    pub fn truncate_or_pad(string: &str, width: usize) -> String {
-        if string.len() > width {
-            string.chars().take(width).collect()
+    pub fn run(command: &mut Command) -> miette::Result<Vec<u8>> {
+        let output = command.output().into_diagnostic()?;
+        if output.status.success() {
+            ok!(output.stdout)
         } else {
-            let mut padded_string = string.to_string();
-            padded_string.push_str(&" ".repeat(width - string.len()));
-            padded_string
+            miette::bail!(
+                "Failed to execute command: {:?}",
+                String::from_utf8_lossy(&output.stderr)
+            );
         }
     }
 
-    #[test]
-    fn test_truncate_or_pad() {
-        let long_string = "Hello, world!";
-        let short_string = "Hi!";
-        let width = 10;
+    /// Mimics the behavior of the Unix pipe operator `|`, ie: `command_one |
+    /// command_two`.
+    /// - The output of the first command is passed as input to the second command.
+    /// - The output of the second command is returned.
+    /// - If either command fails, an error is returned.
+    pub fn pipe(command_one: &mut Command, command_two: &mut Command) -> miette::Result<String> {
+        // Run the first command & get the output.
+        let command_one = command_one.stdout(Stdio::piped());
+        let command_one_output_stdout = command_one.output().into_diagnostic()?.stdout;
 
-        assert_eq!(truncate_or_pad(long_string, width), "Hello, wor");
-        assert_eq!(truncate_or_pad(short_string, width), "Hi!       ");
+        // Spawn the second command, make it to accept piped input from the first command.
+        let command_two = command_two.stdin(Stdio::piped()).stdout(Stdio::piped());
+        let mut child_handle: Child = command_two.spawn().into_diagnostic()?;
+        if let Some(mut child_stdin) = child_handle.stdin.take() {
+            child_stdin
+                .write_all(&command_one_output_stdout)
+                .into_diagnostic()?;
+        }
+
+        let child_output = child_handle.wait_with_output().into_diagnostic()?;
+
+        if child_output.status.success() {
+            ok!(String::from_utf8_lossy(&child_output.stdout).to_string())
+        } else {
+            miette::bail!("Failed to execute command: {:?}", child_output.stderr);
+        }
+    }
+
+    #[cfg(test)]
+    mod tests_command_runner {
+        use super::*;
+
+        #[test]
+        fn test_run() {
+            let mut command = command!(
+                program => "echo",
+                args => "Hello, world!",
+            );
+            let output = run(&mut command).unwrap();
+            assert_eq!(String::from_utf8_lossy(&output), "Hello, world!\n");
+        }
+
+        #[test]
+        fn test_pipe() {
+            let mut command_one = command!(
+                program => "echo",
+                args => "Hello, world!",
+            );
+            let mut command_two = command!(
+                program => "wc",
+                args => "-w",
+            );
+            let output = pipe(&mut command_one, &mut command_two).unwrap();
+            assert_eq!(output.trim(), "2");
+        }
     }
 }
 
-pub mod debug {
-    pub const TRACING_MSG_WIDTH: usize = 25;
-    pub const TRACING_BODY_WIDTH: usize = 70;
+pub mod tracing_debug_helper {
+    /// Use this macro instead of [tracing::debug!] to make the output easier to read.
+    ///
+    /// - It simply applies a display width to the message [constants::TRACING_MSG_WIDTH]
+    ///   characters).
+    /// - This ensures that the first message is always this width, its clipped if too
+    ///   long, and padded with spaces if too short.
+    ///
+    /// # Arguments
+    /// 1. The first argument is the message that will be displayed. This can be any type
+    ///    that implements the [std::fmt::Display] trait.
+    /// 2. The second argument is the body of the message. This can be any type that
+    ///    implements the [std::fmt::Debug] trait.
+    ///
+    /// More info: <https://doc.rust-lang.org/std/fmt/index.html>
+    ///
+    /// This works hand in hand with [tracing_init] to ensure that the output is formatted
+    /// with minimal noise.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tls::tracing_debug;
+    /// tracing_debug!(
+    ///     "Hello, wor .. 20 ch!", // Must implement Display trait.
+    ///     "Body has more space .... will be clipped to 50 ch!" // Must implement Debug trait.
+    /// );
+    /// ```
+    ///
+    /// Here's what the [tracing::debug!] macro looks like:
+    ///
+    /// ```
+    /// use tracing::debug;
+    /// tracing::debug!("{:10} = {:20}", "bar", "donkey");
+    /// ```
+    #[macro_export]
+    macro_rules! tracing_debug {
+        ($msg:expr, $body:expr) => {
+            let (_msg_display_trunc, _body_debug_trunc) =
+                $crate::tracing_debug_helper::prepare_tracing_debug(&$msg, &$body);
+            tracing::debug!("{} = {}", _msg_display_trunc, _body_debug_trunc);
+        };
+    }
+
+    pub mod constants {
+        pub const TRACING_MSG_WIDTH: usize = 25;
+        pub const TRACING_BODY_WIDTH: usize = 70;
+    }
 
     /// Works with [tracing_debug!] to initialize the tracing subscriber to output the
     /// least amount of noise (no line number, target, file, etc).
@@ -217,146 +233,71 @@ pub mod debug {
             .without_time()
             .init();
     }
-}
 
-/// Use this macro to make it more ergonomic to work with [PathBuf]s.
-///
-/// # Example - create a new path
-///
-/// ```
-/// use tls::fs_paths;
-/// use std::path::{PathBuf, Path};
-///
-/// let my_path = fs_paths![with_empty_root => "usr/bin" => "bash"];
-/// assert_eq!(my_path, PathBuf::from("usr/bin/bash"));
-///
-/// let my_path = fs_paths![with_empty_root => "usr" => "bin" => "bash"];
-/// assert_eq!(my_path, PathBuf::from("usr/bin/bash"));
-/// ```
-///
-/// # Example - join to an existing path
-///
-/// ```
-/// use tls::fs_paths;
-/// use std::path::{PathBuf, Path};
-///
-/// let root = PathBuf::from("/home/user");
-/// let my_path = fs_paths![with_root => root => "Downloads" => "rust"];
-/// assert_eq!(my_path, PathBuf::from("/home/user/Downloads/rust"));
-///
-/// let root = PathBuf::from("/home/user");
-/// let my_path = fs_paths![with_root => root => "Downloads" => "rust"];
-/// assert_eq!(my_path, PathBuf::from("/home/user/Downloads/rust"));
-/// ```
-#[macro_export]
-macro_rules! fs_paths {
-    // Join to an existing root path.
-    (with_root=> $path:expr=> $($x:expr)=>*) => {{
-        let mut it = $path.clone();
-        $(
-            it = it.join($x);
-        )*
-        it
-    }};
+    pub fn prepare_tracing_debug(
+        msg: &impl std::fmt::Display,
+        body: &impl std::fmt::Debug,
+    ) -> (String, String) {
+        let msg_display = format!("{}", msg);
+        let body_debug = format!("{:?}", body);
+        let msg_display_trunc = truncate_or_pad_from_right(
+            &msg_display,
+            crate::tracing_debug_helper::constants::TRACING_MSG_WIDTH,
+        );
+        let body_debug_trunc = truncate_or_pad_from_right(
+            &body_debug,
+            crate::tracing_debug_helper::constants::TRACING_BODY_WIDTH,
+        );
+        (msg_display_trunc, body_debug_trunc)
+    }
 
-    // Create a new path w/ no pre-existing root.
-    (with_empty_root=> $($x:expr)=>*) => {{
-        use std::path::{PathBuf};
-        let mut it = PathBuf::new();
-        $(
-            it = it.join($x);
-        )*
-        it
-    }}
-}
-
-/// Use this macro to ensure that all the paths provided exist on the filesystem, in which
-/// case it will return true If any of the paths do not exist, the function will return
-/// false. No error will be returned in case any of the paths are invalid or there aren't
-/// enough permissions to check if the paths exist.
-///
-/// # Example
-///
-/// ```
-/// use tls::fs_paths_exist;
-/// use tls::fs_paths;
-/// use r3bl_test_fixtures::create_temp_dir;
-///
-/// let temp_dir = create_temp_dir().unwrap();
-/// let path_1 = fs_paths![with_root => temp_dir => "some_dir"];
-/// let path_2 = fs_paths![with_root => temp_dir => "another_dir"];
-///
-/// assert!(!fs_paths_exist!(path_1, path_2));
-/// ```
-#[macro_export]
-macro_rules! fs_paths_exist {
-    ($($x:expr),*) => {'block: {
-        $(
-            if !std::fs::metadata($x).is_ok() {
-                break 'block false;
-            };
-        )*
-        true
-    }};
-}
-
-#[derive(Debug, Error, Diagnostic)]
-pub enum FsOpError {
-    #[error("File does not exist: {0}")]
-    FileDoesNotExist(String),
-
-    #[error("Directory does not exist: {0}")]
-    DirectoryDoesNotExist(String),
-
-    #[error("File already exists: {0}")]
-    FileAlreadyExists(String),
-
-    #[error("Directory already exists: {0}")]
-    DirectoryAlreadyExists(String),
-
-    #[error("Insufficient permissions: {0}")]
-    PermissionDenied(String),
-
-    #[error("Invalid name: {0}")]
-    InvalidName(String),
-
-    #[error("Failed to perform fs operation directory: {0}")]
-    IoError(#[from] std::io::Error),
-}
-
-pub type FsOpResult<T> = miette::Result<T, FsOpError>;
-
-/// This macro is used to wrap a block with code that saves the current working directory,
-/// runs the block of code for the test, and then restores the original working directory.
-/// It also ensures that the test is run serially.
-///
-/// Be careful when manipulating the current working directory in tests using
-/// [env::set_current_dir] as it can affect other tests that run in parallel.
-#[macro_export]
-macro_rules! serial_preserve_pwd_test {
-    ($name:ident, $block:block) => {
-        #[serial_test::serial]
-        #[test]
-        fn $name() {
-            with_saved_pwd!($block);
+    pub fn truncate_or_pad_from_right(string: &str, width: usize) -> String {
+        if string.len() > width {
+            string.chars().take(width).collect()
+        } else {
+            let mut padded_string = string.to_string();
+            padded_string.push_str(&" ".repeat(width - string.len()));
+            padded_string
         }
-    };
-}
+    }
 
-/// This macro is used to wrap a block with code that saves the current working directory,
-/// runs the block of code for the test, and then restores the original working directory.
-///
-/// Use this in conjunction with [serial_test::serial] in order to make sure that multiple
-/// threads are not changing the current working directory at the same time (even with
-/// this macro). In other words, use this macro [serial_preserve_pwd_test!] for tests.
-#[macro_export]
-macro_rules! with_saved_pwd {
-    ($block:block) => {{
-        let og_pwd = env::current_dir().unwrap();
-        let result = { $block };
-        env::set_current_dir(og_pwd).unwrap();
-        result
-    }};
+    pub fn truncate_or_pad_from_left(string: &str, width: usize) -> String {
+        if string.len() > width {
+            string.chars().skip(string.len() - width).collect()
+        } else {
+            let mut padded_string = " ".repeat(width - string.len());
+            padded_string.push_str(string);
+            padded_string
+        }
+    }
+
+    #[cfg(test)]
+    mod tests_truncate_or_pad {
+        use super::*;
+
+        #[test]
+        fn test_truncate_or_pad_from_right() {
+            let long_string = "Hello, world!";
+            let short_string = "Hi!";
+            let width = 10;
+
+            assert_eq!(truncate_or_pad_from_right(long_string, width), "Hello, wor");
+            assert_eq!(
+                truncate_or_pad_from_right(short_string, width),
+                "Hi!       "
+            );
+        }
+
+        #[test]
+        fn test_truncate_or_pad_from_left() {
+            let long_string = "Hello, world!";
+            let short_string = "Hi!";
+            let width = 10;
+
+            assert_eq!(truncate_or_pad_from_left(long_string, width), "lo, world!");
+            assert_eq!(truncate_or_pad_from_left(short_string, width), "       Hi!");
+        }
+    }
 }
 
 pub mod http_client {
@@ -402,7 +343,10 @@ pub mod github_api {
             .replace("{org}", org)
             .replace("{repo}", repo);
 
-        println!("url: {}", url.as_str().magenta());
+        tracing_debug!(
+            "Fetching latest release tag from GitHub",
+            url.to_string().magenta()
+        );
 
         let client = http_client::create_client_with_user_agent(None)?;
         let response = client.get(url).send().await.into_diagnostic()?;
@@ -572,8 +516,41 @@ pub mod github_api {
 pub mod directory_change {
     use super::*;
 
+    /// This macro is used to wrap a block with code that saves the current working directory,
+    /// runs the block of code for the test, and then restores the original working directory.
+    /// It also ensures that the test is run serially.
+    ///
+    /// Be careful when manipulating the current working directory in tests using
+    /// [env::set_current_dir] as it can affect other tests that run in parallel.
+    #[macro_export]
+    macro_rules! serial_preserve_pwd_test {
+        ($name:ident, $block:block) => {
+            #[serial_test::serial]
+            #[test]
+            fn $name() {
+                $crate::with_saved_pwd!($block);
+            }
+        };
+    }
+
+    /// This macro is used to wrap a block with code that saves the current working directory,
+    /// runs the block of code for the test, and then restores the original working directory.
+    ///
+    /// Use this in conjunction with [serial_test::serial] in order to make sure that multiple
+    /// threads are not changing the current working directory at the same time (even with
+    /// this macro). In other words, use this macro [serial_preserve_pwd_test!] for tests.
+    #[macro_export]
+    macro_rules! with_saved_pwd {
+        ($block:block) => {{
+            let og_pwd = env::current_dir().unwrap();
+            let result = { $block };
+            env::set_current_dir(og_pwd).unwrap();
+            result
+        }};
+    }
+
     /// Change cwd for current process.
-    pub fn try_change_directory(new_dir: impl AsRef<Path>) -> FsOpResult<()> {
+    pub fn try_cd(new_dir: impl AsRef<Path>) -> FsOpResult<()> {
         match env::set_current_dir(new_dir.as_ref()) {
             Ok(_) => ok!(),
             Err(err) => match err.kind() {
@@ -591,8 +568,11 @@ pub mod directory_change {
 
     #[cfg(test)]
     mod tests_directory_change {
+        use crate::fs_paths;
+
         use super::*;
-        use directory_change::try_change_directory;
+        use directory_change::try_cd;
+        use fs_path::FsOpError;
         use r3bl_test_fixtures::create_temp_dir;
 
         serial_preserve_pwd_test!(test_try_change_directory_permissions_errors, {
@@ -602,19 +582,19 @@ pub mod directory_change {
 
                 // Create a new temporary directory.
                 let new_tmp_dir =
-                    fs_paths!(with_root=> root => "test_change_dir_permissions_errors");
+                    fs_paths!(with_root: root => "test_change_dir_permissions_errors");
                 fs::create_dir_all(&new_tmp_dir).unwrap();
                 assert!(new_tmp_dir.exists());
 
                 // Create a directory with no permissions for user.
-                let no_permissions_dir = fs_paths!(with_root=> new_tmp_dir => "no_permissions_dir");
+                let no_permissions_dir = fs_paths!(with_root: new_tmp_dir => "no_permissions_dir");
                 fs::create_dir_all(&no_permissions_dir).unwrap();
                 let mut permissions = fs::metadata(&no_permissions_dir).unwrap().permissions();
                 permissions.set_mode(0o000);
                 fs::set_permissions(&no_permissions_dir, permissions).unwrap();
                 assert!(no_permissions_dir.exists());
                 // Try to change to a directory with insufficient permissions.
-                let result = try_change_directory(&no_permissions_dir);
+                let result = try_cd(&no_permissions_dir);
                 println!("✅ err: {:?}", result);
                 assert!(result.is_err());
                 assert!(matches!(result, Err(FsOpError::PermissionDenied(_))));
@@ -632,16 +612,16 @@ pub mod directory_change {
                 let root = create_temp_dir().unwrap();
 
                 // Create a new temporary directory.
-                let new_tmp_dir = fs_paths!(with_root=> root => "test_change_dir_happy_path");
+                let new_tmp_dir = fs_paths!(with_root: root => "test_change_dir_happy_path");
                 fs::create_dir_all(&new_tmp_dir).unwrap();
                 assert!(new_tmp_dir.exists());
 
                 // Change to the temporary directory.
-                try_change_directory(&new_tmp_dir).unwrap();
+                try_cd(&new_tmp_dir).unwrap();
                 assert_eq!(env::current_dir().unwrap(), new_tmp_dir);
 
                 // Change back to the original directory.
-                try_change_directory(&root).unwrap();
+                try_cd(&root).unwrap();
                 assert_eq!(env::current_dir().unwrap(), *root);
             });
         });
@@ -652,18 +632,18 @@ pub mod directory_change {
                 let root = create_temp_dir().unwrap();
 
                 // Create a new temporary directory.
-                let new_tmp_dir = fs_paths!(with_root=> root => "test_change_dir_non_existent");
+                let new_tmp_dir = fs_paths!(with_root: root => "test_change_dir_non_existent");
                 fs::create_dir_all(&new_tmp_dir).unwrap();
                 assert!(new_tmp_dir.exists());
 
                 // Try to change to a non-existent directory.
-                let non_existent_dir = fs_paths!(with_root=> new_tmp_dir => "non_existent_dir");
-                let result = try_change_directory(&non_existent_dir);
+                let non_existent_dir = fs_paths!(with_root: new_tmp_dir => "non_existent_dir");
+                let result = try_cd(&non_existent_dir);
                 assert!(result.is_err());
                 assert!(matches!(result, Err(FsOpError::DirectoryDoesNotExist(_))));
 
                 // Change back to the original directory.
-                try_change_directory(&root).unwrap();
+                try_cd(&root).unwrap();
                 assert_eq!(env::current_dir().unwrap(), *root);
             });
         });
@@ -674,19 +654,19 @@ pub mod directory_change {
                 let root = create_temp_dir().unwrap();
 
                 // Create a new temporary directory.
-                let new_tmp_dir = fs_paths!(with_root=> root => "test_change_dir_invalid_name");
+                let new_tmp_dir = fs_paths!(with_root: root => "test_change_dir_invalid_name");
                 fs::create_dir_all(&new_tmp_dir).unwrap();
                 assert!(new_tmp_dir.exists());
 
                 // Try to change to a directory with an invalid name.
-                let invalid_name_dir = fs_paths!(with_root=> new_tmp_dir => "invalid_name_dir\0");
-                let result = try_change_directory(&invalid_name_dir);
+                let invalid_name_dir = fs_paths!(with_root: new_tmp_dir => "invalid_name_dir\0");
+                let result = try_cd(&invalid_name_dir);
                 assert!(result.is_err());
                 println!("✅ err: {:?}", result);
                 assert!(matches!(result, Err(FsOpError::InvalidName(_))));
 
                 // Change back to the original directory.
-                try_change_directory(&root).unwrap();
+                try_cd(&root).unwrap();
                 assert_eq!(env::current_dir().unwrap(), *root);
             });
         });
@@ -702,26 +682,6 @@ pub mod directory_create {
         CreateIntermediateDirectories,
         CreateIntermediateDirectoriesOnlyIfNotExists,
         CreateIntermediateDirectoriesAndPurgeExisting,
-    }
-
-    fn handle_err(err: std::io::Error) -> FsOpResult<()> {
-        match err.kind() {
-            ErrorKind::PermissionDenied => {
-                FsOpResult::Err(FsOpError::PermissionDenied(err.to_string()))
-            }
-            ErrorKind::InvalidInput => FsOpResult::Err(FsOpError::InvalidName(err.to_string())),
-            ErrorKind::ReadOnlyFilesystem => {
-                FsOpResult::Err(FsOpError::PermissionDenied(err.to_string()))
-            }
-            _ => FsOpResult::Err(FsOpError::IoError(err)),
-        }
-    }
-
-    fn create_dir_all(new_path: &Path) -> FsOpResult<()> {
-        match fs::create_dir_all(new_path) {
-            Ok(_) => ok!(),
-            Err(err) => handle_err(err),
-        }
     }
 
     /// Creates a new directory at the specified path.
@@ -769,9 +729,30 @@ pub mod directory_create {
         create_dir_all(new_path)
     }
 
+    fn handle_err(err: std::io::Error) -> FsOpResult<()> {
+        match err.kind() {
+            ErrorKind::PermissionDenied => {
+                FsOpResult::Err(FsOpError::PermissionDenied(err.to_string()))
+            }
+            ErrorKind::InvalidInput => FsOpResult::Err(FsOpError::InvalidName(err.to_string())),
+            ErrorKind::ReadOnlyFilesystem => {
+                FsOpResult::Err(FsOpError::PermissionDenied(err.to_string()))
+            }
+            _ => FsOpResult::Err(FsOpError::IoError(err)),
+        }
+    }
+
+    fn create_dir_all(new_path: &Path) -> FsOpResult<()> {
+        match fs::create_dir_all(new_path) {
+            Ok(_) => ok!(),
+            Err(err) => handle_err(err),
+        }
+    }
+
     #[cfg(test)]
     mod tests_directory_create {
         use super::*;
+        use crate::{fs_paths, serial_preserve_pwd_test, with_saved_pwd};
         use directory_create::{try_mkdir, MkdirOptions::*};
         use r3bl_test_fixtures::create_temp_dir;
 
@@ -781,11 +762,11 @@ pub mod directory_create {
                 let root = create_temp_dir().unwrap();
 
                 // Create a temporary directory.
-                let tmp_root_dir = fs_paths!(with_root=> root => "test_create_clean_new_dir");
+                let tmp_root_dir = fs_paths!(with_root: root => "test_create_clean_new_dir");
                 try_mkdir(&tmp_root_dir, CreateIntermediateDirectories).unwrap();
 
                 // Create a new directory inside the temporary directory.
-                let new_dir = fs_paths!(with_root=> tmp_root_dir => "new_dir");
+                let new_dir = fs_paths!(with_root: tmp_root_dir => "new_dir");
                 try_mkdir(&new_dir, CreateIntermediateDirectories).unwrap();
                 assert!(new_dir.exists());
 
@@ -817,6 +798,113 @@ pub mod directory_create {
 ///   [here](https://rust-lang.github.io/rust-clippy/master/index.html#ptr_arg).
 pub mod fs_path {
     use super::*;
+
+    /// Use this macro to make it more ergonomic to work with [PathBuf]s.
+    ///
+    /// # Example - create a new path
+    ///
+    /// ```
+    /// use tls::fs_paths;
+    /// use std::path::{PathBuf, Path};
+    ///
+    /// let my_path = fs_paths![with_empty_root => "usr/bin" => "bash"];
+    /// assert_eq!(my_path, PathBuf::from("usr/bin/bash"));
+    ///
+    /// let my_path = fs_paths![with_empty_root => "usr" => "bin" => "bash"];
+    /// assert_eq!(my_path, PathBuf::from("usr/bin/bash"));
+    /// ```
+    ///
+    /// # Example - join to an existing path
+    ///
+    /// ```
+    /// use tls::fs_paths;
+    /// use std::path::{PathBuf, Path};
+    ///
+    /// let root = PathBuf::from("/home/user");
+    /// let my_path = fs_paths![with_root: root => "Downloads" => "rust"];
+    /// assert_eq!(my_path, PathBuf::from("/home/user/Downloads/rust"));
+    ///
+    /// let root = PathBuf::from("/home/user");
+    /// let my_path = fs_paths![with_root: root => "Downloads" => "rust"];
+    /// assert_eq!(my_path, PathBuf::from("/home/user/Downloads/rust"));
+    /// ```
+    #[macro_export]
+    macro_rules! fs_paths {
+        // Join to an existing root path.
+        (with_root: $path:expr=> $($x:expr)=>*) => {{
+            let mut it: std::path::PathBuf = $path.to_path_buf();
+            $(
+                it = it.join($x);
+            )*
+            it
+        }};
+
+        // Create a new path w/ no pre-existing root.
+        (with_empty_root=> $($x:expr)=>*) => {{
+            use std::path::{PathBuf};
+            let mut it = PathBuf::new();
+            $(
+                it = it.join($x);
+            )*
+            it
+        }}
+    }
+
+    /// Use this macro to ensure that all the paths provided exist on the filesystem, in which
+    /// case it will return true If any of the paths do not exist, the function will return
+    /// false. No error will be returned in case any of the paths are invalid or there aren't
+    /// enough permissions to check if the paths exist.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tls::fs_paths_exist;
+    /// use tls::fs_paths;
+    /// use r3bl_test_fixtures::create_temp_dir;
+    ///
+    /// let temp_dir = create_temp_dir().unwrap();
+    /// let path_1 = fs_paths![with_root: temp_dir => "some_dir"];
+    /// let path_2 = fs_paths![with_root: temp_dir => "another_dir"];
+    ///
+    /// assert!(!fs_paths_exist!(path_1, path_2));
+    /// ```
+    #[macro_export]
+    macro_rules! fs_paths_exist {
+        ($($x:expr),*) => {'block: {
+            $(
+                if !std::fs::metadata($x).is_ok() {
+                    break 'block false;
+                };
+            )*
+            true
+        }};
+    }
+
+    #[derive(Debug, Error, Diagnostic)]
+    pub enum FsOpError {
+        #[error("File does not exist: {0}")]
+        FileDoesNotExist(String),
+
+        #[error("Directory does not exist: {0}")]
+        DirectoryDoesNotExist(String),
+
+        #[error("File already exists: {0}")]
+        FileAlreadyExists(String),
+
+        #[error("Directory already exists: {0}")]
+        DirectoryAlreadyExists(String),
+
+        #[error("Insufficient permissions: {0}")]
+        PermissionDenied(String),
+
+        #[error("Invalid name: {0}")]
+        InvalidName(String),
+
+        #[error("Failed to perform fs operation directory: {0}")]
+        IoError(#[from] std::io::Error),
+    }
+
+    pub type FsOpResult<T> = miette::Result<T, FsOpError>;
 
     /// Checks whether the directory exist. If won't provide any errors if there are
     /// permissions issues or the directory is invalid. Use [try_directory_exists] if you
@@ -897,6 +985,7 @@ pub mod fs_path {
     #[cfg(test)]
     mod tests_fs_path {
         use super::*;
+        use crate::{serial_preserve_pwd_test, with_saved_pwd};
         use fs_path::try_pwd;
         use r3bl_test_fixtures::create_temp_dir;
 
@@ -960,7 +1049,7 @@ pub mod fs_path {
                 println!("Current directory set to: {}", root);
                 println!("Current directory is    : {}", try_pwd().unwrap().display());
 
-                let fq_path = fs_paths!(with_root=> try_pwd().unwrap() => sub_path);
+                let fq_path = fs_paths!(with_root: try_pwd().unwrap() => sub_path);
 
                 println!("Sub directory created at: {}", fq_path.display());
                 println!("Sub directory exists    : {}", fq_path.exists());
@@ -976,7 +1065,7 @@ pub mod fs_path {
 
                 env::set_current_dir(&root).unwrap();
 
-                let fq_path = fs_paths!(with_root=> try_pwd().unwrap() => "some_dir");
+                let fq_path = fs_paths!(with_root: try_pwd().unwrap() => "some_dir");
                 let fq_path_str = fs_path::path_as_string(&fq_path);
 
                 assert_eq!(fq_path_str, fq_path.display().to_string());
@@ -1143,19 +1232,38 @@ pub mod environment {
         Path,
     }
 
+    pub type EnvVars = Vec<(String, String)>;
+    pub type EnvVarsSlice<'a> = &'a [(String, String)];
+
     /// Returns the PATH environment variable as a vector of tuples.
     ///
     /// # Example
     ///
     /// ```
-    /// use tls::environment::get_path_envs;
-    /// let path_envs = get_path_envs("/usr/bin");
+    /// use tls::environment::get_path_env_vars;
+    ///
+    /// let path_envs = get_path_env_vars("/usr/bin");
     /// let expected = vec![
     ///     ("PATH".to_string(), "/usr/bin".to_string())
     /// ];
     /// assert_eq!(path_envs, expected);
     /// ```
-    pub fn get_path_envs(path: &str) -> Vec<(String, String)> {
+    ///
+    /// # Example of using the returned value as a slice
+    ///
+    /// The returned value can also be passed around as a `&[(String, String)]`.
+    ///
+    /// ```
+    /// use tls::environment::{get_path_env_vars, EnvVars, EnvVarsSlice};
+    ///
+    /// let path_envs: EnvVars = get_path_env_vars("/usr/bin");
+    /// let path_envs_ref: EnvVarsSlice = &path_envs;
+    /// let path_envs_ref_2 = path_envs.as_slice();
+    /// let path_envs_ref_clone = path_envs_ref.to_owned();
+    /// assert_eq!(path_envs_ref, path_envs_ref_clone);
+    /// assert_eq!(path_envs_ref, path_envs_ref_2);
+    /// ```
+    pub fn get_path_env_vars(path: &str) -> EnvVars {
         vec![(environment::EnvKeys::Path.to_string(), path.to_string())]
     }
 
@@ -1184,6 +1292,25 @@ pub mod environment {
         use super::*;
 
         #[test]
+        fn test_try_get_path_from_env() {
+            let path = environment::try_get_path_from_env().unwrap();
+            assert!(!path.is_empty());
+        }
+
+        #[test]
+        fn test_try_get() {
+            let path = environment::try_get(EnvKeys::Path).unwrap();
+            assert!(!path.is_empty());
+        }
+
+        #[test]
+        fn test_get_path_envs() {
+            let path_envs = environment::get_path_env_vars("/usr/bin");
+            let expected = vec![("PATH".to_string(), "/usr/bin".to_string())];
+            assert_eq!(path_envs, expected);
+        }
+
+        #[test]
         fn test_get_path() {
             let path = environment::try_get_path_from_env().unwrap();
             assert!(!path.is_empty());
@@ -1201,7 +1328,6 @@ pub mod environment {
 
 pub mod download {
     use super::*;
-    use http_client::create_client_with_user_agent;
 
     pub async fn try_download_file_overwrite_existing(
         source_url: &str,
