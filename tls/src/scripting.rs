@@ -27,10 +27,11 @@ use std::{
     io::{ErrorKind, Write as _},
     os::unix::fs::PermissionsExt as _,
     path::{Path, PathBuf},
-    process::{Child, Command, Stdio},
+    process::Stdio,
 };
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
+use tokio::process::{Child, Command};
 
 // 00: move this file into the r3bl-open-core monorepo (as a new crate `r3bl_scripting` in the workspace)
 
@@ -54,32 +55,40 @@ pub mod apt_install {
     ///
     /// ```no_run
     /// use tls::apt_install::check_if_package_is_installed;
-    /// let package_name = "bash";
-    /// let is_installed = check_if_package_is_installed(package_name).unwrap();
-    /// assert!(is_installed);
+    ///
+    /// async fn check() {
+    ///     let package_name = "bash";
+    ///     let is_installed = check_if_package_is_installed(package_name).await.unwrap();
+    ///     assert!(is_installed);
+    /// }
     /// ```
     ///
     /// ```no_run
     /// use tls::apt_install::install_package;
-    /// let package_name = "does_not_exist";
-    /// assert!(install_package(package_name).is_err());
+    ///
+    /// async fn install() {
+    ///     let package_name = "does_not_exist";
+    ///     assert!(install_package(package_name).await.is_err());
+    /// }
     /// ```
-    pub fn check_if_package_is_installed(package_name: &str) -> miette::Result<bool> {
+    pub async fn check_if_package_is_installed(package_name: &str) -> miette::Result<bool> {
         let output = command!(
             program => "dpkg-query",
             args => "-s", package_name
         )
         .output()
+        .await
         .into_diagnostic()?;
         ok!(output.status.success())
     }
 
-    pub fn install_package(package_name: &str) -> miette::Result<()> {
+    pub async fn install_package(package_name: &str) -> miette::Result<()> {
         let command = command!(
             program => "sudo",
             args => "apt", "install", "-y", package_name
         )
         .output()
+        .await
         .into_diagnostic()?;
         if command.status.success() {
             ok!()
@@ -96,31 +105,32 @@ pub mod apt_install {
         use super::*;
         use r3bl_ansi_color::{is_fully_uninteractive_terminal, TTYResult};
 
-        #[test]
-        fn test_check_if_package_is_installed() {
+        #[tokio::test]
+        async fn test_check_if_package_is_installed() {
             // This is for CI/CD.
             if let TTYResult::IsNotInteractive = is_fully_uninteractive_terminal() {
                 return;
             }
             let package_name = "bash";
-            let is_installed = check_if_package_is_installed(package_name).unwrap();
+            let is_installed = check_if_package_is_installed(package_name).await.unwrap();
             assert!(is_installed);
         }
 
-        #[test]
-        fn test_install_package() {
+        #[tokio::test]
+        async fn test_install_package() {
             // This is for CI/CD.
             if let TTYResult::IsNotInteractive = is_fully_uninteractive_terminal() {
                 return;
             }
             let package_name = "does_not_exist";
-            assert!(install_package(package_name).is_err());
+            assert!(install_package(package_name).await.is_err());
         }
     }
 }
 
 pub mod command_runner {
     use miette::Context;
+    use tokio::io::AsyncWriteExt as _;
 
     use super::*;
 
@@ -133,13 +143,15 @@ pub mod command_runner {
     /// use tls::command;
     /// use std::process::Command;
     ///
-    /// let mut command = command!(
-    ///     program => "echo",
-    ///     args => "Hello, world!",
-    /// );
-    /// let output = command.output().expect("Failed to execute command");
-    /// assert!(output.status.success());
-    /// assert_eq!(String::from_utf8_lossy(&output.stdout), "Hello, world!\n");
+    /// async fn run_command() {
+    ///     let mut command = command!(
+    ///         program => "echo",
+    ///         args => "Hello, world!",
+    ///     );
+    ///     let output = command.output().await.expect("Failed to execute command");
+    ///     assert!(output.status.success());
+    ///     assert_eq!(String::from_utf8_lossy(&output.stdout), "Hello, world!\n");
+    /// }
     /// ```
     ///
     /// # Example of command, env, and args
@@ -149,16 +161,18 @@ pub mod command_runner {
     /// use tls::environment::{self, EnvKeys};
     /// use std::process::Command;
     ///
-    /// let my_path = "/usr/bin";
-    /// let env_vars = environment::get_env_vars(EnvKeys::Path, my_path);
-    /// let mut command = command!(
-    ///     program => "printenv",
-    ///     envs => env_vars,
-    ///     args => "PATH",
-    /// );
-    /// let output = command.output().expect("Failed to execute command");
-    /// assert!(output.status.success());
-    /// assert_eq!(String::from_utf8_lossy(&output.stdout), "/usr/bin\n");
+    /// async fn run_command() {
+    ///     let my_path = "/usr/bin";
+    ///     let env_vars = environment::get_env_vars(EnvKeys::Path, my_path);
+    ///     let mut command = command!(
+    ///         program => "printenv",
+    ///         envs => env_vars,
+    ///         args => "PATH",
+    ///     );
+    ///     let output = command.output().await.expect("Failed to execute command");
+    ///     assert!(output.status.success());
+    ///     assert_eq!(String::from_utf8_lossy(&output.stdout), "/usr/bin\n");
+    /// }
     /// ```
     ///
     /// # Examples of using the [Run] trait, and [std::process::Output].
@@ -167,27 +181,31 @@ pub mod command_runner {
     /// use tls::command;
     /// use tls::command_runner::Run;
     ///
-    /// let output = command!(
-    ///    program => "echo",
-    ///    args => "Hello, world!",
-    /// )
-    /// .output()
-    /// .unwrap();
-    /// assert!(output.status.success());
+    /// async fn run_command() {
+    ///     let output = command!(
+    ///        program => "echo",
+    ///        args => "Hello, world!",
+    ///     )
+    ///     .output()
+    ///     .await
+    ///     .unwrap();
+    ///     assert!(output.status.success());
     ///
-    /// let run_bytes = command!(
-    ///   program => "echo",
-    ///   args => "Hello, world!",
-    /// )
-    /// .run()
-    /// .unwrap();
-    /// assert_eq!(String::from_utf8_lossy(&run_bytes), "Hello, world!\n");
+    ///     let run_bytes = command!(
+    ///       program => "echo",
+    ///       args => "Hello, world!",
+    ///     )
+    ///     .run()
+    ///     .await
+    ///     .unwrap();
+    ///     assert_eq!(String::from_utf8_lossy(&run_bytes), "Hello, world!\n");
+    /// }
     /// ```
     #[macro_export]
     macro_rules! command {
         // Variant that receives a command and args.
         (program=> $cmd:expr, args=> $($args:expr),* $(,)?) => {{
-            let mut it = std::process::Command::new($cmd);
+            let mut it = tokio::process::Command::new($cmd);
             $(
                 it.arg($args);
             )*
@@ -196,7 +214,7 @@ pub mod command_runner {
 
         // Variant that receives a command, env (vec), and args.
         (program=> $cmd:expr, envs=> $envs:expr, args=> $($args:expr),* $(,)?) => {{
-            let mut it = std::process::Command::new($cmd);
+            let mut it = tokio::process::Command::new($cmd);
             it.envs($envs.to_owned());
             // The following is equivalent to the line above:
             // it.envs($envs.iter().map(|(k, v)| (k.as_str(), v.as_str())));
@@ -208,17 +226,19 @@ pub mod command_runner {
     }
 
     pub trait Run {
-        fn run(&mut self) -> miette::Result<Vec<u8>>;
-        fn run_interactive(&mut self) -> miette::Result<Vec<u8>>;
+        fn run(&mut self) -> impl std::future::Future<Output = miette::Result<Vec<u8>>> + Send;
+        fn run_interactive(
+            &mut self,
+        ) -> impl std::future::Future<Output = miette::Result<Vec<u8>>> + Send;
     }
 
     impl Run for Command {
-        fn run(&mut self) -> miette::Result<Vec<u8>> {
-            run(self)
+        async fn run(&mut self) -> miette::Result<Vec<u8>> {
+            run(self).await
         }
 
-        fn run_interactive(&mut self) -> miette::Result<Vec<u8>> {
-            run_interactive(self)
+        async fn run_interactive(&mut self) -> miette::Result<Vec<u8>> {
+            run_interactive(self).await
         }
     }
 
@@ -243,13 +263,14 @@ pub mod command_runner {
     /// `stdin`, `stdout`, `stderr` from the parent (aka current) process.
     ///
     /// See the tests for examples of how to use this.
-    pub fn run(command: &mut Command) -> miette::Result<Vec<u8>> {
+    pub async fn run(command: &mut Command) -> miette::Result<Vec<u8>> {
         // Try to run command (might be unable to run it if the program is invalid).
         let output = command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .output()
+            .await
             .into_diagnostic()
             .wrap_err(miette::miette!("Unable to run command: {:?}", command))?;
 
@@ -277,13 +298,14 @@ pub mod command_runner {
     ///     args => "-c", "read -p 'Enter your input: ' input"
     /// );
     /// ```
-    pub fn run_interactive(command: &mut Command) -> miette::Result<Vec<u8>> {
+    pub async fn run_interactive(command: &mut Command) -> miette::Result<Vec<u8>> {
         // Try to run command (might be unable to run it if the program is invalid).
         let output = command
             .stdin(Stdio::inherit())
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .output()
+            .await
             .into_diagnostic()
             .wrap_err(miette::miette!("Unable to run command: {:?}", command))?;
 
@@ -313,7 +335,10 @@ pub mod command_runner {
     ///     args => "-c", "read -p 'Enter your input: ' input"
     /// );
     /// ```
-    pub fn pipe(command_one: &mut Command, command_two: &mut Command) -> miette::Result<String> {
+    pub async fn pipe(
+        command_one: &mut Command,
+        command_two: &mut Command,
+    ) -> miette::Result<String> {
         // Run the first command & get the output.
         let command_one = command_one
             .stdin(Stdio::piped())
@@ -323,6 +348,7 @@ pub mod command_runner {
         let command_one_output =
             command_one
                 .output()
+                .await
                 .into_diagnostic()
                 .wrap_err(miette::miette!(
                     "Unable to run command_one: {:?}",
@@ -355,10 +381,11 @@ pub mod command_runner {
         if let Some(mut child_stdin) = child_handle.stdin.take() {
             child_stdin
                 .write_all(&command_one_stdout)
+                .await
                 .into_diagnostic()?;
         }
         // At this point, command_one has run, but it might result in a success or failure.
-        let command_two_output = child_handle.wait_with_output().into_diagnostic()?;
+        let command_two_output = child_handle.wait_with_output().await.into_diagnostic()?;
         if command_two_output.status.success() {
             ok!(String::from_utf8_lossy(&command_two_output.stdout).to_string())
         } else {
@@ -374,40 +401,48 @@ pub mod command_runner {
     mod tests_command_runner {
         use super::*;
 
-        #[test]
-        fn test_run() {
-            let mut command = command!(
+        #[tokio::test]
+        async fn test_run() {
+            let output = command!(
                 program => "echo",
                 args => "Hello, world!",
-            );
+            )
+            .run()
+            .await
+            .unwrap();
 
             // This captures the output.
-            let output = run(&mut command).unwrap();
             assert_eq!(String::from_utf8_lossy(&output), "Hello, world!\n");
 
-            // This dumps the output to the parent process' stdout & is not captured.
-            let output = run_interactive(&mut command).unwrap();
-            assert_eq!(String::from_utf8_lossy(&output), "");
+            // This dumps the output to the parent process' stdout & is captured by
+            // tokio::process::Command but not by std::process::Command.
+            let output = command!(
+                program => "echo",
+                args => "Hello, world!",
+            )
+            .run_interactive()
+            .await
+            .unwrap();
+            assert_eq!(String::from_utf8_lossy(&output), "Hello, world!\n");
         }
 
-        #[test]
-        fn test_run_invalid_command() {
+        #[tokio::test]
+        async fn test_run_invalid_command() {
             let result = command!(
                 program => "does_not_exist",
                 args => "Hello, world!",
             )
-            .run();
+            .run()
+            .await;
             if let Err(err) = result {
-                assert!(err
-                    .to_string()
-                    .contains("Unable to run command: \"does_not_exist\" \"Hello, world!\""));
+                assert!(err.to_string().contains("does_not_exist"));
             } else {
                 panic!("Expected an error, but got success");
             }
         }
 
-        #[test]
-        fn test_pipe_command_two_not_interactive_terminal() {
+        #[tokio::test]
+        async fn test_pipe_command_two_not_interactive_terminal() {
             let mut command_one = command!(
                 program => "echo",
                 args => "hello world",
@@ -416,12 +451,14 @@ pub mod command_runner {
                 program => "/usr/bin/bash",
                 args => "-c", "read -p 'Enter your input: ' input"
             );
-            let result = pipe(&mut command_one, &mut command_two);
-            assert!(result.is_err());
+            let result = pipe(&mut command_one, &mut command_two).await;
+            // This is not an error when using tokio::process::Command. However, when using
+            // std::process::Command, this will result in an error.
+            assert_eq!("", result.unwrap());
         }
 
-        #[test]
-        fn test_pipe_invalid_command() {
+        #[tokio::test]
+        async fn test_pipe_invalid_command() {
             let result = pipe(
                 &mut command!(
                     program => "does_not_exist",
@@ -431,11 +468,10 @@ pub mod command_runner {
                     program => "wc",
                     args => "-w",
                 ),
-            );
+            )
+            .await;
             if let Err(err) = result {
-                assert!(err
-                    .to_string()
-                    .contains("Unable to run command_one: \"does_not_exist\" \"Hello, world!\""));
+                assert!(err.to_string().contains("does_not_exist"));
             } else {
                 panic!("Expected an error, but got success");
             }
@@ -499,6 +535,7 @@ pub mod tracing_debug_helper {
         };
     }
 
+    // 00: consider adding bg color to the msg to make it more readable
     /// This is intricately tied to the [tracing_debug!] macro.
     pub fn prepare_tracing_debug(
         msg: &impl std::fmt::Display,
