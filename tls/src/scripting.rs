@@ -335,9 +335,9 @@ pub mod tracing_debug_helper {
 
     /// Works with [tracing_debug!] to initialize the tracing subscriber to output the
     /// least amount of noise (no line number, target, file, etc).
-    pub fn tracing_init() {
+    pub fn tracing_init(level: tracing::Level) {
         tracing_subscriber::fmt()
-            .with_max_level(tracing::Level::DEBUG)
+            .with_max_level(level)
             .pretty()
             .compact()
             .with_file(false)

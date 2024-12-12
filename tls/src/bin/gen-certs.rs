@@ -88,7 +88,7 @@ async fn main() -> miette::Result<()> {
     };
 
     // Setup tracing.
-    tracing_debug_helper::tracing_init();
+    tracing_debug_helper::tracing_init(tracing::Level::DEBUG);
 
     tracing_debug!("pwd at start", fs_path::try_pwd());
 
