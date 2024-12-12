@@ -103,31 +103,31 @@ async fn main() -> miette::Result<()> {
     };
 
     download_cfssl_binaries_if_needed(&root_dir).await?;
-    generate_certs_using_cfssl_bin(&root_dir, &amended_path_envs)?;
-    install_openssl_if_needed()?;
-    display_status_using_openssl_bin(&root_dir, &amended_path_envs)?;
+    generate_certs_using_cfssl_bin(&root_dir, &amended_path_envs).await?;
+    install_openssl_if_needed().await?;
+    display_status_using_openssl_bin(&root_dir, &amended_path_envs).await?;
 
     tracing_debug!("pwd at end", fs_path::try_pwd());
 
     ok!()
 }
 
-fn install_openssl_if_needed() -> miette::Result<()> {
+async fn install_openssl_if_needed() -> miette::Result<()> {
     tracing_debug!("install openssl if needed", fs_path::try_pwd());
-    if check_if_package_is_installed(OPENSSL_BIN)? {
+    if check_if_package_is_installed(OPENSSL_BIN).await? {
         println!("🎉 {} is already installed.", OPENSSL_BIN.blue());
     } else {
         //install using install_package()
         println!("📦 Installing {} using apt...", OPENSSL_BIN.blue());
-        install_package(OPENSSL_BIN)?;
+        install_package(OPENSSL_BIN).await?;
         println!("🎉 {} installed successfully.", OPENSSL_BIN.blue());
     }
     ok!()
 }
 
-fn generate_certs_using_cfssl_bin(
+async fn generate_certs_using_cfssl_bin(
     root_dir: &Path,
-    amended_path_envs: EnvVarsSlice,
+    amended_path_envs: EnvVarsSlice<'_>,
 ) -> miette::Result<()> {
     tracing_debug!("generate certs", fs_path::try_pwd());
     // Pushd into the `certs/generated` directory. Generate CA and server certificates.
@@ -159,7 +159,7 @@ fn generate_certs_using_cfssl_bin(
                 envs => amended_path_envs,
                 args => "-bare", CONFIG_VALUE_CA_CN,
             ),
-        )?;
+        ).await?;
 
         println!(
             "🎉 Generated CA certificate & key in {}",
@@ -192,7 +192,7 @@ fn generate_certs_using_cfssl_bin(
                 envs => amended_path_envs,
                 args => "-bare", CONFIG_VALUE_SERVER_CN,
             ),
-        )?;
+        ).await?;
         println!(
             "🎉 Generated server certificate (issued by CA) & key in {}",
             generated_dir_display_string.clone().magenta()
@@ -202,9 +202,9 @@ fn generate_certs_using_cfssl_bin(
     })
 }
 
-fn display_status_using_openssl_bin(
+async fn display_status_using_openssl_bin(
     root_dir: &Path,
-    amended_path_envs: EnvVarsSlice,
+    amended_path_envs: EnvVarsSlice<'_>,
 ) -> miette::Result<()> {
     tracing_debug!("verify certificates", fs_path::try_pwd());
     with_saved_pwd!({
@@ -220,7 +220,7 @@ fn display_status_using_openssl_bin(
                     "-text",
                     "-in", CA_PEM_FILE,
         )
-        .run()?;
+        .run().await?;
         println!(
             "🎉 CA certificate size: {} bytes",
             ca_cert_bytes.len().to_string().blue()
@@ -235,7 +235,7 @@ fn display_status_using_openssl_bin(
                     "-text",
                     "-in", SERVER_PEM_FILE,
         )
-        .run()?;
+        .run().await?;
         println!(
             "🎉 Server certificate size: {} bytes",
             server_cert_bytes.len().to_string().blue()
@@ -249,7 +249,7 @@ fn display_status_using_openssl_bin(
                     "-CAfile", CA_PEM_FILE,
                     SERVER_PEM_FILE,
         )
-        .run()?;
+        .run().await?;
         println!(
             "🎉 Server certificate is signed by CA {}",
             "verified".green()
