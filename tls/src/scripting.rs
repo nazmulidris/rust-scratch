@@ -20,6 +20,7 @@ use crossterm::style::Stylize as _;
 use fs_path::{FsOpError, FsOpResult};
 use http_client::create_client_with_user_agent;
 use miette::{Diagnostic, IntoDiagnostic};
+use r3bl_core::get_terminal_width;
 use r3bl_core::ok;
 use std::{
     env, fs,
@@ -443,7 +444,19 @@ pub mod command_runner {
 }
 
 pub mod tracing_debug_helper {
-    /// Use this macro instead of [tracing::debug!] to make the output easier to read.
+    use super::*;
+
+    pub mod constants {
+        /// This plus [TRACING_BODY_WIDTH] should be equal to 100.
+        pub const TRACING_MSG_WIDTH: usize = 30;
+        /// This plus [TRACING_MSG_WIDTH] should be equal to 100.
+        pub const TRACING_BODY_WIDTH: usize = 70;
+        /// The width of "├ {} ❯ {} ┤" used in [crate::tracing_debug]
+        pub const WIDTH_OF_DEBUG_LINE_DECORATION: usize = 13;
+    }
+
+    /// Use this macro instead of [tracing::debug!] to make the output easier to read. It
+    /// uses [prepare_tracing_debug] to do almost all the work.
     ///
     /// - It simply applies a display width to the message [constants::TRACING_MSG_WIDTH]
     ///   characters).
@@ -486,39 +499,26 @@ pub mod tracing_debug_helper {
         };
     }
 
-    pub mod constants {
-        pub const TRACING_MSG_WIDTH: usize = 25;
-        pub const TRACING_BODY_WIDTH: usize = 70;
-    }
-
-    /// Works with [tracing_debug!] to initialize the tracing subscriber to output the
-    /// least amount of noise (no line number, target, file, etc).
-    pub fn tracing_init(level: tracing::Level) {
-        tracing_subscriber::fmt()
-            .with_max_level(level)
-            .pretty()
-            .compact()
-            .with_file(false)
-            .with_target(false)
-            .with_line_number(false)
-            .without_time()
-            .init();
-    }
-
+    /// This is intricately tied to the [tracing_debug!] macro.
     pub fn prepare_tracing_debug(
         msg: &impl std::fmt::Display,
         body: &impl std::fmt::Debug,
     ) -> (String, String) {
+        use tracing_debug_helper::constants::{
+            TRACING_BODY_WIDTH, TRACING_MSG_WIDTH, WIDTH_OF_DEBUG_LINE_DECORATION,
+        };
+        let term_width = get_terminal_width() - WIDTH_OF_DEBUG_LINE_DECORATION;
+
+        // Use the TRACING_MSG_WIDTH and TRACING_BODY_WIDTH as percentages of the
+        // term_width to calculate the actual values for each.
+        let msg_width = ((TRACING_MSG_WIDTH as f64) / 100.0 * (term_width as f64)).round() as usize;
+        let body_width =
+            ((TRACING_BODY_WIDTH as f64) / 100.0 * (term_width as f64)).round() as usize;
+
         let msg_display = format!("{}", msg);
         let body_debug = format!("{:?}", body);
-        let msg_display_trunc = truncate_or_pad_from_right(
-            &msg_display,
-            crate::tracing_debug_helper::constants::TRACING_MSG_WIDTH,
-        );
-        let body_debug_trunc = truncate_or_pad_from_right(
-            &body_debug,
-            crate::tracing_debug_helper::constants::TRACING_BODY_WIDTH,
-        );
+        let msg_display_trunc = truncate_or_pad_from_right(&msg_display, msg_width);
+        let body_debug_trunc = truncate_or_pad_from_right(&body_debug, body_width);
         (msg_display_trunc, body_debug_trunc)
     }
 
@@ -544,6 +544,20 @@ pub mod tracing_debug_helper {
             padded_string.push_str(string);
             padded_string
         }
+    }
+
+    /// Works with [tracing_debug!] to initialize the tracing subscriber to output the
+    /// least amount of noise (no line number, target, file, etc).
+    pub fn tracing_init(level: tracing::Level) {
+        tracing_subscriber::fmt()
+            .with_max_level(level)
+            .pretty()
+            .compact()
+            .with_file(false)
+            .with_target(false)
+            .with_line_number(false)
+            .without_time()
+            .init();
     }
 
     #[cfg(test)]
