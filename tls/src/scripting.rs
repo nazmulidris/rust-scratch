@@ -119,6 +119,8 @@ pub mod apt_install {
 }
 
 pub mod command_runner {
+    use miette::Context;
+
     use super::*;
 
     /// This macro to create a [std::process::Command] that receives a set of arguments and
@@ -206,23 +208,89 @@ pub mod command_runner {
 
     pub trait Run {
         fn run(&mut self) -> miette::Result<Vec<u8>>;
+        fn run_interactive(&mut self) -> miette::Result<Vec<u8>>;
     }
 
     impl Run for Command {
         fn run(&mut self) -> miette::Result<Vec<u8>> {
             run(self)
         }
+
+        fn run_interactive(&mut self) -> miette::Result<Vec<u8>> {
+            run_interactive(self)
+        }
     }
 
+    #[macro_export]
+    macro_rules! bail_command_ran_and_failed {
+        ($command:expr, $status:expr, $stderr:expr) => {
+            use crossterm::style::Stylize as _;
+            miette::bail!(
+                "{name} failed\n{cmd_label}: '{cmd:?}'\n{status_label}: '{status}'\n{stderr_label}: '{stderr}'",
+                cmd_label = "[command]".to_string().yellow(),
+                status_label = "[status]".to_string().yellow(),
+                stderr_label = "[stderr]".to_string().yellow(),
+                name = stringify!($command).blue(),
+                cmd = $command,
+                status = format!("{:?}", $status).magenta(),
+                stderr = String::from_utf8_lossy(&$stderr).magenta(),
+            );
+        };
+    }
+
+    /// This command is not allowed to have user interaction. It does not inherit the
+    /// `stdin`, `stdout`, `stderr` from the parent (aka current) process.
+    ///
+    /// See the tests for examples of how to use this.
     pub fn run(command: &mut Command) -> miette::Result<Vec<u8>> {
-        let output = command.output().into_diagnostic()?;
+        // Try to run command (might be unable to run it if the program is invalid).
+        let output = command
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .into_diagnostic()
+            .wrap_err(miette::miette!("Unable to run command: {:?}", command))?;
+
+        // At this point, command_one has run, but it might result in a success or failure.
         if output.status.success() {
             ok!(output.stdout)
         } else {
-            miette::bail!(
-                "Failed to execute command: {:?}",
-                String::from_utf8_lossy(&output.stderr)
-            );
+            bail_command_ran_and_failed!(command, output.status, output.stderr);
+        }
+    }
+
+    /// This command is allowed to have full user interaction. It inherits the `stdin`,
+    /// `stdout`, `stderr` from the parent (aka current) process.
+    ///
+    /// See the tests for examples of how to use this.
+    ///
+    /// Here's an example which will block on user input from an interactive terminal if
+    /// executed:
+    ///
+    /// ```
+    /// use tls::command;
+    ///
+    /// let mut command_one = command!(
+    ///     program => "/usr/bin/bash",
+    ///     args => "-c", "read -p 'Enter your input: ' input"
+    /// );
+    /// ```
+    pub fn run_interactive(command: &mut Command) -> miette::Result<Vec<u8>> {
+        // Try to run command (might be unable to run it if the program is invalid).
+        let output = command
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .output()
+            .into_diagnostic()
+            .wrap_err(miette::miette!("Unable to run command: {:?}", command))?;
+
+        // At this point, command_one has run, but it might result in a success or failure.
+        if output.status.success() {
+            ok!(output.stdout)
+        } else {
+            bail_command_ran_and_failed!(command, output.status, output.stderr);
         }
     }
 
@@ -231,26 +299,73 @@ pub mod command_runner {
     /// - The output of the first command is passed as input to the second command.
     /// - The output of the second command is returned.
     /// - If either command fails, an error is returned.
+    ///
+    /// Only `command_one` is allowed to have any user interaction. It is set to inherit
+    /// the `stdin`, `stdout`, `stderr` from the parent (aka current) process. Here's an
+    /// example which will block on user input from an interactive terminal if executed:
+    ///
+    /// ```
+    /// use tls::command;
+    ///
+    /// let mut command_one = command!(
+    ///     program => "/usr/bin/bash",
+    ///     args => "-c", "read -p 'Enter your input: ' input"
+    /// );
+    /// ```
     pub fn pipe(command_one: &mut Command, command_two: &mut Command) -> miette::Result<String> {
         // Run the first command & get the output.
-        let command_one = command_one.stdout(Stdio::piped());
-        let command_one_output_stdout = command_one.output().into_diagnostic()?.stdout;
+        let command_one = command_one
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        // Try to run command_one (might be unable to run it if the program is invalid).
+        let command_one_output =
+            command_one
+                .output()
+                .into_diagnostic()
+                .wrap_err(miette::miette!(
+                    "Unable to run command_one: {:?}",
+                    command_one
+                ))?;
+        // At this point, command_one has run, but it might result in a success or failure.
+        if !command_one_output.status.success() {
+            bail_command_ran_and_failed!(
+                command_one,
+                command_one_output.status,
+                command_one_output.stderr
+            );
+        }
+        let command_one_stdout = command_one_output.stdout;
 
         // Spawn the second command, make it to accept piped input from the first command.
-        let command_two = command_two.stdin(Stdio::piped()).stdout(Stdio::piped());
-        let mut child_handle: Child = command_two.spawn().into_diagnostic()?;
+        let command_two = command_two
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        // Try to run command_one (might be unable to run it if the program is invalid).
+        let mut child_handle: Child =
+            command_two
+                .spawn()
+                .into_diagnostic()
+                .wrap_err(miette::miette!(
+                    "Unable to run command_two: {:?}",
+                    command_two
+                ))?;
         if let Some(mut child_stdin) = child_handle.stdin.take() {
             child_stdin
-                .write_all(&command_one_output_stdout)
+                .write_all(&command_one_stdout)
                 .into_diagnostic()?;
         }
-
-        let child_output = child_handle.wait_with_output().into_diagnostic()?;
-
-        if child_output.status.success() {
-            ok!(String::from_utf8_lossy(&child_output.stdout).to_string())
+        // At this point, command_one has run, but it might result in a success or failure.
+        let command_two_output = child_handle.wait_with_output().into_diagnostic()?;
+        if command_two_output.status.success() {
+            ok!(String::from_utf8_lossy(&command_two_output.stdout).to_string())
         } else {
-            miette::bail!("Failed to execute command: {:?}", child_output.stderr);
+            bail_command_ran_and_failed!(
+                command_two,
+                command_two_output.status,
+                command_two_output.stderr
+            );
         }
     }
 
@@ -264,22 +379,65 @@ pub mod command_runner {
                 program => "echo",
                 args => "Hello, world!",
             );
+
+            // This captures the output.
             let output = run(&mut command).unwrap();
             assert_eq!(String::from_utf8_lossy(&output), "Hello, world!\n");
+
+            // This dumps the output to the parent process' stdout & is not captured.
+            let output = run_interactive(&mut command).unwrap();
+            assert_eq!(String::from_utf8_lossy(&output), "");
         }
 
         #[test]
-        fn test_pipe() {
+        fn test_run_invalid_command() {
+            let result = command!(
+                program => "does_not_exist",
+                args => "Hello, world!",
+            )
+            .run();
+            if let Err(err) = result {
+                assert!(err
+                    .to_string()
+                    .contains("Unable to run command: \"does_not_exist\" \"Hello, world!\""));
+            } else {
+                panic!("Expected an error, but got success");
+            }
+        }
+
+        #[test]
+        fn test_pipe_command_two_not_interactive_terminal() {
             let mut command_one = command!(
                 program => "echo",
-                args => "Hello, world!",
+                args => "hello world",
             );
             let mut command_two = command!(
-                program => "wc",
-                args => "-w",
+                program => "/usr/bin/bash",
+                args => "-c", "read -p 'Enter your input: ' input"
             );
-            let output = pipe(&mut command_one, &mut command_two).unwrap();
-            assert_eq!(output.trim(), "2");
+            let result = pipe(&mut command_one, &mut command_two);
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn test_pipe_invalid_command() {
+            let result = pipe(
+                &mut command!(
+                    program => "does_not_exist",
+                    args => "Hello, world!",
+                ),
+                &mut command!(
+                    program => "wc",
+                    args => "-w",
+                ),
+            );
+            if let Err(err) = result {
+                assert!(err
+                    .to_string()
+                    .contains("Unable to run command_one: \"does_not_exist\" \"Hello, world!\""));
+            } else {
+                panic!("Expected an error, but got success");
+            }
         }
     }
 }
