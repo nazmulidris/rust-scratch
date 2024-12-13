@@ -35,7 +35,7 @@ use tls::{
         environment, github_api, permissions,
     },
     tracing_debug,
-    tracing_debug_helper::{self, constants::TRACING_MSG_WIDTH, truncate_or_pad_from_left},
+    tracing_support::{self, truncate_or_pad_from_left},
     with_saved_pwd,
 };
 
@@ -59,6 +59,8 @@ pub mod constants {
     pub const CFSSL_BIN: &str = "cfssl";
     pub const CFSSLJSON_BIN: &str = "cfssljson";
     pub const OPENSSL_BIN: &str = "openssl";
+
+    pub const FIELD_OUTPUT_DISPLAY_WIDTH: usize = 50;
 
     #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
     pub const OS_ARCH: &str = "linux_amd64";
@@ -88,7 +90,7 @@ async fn main() -> miette::Result<()> {
     };
 
     // Setup tracing.
-    tracing_debug_helper::tracing_init(tracing::Level::DEBUG);
+    tracing_support::tracing_init(tracing::Level::DEBUG);
 
     tracing_debug!("pwd at start", fs_path::try_pwd());
 
@@ -133,9 +135,11 @@ async fn generate_certs_using_cfssl_bin(
     // Pushd into the `certs/generated` directory. Generate CA and server certificates.
     with_saved_pwd!({
         let generated_dir = fs_paths!(with_root: root_dir => CERTS_DIR => GENERATED_DIR);
-        let generated_dir_display_string =
-            truncate_or_pad_from_left(&generated_dir.display().to_string(), TRACING_MSG_WIDTH)
-                .magenta();
+        let generated_dir_display_string = truncate_or_pad_from_left(
+            &generated_dir.display().to_string(),
+            FIELD_OUTPUT_DISPLAY_WIDTH,
+        )
+        .magenta();
 
         // Create the generated directory if it does not exist.
         directory_create::try_mkdir(&generated_dir, MkdirOptions::CreateIntermediateDirectories)?;
@@ -220,7 +224,8 @@ async fn display_status_using_openssl_bin(
                     "-text",
                     "-in", CA_PEM_FILE,
         )
-        .run().await?;
+        .run()
+        .await?;
         println!(
             "🎉 CA certificate size: {} bytes",
             ca_cert_bytes.len().to_string().blue()
@@ -235,7 +240,8 @@ async fn display_status_using_openssl_bin(
                     "-text",
                     "-in", SERVER_PEM_FILE,
         )
-        .run().await?;
+        .run()
+        .await?;
         println!(
             "🎉 Server certificate size: {} bytes",
             server_cert_bytes.len().to_string().blue()
@@ -249,7 +255,8 @@ async fn display_status_using_openssl_bin(
                     "-CAfile", CA_PEM_FILE,
                     SERVER_PEM_FILE,
         )
-        .run().await?;
+        .run()
+        .await?;
         println!(
             "🎉 Server certificate is signed by CA {}",
             "verified".green()
@@ -272,11 +279,11 @@ async fn download_cfssl_binaries_if_needed(root_dir: &Path) -> miette::Result<()
                 let cfssljson_file = fs_paths!(with_root: root => CFSSLJSON_BIN);
                 if fs_paths_exist!(&root, &cfssl_file, &cfssljson_file) {
                     let cfssl_file_trunc_left =
-                        truncate_or_pad_from_left(&cfssl_file.display().to_string(), TRACING_MSG_WIDTH);
+                        truncate_or_pad_from_left(&cfssl_file.display().to_string(), FIELD_OUTPUT_DISPLAY_WIDTH);
                     let cfssljson_file_trunc_left =
-                        truncate_or_pad_from_left(&cfssljson_file.display().to_string(), TRACING_MSG_WIDTH);
+                        truncate_or_pad_from_left(&cfssljson_file.display().to_string(), FIELD_OUTPUT_DISPLAY_WIDTH);
                     println!(
-                        "🎉 {} and {} binaries already exist.",
+                        "🎉 binaries already exist: \n✅ {}\n✅ {}",
                         cfssl_file_trunc_left.magenta(),
                         cfssljson_file_trunc_left.magenta(),
                     );
