@@ -1,8 +1,10 @@
 {
   "cSpell.words": [
     "Bufs",
+    "callsite",
     "CFSSL",
     "cfssljson",
+    "chrono",
     "gencert",
     "initca",
     "noout",

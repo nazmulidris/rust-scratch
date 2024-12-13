@@ -24,7 +24,7 @@ path = "src/bin/client.rs"
 
 [dependencies]
 # TLS dependencies.
-rustls = "0.23.19"
+rustls = "0.23.20"
 tokio-rustls = "0.26.1"
 rustls-pemfile = "2.2.0"
 
@@ -34,6 +34,9 @@ tokio = { version = "1.42.0", features = ["full"] }
 # Tokio tracing dependencies.
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
+tracing-core = "0.1.33"
+chrono = "0.4.39"
+textwrap = "0.16.1"
 
 # Error handling.
 miette = "7.4.0"
@@ -51,7 +54,7 @@ futures-util = "0.3.31"                                            # Async strea
 r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core" } # Use latest version for `create_global_singleton!`
 #r3bl_core = { path = "/home/nazmul/github/r3bl-open-core/core" } # Unstable, active development
 r3bl_ansi_color = "0.7.0"
-paste = "1.0.15" # Dynamically name variables in declarative macros (required for `create_global_singleton!`).
+paste = "1.0.15"          # Dynamically name variables in declarative macros (required for `create_global_singleton!`).
 
 # Use latest version for: `create_temp_dir()`, `gen_input_stream_with_delay()`
 r3bl_test_fixtures = { git = "https://github.com/r3bl-org/r3bl-open-core" } # Stable, but not released

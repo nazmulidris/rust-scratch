@@ -479,29 +479,81 @@ pub mod command_runner {
     }
 }
 
-pub mod tracing_debug_helper {
-    use super::*;
+// 00: move this to r3bl_core
+pub mod ordered_map {
+    use std::collections::HashMap;
 
-    pub mod constants {
-        /// This plus [TRACING_BODY_WIDTH] should be equal to 100.
-        pub const TRACING_MSG_WIDTH: usize = 30;
-        /// This plus [TRACING_MSG_WIDTH] should be equal to 100.
-        pub const TRACING_BODY_WIDTH: usize = 70;
-        /// The width of "├ {} ❯ {} ┤" used in [crate::tracing_debug]
-        pub const WIDTH_OF_DEBUG_LINE_DECORATION: usize = 13;
+    #[derive(Debug, Default)]
+    pub struct OrderedMap<K, V> {
+        keys: Vec<K>,
+        map: HashMap<K, V>,
     }
 
-    /// Use this macro instead of [tracing::debug!] to make the output easier to read. It
-    /// uses [prepare_tracing_debug] to do almost all the work.
-    ///
-    /// - It simply applies a display width to the message [constants::TRACING_MSG_WIDTH]
-    ///   characters).
-    /// - This ensures that the first message is always this width, its clipped if too
-    ///   long, and padded with spaces if too short.
+    impl<K: std::hash::Hash + Eq + Clone, V> OrderedMap<K, V> {
+        pub fn new() -> Self {
+            OrderedMap {
+                keys: Vec::new(),
+                map: HashMap::new(),
+            }
+        }
+
+        pub fn insert(&mut self, key: K, value: V) {
+            if !self.map.contains_key(&key) {
+                self.keys.push(key.clone());
+            }
+            self.map.insert(key, value);
+        }
+
+        pub fn get(&self, key: &K) -> Option<&V> {
+            self.map.get(key)
+        }
+
+        pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
+            self.keys
+                .iter()
+                .filter_map(move |key| self.map.get(key).map(|value| (key, value)))
+        }
+    }
+
+    #[cfg(test)]
+    mod tests_ordered_map {
+        use super::*;
+
+        #[test]
+        fn test_ordered_map() {
+            let mut map = OrderedMap::new();
+            map.insert("key2", "value2");
+            map.insert("key1", "value1");
+            map.insert("key3", "value3");
+
+            let mut iter = map.iter();
+            assert_eq!(iter.next(), Some((&"key2", &"value2")));
+            assert_eq!(iter.next(), Some((&"key1", &"value1")));
+            assert_eq!(iter.next(), Some((&"key3", &"value3")));
+            assert_eq!(iter.next(), None);
+        }
+    }
+}
+
+pub mod tracing_support {
+    use super::*;
+    use chrono::Local;
+    use crossterm::style::Stylize;
+    use ordered_map::OrderedMap;
+    use std::fmt;
+    use tracing::{
+        field::{Field, Visit},
+        Event, Subscriber,
+    };
+    use tracing_subscriber::fmt::{FormatEvent, FormatFields};
+    use tracing_subscriber::registry::LookupSpan;
+
+    /// Use this macro instead of [tracing::debug!] to make the output easier to read.
     ///
     /// # Arguments
+    ///
     /// 1. The first argument is the message that will be displayed. This can be any type
-    ///    that implements the [std::fmt::Display] trait.
+    ///    that implements the [std::fmt::Debug] trait.
     /// 2. The second argument is the body of the message. This can be any type that
     ///    implements the [std::fmt::Debug] trait.
     ///
@@ -529,34 +581,8 @@ pub mod tracing_debug_helper {
     #[macro_export]
     macro_rules! tracing_debug {
         ($msg:expr, $body:expr) => {
-            let (_msg_display_trunc, _body_debug_trunc) =
-                $crate::tracing_debug_helper::prepare_tracing_debug(&$msg, &$body);
-            tracing::debug!("├ {} ❯ {} ┤", _msg_display_trunc, _body_debug_trunc);
+            tracing::debug!(msg = ?$msg, body = ?$body);
         };
-    }
-
-    // 00: consider adding bg color to the msg to make it more readable
-    /// This is intricately tied to the [tracing_debug!] macro.
-    pub fn prepare_tracing_debug(
-        msg: &impl std::fmt::Display,
-        body: &impl std::fmt::Debug,
-    ) -> (String, String) {
-        use tracing_debug_helper::constants::{
-            TRACING_BODY_WIDTH, TRACING_MSG_WIDTH, WIDTH_OF_DEBUG_LINE_DECORATION,
-        };
-        let term_width = get_terminal_width() - WIDTH_OF_DEBUG_LINE_DECORATION;
-
-        // Use the TRACING_MSG_WIDTH and TRACING_BODY_WIDTH as percentages of the
-        // term_width to calculate the actual values for each.
-        let msg_width = ((TRACING_MSG_WIDTH as f64) / 100.0 * (term_width as f64)).round() as usize;
-        let body_width =
-            ((TRACING_BODY_WIDTH as f64) / 100.0 * (term_width as f64)).round() as usize;
-
-        let msg_display = format!("{}", msg);
-        let body_debug = format!("{:?}", body);
-        let msg_display_trunc = truncate_or_pad_from_right(&msg_display, msg_width);
-        let body_debug_trunc = truncate_or_pad_from_right(&body_debug, body_width);
-        (msg_display_trunc, body_debug_trunc)
     }
 
     pub fn truncate_or_pad_from_right(string: &str, width: usize) -> String {
@@ -583,9 +609,20 @@ pub mod tracing_debug_helper {
         }
     }
 
-    /// Works with [tracing_debug!] to initialize the tracing subscriber to output the
+    /// This uses the [CustomEventFormatter] to format the output of the tracing events.
+    /// It works with [tracing_debug!] to initialize the tracing subscriber to output the
     /// least amount of noise (no line number, target, file, etc).
     pub fn tracing_init(level: tracing::Level) {
+        tracing_subscriber::fmt()
+            .with_max_level(level)
+            .event_format(CustomEventFormatter)
+            .init();
+    }
+
+    /// This does not use the [CustomEventFormatter] to format the output of the tracing
+    /// events. It works with [tracing_debug!] to initialize the tracing subscriber to
+    /// output the least amount of noise (no line number, target, file, etc).
+    pub fn tracing_init_without_custom_formatter(level: tracing::Level) {
         tracing_subscriber::fmt()
             .with_max_level(level)
             .pretty()
@@ -595,6 +632,143 @@ pub mod tracing_debug_helper {
             .with_line_number(false)
             .without_time()
             .init();
+    }
+
+    pub struct CustomEventFormatter;
+
+    impl<S, N> FormatEvent<S, N> for CustomEventFormatter
+    where
+        S: Subscriber + for<'a> LookupSpan<'a>,
+        N: for<'a> FormatFields<'a> + 'static,
+    {
+        /// Format the event into 2 lines:
+        /// 1. Timestamp, span context, level, and message truncated to the available visible width.
+        /// 2. Body that is text wrapped to the visible width.
+        fn format_event(
+            &self,
+            ctx: &tracing_subscriber::fmt::FmtContext<'_, S, N>,
+            mut writer: tracing_subscriber::fmt::format::Writer<'_>,
+            event: &Event<'_>,
+        ) -> fmt::Result {
+            // Length accumulator (for line width calculations).
+            let mut line_width_used = 0;
+
+            // Custom timestamp.
+            let timestamp = Local::now();
+            let timestamp_str = format!("{} ", timestamp.format("%I:%M%P"));
+            line_width_used += timestamp_str.len();
+            let timestamp_str_fmt = timestamp_str.grey().on_dark_grey().underlined();
+            write!(writer, "\n{timestamp_str_fmt}")?;
+
+            // Custom span context.
+            if let Some(scope) = ctx.lookup_current() {
+                let scope_str = format!("[{}] ", scope.name());
+                line_width_used += scope_str.len();
+                let scope_str_fmt = scope_str.grey().on_dark_grey().italic().underlined();
+                write!(writer, "{scope_str_fmt}")?;
+            }
+
+            // Custom metadata formatting. For eg:
+            //
+            // metadata: Metadata {
+            //     name: "event src/bin/gen-certs.rs:110",
+            //     target: "gen_certs",
+            //     level: Level(
+            //         Debug,
+            //     ),
+            //     module_path: "gen_certs",
+            //     location: src/bin/gen-certs.rs:110,
+            //     fields: {msg, body},
+            //     callsite: Identifier(0x5a46fb928d40),
+            //     kind: Kind(EVENT),
+            // }
+            let level_str_fmt = match *event.metadata().level() {
+                tracing::Level::ERROR => "E: ".red(),
+                tracing::Level::WARN => "W: ".magenta(),
+                tracing::Level::INFO => "I: ".blue(),
+                tracing::Level::DEBUG => "D: ".yellow(),
+                tracing::Level::TRACE => "T: ".grey(),
+            }
+            .on_dark_grey()
+            .bold()
+            .underlined();
+
+            line_width_used += 3;
+            write!(writer, "{level_str_fmt}")?;
+
+            // Custom field formatting. For eg:
+            //
+            // fields: ValueSet {
+            //     msg: "pwd at end",
+            //     body: "Ok(\"/home/nazmul/github/rust-scratch/tls\")",
+            //     callsite: Identifier(0x5a46fb928d40),
+            // }
+            //
+            // Instead of:
+            // ctx.field_format().format_fields(writer.by_ref(), event)?;
+            let mut ordered_map = OrderedMap::<String, String>::default();
+            event.record(&mut VisitEventAndPopulateOrderedMapWithFields {
+                inner: &mut ordered_map,
+            });
+
+            // Prepare the msg and body.
+            let msg_key = "msg".to_string();
+            let body_key = "body".to_string();
+            let empty_string = "".to_string();
+            let msg = ordered_map.get(&msg_key).unwrap_or(&empty_string);
+            let body = ordered_map.get(&body_key).unwrap_or(&empty_string);
+            let msg = remove_escaped_quotes(msg);
+            let body = remove_escaped_quotes(body);
+
+            // 00: make the msg lolcat!
+            // Write msg line.
+            let max_display_width = get_terminal_width();
+            line_width_used += 1;
+            let line_1_width = max_display_width - line_width_used;
+            let msg = format!(" {}", truncate_or_pad_from_right(&msg, line_1_width));
+            let msg = msg.grey().italic().underlined();
+            write!(writer, "{msg}")?;
+
+            // Write body line(s).
+            let body_width = max_display_width - 2;
+            let body = textwrap::wrap(&body, body_width);
+            for body_line in body.iter() {
+                let body_line = truncate_or_pad_from_right(body_line, body_width);
+                let body_line_fmt = format!("░{}░", body_line).dark_grey();
+                writeln!(writer, "{body_line_fmt}")?;
+            }
+
+            // Write the terminating line separator.
+            let line_separator = "‾".repeat(max_display_width);
+            let line_separator_fmt = line_separator.dark_green();
+            writeln!(writer, "{line_separator_fmt}")
+        }
+    }
+
+    /// Replace escaped quotes with unescaped quotes. The escaped quotes are generated
+    /// when [std::fmt::Debug] is used to format the output using [format!], eg:
+    /// ```
+    /// use tls::tracing_support::remove_escaped_quotes;
+    ///
+    /// let s = format!("{:?}", "Hello\", world!");
+    /// assert_eq!(s, "\"Hello\\\", world!\"");
+    /// let s = remove_escaped_quotes(&s);
+    /// assert_eq!(s, "Hello, world!");
+    /// ```
+    pub fn remove_escaped_quotes(s: &str) -> String {
+        s.replace("\\\"", "\"").replace("\"", "")
+    }
+
+    pub struct VisitEventAndPopulateOrderedMapWithFields<'a> {
+        inner: &'a mut OrderedMap<String, String>,
+    }
+
+    impl Visit for VisitEventAndPopulateOrderedMapWithFields<'_> {
+        fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
+            let field_name = field.name();
+            let field_value = format!("{:?}", value);
+            self.inner.insert(field_name.to_string(), field_value);
+        }
     }
 
     #[cfg(test)]
