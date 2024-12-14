@@ -833,6 +833,45 @@ pub mod tracing_support {
             assert_eq!(truncate_from_left(short_string, width, false), "Hi!");
         }
     }
+
+    #[cfg(test)]
+    mod tests_tracing_custom_event_formatter {
+        use crate::tracing_support::CustomEventFormatter;
+        use chrono::Local;
+        use r3bl_test_fixtures::StdoutMock;
+        use std::sync::Mutex;
+        use tracing::{info, subscriber::set_global_default};
+        use tracing_subscriber::fmt::SubscriberBuilder;
+
+        #[test]
+        fn test_custom_formatter() {
+            let mock_stdout = StdoutMock::new();
+            let mock_stdout_clone = mock_stdout.clone();
+            let subscriber = SubscriberBuilder::default()
+                .event_format(CustomEventFormatter)
+                .with_writer(Mutex::new(mock_stdout))
+                .finish();
+
+            set_global_default(subscriber).expect("Failed to set subscriber");
+
+            info!(message = "This is a test log entry");
+
+            let time = Local::now().format("%I:%M%P").to_string();
+            let it = mock_stdout_clone.get_copy_of_buffer_as_string();
+            let it_no_ansi = mock_stdout_clone.get_copy_of_buffer_as_string_strip_ansi();
+
+            // println!("{}", it);
+            // println!("{}", it_no_ansi);
+
+            assert!(it_no_ansi.contains("message")); // lolcat colorized each char, so strip the colors.
+            assert!(it.matches("░").count() >= 2);
+            assert!(it.matches("‾").count() >= 1);
+            assert!(it.contains("This is a test log entry"));
+            assert!(it.contains("I:"));
+            assert!(it.contains(&time));
+            assert!(it.matches('\n').count() >= 4); // There are many new lines.
+        }
+    }
 }
 
 pub mod http_client {

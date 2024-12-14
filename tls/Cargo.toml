@@ -64,3 +64,6 @@ serde_json = "1.0.133"
 
 # Run tests in serial.
 serial_test = "3.2.0"
+
+[dev-dependencies]
+strip-ansi = "0.1.0" # For tracing_support.

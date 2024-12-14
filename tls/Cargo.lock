@@ -2335,6 +2335,7 @@ dependencies = [
  "rustls-pemfile",
  "serde_json",
  "serial_test",
+ "strip-ansi",
  "strum",
  "strum_macros",
  "textwrap",
