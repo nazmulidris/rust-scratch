@@ -520,7 +520,7 @@ pub mod ordered_map {
         use super::*;
 
         #[test]
-        fn test_ordered_map() {
+        fn test_ordered_map_insert() {
             let mut map = OrderedMap::new();
             map.insert("key2", "value2");
             map.insert("key1", "value1");
@@ -529,6 +529,64 @@ pub mod ordered_map {
             let mut iter = map.iter();
             assert_eq!(iter.next(), Some((&"key2", &"value2")));
             assert_eq!(iter.next(), Some((&"key1", &"value1")));
+            assert_eq!(iter.next(), Some((&"key3", &"value3")));
+            assert_eq!(iter.next(), None);
+        }
+
+        #[test]
+        fn test_ordered_map_delete() {
+            let mut map = OrderedMap::new();
+            map.insert("key1", "value1");
+            map.insert("key2", "value2");
+            map.insert("key3", "value3");
+
+            // Delete a key and check if it is removed.
+            map.map.remove("key2");
+            let mut iter = map.iter();
+            assert_eq!(iter.next(), Some((&"key1", &"value1")));
+            assert_eq!(iter.next(), Some((&"key3", &"value3")));
+            assert_eq!(iter.next(), None);
+        }
+
+        #[test]
+        fn test_ordered_map_update() {
+            let mut map = OrderedMap::new();
+            map.insert("key1", "value1");
+            map.insert("key2", "value2");
+            map.insert("key3", "value3");
+
+            // Update a value and check if it is updated.
+            map.insert("key2", "new_value2");
+            let mut iter = map.iter();
+            assert_eq!(iter.next(), Some((&"key1", &"value1")));
+            assert_eq!(iter.next(), Some((&"key2", &"new_value2")));
+            assert_eq!(iter.next(), Some((&"key3", &"value3")));
+            assert_eq!(iter.next(), None);
+        }
+
+        #[test]
+        fn test_ordered_map_get() {
+            let mut map = OrderedMap::new();
+            map.insert("key1", "value1");
+            map.insert("key2", "value2");
+            map.insert("key3", "value3");
+
+            assert_eq!(map.get(&"key1"), Some(&"value1"));
+            assert_eq!(map.get(&"key2"), Some(&"value2"));
+            assert_eq!(map.get(&"key3"), Some(&"value3"));
+            assert_eq!(map.get(&"key4"), None);
+        }
+
+        #[test]
+        fn test_ordered_map_iter() {
+            let mut map = OrderedMap::new();
+            map.insert("key1", "value1");
+            map.insert("key2", "value2");
+            map.insert("key3", "value3");
+
+            let mut iter = map.iter();
+            assert_eq!(iter.next(), Some((&"key1", &"value1")));
+            assert_eq!(iter.next(), Some((&"key2", &"value2")));
             assert_eq!(iter.next(), Some((&"key3", &"value3")));
             assert_eq!(iter.next(), None);
         }
