@@ -601,6 +601,8 @@ pub mod tracing_support {
     use chrono::Local;
     use crossterm::style::Stylize;
     use ordered_map::OrderedMap;
+    use r3bl_core::ColorWheel;
+    use r3bl_macro::tui_style;
     use std::fmt;
     use tracing::{
         field::{Field, Visit},
@@ -609,27 +611,31 @@ pub mod tracing_support {
     use tracing_subscriber::fmt::{FormatEvent, FormatFields};
     use tracing_subscriber::registry::LookupSpan;
 
-    pub fn truncate_or_pad_from_right(string: &str, width: usize) -> String {
+    pub fn truncate_from_right(string: &str, width: usize, pad: bool) -> String {
         if string.len() > width {
             let mut truncated_string: String = string.chars().take(width - 3).collect();
             truncated_string.push_str("...");
             truncated_string
-        } else {
+        } else if pad {
             let mut padded_string = string.to_string();
             padded_string.push_str(&" ".repeat(width - string.len()));
             padded_string
+        } else {
+            string.to_string()
         }
     }
 
-    pub fn truncate_or_pad_from_left(string: &str, width: usize) -> String {
+    pub fn truncate_from_left(string: &str, width: usize, pad: bool) -> String {
         if string.len() > width {
             let mut truncated_string: String = "...".to_string();
             truncated_string.extend(string.chars().skip(string.len() - width + 3));
             truncated_string
-        } else {
+        } else if pad {
             let mut padded_string = " ".repeat(width - string.len());
             padded_string.push_str(string);
             padded_string
+        } else {
+            string.to_string()
         }
     }
 
@@ -742,19 +748,23 @@ pub mod tracing_support {
                 let msg = remove_escaped_quotes(msg);
                 let body = remove_escaped_quotes(body);
 
-                // 00: make the msg lolcat! ColorWheel::lolcat_into_string(&plain_text_msg)
                 // Write msg line.
                 line_width_used += 1;
                 let line_1_width = max_display_width - line_width_used;
-                let msg = format!(" {}", truncate_or_pad_from_right(&msg, line_1_width));
-                let msg = msg.grey().italic().underlined();
-                write!(writer, "{msg}")?;
+                let msg = format!(" {}\n", truncate_from_right(&msg, line_1_width, false));
+                let msg_fmt = ColorWheel::lolcat_into_string(
+                    &msg,
+                    Some(tui_style!(
+                        attrib: [bold, italic, underline]
+                    )),
+                );
+                write!(writer, "{msg_fmt}")?;
 
                 // Write body line(s).
                 let body_width = max_display_width - 2;
                 let body = textwrap::wrap(&body, body_width);
                 for body_line in body.iter() {
-                    let body_line = truncate_or_pad_from_right(body_line, body_width);
+                    let body_line = truncate_from_right(body_line, body_width, true);
                     let body_line_fmt = format!("░{}░", body_line).dark_grey();
                     writeln!(writer, "{body_line_fmt}")?;
                 }
@@ -803,11 +813,11 @@ pub mod tracing_support {
             let short_string = "Hi!";
             let width = 10;
 
-            assert_eq!(truncate_or_pad_from_right(long_string, width), "Hello, ...");
-            assert_eq!(
-                truncate_or_pad_from_right(short_string, width),
-                "Hi!       "
-            );
+            assert_eq!(truncate_from_right(long_string, width, true), "Hello, ...");
+            assert_eq!(truncate_from_right(short_string, width, true), "Hi!       ");
+
+            assert_eq!(truncate_from_right(long_string, width, false), "Hello, ...");
+            assert_eq!(truncate_from_right(short_string, width, false), "Hi!");
         }
 
         #[test]
@@ -816,8 +826,11 @@ pub mod tracing_support {
             let short_string = "Hi!";
             let width = 10;
 
-            assert_eq!(truncate_or_pad_from_left(long_string, width), "... world!");
-            assert_eq!(truncate_or_pad_from_left(short_string, width), "       Hi!");
+            assert_eq!(truncate_from_left(long_string, width, true), "... world!");
+            assert_eq!(truncate_from_left(short_string, width, true), "       Hi!");
+
+            assert_eq!(truncate_from_left(long_string, width, false), "... world!");
+            assert_eq!(truncate_from_left(short_string, width, false), "Hi!");
         }
     }
 }

@@ -34,7 +34,7 @@ use tls::{
         download::try_download_file_overwrite_existing,
         environment, github_api, permissions,
     },
-    tracing_support::{self, truncate_or_pad_from_left},
+    tracing_support::{self, truncate_from_left},
     with_saved_pwd,
 };
 
@@ -138,9 +138,10 @@ async fn generate_certs_using_cfssl_bin(
     // Pushd into the `certs/generated` directory. Generate CA and server certificates.
     with_saved_pwd!({
         let generated_dir = fs_paths!(with_root: root_dir => CERTS_DIR => GENERATED_DIR);
-        let generated_dir_display_string = truncate_or_pad_from_left(
+        let generated_dir_display_string = truncate_from_left(
             &generated_dir.display().to_string(),
             FIELD_OUTPUT_DISPLAY_WIDTH,
+            false,
         )
         .magenta();
 
@@ -271,8 +272,8 @@ async fn display_status_using_openssl_bin(
 }
 
 async fn download_cfssl_binaries_if_needed(root_dir: &Path) -> miette::Result<()> {
-        // % is Display, ? is Debug.
-        tracing::debug!("download binaries" = ?fs_path::try_pwd());
+    // % is Display, ? is Debug.
+    tracing::debug!("download binaries" = ?fs_path::try_pwd());
     with_saved_pwd!({
         let bin_folder = fs_paths!(with_root: root_dir => CERTS_DIR => BIN_DIR);
         with!(
@@ -284,9 +285,9 @@ async fn download_cfssl_binaries_if_needed(root_dir: &Path) -> miette::Result<()
                 let cfssljson_file = fs_paths!(with_root: root => CFSSLJSON_BIN);
                 if fs_paths_exist!(&root, &cfssl_file, &cfssljson_file) {
                     let cfssl_file_trunc_left =
-                        truncate_or_pad_from_left(&cfssl_file.display().to_string(), FIELD_OUTPUT_DISPLAY_WIDTH);
+                        truncate_from_left(&cfssl_file.display().to_string(), FIELD_OUTPUT_DISPLAY_WIDTH, false);
                     let cfssljson_file_trunc_left =
-                        truncate_or_pad_from_left(&cfssljson_file.display().to_string(), FIELD_OUTPUT_DISPLAY_WIDTH);
+                        truncate_from_left(&cfssljson_file.display().to_string(), FIELD_OUTPUT_DISPLAY_WIDTH, false);
                     println!(
                         "🎉 binaries already exist: \n✅ {}\n✅ {}",
                         cfssl_file_trunc_left.magenta(),
