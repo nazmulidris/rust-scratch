@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-use crate::{command, tracing_debug};
+use crate::command;
 use crossterm::style::Stylize as _;
 use fs_path::{FsOpError, FsOpResult};
 use http_client::create_client_with_user_agent;
@@ -593,6 +593,9 @@ pub mod ordered_map {
     }
 }
 
+/// Meaning of [tracing_subscriber] sigils:
+/// - `%` sigil in tokio tracing is similar to `{}` aka [std::fmt::Display].
+/// - `?` sigil in tokio tracing is similar to `{:?}` aka [std::fmt::Debug].
 pub mod tracing_support {
     use super::*;
     use chrono::Local;
@@ -605,43 +608,6 @@ pub mod tracing_support {
     };
     use tracing_subscriber::fmt::{FormatEvent, FormatFields};
     use tracing_subscriber::registry::LookupSpan;
-
-    /// Use this macro instead of [tracing::debug!] to make the output easier to read.
-    ///
-    /// # Arguments
-    ///
-    /// 1. The first argument is the message that will be displayed. This can be any type
-    ///    that implements the [std::fmt::Debug] trait.
-    /// 2. The second argument is the body of the message. This can be any type that
-    ///    implements the [std::fmt::Debug] trait.
-    ///
-    /// More info: <https://doc.rust-lang.org/std/fmt/index.html>
-    ///
-    /// This works hand in hand with [tracing_init] to ensure that the output is formatted
-    /// with minimal noise.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use tls::tracing_debug;
-    /// tracing_debug!(
-    ///     "Hello, wor .. 20 ch!", // Must implement Display trait.
-    ///     "Body has more space .... will be clipped to 50 ch!" // Must implement Debug trait.
-    /// );
-    /// ```
-    ///
-    /// Here's what the [tracing::debug!] macro looks like:
-    ///
-    /// ```
-    /// use tracing::debug;
-    /// tracing::debug!("{:10} = {:20}", "bar", "donkey");
-    /// ```
-    #[macro_export]
-    macro_rules! tracing_debug {
-        ($msg:expr, $body:expr) => {
-            tracing::debug!(msg = ?$msg, body = ?$body);
-        };
-    }
 
     pub fn truncate_or_pad_from_right(string: &str, width: usize) -> String {
         if string.len() > width {
@@ -668,8 +634,8 @@ pub mod tracing_support {
     }
 
     /// This uses the [CustomEventFormatter] to format the output of the tracing events.
-    /// It works with [tracing_debug!] to initialize the tracing subscriber to output the
-    /// least amount of noise (no line number, target, file, etc).
+    /// It works with [tracing] to initialize the tracing subscriber to output the least
+    /// amount of noise (no line number, target, file, etc).
     pub fn tracing_init(level: tracing::Level) {
         tracing_subscriber::fmt()
             .with_max_level(level)
@@ -678,8 +644,8 @@ pub mod tracing_support {
     }
 
     /// This does not use the [CustomEventFormatter] to format the output of the tracing
-    /// events. It works with [tracing_debug!] to initialize the tracing subscriber to
-    /// output the least amount of noise (no line number, target, file, etc).
+    /// events. It works with [tracing] to initialize the tracing subscriber to output the
+    /// least amount of noise (no line number, target, file, etc).
     pub fn tracing_init_without_custom_formatter(level: tracing::Level) {
         tracing_subscriber::fmt()
             .with_max_level(level)
@@ -769,31 +735,29 @@ pub mod tracing_support {
                 inner: &mut ordered_map,
             });
 
-            // Prepare the msg and body.
-            let msg_key = "msg".to_string();
-            let body_key = "body".to_string();
-            let empty_string = "".to_string();
-            let msg = ordered_map.get(&msg_key).unwrap_or(&empty_string);
-            let body = ordered_map.get(&body_key).unwrap_or(&empty_string);
-            let msg = remove_escaped_quotes(msg);
-            let body = remove_escaped_quotes(body);
-
-            // 00: make the msg lolcat!
-            // Write msg line.
             let max_display_width = get_terminal_width();
-            line_width_used += 1;
-            let line_1_width = max_display_width - line_width_used;
-            let msg = format!(" {}", truncate_or_pad_from_right(&msg, line_1_width));
-            let msg = msg.grey().italic().underlined();
-            write!(writer, "{msg}")?;
 
-            // Write body line(s).
-            let body_width = max_display_width - 2;
-            let body = textwrap::wrap(&body, body_width);
-            for body_line in body.iter() {
-                let body_line = truncate_or_pad_from_right(body_line, body_width);
-                let body_line_fmt = format!("░{}░", body_line).dark_grey();
-                writeln!(writer, "{body_line_fmt}")?;
+            for (msg, body) in ordered_map.iter() {
+                // Prepare the msg and body.
+                let msg = remove_escaped_quotes(msg);
+                let body = remove_escaped_quotes(body);
+
+                // 00: make the msg lolcat! ColorWheel::lolcat_into_string(&plain_text_msg)
+                // Write msg line.
+                line_width_used += 1;
+                let line_1_width = max_display_width - line_width_used;
+                let msg = format!(" {}", truncate_or_pad_from_right(&msg, line_1_width));
+                let msg = msg.grey().italic().underlined();
+                write!(writer, "{msg}")?;
+
+                // Write body line(s).
+                let body_width = max_display_width - 2;
+                let body = textwrap::wrap(&body, body_width);
+                for body_line in body.iter() {
+                    let body_line = truncate_or_pad_from_right(body_line, body_width);
+                    let body_line_fmt = format!("░{}░", body_line).dark_grey();
+                    writeln!(writer, "{body_line_fmt}")?;
+                }
             }
 
             // Write the terminating line separator.
@@ -899,9 +863,9 @@ pub mod github_api {
             .replace("{org}", org)
             .replace("{repo}", repo);
 
-        tracing_debug!(
-            "Fetching latest release tag from GitHub",
-            url.to_string().magenta()
+        // % is Display, ? is Debug.
+        tracing::debug!(
+            "Fetching latest release tag from GitHub" = %url.to_string().magenta()
         );
 
         let client = http_client::create_client_with_user_agent(None)?;
@@ -1708,7 +1672,8 @@ pub mod environment {
             OS_SPECIFIC_ENV_PATH_SEPARATOR,
             path
         );
-        tracing_debug!("my_path", add_to_path);
+        // % is Display, ? is Debug.
+        tracing::debug!("my_path" = %add_to_path);
         ok!(add_to_path)
     }
 

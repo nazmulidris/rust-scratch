@@ -34,7 +34,6 @@ use tls::{
         download::try_download_file_overwrite_existing,
         environment, github_api, permissions,
     },
-    tracing_debug,
     tracing_support::{self, truncate_or_pad_from_left},
     with_saved_pwd,
 };
@@ -92,7 +91,8 @@ async fn main() -> miette::Result<()> {
     // Setup tracing.
     tracing_support::tracing_init(tracing::Level::DEBUG);
 
-    tracing_debug!("pwd at start", fs_path::try_pwd());
+    // % is Display, ? is Debug.
+    tracing::debug!("pwd at start" = ?fs_path::try_pwd());
 
     // Add to PATH: "(realpath(.)/certs/bin)"
     let amended_path_envs = {
@@ -109,13 +109,15 @@ async fn main() -> miette::Result<()> {
     install_openssl_if_needed().await?;
     display_status_using_openssl_bin(&root_dir, &amended_path_envs).await?;
 
-    tracing_debug!("pwd at end", fs_path::try_pwd());
+    // % is Display, ? is Debug.
+    tracing::debug!("pwd at end" = ?fs_path::try_pwd());
 
     ok!()
 }
 
 async fn install_openssl_if_needed() -> miette::Result<()> {
-    tracing_debug!("install openssl if needed", fs_path::try_pwd());
+    // % is Display, ? is Debug.
+    tracing::debug!("install openssl if needed" = ?fs_path::try_pwd());
     if check_if_package_is_installed(OPENSSL_BIN).await? {
         println!("🎉 {} is already installed.", OPENSSL_BIN.blue());
     } else {
@@ -131,7 +133,8 @@ async fn generate_certs_using_cfssl_bin(
     root_dir: &Path,
     amended_path_envs: EnvVarsSlice<'_>,
 ) -> miette::Result<()> {
-    tracing_debug!("generate certs", fs_path::try_pwd());
+    // % is Display, ? is Debug.
+    tracing::debug!("generate certs" = ?fs_path::try_pwd());
     // Pushd into the `certs/generated` directory. Generate CA and server certificates.
     with_saved_pwd!({
         let generated_dir = fs_paths!(with_root: root_dir => CERTS_DIR => GENERATED_DIR);
@@ -210,7 +213,8 @@ async fn display_status_using_openssl_bin(
     root_dir: &Path,
     amended_path_envs: EnvVarsSlice<'_>,
 ) -> miette::Result<()> {
-    tracing_debug!("verify certificates", fs_path::try_pwd());
+    // % is Display, ? is Debug.
+    tracing::debug!("verify certificates" = ?fs_path::try_pwd());
     with_saved_pwd!({
         // Pushd into the `certs/generated` directory. Generate CA and server certificates.
         directory_change::try_cd(fs_paths!(with_root: root_dir => CERTS_DIR => GENERATED_DIR))?;
@@ -267,7 +271,8 @@ async fn display_status_using_openssl_bin(
 }
 
 async fn download_cfssl_binaries_if_needed(root_dir: &Path) -> miette::Result<()> {
-    tracing_debug!("download binaries", fs_path::try_pwd());
+        // % is Display, ? is Debug.
+        tracing::debug!("download binaries" = ?fs_path::try_pwd());
     with_saved_pwd!({
         let bin_folder = fs_paths!(with_root: root_dir => CERTS_DIR => BIN_DIR);
         with!(
