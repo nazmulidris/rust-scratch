@@ -50,13 +50,21 @@ strum = "0.26.3"
 strum_macros = "0.26.4"
 
 # R3BL awesomeness.
-futures-util = "0.3.31"                                                             # Async streams.
-r3bl_macro = "0.10.0"                                                               # TUI style macro.
+futures-util = "0.3.31"   # Async streams.
+r3bl_macro = "0.10.0"     # TUI style macro.
 r3bl_ansi_color = "0.7.0"
-r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core", rev = "504d4d4" } # Stable, not released.
-# r3bl_core = { path = "/home/nazmul/github/r3bl-open-core/core" } # Unstable, active development.
-r3bl_test_fixtures = { git = "https://github.com/r3bl-org/r3bl-open-core", rev = "504d4d4" } # Stable, not released.
-# r3bl_test_fixtures = { path = "/home/nazmul/github/r3bl-open-core/test_fixtures" } # Unstable, active development.
+
+r3bl_core = { path = "/home/nazmul/github/r3bl-open-core/core" } # Unstable, active development.
+# r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core", rev = "504d4d4" } # Stable, not released.
+
+r3bl_test_fixtures = { path = "/home/nazmul/github/r3bl-open-core/test_fixtures" } # Unstable, active development.
+# r3bl_test_fixtures = { git = "https://github.com/r3bl-org/r3bl-open-core", rev = "504d4d4" } # Stable, not released.
+
+r3bl_script = { path = "/home/nazmul/github/r3bl-open-core/script" } # Unstable, active development.
+# r3bl_script = { git = "https://github.com/r3bl-org/r3bl-open-core", rev = "504d4d4" } # Stable, not released.
+
+r3bl_log = { path = "/home/nazmul/github/r3bl-open-core/log" } # Unstable, active development.
+# r3bl_log = { git = "https://github.com/r3bl-org/r3bl-open-core", rev = "504d4d4" } # Stable, not released.
 
 # HTTP client library.
 reqwest = { version = "0.12.9", features = ["json"] }

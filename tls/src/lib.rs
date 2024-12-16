@@ -17,10 +17,8 @@
 
 // Attach.
 pub mod common_io;
-pub mod scripting;
 pub mod tls;
 
 // Re-export.
 pub use common_io::*;
-pub use scripting::*;
 pub use tls::*;
