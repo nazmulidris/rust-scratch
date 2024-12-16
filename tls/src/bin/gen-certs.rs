@@ -16,29 +16,24 @@
  */
 
 use constants::*;
-
 use crossterm::style::Stylize as _;
-use r3bl_core::{ok, with};
-use std::{env, path::Path};
-use strum_macros::{Display, EnumString};
-use tls::{
+use r3bl_core::{ok, truncate_from_left, with};
+use r3bl_log::{try_initialize_logging_global, DisplayPreference};
+use r3bl_script::environment::{self, EnvKeys, EnvVarsSlice};
+use r3bl_script::{
     apt_install::{check_if_package_is_installed, install_package},
-    command,
-    command_runner::{pipe, Run},
-    directory_change,
-    environment::{EnvKeys, EnvVarsSlice},
-    fs_path::{self, try_pwd},
-    fs_paths, fs_paths_exist,
-    scripting::{
-        directory_create::{self, MkdirOptions},
-        download::try_download_file_overwrite_existing,
-        environment, github_api, permissions,
-    },
-    tracing_support::{self, truncate_from_left},
-    with_saved_pwd,
+    github_api,
 };
+use r3bl_script::{
+    command, directory_change,
+    directory_create::{self, MkdirOptions},
+    fs_path, fs_paths, fs_paths_exist, permissions, pipe, try_download_file_overwrite_existing,
+    try_pwd, with_saved_pwd, Run as _,
+};
+use std::path::Path;
+use strum_macros::{Display, EnumString};
 
-pub mod constants {
+mod constants {
     pub const CERTS_DIR: &str = "certs";
     pub const BIN_DIR: &str = "bin";
     pub const GENERATED_DIR: &str = "generated";
@@ -89,7 +84,7 @@ async fn main() -> miette::Result<()> {
     };
 
     // Setup tracing.
-    tracing_support::tracing_init(tracing::Level::DEBUG);
+    try_initialize_logging_global(DisplayPreference::Stdout)?;
 
     // % is Display, ? is Debug.
     tracing::debug!("pwd at start" = ?fs_path::try_pwd());
@@ -98,7 +93,7 @@ async fn main() -> miette::Result<()> {
     let amended_path_envs = {
         let amended_env_path = {
             let fq_pwd = try_pwd()?;
-            let path_to_cfssl_bin = tls::fs_paths!(with_root: fq_pwd => CERTS_DIR => BIN_DIR);
+            let path_to_cfssl_bin = fs_paths!(with_root: fq_pwd => CERTS_DIR => BIN_DIR);
             environment::try_get_path_prefixed(path_to_cfssl_bin)?
         };
         environment::get_env_vars(EnvKeys::Path, &amended_env_path)

@@ -281,6 +281,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "const_format"
+version = "0.2.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "126f97965c8ad46d6d9163268ff28432e8f6a1196a55578867832e3049df63dd"
+dependencies = [
+ "const_format_proc_macros",
+]
+
+[[package]]
+name = "const_format_proc_macros"
+version = "0.2.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d57c2eccfb16dbac1f4e61e206105db5820c9d26c3c472bc17c774259ef7744"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-xid",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1464,8 +1484,6 @@ dependencies = [
 [[package]]
 name = "r3bl_ansi_color"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed5be50e9547e995b93be1515a1a257f6ff66e90af407dac913edf70d04bdbd2"
 dependencies = [
  "is_ci",
 ]
@@ -1473,9 +1491,47 @@ dependencies = [
 [[package]]
 name = "r3bl_ansi_color"
 version = "0.7.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core?rev=504d4d4#504d4d49bfb2b6456a71fa85216e7d2f5c7405e3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed5be50e9547e995b93be1515a1a257f6ff66e90af407dac913edf70d04bdbd2"
 dependencies = [
  "is_ci",
+]
+
+[[package]]
+name = "r3bl_core"
+version = "0.10.0"
+dependencies = [
+ "async-stream",
+ "bincode",
+ "chrono",
+ "colorgrad",
+ "crossterm",
+ "futures-core",
+ "futures-util",
+ "kv",
+ "miette",
+ "nom",
+ "paste",
+ "pretty_assertions",
+ "r3bl_ansi_color 0.7.0",
+ "rand",
+ "serde",
+ "serde_json",
+ "sha2",
+ "size-of",
+ "strip-ansi",
+ "strum",
+ "strum_macros",
+ "thiserror 1.0.69",
+ "time",
+ "tokio",
+ "tracing",
+ "tracing-appender",
+ "tracing-core",
+ "tracing-subscriber",
+ "unicode-segmentation",
+ "unicode-width 0.2.0",
+ "uuid",
 ]
 
 [[package]]
@@ -1516,40 +1572,36 @@ dependencies = [
 ]
 
 [[package]]
-name = "r3bl_core"
-version = "0.10.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core?rev=504d4d4#504d4d49bfb2b6456a71fa85216e7d2f5c7405e3"
+name = "r3bl_log"
+version = "0.1.0"
 dependencies = [
- "async-stream",
- "bincode",
  "chrono",
- "colorgrad",
+ "const_format",
  "crossterm",
- "futures-core",
- "futures-util",
- "kv",
  "miette",
- "nom",
- "paste",
  "pretty_assertions",
- "r3bl_ansi_color 0.7.0 (git+https://github.com/r3bl-org/r3bl-open-core?rev=504d4d4)",
- "rand",
- "serde",
- "serde_json",
- "sha2",
- "size-of",
- "strip-ansi",
- "strum",
- "strum_macros",
+ "r3bl_ansi_color 0.7.0",
+ "r3bl_core 0.10.0",
+ "r3bl_macro 0.10.0",
+ "r3bl_test_fixtures",
+ "textwrap",
  "thiserror 1.0.69",
- "time",
  "tokio",
  "tracing",
  "tracing-appender",
  "tracing-core",
  "tracing-subscriber",
- "unicode-segmentation",
- "unicode-width 0.2.0",
+]
+
+[[package]]
+name = "r3bl_macro"
+version = "0.10.0"
+dependencies = [
+ "paste",
+ "proc-macro2",
+ "quote",
+ "r3bl_core 0.10.0",
+ "syn 2.0.89",
 ]
 
 [[package]]
@@ -1566,9 +1618,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "r3bl_script"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "crossterm",
+ "futures-util",
+ "miette",
+ "r3bl_ansi_color 0.7.0",
+ "r3bl_core 0.10.0",
+ "r3bl_macro 0.10.0",
+ "reqwest",
+ "serde_json",
+ "serial_test",
+ "strum",
+ "strum_macros",
+ "textwrap",
+ "thiserror 2.0.6",
+ "tokio",
+ "tracing",
+ "tracing-core",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "r3bl_test_fixtures"
 version = "0.1.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core?rev=504d4d4#504d4d49bfb2b6456a71fa85216e7d2f5c7405e3"
 dependencies = [
  "async-stream",
  "crossterm",
@@ -1576,7 +1651,7 @@ dependencies = [
  "futures-util",
  "miette",
  "pretty_assertions",
- "r3bl_core 0.10.0 (git+https://github.com/r3bl-org/r3bl-open-core?rev=504d4d4)",
+ "r3bl_core 0.10.0",
  "strip-ansi-escapes",
  "strum",
  "strum_macros",
@@ -2327,8 +2402,10 @@ dependencies = [
  "futures-util",
  "miette",
  "r3bl_ansi_color 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "r3bl_core 0.10.0 (git+https://github.com/r3bl-org/r3bl-open-core?rev=504d4d4)",
- "r3bl_macro",
+ "r3bl_core 0.10.0",
+ "r3bl_log",
+ "r3bl_macro 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r3bl_script",
  "r3bl_test_fixtures",
  "reqwest",
  "rustls",
@@ -2561,6 +2638,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fc81956842c57dac11422a97c3b8195a1ff727f06e85c84ed2e8aa277c9a0fd"
 
 [[package]]
+name = "unicode-xid"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
 name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2594,6 +2677,15 @@ name = "utf8parse"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
+
+[[package]]
+name = "uuid"
+version = "1.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8c5f0a0af699448548ad1a2fbf920fb4bee257eae39953ba95cb84891a0446a"
+dependencies = [
+ "getrandom",
+]
 
 [[package]]
 name = "valuable"
