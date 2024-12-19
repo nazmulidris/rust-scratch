@@ -1,16 +1,22 @@
 {
   "cSpell.words": [
+    "Bufs",
+    "callsite",
     "CFSSL",
     "cfssljson",
+    "chrono",
     "gencert",
     "initca",
     "noout",
     "pemfile",
     "Pkcs",
     "popd",
+    "printenv",
     "pushd",
     "rcat",
     "realpath",
+    "replacen",
+    "reqwest",
     "rustls",
     "webpki"
   ]
