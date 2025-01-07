@@ -1486,6 +1486,8 @@ name = "r3bl_ansi_color"
 version = "0.7.0"
 dependencies = [
  "is_ci",
+ "smallstr",
+ "smallvec",
 ]
 
 [[package]]
@@ -1519,6 +1521,8 @@ dependencies = [
  "serde_json",
  "sha2",
  "size-of",
+ "smallstr",
+ "smallvec",
  "strip-ansi",
  "strum",
  "strum_macros",
@@ -1584,6 +1588,8 @@ dependencies = [
  "r3bl_core 0.10.0",
  "r3bl_macro 0.10.0",
  "r3bl_test_fixtures",
+ "smallstr",
+ "smallvec",
  "textwrap",
  "thiserror 1.0.69",
  "tokio",
@@ -1652,6 +1658,8 @@ dependencies = [
  "miette",
  "pretty_assertions",
  "r3bl_core 0.10.0",
+ "smallstr",
+ "smallvec",
  "strip-ansi-escapes",
  "strum",
  "strum_macros",
@@ -2108,10 +2116,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "smallstr"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63b1aefdf380735ff8ded0b15f31aab05daf1f70216c01c02a12926badd1df9d"
+dependencies = [
+ "serde",
+ "smallvec",
+]
+
+[[package]]
 name = "smallvec"
 version = "1.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "smawk"
@@ -2412,6 +2433,8 @@ dependencies = [
  "rustls-pemfile",
  "serde_json",
  "serial_test",
+ "smallstr",
+ "smallvec",
  "strip-ansi",
  "strum",
  "strum_macros",
