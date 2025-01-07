@@ -21,6 +21,7 @@ use futures_util::StreamExt as _;
 use miette::IntoDiagnostic;
 use r3bl_core::{ok, PinnedInputStream};
 use r3bl_test_fixtures::gen_input_stream_with_delay;
+use smallvec::smallvec;
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt as _};
 
 pub mod constants {
@@ -52,7 +53,7 @@ where
     W: AsyncWrite + Unpin + Send + 'static,
 {
     let input_stream = gen_input_stream_with_delay(
-        vec!["one\n", "two\n", "three\n", "\n"],
+        smallvec!["one\n", "two\n", "three\n", "\n"],
         Duration::from_millis(500),
     );
 
