@@ -137,8 +137,7 @@ async fn generate_certs_using_cfssl_bin(
             &generated_dir.display().to_string(),
             FIELD_OUTPUT_DISPLAY_WIDTH,
             false,
-        )
-        .magenta();
+        );
 
         // Create the generated directory if it does not exist.
         directory_create::try_mkdir(&generated_dir, MkdirOptions::CreateIntermediateDirectories)?;
@@ -166,7 +165,7 @@ async fn generate_certs_using_cfssl_bin(
 
         println!(
             "🎉 Generated CA certificate & key in {}",
-            generated_dir_display_string.clone().magenta()
+            generated_dir_display_string.magenta()
         );
 
         // Generate server certificate (and private key) and sign it with the CA.

@@ -1488,6 +1488,8 @@ dependencies = [
  "is_ci",
  "smallstr",
  "smallvec",
+ "strum",
+ "strum_macros",
 ]
 
 [[package]]
