@@ -1,0 +1,8 @@
+[package]
+name = "unit_types"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+r3bl_core = { path = "/home/nazmul/github/r3bl-open-core/core" } # Unstable, active development.
+# r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core", rev = "504d4d4" } # Stable, not released.
