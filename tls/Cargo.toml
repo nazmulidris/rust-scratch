@@ -50,9 +50,11 @@ strum = "0.26.3"
 strum_macros = "0.26.4"
 
 # R3BL awesomeness.
-futures-util = "0.3.31"   # Async streams.
-r3bl_macro = "0.10.0"     # TUI style macro.
-r3bl_ansi_color = "0.7.0"
+futures-util = "0.3.31" # Async streams.
+
+r3bl_macro = { path = "/home/nazmul/github/r3bl-open-core/macro" } # Unstable, active development.
+
+r3bl_ansi_color = { path = "/home/nazmul/github/r3bl-open-core/ansi_color" } # Unstable, active development.
 
 r3bl_core = { path = "/home/nazmul/github/r3bl-open-core/core" } # Unstable, active development.
 # r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core", rev = "504d4d4" } # Stable, not released.

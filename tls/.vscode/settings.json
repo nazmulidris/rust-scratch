@@ -18,6 +18,7 @@
     "replacen",
     "reqwest",
     "rustls",
+    "smallstr",
     "smallvec",
     "webpki"
   ]
