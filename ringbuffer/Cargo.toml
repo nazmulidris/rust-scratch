@@ -1,0 +1,9 @@
+[package]
+name = "ringbuffer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# For smallstr & smallvec.
+smallstr = { version = "0.3.0", features = ["serde", "std"] }
+smallvec = { version = "1.6.1", features = ["serde"] }
