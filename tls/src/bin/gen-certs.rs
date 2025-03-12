@@ -19,7 +19,7 @@ use constants::*;
 use crossterm::style::Stylize as _;
 use r3bl_core::{ok, truncate_from_left, with};
 use r3bl_log::{try_initialize_logging_global, DisplayPreference};
-use r3bl_script::environment::{self, EnvKeys, EnvVarsSlice};
+use r3bl_script::environment::{self, EnvVarsSlice};
 use r3bl_script::{
     apt_install::{check_if_package_is_installed, install_package},
     github_api,
@@ -91,12 +91,12 @@ async fn main() -> miette::Result<()> {
 
     // Add to PATH: "(realpath(.)/certs/bin)"
     let amended_path_envs = {
-        let amended_env_path = {
+        let amended_path_value = {
             let fq_pwd = try_pwd()?;
             let path_to_cfssl_bin = fs_paths!(with_root: fq_pwd => CERTS_DIR => BIN_DIR);
             environment::try_get_path_prefixed(path_to_cfssl_bin)?
         };
-        environment::get_env_vars(EnvKeys::Path, &amended_env_path)
+        environment::gen_path_env_vars(&amended_path_value)
     };
 
     download_cfssl_binaries_if_needed(&root_dir).await?;
