@@ -1495,6 +1495,7 @@ dependencies = [
 [[package]]
 name = "r3bl_ansi_color"
 version = "0.7.0"
+source = "git+https://github.com/r3bl-org/r3bl-open-core.git?branch=main#636bc0d228ec9ad8383c7beec06f4d5511682586"
 dependencies = [
  "is_ci",
  "smallstr",
@@ -1506,6 +1507,7 @@ dependencies = [
 [[package]]
 name = "r3bl_core"
 version = "0.10.0"
+source = "git+https://github.com/r3bl-org/r3bl-open-core.git?branch=main#636bc0d228ec9ad8383c7beec06f4d5511682586"
 dependencies = [
  "async-stream",
  "bincode",
@@ -1544,6 +1546,7 @@ dependencies = [
 [[package]]
 name = "r3bl_log"
 version = "0.1.0"
+source = "git+https://github.com/r3bl-org/r3bl-open-core.git?branch=main#636bc0d228ec9ad8383c7beec06f4d5511682586"
 dependencies = [
  "chrono",
  "const_format",
@@ -1567,6 +1570,7 @@ dependencies = [
 [[package]]
 name = "r3bl_script"
 version = "0.1.0"
+source = "git+https://github.com/r3bl-org/r3bl-open-core.git?branch=main#636bc0d228ec9ad8383c7beec06f4d5511682586"
 dependencies = [
  "chrono",
  "crossterm",
@@ -1590,6 +1594,7 @@ dependencies = [
 [[package]]
 name = "r3bl_test_fixtures"
 version = "0.1.0"
+source = "git+https://github.com/r3bl-org/r3bl-open-core.git?branch=main#636bc0d228ec9ad8383c7beec06f4d5511682586"
 dependencies = [
  "async-stream",
  "crossterm",
