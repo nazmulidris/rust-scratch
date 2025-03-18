@@ -20,4 +20,5 @@ mod ex_2;
 mod ex_3;
 mod ex_4;
 mod ex_5;
-
+mod ex_6;
+mod ex_7;

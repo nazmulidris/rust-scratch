@@ -15,8 +15,6 @@
  *   limitations under the License.
  */
 
-#[allow(dead_code)]
-
 /// In case you want to change how the `x` and `y` fields are displayed on their own, you
 /// can't do this: `impl std::fmt::Display for usize { .. }`
 mod simplistic {
@@ -73,6 +71,7 @@ mod tests {
 
     /// So easy to make off by 1 errors.
     #[test]
+    #[should_panic]
     fn test_fails() {
         let size = Size {
             width: 100,
@@ -92,6 +91,7 @@ mod tests {
     /// Positional arguments are easy to mix up. Also, doesn't help when the type of every
     /// argument is a `usize`.
     #[test]
+    #[should_panic]
     fn test_positional_arg_constructor_problems() {
         let point_1: Point = (10, 20).into();
         let size_1: Size = (50, 100).into();
