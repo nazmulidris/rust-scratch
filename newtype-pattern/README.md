@@ -18,7 +18,9 @@
 - `ex_4.rs`
    - Extend this example to use `into Impl<T>` to create constructor functions for `X`,
      `Y`, `Width`, `Height`, types that can be constructed from `usize`, `f64`, and
-     `String` types. This makes constructors and function arguments more flexible.
+     `String` types. This makes constructors and function arguments more flexible. Don't
+     do this for `Point` and `Size` types, since we want to use `AddAssign` and `Add` for
+     this.
 
 - `ex_5.rs`
    - Extend this example to use `AddAssign` to add `X` and `Y` together to make a `Point`.
