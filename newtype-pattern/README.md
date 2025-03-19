@@ -23,8 +23,9 @@
      this.
 
 - `ex_5.rs`
-   - Extend this example to use `AddAssign` to add `X` and `Y` together to make a `Point`.
-     And use `Add` to add `Width` and `Height` together to make a `Size`.
+   - Extend this example to use `Add` to add `X` and `Y` together to make a `Point`. And
+     use `Add` to add `Width` and `Height` together to make a `Size`. Eliminate the need
+     for correct ordering, to make the API difficult to use incorrectly.
 
 - `ex_6.rs`
    - Allow conversions between `Width` <-> `X` and `Height` <-> `Y` types. Generally index

@@ -25,8 +25,8 @@ pub struct Point {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Size {
-    pub width: X,
-    pub height: Y,
+    pub width: Width,
+    pub height: Height,
 }
 
 #[cfg(test)]
@@ -44,8 +44,8 @@ mod tests {
     #[test]
     fn test_size() {
         let s = Size {
-            width: X(30),
-            height: Y(40),
+            width: Width(30),
+            height: Height(40),
         };
         assert_eq!(s.width.0, 30);
         assert_eq!(s.height.0, 40);
