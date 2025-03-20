@@ -17,34 +17,65 @@
 
 use super::ex_2::*;
 
-// Avoid off by 1 errors in conversions between length and index.
-
 impl From<Width> for X {
-    fn from(arg_width: Width) -> Self {
-        // No underflow.
-        X(arg_width.0.saturating_sub(1))
+    fn from(width: Width) -> Self {
+        X(/* width - 1 */ width.0.saturating_sub(1))
     }
 }
 
 impl From<Height> for Y {
-    fn from(arg_height: Height) -> Self {
-        // No underflow.
-        Y(arg_height.0.saturating_sub(1))
+    fn from(height: Height) -> Self {
+        Y(/* height - 1 */ height.0.saturating_sub(1))
     }
 }
 
 impl From<X> for Width {
-    fn from(arg_x: X) -> Self {
-        Width(arg_x.0 + 1)
-    }
-}
-impl From<Y> for Height {
-    fn from(arg_y: Y) -> Self {
-        Height(arg_y.0 + 1)
+    fn from(x: X) -> Self {
+        Width(/* x + 1 */ x.0 + 1)
     }
 }
 
-// Formalize the relationship between length and index comparisons in a trait.
+impl From<Y> for Height {
+    fn from(y: Y) -> Self {
+        Height(/* y + 1 */ y.0 + 1)
+    }
+}
+
+#[cfg(test)]
+mod test_conversions {
+    use crate::{
+        ex_2::{Height, Width, X, Y},
+        ex_4::{height, width, x, y},
+    };
+
+    #[test]
+    fn test_width_to_x() {
+        let w_val = width(10);
+        let x_val: X = w_val.into();
+        assert_eq!(x_val, x(9));
+    }
+
+    #[test]
+    fn test_height_to_y() {
+        let h_val = height(10);
+        let y_val: Y = h_val.into();
+        assert_eq!(y_val, y(9));
+    }
+
+    #[test]
+    fn test_x_to_width() {
+        let x_val = x(10);
+        let w_val: Width = x_val.into();
+        assert_eq!(w_val, width(11));
+    }
+
+    #[test]
+    fn test_y_to_height() {
+        let y_val = y(10);
+        let h_val: Height = y_val.into();
+        assert_eq!(h_val, height(11));
+    }
+}
 
 #[allow(dead_code)]
 pub trait CheckInBounds<Index, Length>
@@ -57,16 +88,21 @@ where
     ) -> CheckInBoundsResult;
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[allow(dead_code)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CheckInBoundsResult {
     InBounds,
     OutOfBounds,
 }
 
 impl CheckInBounds<X, Width> for X {
-    fn check_in_bounds(&self, arg_other: impl Into<Width>) -> CheckInBoundsResult {
-        let other = arg_other.into();
-        if self.0 < other.0 {
+    fn check_in_bounds(
+        /* Index */ &self,
+        /* Length */ arg_length: impl Into<Width>,
+    ) -> CheckInBoundsResult {
+        let self_index = **self;
+        let other_length = *arg_length.into();
+        if self_index < other_length {
             CheckInBoundsResult::InBounds
         } else {
             CheckInBoundsResult::OutOfBounds
@@ -75,9 +111,13 @@ impl CheckInBounds<X, Width> for X {
 }
 
 impl CheckInBounds<Y, Height> for Y {
-    fn check_in_bounds(&self, arg_other: impl Into<Height>) -> CheckInBoundsResult {
-        let other = arg_other.into();
-        if self.0 < other.0 {
+    fn check_in_bounds(
+        /* Index */ &self,
+        /* Length */ arg_length: impl Into<Height>,
+    ) -> CheckInBoundsResult {
+        let self_index = **self;
+        let other_length = *arg_length.into();
+        if self_index < other_length {
             CheckInBoundsResult::InBounds
         } else {
             CheckInBoundsResult::OutOfBounds
@@ -86,82 +126,17 @@ impl CheckInBounds<Y, Height> for Y {
 }
 
 #[cfg(test)]
-mod test_conversions {
+mod test_check_in_bounds {
     use super::*;
     use crate::ex_4::{height, width, x, y};
 
     #[test]
-    fn test_width_to_x() {
-        {
-            let w_val = width(10);
-            let x_val: X = w_val.into();
-            assert_eq!(x_val, 9.into());
-        }
-
-        {
-            let w_val = width(0);
-            let x_val: X = w_val.into();
-            assert_eq!(x_val, x(0));
-        }
-    }
-
-    #[test]
-    fn test_height_to_y() {
-        {
-            let h_val = height(20);
-            let y_val: Y = h_val.into();
-            assert_eq!(y_val, 19.into());
-        }
-
-        {
-            let h_val = height(0);
-            let y_val: Y = h_val.into();
-            assert_eq!(y_val, y(0));
-        }
-    }
-
-    #[test]
-    fn test_x_to_width() {
-        {
-            let x_val = X(10);
-            let w_val: Width = x_val.into();
-            assert_eq!(w_val, 11.into());
-        }
-
-        {
-            let x_val = X(0);
-            let w_val: Width = x_val.into();
-            assert_eq!(w_val, width(1));
-        }
-    }
-
-    #[test]
-    fn test_y_to_height() {
-        {
-            let y_val = Y(20);
-            let h_val: Height = y_val.into();
-            assert_eq!(h_val, 21.into());
-        }
-
-        {
-            let y_val = Y(0);
-            let h_val: Height = y_val.into();
-            assert_eq!(h_val, height(1));
-        }
-    }
-}
-
-#[cfg(test)]
-mod test_check_in_bounds {
-    use super::*;
-
-    #[test]
     fn test_check_in_bounds_x_and_width() {
-        let x_val = X(10);
-        let w_val = Width(20);
+        let x_val = x(10);
+        let w_val = width(20);
         assert_eq!(x_val.check_in_bounds(w_val), CheckInBoundsResult::InBounds);
 
-        let x_val = X(20);
+        let x_val = x(20);
         assert_eq!(
             x_val.check_in_bounds(w_val),
             CheckInBoundsResult::OutOfBounds
@@ -170,11 +145,11 @@ mod test_check_in_bounds {
 
     #[test]
     fn test_check_in_bounds_y_and_height() {
-        let y_val = Y(10);
-        let h_val = Height(20);
+        let y_val = y(10);
+        let h_val = height(20);
         assert_eq!(y_val.check_in_bounds(h_val), CheckInBoundsResult::InBounds);
 
-        let y_val = Y(20);
+        let y_val = y(20);
         assert_eq!(
             y_val.check_in_bounds(h_val),
             CheckInBoundsResult::OutOfBounds

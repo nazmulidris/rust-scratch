@@ -15,292 +15,286 @@
  *   limitations under the License.
  */
 
-use super::ex_2::*;
+ use super::ex_2::*;
 
-// Constructor functions for `X`.
+ #[allow(dead_code)]
+ mod too_many_fns {
+     use super::*;
 
-/// Note each constructor function takes a different type of argument. We have to define a
-/// new function for each new type of argument.
-#[allow(dead_code)]
-mod too_many_functions {
-    use super::*;
+     pub fn x_alt(arg_x: usize) -> X {
+         X(arg_x as Number)
+     }
 
-    pub fn x_alt(arg_x: usize) -> X {
-        X(arg_x as Number)
-    }
+     pub fn x_alt_2(arg_x: u16) -> X {
+         X(arg_x)
+     }
 
-    pub fn x_alt_2(arg_x: u8) -> X {
-        X(arg_x as Number)
-    }
+     pub fn x_alt_3(arg_x: u32) -> X {
+         X(arg_x as Number)
+     }
 
-    pub fn x_alt_3(arg_x: &str) -> X {
-        X(arg_x.parse().unwrap_or_default())
-    }
-}
+     pub fn x_alt_4(arg_x: &str) -> X {
+         X(arg_x.parse::<u16>().unwrap_or_default())
+     }
+ }
 
-#[allow(dead_code)]
-pub fn x(arg_x: impl Into<X>) -> X {
-    arg_x.into()
-}
+ // Constructor fn for `X`.
 
-mod impl_into_x {
-    use super::*;
+ #[allow(dead_code)]
+ pub fn x(arg_x: impl Into<X>) -> X {
+     arg_x.into()
+ }
 
-    impl From<usize> for X {
-        fn from(arg_x: usize) -> Self {
-            X(arg_x as Number)
-        }
-    }
+ mod into_impl_x {
+     use super::*;
 
-    impl From<u8> for X {
-        fn from(arg_x: u8) -> Self {
-            X(arg_x as Number)
-        }
-    }
+     impl From<usize> for X {
+         fn from(arg_x: usize) -> Self {
+             X(arg_x as Number)
+         }
+     }
 
-    impl From<&str> for X {
-        fn from(arg_x: &str) -> Self {
-            X(arg_x.parse().unwrap_or_default())
-        }
-    }
+     impl From<u16> for X {
+         fn from(arg_x: u16) -> Self {
+             X(arg_x)
+         }
+     }
 
-    impl From<i32> for X {
-        fn from(arg_x: i32) -> Self {
-            X(arg_x as Number)
-        }
-    }
-}
+     impl From<u32> for X {
+         fn from(arg_x: u32) -> Self {
+             X(arg_x as Number)
+         }
+     }
 
-// Constructor functions for `Y`.
+     impl From<&str> for X {
+         fn from(arg_x: &str) -> Self {
+             X(arg_x.parse::<u16>().unwrap_or_default())
+         }
+     }
 
-#[allow(dead_code)]
-pub fn y(arg_y: impl Into<Y>) -> Y {
-    arg_y.into()
-}
+     impl From<i32> for X {
+         fn from(arg_x: i32) -> Self {
+             X(arg_x as Number)
+         }
+     }
+ }
 
-mod impl_into_y {
-    use super::*;
+ // Constructor fn for `Y`.
 
-    impl From<usize> for Y {
-        fn from(arg_y: usize) -> Self {
-            Y(arg_y as Number)
-        }
-    }
+ #[allow(dead_code)]
+ pub fn y(arg_y: impl Into<Y>) -> Y {
+     arg_y.into()
+ }
 
-    impl From<u8> for Y {
-        fn from(arg_y: u8) -> Self {
-            Y(arg_y as Number)
-        }
-    }
+ mod into_impl_y {
+     use super::*;
 
-    impl From<&str> for Y {
-        fn from(arg_y: &str) -> Self {
-            Y(arg_y.parse().unwrap_or_default())
-        }
-    }
+     impl From<usize> for Y {
+         fn from(arg_y: usize) -> Self {
+             Y(arg_y as Number)
+         }
+     }
 
-    impl From<i32> for Y {
-        fn from(arg_y: i32) -> Self {
-            Y(arg_y as Number)
-        }
-    }
-}
+     impl From<u16> for Y {
+         fn from(arg_y: u16) -> Self {
+             Y(arg_y)
+         }
+     }
 
-// Constructor functions for `Width`.
+     impl From<u32> for Y {
+         fn from(arg_y: u32) -> Self {
+             Y(arg_y as Number)
+         }
+     }
 
-#[allow(dead_code)]
-pub fn width(arg_width: impl Into<Width>) -> Width {
-    arg_width.into()
-}
+     impl From<&str> for Y {
+         fn from(arg_y: &str) -> Self {
+             Y(arg_y.parse::<u16>().unwrap_or_default())
+         }
+     }
 
-mod impl_into_width {
-    use super::*;
+     impl From<i32> for Y {
+         fn from(arg_y: i32) -> Self {
+             Y(arg_y as Number)
+         }
+     }
+ }
 
-    impl From<usize> for Width {
-        fn from(arg_width: usize) -> Self {
-            Width(arg_width as Number)
-        }
-    }
+ // Constructor fn for `Width`.
 
-    impl From<u8> for Width {
-        fn from(arg_width: u8) -> Self {
-            Width(arg_width as Number)
-        }
-    }
+ #[allow(dead_code)]
+ pub fn width(arg_width: impl Into<Width>) -> Width {
+     arg_width.into()
+ }
 
-    impl From<&str> for Width {
-        fn from(arg_width: &str) -> Self {
-            Width(arg_width.parse().unwrap_or_default())
-        }
-    }
+ mod into_impl_width {
+     use super::*;
 
-    impl From<i32> for Width {
-        fn from(arg_width: i32) -> Self {
-            Width(arg_width as Number)
-        }
-    }
-}
+     impl From<usize> for Width {
+         fn from(arg_width: usize) -> Self {
+             Width(arg_width as Number)
+         }
+     }
 
-// Constructor functions for `Height`.
+     impl From<u16> for Width {
+         fn from(arg_width: u16) -> Self {
+             Width(arg_width)
+         }
+     }
 
-#[allow(dead_code)]
-pub fn height(arg_height: impl Into<Height>) -> Height {
-    arg_height.into()
-}
+     impl From<u32> for Width {
+         fn from(arg_width: u32) -> Self {
+             Width(arg_width as Number)
+         }
+     }
 
-mod impl_into_height {
-    use super::*;
+     impl From<&str> for Width {
+         fn from(arg_width: &str) -> Self {
+             Width(arg_width.parse::<u16>().unwrap_or_default())
+         }
+     }
 
-    impl From<usize> for Height {
-        fn from(arg_height: usize) -> Self {
-            Height(arg_height as Number)
-        }
-    }
+     impl From<i32> for Width {
+         fn from(arg_width: i32) -> Self {
+             Width(arg_width as Number)
+         }
+     }
+ }
 
-    impl From<u8> for Height {
-        fn from(arg_height: u8) -> Self {
-            Height(arg_height as Number)
-        }
-    }
+ // Constructor fn for `Height`.
 
-    impl From<&str> for Height {
-        fn from(arg_height: &str) -> Self {
-            Height(arg_height.parse().unwrap_or_default())
-        }
-    }
+ #[allow(dead_code)]
+ pub fn height(arg_height: impl Into<Height>) -> Height {
+     arg_height.into()
+ }
 
-    impl From<i32> for Height {
-        fn from(arg_height: i32) -> Self {
-            Height(arg_height as Number)
-        }
-    }
-}
+ mod into_impl_height {
+     use super::*;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+     impl From<usize> for Height {
+         fn from(arg_height: usize) -> Self {
+             Height(arg_height as Number)
+         }
+     }
 
-    #[test]
-    fn test_into_x() {
-        // usize -> X.
-        {
-            let arg_x: usize = 10;
-            let x_val = x(arg_x);
-            assert_eq!(x_val, X(10));
-        }
+     impl From<u16> for Height {
+         fn from(arg_height: u16) -> Self {
+             Height(arg_height)
+         }
+     }
 
-        // u8 -> X.
-        {
-            let arg_x: u8 = 20;
-            let x_val = x(arg_x);
-            assert_eq!(x_val, X(20));
-        }
+     impl From<u32> for Height {
+         fn from(arg_height: u32) -> Self {
+             Height(arg_height as Number)
+         }
+     }
 
-        // &str -> X.
-        {
-            let arg_x: &str = "30";
-            let x_val = x(arg_x);
-            assert_eq!(x_val, X(30));
-        }
+     impl From<&str> for Height {
+         fn from(arg_height: &str) -> Self {
+             Height(arg_height.parse::<u16>().unwrap_or_default())
+         }
+     }
 
-        // i32 -> X.
-        {
-            let arg_x: i32 = 40;
-            let x_val = x(arg_x);
-            assert_eq!(x_val, X(40));
-        }
-    }
+     impl From<i32> for Height {
+         fn from(arg_height: i32) -> Self {
+             Height(arg_height as Number)
+         }
+     }
+ }
 
-    #[test]
-    fn test_into_y() {
-        // usize -> Y.
-        {
-            let arg_y: usize = 10;
-            let y_val = y(arg_y);
-            assert_eq!(y_val, Y(10));
-        }
+ #[cfg(test)]
+ mod tests {
+     use super::*;
 
-        // u8 -> Y.
-        {
-            let arg_y: u8 = 20;
-            let y_val = y(arg_y);
-            assert_eq!(y_val, Y(20));
-        }
+     #[test]
+     fn test_x() {
+         {
+             let x_val_1 = x(0usize);
+             let x_val_2 = x(0u16);
+             let x_val_3 = x(0u32);
+             let x_val_4 = x("0");
+             assert_eq!(x_val_1, x_val_2);
+             assert_eq!(x_val_1, x_val_3);
+             assert_eq!(x_val_1, x_val_4);
+         }
 
-        // &str -> Y.
-        {
-            let arg_y: &str = "30";
-            let y_val = y(arg_y);
-            assert_eq!(y_val, Y(30));
-        }
+         {
+             let x_val_1: X = 0usize.into();
+             let x_val_2: X = 0u16.into();
+             let x_val_3: X = 0u32.into();
+             let x_val_4: X = "0".into();
+             assert_eq!(x_val_1, x_val_2);
+             assert_eq!(x_val_1, x_val_3);
+             assert_eq!(x_val_1, x_val_4);
+         }
+     }
 
-        // i32 -> Y.
-        {
-            let arg_y: i32 = 40;
-            let y_val = y(arg_y);
-            assert_eq!(y_val, Y(40));
-        }
-    }
+     #[test]
+     fn test_y() {
+         {
+             let y_val_1 = y(0usize);
+             let y_val_2 = y(0u16);
+             let y_val_3 = y(0u32);
+             let y_val_4 = y("0");
+             assert_eq!(y_val_1, y_val_2);
+             assert_eq!(y_val_1, y_val_3);
+             assert_eq!(y_val_1, y_val_4);
+         }
 
-    #[test]
-    fn test_into_width() {
-        // usize -> Width.
-        {
-            let arg_width: usize = 10;
-            let width_val = width(arg_width);
-            assert_eq!(width_val, Width(10));
-        }
+         {
+             let y_val_1: Y = 0usize.into();
+             let y_val_2: Y = 0u16.into();
+             let y_val_3: Y = 0u32.into();
+             let y_val_4: Y = "0".into();
+             assert_eq!(y_val_1, y_val_2);
+             assert_eq!(y_val_1, y_val_3);
+             assert_eq!(y_val_1, y_val_4);
+         }
+     }
 
-        // u8 -> Width.
-        {
-            let arg_width: u8 = 20;
-            let width_val = width(arg_width);
-            assert_eq!(width_val, Width(20));
-        }
+     #[test]
+     fn test_width() {
+         {
+             let width_val_1 = width(0usize);
+             let width_val_2 = width(0u16);
+             let width_val_3 = width(0u32);
+             let width_val_4 = width("0");
+             assert_eq!(width_val_1, width_val_2);
+             assert_eq!(width_val_1, width_val_3);
+             assert_eq!(width_val_1, width_val_4);
+         }
 
-        // &str -> Width.
-        {
-            let arg_width: &str = "30";
-            let width_val = width(arg_width);
-            assert_eq!(width_val, Width(30));
-        }
+         {
+             let width_val_1: Width = 0usize.into();
+             let width_val_2: Width = 0u16.into();
+             let width_val_3: Width = 0u32.into();
+             let width_val_4: Width = "0".into();
+             assert_eq!(width_val_1, width_val_2);
+             assert_eq!(width_val_1, width_val_3);
+             assert_eq!(width_val_1, width_val_4);
+         }
+     }
 
-        // i32 -> Width.
-        {
-            let arg_width: i32 = 40;
-            let width_val = width(arg_width);
-            assert_eq!(width_val, Width(40));
-        }
-    }
+     #[test]
+     fn test_height() {
+         {
+             let height_val_1 = height(0usize);
+             let height_val_2 = height(0u16);
+             let height_val_3 = height(0u32);
+             let height_val_4 = height("0");
+             assert_eq!(height_val_1, height_val_2);
+             assert_eq!(height_val_1, height_val_3);
+             assert_eq!(height_val_1, height_val_4);
+         }
 
-    #[test]
-    fn test_into_height() {
-        // usize -> Height.
-        {
-            let arg_height: usize = 10;
-            let height_val = height(arg_height);
-            assert_eq!(height_val, Height(10));
-        }
-
-        // u8 -> Height.
-        {
-            let arg_height: u8 = 20;
-            let height_val = height(arg_height);
-            assert_eq!(height_val, Height(20));
-        }
-
-        // &str -> Height.
-        {
-            let arg_height: &str = "30";
-            let height_val = height(arg_height);
-            assert_eq!(height_val, Height(30));
-        }
-
-        // i32 -> Height.
-        {
-            let arg_height: i32 = 40;
-            let height_val = height(arg_height);
-            assert_eq!(height_val, Height(40));
-        }
-    }
-}
+         {
+             let height_val_1: Height = 0usize.into();
+             let height_val_2: Height = 0u16.into();
+             let height_val_3: Height = 0u32.into();
+             let height_val_4: Height = "0".into();
+             assert_eq!(height_val_1, height_val_2);
+             assert_eq!(height_val_1, height_val_3);
+             assert_eq!(height_val_1, height_val_4);
+         }
+     }
+ }

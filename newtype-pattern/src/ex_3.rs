@@ -15,40 +15,57 @@
  *   limitations under the License.
  */
 
-use super::ex_2::*;
+ use super::ex_2::*;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Point {
-    pub x: X,
-    pub y: Y,
-}
+ #[derive(Debug, Clone, Copy, PartialEq)]
+ pub struct Point {
+     pub x: X,
+     pub y: Y,
+ }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Size {
-    pub width: Width,
-    pub height: Height,
-}
+ #[derive(Debug, Clone, Copy, PartialEq)]
+ pub struct Size {
+     pub width: Width,
+     pub height: Height,
+ }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+ #[cfg(test)]
+ mod tests {
+     use super::*;
 
-    #[test]
-    fn test_point() {
-        let p = Point { x: X(10), y: Y(20) };
-        assert_eq!(p.x.0, 10);
-        assert_eq!(p.y.0, 20);
-        println!("{:?}", p);
-    }
+     #[test]
+     fn test_point() {
+         let x_val = X(0);
+         let y_val = Y(0);
+         let p_val = Point { y: y_val, x: x_val };
+         assert_eq!(p_val.x, x_val);
+         assert_eq!(p_val.y, y_val);
+     }
 
-    #[test]
-    fn test_size() {
-        let s = Size {
-            width: Width(30),
-            height: Height(40),
-        };
-        assert_eq!(s.width.0, 30);
-        assert_eq!(s.height.0, 40);
-        println!("{:?}", s);
-    }
-}
+     #[test]
+     fn test_size() {
+         let w_val = Width(10);
+         let h_val = Height(10);
+         let s_val = Size {
+             width: w_val,
+             height: h_val,
+         };
+         assert_eq!(s_val.width, w_val);
+         assert_eq!(s_val.height, h_val);
+     }
+
+     // #[test]
+     // fn does_not_compile() {
+     //     let x_val = X(0);
+     //     let y_val = Y(0);
+     //     let p_val = Point { y: y_val, x: x_val };
+     //     let w_val = Width(10);
+     //     let h_val = Height(10);
+     //     let s_val = Size {
+     //         width: w_val,
+     //         height: h_val,
+     //     };
+     //     let p_2_val = Point { x: y_val, y: x_val };
+     //     let s_2_val = Size { width: h_val, height: w_val };
+     // }
+ }

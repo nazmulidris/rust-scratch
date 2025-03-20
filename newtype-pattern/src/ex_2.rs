@@ -15,244 +15,184 @@
  *   limitations under the License.
  */
 
-use std::fmt::Debug;
-use std::ops::{Deref, DerefMut};
+ pub type Number = u16;
 
-pub type Number = u16;
+ use std::fmt::Debug;
+ use std::ops::{Deref, DerefMut};
 
-#[derive(Copy, Clone, PartialEq)]
-pub struct X(pub Number);
+ #[derive(Copy, Clone, PartialEq, PartialOrd)]
+ pub struct X(pub Number);
 
-mod x_ops {
-    use super::*;
+ mod x_ops {
+     use super::*;
 
-    impl Deref for X {
-        type Target = Number;
+     impl Deref for X {
+         type Target = Number;
 
-        fn deref(&self) -> &Self::Target {
-            &self.0
-        }
-    }
+         fn deref(&self) -> &Self::Target {
+             &self.0
+         }
+     }
 
-    impl DerefMut for X {
-        fn deref_mut(&mut self) -> &mut Self::Target {
-            &mut self.0
-        }
-    }
+     impl DerefMut for X {
+         fn deref_mut(&mut self) -> &mut Self::Target {
+             &mut self.0
+         }
+     }
 
-    /// Can implement `Debug` for `X` here. But can't implement `Debug` for `Number` due
-    /// to orphan rule.
-    impl Debug for X {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "X({})", self.0)
-        }
-    }
-}
+     impl Debug for X {
+         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+             write!(f, "X({})", self.0)
+         }
+     }
+ }
 
-#[derive(Copy, Clone, PartialEq)]
-pub struct Y(pub Number);
+ #[derive(Clone, Copy, PartialEq, PartialOrd)]
+ pub struct Y(pub Number);
 
-mod y_ops {
-    use super::*;
+ mod y_ops {
+     use super::*;
 
-    impl Deref for Y {
-        type Target = Number;
+     impl Deref for Y {
+         type Target = Number;
 
-        fn deref(&self) -> &Self::Target {
-            &self.0
-        }
-    }
+         fn deref(&self) -> &Self::Target {
+             &self.0
+         }
+     }
 
-    impl DerefMut for Y {
-        fn deref_mut(&mut self) -> &mut Self::Target {
-            &mut self.0
-        }
-    }
+     impl DerefMut for Y {
+         fn deref_mut(&mut self) -> &mut Self::Target {
+             &mut self.0
+         }
+     }
 
-    /// Can implement `Debug` for `Y` here. But can't implement `Debug` for `Number` due
-    /// to orphan rule.
-    impl Debug for Y {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "Y({})", self.0)
-        }
-    }
-}
+     impl Debug for Y {
+         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+             write!(f, "Y({})", self.0)
+         }
+     }
+ }
 
-#[derive(Copy, Clone, PartialEq)]
-pub struct Width(pub Number);
+ #[derive(Clone, Copy, PartialEq, PartialOrd)]
+ pub struct Width(pub Number);
 
-mod width_ops {
-    use super::*;
+ mod width_ops {
+     use super::*;
 
-    impl Deref for Width {
-        type Target = Number;
+     impl Deref for Width {
+         type Target = Number;
 
-        fn deref(&self) -> &Self::Target {
-            &self.0
-        }
-    }
+         fn deref(&self) -> &Self::Target {
+             &self.0
+         }
+     }
 
-    impl DerefMut for Width {
-        fn deref_mut(&mut self) -> &mut Self::Target {
-            &mut self.0
-        }
-    }
+     impl DerefMut for Width {
+         fn deref_mut(&mut self) -> &mut Self::Target {
+             &mut self.0
+         }
+     }
 
-    /// Can implement `Debug` for `Width` here. But can't implement `Debug` for `Number` due
-    /// to orphan rule.
-    impl Debug for Width {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "Width({})", self.0)
-        }
-    }
-}
+     impl Debug for Width {
+         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+             write!(f, "Width({})", self.0)
+         }
+     }
+ }
 
-#[derive(Copy, Clone, PartialEq)]
-pub struct Height(pub Number);
+ #[derive(Clone, Copy, PartialEq, PartialOrd)]
+ pub struct Height(pub Number);
 
-mod height_ops {
-    use super::*;
+ mod height_ops {
+     use super::*;
 
-    impl Deref for Height {
-        type Target = Number;
+     impl Deref for Height {
+         type Target = Number;
 
-        fn deref(&self) -> &Self::Target {
-            &self.0
-        }
-    }
+         fn deref(&self) -> &Self::Target {
+             &self.0
+         }
+     }
 
-    impl DerefMut for Height {
-        fn deref_mut(&mut self) -> &mut Self::Target {
-            &mut self.0
-        }
-    }
+     impl DerefMut for Height {
+         fn deref_mut(&mut self) -> &mut Self::Target {
+             &mut self.0
+         }
+     }
 
-    /// Can implement `Debug` for `Height` here. But can't implement `Debug` for `Number` due
-    /// to orphan rule.
-    impl Debug for Height {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "Height({})", self.0)
-        }
-    }
-}
+     impl Debug for Height {
+         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+             write!(f, "Height({})", self.0)
+         }
+     }
+ }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+ #[cfg(test)]
+ mod tests {
+     use super::*;
 
-    #[test]
-    fn test_x() {
-        // Direct access.
-        {
-            let x = X(0);
-            assert_eq!(x.0, 0);
-        }
+     #[test]
+     fn test_x() {
+         let mut x = X(10);
 
-        // Deref.
-        {
-            let x = X(0);
-            let it = *x;
-            assert_eq!(it, 0);
-        }
+         // Deref.
+         assert_eq!(*x, 10);
 
-        // DerefMut.
-        {
-            let mut x = X(0);
-            *x = 1;
-            assert_eq!(*x, 1);
-        }
+         assert_eq!(x.0, 10);
+         assert_eq!(x, X(10));
 
-        // Debug.
-        {
-            let x = X(0);
-            assert_eq!(format!("{:?}", x), "X(0)");
-        }
-    }
+         // DerefMut.
+         *x = 100;
 
-    #[test]
-    fn test_y() {
-        // Direct access.
-        {
-            let y = Y(0);
-            assert_eq!(y.0, 0);
-        }
+         assert_eq!(format!("{:?}", x), "X(100)");
+     }
 
-        // Deref.
-        {
-            let y = Y(0);
-            let it = *y;
-            assert_eq!(it, 0);
-        }
+     #[test]
+     fn test_y() {
+         let mut y = Y(20);
 
-        // DerefMut.
-        {
-            let mut y = Y(0);
-            *y = 1;
-            assert_eq!(*y, 1);
-        }
+         // Deref.
+         assert_eq!(*y, 20);
 
-        // Debug.
-        {
-            let y = Y(0);
-            assert_eq!(format!("{:?}", y), "Y(0)");
-        }
-    }
+         assert_eq!(y.0, 20);
+         assert_eq!(y, Y(20));
 
-    #[test]
-    fn test_width() {
-        // Direct access.
-        {
-            let width = Width(0);
-            assert_eq!(width.0, 0);
-        }
+         // DerefMut.
+         *y = 200;
 
-        // Deref.
-        {
-            let width = Width(0);
-            let it = *width;
-            assert_eq!(it, 0);
-        }
+         assert_eq!(format!("{:?}", y), "Y(200)");
+     }
 
-        // DerefMut.
-        {
-            let mut width = Width(0);
-            *width = 1;
-            assert_eq!(*width, 1);
-        }
+     #[test]
+     fn test_width() {
+         let mut width = Width(30);
 
-        // Debug.
-        {
-            let width = Width(0);
-            assert_eq!(format!("{:?}", width), "Width(0)");
-        }
-    }
+         // Deref.
+         assert_eq!(*width, 30);
 
-    #[test]
-    fn test_height() {
-        // Direct access.
-        {
-            let height = Height(0);
-            assert_eq!(height.0, 0);
-        }
+         assert_eq!(width.0, 30);
+         assert_eq!(width, Width(30));
 
-        // Deref.
-        {
-            let height = Height(0);
-            let it = *height;
-            assert_eq!(it, 0);
-        }
+         // DerefMut.
+         *width = 300;
 
-        // DerefMut.
-        {
-            let mut height = Height(0);
-            *height = 1;
-            assert_eq!(*height, 1);
-        }
+         assert_eq!(format!("{:?}", width), "Width(300)");
+     }
 
-        // Debug.
-        {
-            let height = Height(0);
-            assert_eq!(format!("{:?}", height), "Height(0)");
-        }
-    }
-}
+     #[test]
+     fn test_height() {
+         let mut height = Height(40);
+
+         // Deref.
+         assert_eq!(*height, 40);
+
+         assert_eq!(height.0, 40);
+         assert_eq!(height, Height(40));
+
+         // DerefMut.
+         *height = 400;
+
+         assert_eq!(format!("{:?}", height), "Height(400)");
+     }
+ }

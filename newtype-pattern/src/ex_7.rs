@@ -17,7 +17,6 @@
 
 use super::ex_2::*;
 
-#[derive(Debug)]
 pub struct XDrop<'a> {
     pub x: X,
     pub dropped_list: &'a mut Vec<X>,
@@ -25,9 +24,8 @@ pub struct XDrop<'a> {
 
 impl Drop for XDrop<'_> {
     fn drop(&mut self) {
-        println!("Dropping X_Drop with x: {:?}", self.x);
+        println!("XDrop: Dropping {:?} & adding to dropped_list", self.x);
         self.dropped_list.push(self.x);
-        println!("Dropped list: {:?}", self.dropped_list);
     }
 }
 
@@ -41,26 +39,28 @@ mod tests {
         let dropped_list = &mut vec![];
 
         {
-            let x_val = x(10);
-            let _drop_handle = XDrop {
-                x: x_val,
+            let x_val = XDrop {
+                x: x(10),
                 dropped_list,
             };
-            println!("Inside scope with x: {:?}", x_val);
+            println!("XDrop: Created {:?}", x_val.x);
         }
 
+        assert_eq!(dropped_list.len(), 1);
+        assert_eq!(dropped_list[0], x(10));
+
         {
-            let x_val = x(20);
-            let _drop_handle = XDrop {
-                x: x_val,
+            let x_val = XDrop {
+                x: x(20),
                 dropped_list,
             };
-            println!("Inside scope with x: {:?}", x_val);
+            println!("XDrop: Created {:?}", x_val.x);
         }
 
         assert_eq!(dropped_list.len(), 2);
-        assert_eq!(dropped_list[0].0, 10);
-        assert_eq!(dropped_list[1].0, 20);
-        println!("Final dropped list: {:?}", dropped_list);
+        assert_eq!(dropped_list[0], x(10));
+        assert_eq!(dropped_list[1], x(20));
+
+        println!("XDrop: dropped_list: {:?}", dropped_list);
     }
 }

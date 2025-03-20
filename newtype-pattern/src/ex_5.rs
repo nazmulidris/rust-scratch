@@ -15,110 +15,107 @@
  *   limitations under the License.
  */
 
-use super::ex_2::*;
-use super::ex_3::*;
-use std::ops::Add;
+ use super::ex_2::*;
+ use super::ex_3::*;
+ use std::ops::Add;
 
-#[allow(dead_code)]
-pub fn point(arg_point: impl Into<Point>) -> Point {
-    arg_point.into()
-}
+ #[allow(dead_code)]
+ pub fn point(arg_point: impl Into<Point>) -> Point {
+     arg_point.into()
+ }
 
-/// Ordering of the `X` and `Y` types does not matter. Support for both ways are provided
-/// making the API really difficult to use incorrectly.
-mod impl_into_point {
-    use super::*;
+ mod impl_ops_point {
+     use super::*;
 
-    impl Add<X> for Y {
-        type Output = Point;
+     impl Add<X> for Y {
+         type Output = Point;
 
-        fn add(self, rhs: X) -> Self::Output {
-            let y_val = self;
-            let x_val = rhs;
-            Point { x: x_val, y: y_val }
-        }
-    }
+         fn add(self, rhs: X) -> Self::Output {
+             let y_val = self;
+             let x_val = rhs;
+             Point { x: x_val, y: y_val }
+         }
+     }
 
-    impl Add<Y> for X {
-        type Output = Point;
+     impl Add<Y> for X {
+         type Output = Point;
 
-        fn add(self, rhs: Y) -> Self::Output {
-            let x_val = self;
-            let y_val = rhs;
-            Point { x: x_val, y: y_val }
-        }
-    }
-}
+         fn add(self, rhs: Y) -> Self::Output {
+             let x_val = self;
+             let y_val = rhs;
+             Point { x: x_val, y: y_val }
+         }
+     }
+ }
 
-#[allow(dead_code)]
-pub fn size(arg_size: impl Into<Size>) -> Size {
-    arg_size.into()
-}
+ #[allow(dead_code)]
+ pub fn size(arg_size: impl Into<Size>) -> Size {
+     arg_size.into()
+ }
 
-/// Ordering of the `Width` and `Height` types does not matter. Support for both ways are
-/// provided making the API really difficult to use incorrectly.
-mod impl_into_size {
-    use super::*;
+ mod impl_ops_size {
+     use super::*;
 
-    impl Add<Width> for Height {
-        type Output = Size;
+     impl Add<Width> for Height {
+         type Output = Size;
 
-        fn add(self, rhs: Width) -> Self::Output {
-            let height_val = self;
-            let width_val = rhs;
-            Size {
-                width: width_val,
-                height: height_val,
-            }
-        }
-    }
+         fn add(self, rhs: Width) -> Self::Output {
+             let h_val = self;
+             let w_val = rhs;
+             Size {
+                 width: w_val,
+                 height: h_val,
+             }
+         }
+     }
 
-    impl Add<Height> for Width {
-        type Output = Size;
+     impl Add<Height> for Width {
+         type Output = Size;
 
-        fn add(self, rhs: Height) -> Self::Output {
-            let width_val = self;
-            let height_val = rhs;
-            Size {
-                width: width_val,
-                height: height_val,
-            }
-        }
-    }
-}
+         fn add(self, rhs: Height) -> Self::Output {
+             let w_val = self;
+             let h_val = rhs;
+             Size {
+                 width: w_val,
+                 height: h_val,
+             }
+         }
+     }
+ }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+ #[cfg(test)]
+ mod tests {
+     use super::*;
 
-    #[test]
-    fn test_point() {
-        let p_1 = Point { x: X(10), y: Y(20) };
-        let p_2 = p_1.x + p_1.y;
-        let p_3 = point(p_1.y + p_1.x);
+     #[test]
+     fn test_point() {
+         let x_val = X(0);
+         let y_val = Y(0);
 
-        assert_eq!(p_1.x.0, 10);
-        assert_eq!(p_1.y.0, 20);
-        println!("{:?}", p_1);
+         let p_val_1 = x_val + y_val;
+         let p_val_2 = y_val + x_val;
 
-        assert_eq!(p_1, p_2);
-        assert_eq!(p_1, p_3);
-    }
+         assert_eq!(p_val_1, p_val_2);
 
-    #[test]
-    fn test_size() {
-        let s_1 = Size {
-            width: Width(30),
-            height: Height(40),
-        };
-        let s_2 = s_1.width + s_1.height;
-        let s_3 = size(s_1.height + s_1.width);
+         let p_val_3 = point(x_val + y_val);
+         let p_val_4 = point(y_val + x_val);
 
-        assert_eq!(s_1.width.0, 30);
-        assert_eq!(s_1.height.0, 40);
-        println!("{:?}", s_1);
+         assert_eq!(p_val_3, p_val_4);
+     }
 
-        assert_eq!(s_1, s_2);
-        assert_eq!(s_1, s_3);
-    }
-}
+     #[test]
+     fn test_size() {
+         let w_val = Width(10);
+         let h_val = Height(10);
+
+         let s_val_1 = w_val + h_val;
+         let s_val_2 = h_val + w_val;
+
+         assert_eq!(s_val_1, s_val_2);
+
+         let s_val_3 = size(w_val + h_val);
+         let s_val_4 = size(h_val + w_val);
+
+         assert_eq!(s_val_3, s_val_4);
+     }
+ }
