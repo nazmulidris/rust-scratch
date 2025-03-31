@@ -50,12 +50,9 @@ strum = "0.26.3"
 strum_macros = "0.26.4"
 
 # R3BL awesomeness.
-futures-util = "0.3.31"                                                                                                          # Async streams.
-r3bl_ansi_color = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "main", package = "r3bl_ansi_color" }
-r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "main", package = "r3bl_core" }
-r3bl_test_fixtures = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "main", package = "r3bl_test_fixtures" }
-r3bl_script = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "main", package = "r3bl_script" }
-r3bl_log = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "main", package = "r3bl_log" }
+# r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "main", package = "r3bl_core" }
+r3bl_core = { path = "/home/nazmul/github/r3bl-open-core/core" } # Local path to the r3bl_core crate.
+futures-util = "0.3.31"                                          # Async streams.
 
 # HTTP client library.
 reqwest = { version = "0.12.9", features = ["json"] }

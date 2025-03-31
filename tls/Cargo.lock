@@ -1493,47 +1493,39 @@ dependencies = [
 ]
 
 [[package]]
-name = "r3bl_ansi_color"
-version = "0.7.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core.git?branch=main#636bc0d228ec9ad8383c7beec06f4d5511682586"
-dependencies = [
- "is_ci",
- "smallstr",
- "smallvec",
- "strum",
- "strum_macros",
-]
-
-[[package]]
 name = "r3bl_core"
 version = "0.10.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core.git?branch=main#636bc0d228ec9ad8383c7beec06f4d5511682586"
 dependencies = [
  "async-stream",
  "bincode",
  "chrono",
  "colorgrad",
+ "const_format",
  "crossterm",
  "futures-core",
  "futures-util",
+ "is_ci",
  "kv",
  "miette",
  "nom",
  "paste",
  "pretty_assertions",
- "r3bl_ansi_color",
  "rand",
+ "reqwest",
  "serde",
  "serde_json",
  "sha2",
  "smallstr",
  "smallvec",
  "strip-ansi",
+ "strip-ansi-escapes",
  "strum",
  "strum_macros",
+ "textwrap",
  "thiserror 1.0.69",
  "time",
  "tokio",
+ "tokio-test",
  "tracing",
  "tracing-appender",
  "tracing-core",
@@ -1541,80 +1533,6 @@ dependencies = [
  "unicode-segmentation",
  "unicode-width 0.2.0",
  "uuid",
-]
-
-[[package]]
-name = "r3bl_log"
-version = "0.1.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core.git?branch=main#636bc0d228ec9ad8383c7beec06f4d5511682586"
-dependencies = [
- "chrono",
- "const_format",
- "crossterm",
- "miette",
- "pretty_assertions",
- "r3bl_ansi_color",
- "r3bl_core",
- "r3bl_test_fixtures",
- "smallstr",
- "smallvec",
- "textwrap",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "tracing-appender",
- "tracing-core",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "r3bl_script"
-version = "0.1.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core.git?branch=main#636bc0d228ec9ad8383c7beec06f4d5511682586"
-dependencies = [
- "chrono",
- "crossterm",
- "futures-util",
- "miette",
- "r3bl_ansi_color",
- "r3bl_core",
- "reqwest",
- "serde_json",
- "serial_test",
- "strum",
- "strum_macros",
- "textwrap",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "tracing-core",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "r3bl_test_fixtures"
-version = "0.1.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core.git?branch=main#636bc0d228ec9ad8383c7beec06f4d5511682586"
-dependencies = [
- "async-stream",
- "crossterm",
- "futures-core",
- "futures-util",
- "miette",
- "pretty_assertions",
- "r3bl_core",
- "smallstr",
- "smallvec",
- "strip-ansi-escapes",
- "strum",
- "strum_macros",
- "thiserror 1.0.69",
- "tokio",
- "tokio-test",
- "tracing",
- "tracing-appender",
- "tracing-core",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -2344,11 +2262,7 @@ dependencies = [
  "crossterm",
  "futures-util",
  "miette",
- "r3bl_ansi_color",
  "r3bl_core",
- "r3bl_log",
- "r3bl_script",
- "r3bl_test_fixtures",
  "reqwest",
  "rustls",
  "rustls-pemfile",
