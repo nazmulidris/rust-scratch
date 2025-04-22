@@ -105,7 +105,7 @@ pub async fn server_entry_point(cli_args: CLIArg) -> miette::Result<()> {
                     // Ensure that you are connecting to the correct client. Handle
                     // timeout and invalid handshake.
                     if let Err(err) = handshake::try_accept_or_timeout(&mut read_half, &mut write_half).await {
-                        tracing::error!(%err, "Problem with handshake");
+                        error!(%err, "Problem with handshake");
                         return;
                     };
 
@@ -377,16 +377,16 @@ mod generate_server_message {
     }
 
     #[instrument(skip_all, fields(bucket_len = bucket.len()))]
-    pub(super) fn try_get_size_of_bucket<'a>(
-        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+    pub(super) fn try_get_size_of_bucket(
+        bucket: &KVBucket<MessageKey, MessageValue>,
     ) -> miette::Result<MyServerMessage> {
         info!("Getting size of bucket");
         Ok(ServerMessage::Size(bucket.len()))
     }
 
     #[instrument(skip_all)]
-    pub(super) fn try_clear_bucket<'a>(
-        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+    pub(super) fn try_clear_bucket(
+        bucket: &KVBucket<MessageKey, MessageValue>,
     ) -> miette::Result<MyServerMessage> {
         info!("Clearing bucket");
         let clear_status_flag = match bucket.clear() {
@@ -400,8 +400,8 @@ mod generate_server_message {
     }
 
     #[instrument(skip_all, fields(?key))]
-    pub(super) fn try_get_from_bucket<'a>(
-        bucket: &KVBucket<'a, MessageKey, MessageValue>,
+    pub(super) fn try_get_from_bucket(
+        bucket: &KVBucket<MessageKey, MessageValue>,
         key: MessageKey,
     ) -> miette::Result<MyServerMessage> {
         info!("Getting from bucket");
@@ -480,8 +480,9 @@ mod generate_server_message {
 #[cfg(test)]
 pub mod test_handle_client_message {
     use crate::{
-        handle_client_task::handle_client_message, protocol, server_task::generate_server_message,
-        Buffer, ClientMessage, Data, InterClientMessage, ServerMessage, CHANNEL_SIZE,
+        bincode_serde, handle_client_task::handle_client_message, protocol,
+        server_task::generate_server_message, Buffer, ClientMessage, Data, InterClientMessage,
+        ServerMessage, CHANNEL_SIZE,
     };
     use miette::IntoDiagnostic;
     use r3bl_tui::MockAsyncStream;
@@ -525,8 +526,7 @@ pub mod test_handle_client_message {
             let expected_payload = {
                 let item_vec = vec![(key.to_string(), data.clone())];
                 let server_message = ServerMessage::GetAll(item_vec);
-                let config = bincode::config::standard();
-                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
+                bincode_serde::try_serialize(&server_message)?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -570,8 +570,7 @@ pub mod test_handle_client_message {
         let result_vec = {
             let expected_payload = {
                 let server_message = ServerMessage::<String, Data>::Insert(true);
-                let config = bincode::config::standard();
-                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
+                bincode_serde::try_serialize(&server_message)?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -619,8 +618,7 @@ pub mod test_handle_client_message {
         let result_vec = {
             let expected_payload = {
                 let server_message = ServerMessage::<String, Data>::Remove(true);
-                let config = bincode::config::standard();
-                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
+                bincode_serde::try_serialize(&server_message)?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -673,8 +671,7 @@ pub mod test_handle_client_message {
             let expected_payload = {
                 let it = Some(data.clone());
                 let server_message = ServerMessage::<String, Data>::Get(it);
-                let config = bincode::config::standard();
-                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
+                bincode_serde::try_serialize(&server_message)?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -722,8 +719,7 @@ pub mod test_handle_client_message {
         let result_vec = {
             let expected_payload = {
                 let server_message = ServerMessage::<String, Data>::Clear(true);
-                let config = bincode::config::standard();
-                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
+                bincode_serde::try_serialize(&server_message)?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -771,8 +767,7 @@ pub mod test_handle_client_message {
         let result_vec = {
             let expected_payload = {
                 let server_message = ServerMessage::<String, Data>::Size(1);
-                let config = bincode::config::standard();
-                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
+                bincode_serde::try_serialize(&server_message)?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -837,8 +832,7 @@ pub mod test_handle_client_message {
             let expected_payload = {
                 let server_message =
                     ServerMessage::<String, Data>::BroadcastToOthersAck(expected_count);
-                let config = bincode::config::standard();
-                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
+                bincode_serde::try_serialize(&server_message)?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -864,8 +858,7 @@ pub mod test_handle_client_message {
         // length prefix).
         let expected_payload_bytes = {
             let server_message = ServerMessage::<String, Data>::HandleBroadcast(payload.clone());
-            let config = bincode::config::standard();
-            bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
+            bincode_serde::try_serialize(&server_message)?
         };
 
         // Prepare the actual payload.
@@ -876,10 +869,7 @@ pub mod test_handle_client_message {
         .await?;
 
         let actual_payload_bytes = actual_payload
-            .map(|payload| {
-                let config = bincode::config::standard();
-                bincode::serde::encode_to_vec(&payload, config).into_diagnostic()
-            })
+            .map(|payload| bincode_serde::try_serialize(&payload))
             .unwrap()
             .unwrap();
 

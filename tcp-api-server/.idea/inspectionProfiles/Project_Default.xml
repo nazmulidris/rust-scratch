@@ -1,0 +1,46 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="GrazieInspection" enabled="true" level="TYPO" enabled_by_default="true" editorAttributes="TYPO" />
+    <inspection_tool class="LanguageDetectionInspection" enabled="true" level="TYPO" enabled_by_default="true" editorAttributes="TYPO" />
+    <inspection_tool class="RsArgumentNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsAssocTypeNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsConstNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsDeprecation" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsDoubleMustUse" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsEnumNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsEnumVariantNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsFieldNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsFunctionNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsLifetimeNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsLiveness" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsMacroNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsMethodNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsModuleNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsNeedlessLifetimes" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsNonShorthandFieldPatterns" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsPathStatements" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsRedundantSemicolons" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsReplaceCastWithSuffix" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsSelfConvention" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsStaticConstNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsStructNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsTraitNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsTypeAliasNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsTypeParameterNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsUnknownCrateTypes" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="RsUnnecessaryCast" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsUnnecessaryParentheses" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsUnnecessaryQualifications" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsUnnecessaryReturn" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsUnreachableCode" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsUnreachablePatterns" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsUnusedImport" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsUnusedLabels" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsUnusedMustUse" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsUnusedMut" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsUnwrap" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsVariableNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RsWhileTrueLoop" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+  </profile>
+</component>

@@ -226,7 +226,50 @@ mod tests_handshake {
     }
 }
 
-/// <https://github.com/bincode-org/bincode/blob/trunk/docs/migration_guide.md>
+/// This is a wrapper to make it easier to use `bincode` with `serde`.
+///
+/// More info:
+/// - [bincode v2.x migration
+///   guide](https://github.com/bincode-org/bincode/blob/trunk/docs/migration_guide.md)
+pub mod bincode_serde {
+    use super::*;
+
+    fn get_config() -> bincode::config::Configuration {
+        bincode::config::standard()
+    }
+
+    /// Serialize the payload using the [bincode] crate. Returns a [Buffer]. `T` must
+    /// implement the [Serialize] trait.
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - The data to serialize.
+    pub fn try_serialize<T: Serialize>(data: &T) -> miette::Result<Buffer> {
+        let buffer = bincode::serde::encode_to_vec(data, get_config()).into_diagnostic()?;
+        Ok(buffer)
+    }
+
+    /// You must provide the `T` type to deserialize the payload. Deserialize the payload
+    /// (of &[Buffer]) using the [bincode] crate. Returns a [miette::Result] of `T`.
+    ///
+    /// # Arguments
+    ///
+    /// * `buffer` - The buffer to deserialize.
+    /// * `T` - The type to deserialize to. Must implement the [Deserialize] trait.
+    pub fn try_deserialize<'d, T: for<'de> Deserialize<'de>>(
+        buffer: &[BufferAtom],
+    ) -> miette::Result<T> {
+        let res = bincode::serde::decode_from_slice::<T, _>(buffer, get_config());
+        match res {
+            Ok((payload, _bytes_read)) => Ok(payload),
+            Err(err) => {
+                let err_msg = format!("{:?}", err);
+                miette::bail!("Failed to deserialize: {}", err_msg)
+            }
+        }
+    }
+}
+
 pub mod byte_io {
     use super::*;
 
@@ -239,8 +282,7 @@ pub mod byte_io {
         data: &T,
     ) -> miette::Result<()> {
         // Try to serialize the data.
-        let config = bincode::config::standard();
-        let payload_buffer = bincode::serde::encode_to_vec(data, config).into_diagnostic()?;
+        let payload_buffer = bincode_serde::try_serialize(data)?;
 
         // Compress the payload.
         let payload_buffer = compression::compress(&payload_buffer)?;
@@ -292,10 +334,7 @@ pub mod byte_io {
         let payload_buffer = compression::decompress(&payload_buffer)?;
 
         // Deserialize the payload.
-        let config = bincode::config::standard();
-        let (payload_buffer, _bytes_read) =
-            bincode::serde::decode_from_slice(&payload_buffer, config).into_diagnostic()?;
-
+        let payload_buffer = bincode_serde::try_deserialize::<T>(&payload_buffer)?;
         Ok(payload_buffer)
     }
 }
@@ -488,17 +527,16 @@ mod tests_bincode_serde {
         };
 
         // Struct (MyValueType) -> Bytes (Buffer).
-        let config = bincode::config::standard();
-        let result_struct_to_bytes = bincode::serde::encode_to_vec(&value, config);
+        let res_struct_to_bytes = bincode_serde::try_serialize(&value);
 
-        assert!(result_struct_to_bytes.is_ok());
-        let struct_to_bytes: Buffer = result_struct_to_bytes.into_diagnostic()?;
+        assert!(res_struct_to_bytes.is_ok());
+        let struct_to_bytes: Buffer = res_struct_to_bytes?;
         println!("{:?}", struct_to_bytes);
 
         // Bytes (Buffer) -> Struct (MyValueType).
-        let res = bincode::serde::decode_from_slice::<TestPayload, _>(&struct_to_bytes, config);
+        let res = bincode_serde::try_deserialize::<TestPayload>(&struct_to_bytes);
         assert!(res.is_ok());
-        let (result_struct_from_bytes, _bytes_read) = res.into_diagnostic()?;
+        let result_struct_from_bytes = res?;
         let struct_from_bytes: TestPayload = result_struct_from_bytes;
         println!("{:?}", struct_from_bytes);
 
