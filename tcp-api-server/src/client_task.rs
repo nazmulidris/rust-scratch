@@ -14,9 +14,12 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-use r3bl_tui::{rla_println, rla_println_prefixed};
+use r3bl_tui::{
+    network_io::{byte_io, handshake, protocol_types::Buffer},
+    rla_println, rla_println_prefixed,
+};
 
-use crate::{byte_io, handshake, Buffer, CLIArg, MessageValue, MyClientMessage, MyServerMessage};
+use crate::{CLIArg, MessageValue, MyClientMessage, MyServerMessage};
 use crossterm::style::Stylize;
 use miette::{Context, IntoDiagnostic};
 use r3bl_tui::{generate_friendly_random_id, ok, SharedWriter, SpinnerTemplate, StdMutex};

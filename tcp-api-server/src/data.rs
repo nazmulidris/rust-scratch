@@ -15,8 +15,9 @@
  *   limitations under the License.
  */
 
-use crate::{protocol, Buffer};
+use crate::protocol;
 use core::fmt;
+use r3bl_tui::network_io::protocol_types::Buffer;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fmt::Formatter;

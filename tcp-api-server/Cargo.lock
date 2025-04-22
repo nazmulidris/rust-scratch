@@ -2102,15 +2102,16 @@ checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
 [[package]]
 name = "r3bl_tui"
 version = "0.6.0"
-source = "git+https://github.com/r3bl-org/r3bl-open-core.git?branch=tuifyasync#24dafc98d7a96da490780332c8c34d09692cb54e"
 dependencies = [
  "async-stream",
+ "bincode 2.0.1",
  "chrono",
  "clap",
  "colorgrad",
  "const_format",
  "copypasta-ext",
  "crossterm",
+ "flate2",
  "futures-core",
  "futures-util",
  "is_ci",

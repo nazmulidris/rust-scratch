@@ -18,14 +18,14 @@
 use r3bl_tui::ok;
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 
-use crate::handshake;
 use crate::{
-    byte_io, protocol::ServerMessage, CLIArg, ClientMessage, MessageKey, MessageValue,
-    MyClientMessage, MyServerMessage, CHANNEL_SIZE,
+    protocol::ServerMessage, CLIArg, ClientMessage, MessageKey, MessageValue, MyClientMessage,
+    MyServerMessage, CHANNEL_SIZE,
 };
 use crossterm::style::Stylize;
 use kv::Store;
 use miette::{miette, IntoDiagnostic};
+use r3bl_tui::network_io::{byte_io, handshake};
 use r3bl_tui::{
     friendly_random_id, get_from_bucket, insert_into_bucket, iterate_bucket,
     load_or_create_bucket_from_store, load_or_create_store, remove_from_bucket, KVBucket,
@@ -480,11 +480,11 @@ mod generate_server_message {
 #[cfg(test)]
 pub mod test_handle_client_message {
     use crate::{
-        bincode_serde, handle_client_task::handle_client_message, protocol,
-        server_task::generate_server_message, Buffer, ClientMessage, Data, InterClientMessage,
-        ServerMessage, CHANNEL_SIZE,
+        handle_client_task::handle_client_message, server_task::generate_server_message,
+        ClientMessage, Data, InterClientMessage, ServerMessage, CHANNEL_SIZE,
     };
     use miette::IntoDiagnostic;
+    use r3bl_tui::network_io::{bincode_serde, compress, protocol_types::Buffer};
     use r3bl_tui::MockAsyncStream;
     use r3bl_tui::{insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store};
     use tempfile::tempdir;
@@ -528,7 +528,7 @@ pub mod test_handle_client_message {
                 let server_message = ServerMessage::GetAll(item_vec);
                 bincode_serde::try_serialize(&server_message)?
             };
-            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let expected_payload = compress::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
             let length_prefix = expected_payload.len() as u64;
             let length_prefix_bytes = length_prefix.to_be_bytes();
@@ -572,7 +572,7 @@ pub mod test_handle_client_message {
                 let server_message = ServerMessage::<String, Data>::Insert(true);
                 bincode_serde::try_serialize(&server_message)?
             };
-            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let expected_payload = compress::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
             let length_prefix = expected_payload.len() as u64;
             let length_prefix_bytes = length_prefix.to_be_bytes();
@@ -620,7 +620,7 @@ pub mod test_handle_client_message {
                 let server_message = ServerMessage::<String, Data>::Remove(true);
                 bincode_serde::try_serialize(&server_message)?
             };
-            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let expected_payload = compress::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
             let length_prefix = expected_payload.len() as u64;
             let length_prefix_bytes = length_prefix.to_be_bytes();
@@ -673,7 +673,7 @@ pub mod test_handle_client_message {
                 let server_message = ServerMessage::<String, Data>::Get(it);
                 bincode_serde::try_serialize(&server_message)?
             };
-            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let expected_payload = compress::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
             let length_prefix = expected_payload.len() as u64;
             let length_prefix_bytes = length_prefix.to_be_bytes();
@@ -721,7 +721,7 @@ pub mod test_handle_client_message {
                 let server_message = ServerMessage::<String, Data>::Clear(true);
                 bincode_serde::try_serialize(&server_message)?
             };
-            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let expected_payload = compress::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
             let length_prefix = expected_payload.len() as u64;
             let length_prefix_bytes = length_prefix.to_be_bytes();
@@ -769,7 +769,7 @@ pub mod test_handle_client_message {
                 let server_message = ServerMessage::<String, Data>::Size(1);
                 bincode_serde::try_serialize(&server_message)?
             };
-            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let expected_payload = compress::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
             let length_prefix = expected_payload.len() as u64;
             let length_prefix_bytes = length_prefix.to_be_bytes();
@@ -834,7 +834,7 @@ pub mod test_handle_client_message {
                     ServerMessage::<String, Data>::BroadcastToOthersAck(expected_count);
                 bincode_serde::try_serialize(&server_message)?
             };
-            let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
+            let expected_payload = compress::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
             let length_prefix = expected_payload.len() as u64;
             let length_prefix_bytes = length_prefix.to_be_bytes();
