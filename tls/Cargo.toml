@@ -24,46 +24,46 @@ path = "src/bin/client.rs"
 
 [dependencies]
 # TLS dependencies.
-rustls = "0.23.20"
-tokio-rustls = "0.26.1"
+rustls = "0.23.26"
+tokio-rustls = "0.26.2"
 rustls-pemfile = "2.2.0"
 
 # Tokio dependencies.
-tokio = { version = "1.42.0", features = ["full"] }
+tokio = { version = "1.44.2", features = ["full"] }
 
 # Tokio tracing dependencies.
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
 tracing-core = "0.1.33"
-chrono = "0.4.39"
-textwrap = "0.16.1"
+chrono = "0.4.40"
+textwrap = "0.16.2"
 
 # Error handling.
-miette = "7.4.0"
-thiserror = "2.0.6"
+miette = "7.5.0"
+thiserror = "2.0.12"
 
 # Terminal color output.
-crossterm = "0.28.1"
+crossterm = "0.29.0"
 
 # Strum dependencies.
-strum = "0.26.3"
-strum_macros = "0.26.4"
+strum = "0.27.1"
+strum_macros = "0.27.1"
 
 # R3BL awesomeness.
-# r3bl_core = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "main", package = "r3bl_core" }
-r3bl_core = { path = "/home/nazmul/github/r3bl-open-core/core" } # Local path to the r3bl_core crate.
-futures-util = "0.3.31"                                          # Async streams.
+r3bl_tui = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "tuifyasync", package = "r3bl_tui" }
+# r3bl_tui = { path = "/home/nazmul/github/r3bl-open-core/tui" } # Local path to the r3bl_tui crate.
+futures-util = "0.3.31" # Async streams.
 
 # HTTP client library.
-reqwest = { version = "0.12.9", features = ["json"] }
-serde_json = "1.0.133"
+reqwest = { version = "0.12.15", features = ["json"] }
+serde_json = "1.0.140"
 
 # Run tests in serial.
 serial_test = "3.2.0"
 
 # For smallstr & smallvec.
 smallstr = { version = "0.3.0", features = ["serde", "std"] }
-smallvec = { version = "1.6.1", features = ["serde"] }
+smallvec = { version = "1.15.0", features = ["serde"] }
 
 [dev-dependencies]
 strip-ansi = "0.1.0" # For tracing_support.

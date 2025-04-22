@@ -11,45 +11,45 @@ r3bl_terminal_async = { version = "0.6.0" }
 r3bl_tui = { version = "0.6.0" }
 r3bl_core = { version = "0.10.0" }
 r3bl_test_fixtures = { git = "https://github.com/r3bl-org/r3bl-open-core" }
-crossterm = "0.28.1"
+crossterm = "0.29.0"
 
 # Command line argument parsing.
-clap = { version = "4.5.21", features = ["derive"] }
+clap = { version = "4.5.37", features = ["derive"] }
 color-print = "0.3.7"
 
 # Serde for serialization and deserialization support.
-serde = { version = "1.0.215", features = ["derive"] }
-serde_json = { version = "1.0.133" }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = { version = "1.0.140" }
 
 # Convert Rust structs to and from binary representation.
-bincode = { version = "1.3.3" }
+bincode = { version = "2.0.1" }
 
 # Compression for the protocol.
-flate2 = "1.0.35"
+flate2 = "1.1.1"
 
 # Enum to string generation.
-strum = "0.26.3"
-strum_macros = "0.26.4"
+strum = "0.27.1"
+strum_macros = "0.27.1"
 
 # Key Value store that can be used to store JSON or bincode encoded values. `kv` is built
 # on top of `sled` which currently does not support access across multiple processes.
 kv = { version = "0.24.0", features = ["json-value", "bincode-value"] }
 
 # Error handling.
-thiserror = "2.0.3"
-miette = { version = "7.2.0", features = ["fancy"] }
+thiserror = "2.0.12"
+miette = { version = "7.5.0", features = ["fancy"] }
 pretty_assertions = "1.4.1"
 
 # Random numbers.
-rand = "0.8.5"
+rand = "0.9.1"
 
 # Tokio / Tracing / Logging / Testing / Utils.
 # https://tokio.rs/tokio/topics/tracing
 # https://tokio.rs/tokio/topics/tracing-next-steps
-tracing = "0.1.40"
+tracing = "0.1.41"
 tracing-appender = "0.2.3"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-tokio = { version = "1.41.1", features = ["full", "tracing"] }
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tokio = { version = "1.44.2", features = ["full", "tracing"] }
 tokio-test = "0.4.4"                                                   # For mock `TcpStream` (`Builder`)
 
 # ⚠️ NOTE ⚠️
@@ -61,18 +61,18 @@ tokio-test = "0.4.4"                                                   # For moc
 # Open: http://localhost:16686/search
 # Example: https://github.com/open-telemetry/opentelemetry-rust/blob/main/examples/tracing-jaeger/src/main.rs
 # OpenTelemetry’s API-level view of tracing, spans, etc.
-opentelemetry = { version = "0.22.0" }
+opentelemetry = { version = "0.29.1" }
 # Implements the OpenTelemetry APIs.
-opentelemetry_sdk = { version = "0.22.1", features = ["rt-tokio"] }
+opentelemetry_sdk = { version = "0.29.0", features = ["rt-tokio"] }
 # The OTel protocol (OTLP) implementation to export data to Jaeger or some other backend.
 # tonic is a gRPC crate.
-opentelemetry-otlp = { version = "0.15.0", features = ["tonic"] }
+opentelemetry-otlp = { version = "0.29.0", features = ["tonic"] }
 # Integration between the tracing crate and the opentelemetry crate.
-tracing-opentelemetry = "0.23.0"
+tracing-opentelemetry = "0.30.0"
 # Standardized naming patterns for OpenTelemetry things.
-opentelemetry-semantic-conventions = "0.14.0"
+opentelemetry-semantic-conventions = "0.29.0"
 
 [dev-dependencies]
-tempfile = "3.14.0"
+tempfile = "3.19.1"
 serial_test = "3.2.0"
 # Allows you to export data to Jaeger

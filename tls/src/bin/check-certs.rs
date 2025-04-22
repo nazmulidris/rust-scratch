@@ -16,7 +16,7 @@
  */
 
 use crossterm::style::Stylize as _;
-use r3bl_core::ok;
+use r3bl_tui::ok;
 use tls::{
     certificate_ops::server_load_server_cert_chain, key_ops::server_load_single_private_key,
     root_cert_store_ops::client_create_root_cert_store,

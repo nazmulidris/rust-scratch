@@ -17,7 +17,7 @@
 
 use crossterm::style::Stylize;
 use miette::IntoDiagnostic;
-use r3bl_core::ok;
+use r3bl_tui::ok;
 use tls::common_io;
 use tokio::{io::split, net::TcpListener};
 

@@ -19,8 +19,8 @@ use std::time::Duration;
 
 use futures_util::StreamExt as _;
 use miette::IntoDiagnostic;
-use r3bl_core::test_fixtures::gen_input_stream_with_delay;
-use r3bl_core::{ok, PinnedInputStream};
+use r3bl_tui::test_fixtures::gen_input_stream_with_delay;
+use r3bl_tui::{ok, PinnedInputStream};
 use smallvec::smallvec;
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt as _};
 

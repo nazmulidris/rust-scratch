@@ -34,7 +34,7 @@
 
 use crate::tls;
 use miette::IntoDiagnostic as _;
-use r3bl_core::ok;
+use r3bl_tui::ok;
 use rustls::{
     pki_types::{CertificateDer, PrivateKeyDer},
     ClientConfig, RootCertStore, ServerConfig,

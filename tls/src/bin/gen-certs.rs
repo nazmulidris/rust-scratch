@@ -17,19 +17,19 @@
 
 use constants::*;
 use crossterm::style::Stylize as _;
-use r3bl_core::script::environment::{self, EnvVarsSlice};
-use r3bl_core::script::{
+use r3bl_tui::script::environment::{self, EnvVarsSlice};
+use r3bl_tui::script::{
     apt_install::{check_if_package_is_installed, install_package},
     github_api,
 };
-use r3bl_core::script::{
+use r3bl_tui::script::{
     directory_change,
     directory_create::{self, MkdirOptions},
     permissions, pipe, try_download_file_overwrite_existing, try_pwd, Run as _,
 };
-use r3bl_core::{command, fs_path, fs_paths, fs_paths_exist, with_saved_pwd};
-use r3bl_core::{ok, truncate_from_left, with};
-use r3bl_core::{try_initialize_logging_global, DisplayPreference};
+use r3bl_tui::{command, fs_path, fs_paths, fs_paths_exist, with_saved_pwd};
+use r3bl_tui::{ok, truncate_from_left, with};
+use r3bl_tui::{try_initialize_logging_global, DisplayPreference};
 use std::path::Path;
 use strum_macros::{Display, EnumString};
 
