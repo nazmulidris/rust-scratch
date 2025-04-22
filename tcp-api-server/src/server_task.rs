@@ -15,6 +15,9 @@
  *   limitations under the License.
  */
 
+use r3bl_tui::ok;
+use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
+
 use crate::handshake;
 use crate::{
     byte_io, protocol::ServerMessage, CLIArg, ClientMessage, MessageKey, MessageValue,
@@ -23,7 +26,7 @@ use crate::{
 use crossterm::style::Stylize;
 use kv::Store;
 use miette::{miette, IntoDiagnostic};
-use r3bl_core::{
+use r3bl_tui::{
     friendly_random_id, get_from_bucket, insert_into_bucket, iterate_bucket,
     load_or_create_bucket_from_store, load_or_create_store, remove_from_bucket, KVBucket,
 };
@@ -109,7 +112,7 @@ pub async fn server_entry_point(cli_args: CLIArg) -> miette::Result<()> {
                     // Increment the connected client count.
                     safe_connected_client_count_clone.fetch_add(1, Ordering::SeqCst);
 
-                    let client_id = friendly_random_id::generate_friendly_random_id();
+                    let client_id = friendly_random_id::generate_friendly_random_id().to_string();
                     let result_handle_client_task = handle_client_task::event_loop(
                         &client_id,
                         read_half,
@@ -181,9 +184,6 @@ pub async fn server_entry_point(cli_args: CLIArg) -> miette::Result<()> {
 }
 
 pub mod handle_client_task {
-    use r3bl_core::ok;
-    use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
-
     use super::*;
 
     /// This has an infinite loop, so you might want to call it in a spawn block. Server
@@ -484,8 +484,8 @@ pub mod test_handle_client_message {
         Buffer, ClientMessage, Data, InterClientMessage, ServerMessage, CHANNEL_SIZE,
     };
     use miette::IntoDiagnostic;
-    use r3bl_core::{insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store};
-    use r3bl_test_fixtures::MockAsyncStream;
+    use r3bl_tui::MockAsyncStream;
+    use r3bl_tui::{insert_into_bucket, load_or_create_bucket_from_store, load_or_create_store};
     use tempfile::tempdir;
     use tokio::{io::BufWriter, sync::broadcast};
 
@@ -525,8 +525,8 @@ pub mod test_handle_client_message {
             let expected_payload = {
                 let item_vec = vec![(key.to_string(), data.clone())];
                 let server_message = ServerMessage::GetAll(item_vec);
-
-                bincode::serialize(&server_message).into_diagnostic()?
+                let config = bincode::config::standard();
+                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -570,7 +570,8 @@ pub mod test_handle_client_message {
         let result_vec = {
             let expected_payload = {
                 let server_message = ServerMessage::<String, Data>::Insert(true);
-                bincode::serialize(&server_message).into_diagnostic()?
+                let config = bincode::config::standard();
+                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -618,7 +619,8 @@ pub mod test_handle_client_message {
         let result_vec = {
             let expected_payload = {
                 let server_message = ServerMessage::<String, Data>::Remove(true);
-                bincode::serialize(&server_message).into_diagnostic()?
+                let config = bincode::config::standard();
+                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -671,7 +673,8 @@ pub mod test_handle_client_message {
             let expected_payload = {
                 let it = Some(data.clone());
                 let server_message = ServerMessage::<String, Data>::Get(it);
-                bincode::serialize(&server_message).into_diagnostic()?
+                let config = bincode::config::standard();
+                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -719,7 +722,8 @@ pub mod test_handle_client_message {
         let result_vec = {
             let expected_payload = {
                 let server_message = ServerMessage::<String, Data>::Clear(true);
-                bincode::serialize(&server_message).into_diagnostic()?
+                let config = bincode::config::standard();
+                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -767,7 +771,8 @@ pub mod test_handle_client_message {
         let result_vec = {
             let expected_payload = {
                 let server_message = ServerMessage::<String, Data>::Size(1);
-                bincode::serialize(&server_message).into_diagnostic()?
+                let config = bincode::config::standard();
+                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -832,7 +837,8 @@ pub mod test_handle_client_message {
             let expected_payload = {
                 let server_message =
                     ServerMessage::<String, Data>::BroadcastToOthersAck(expected_count);
-                bincode::serialize(&server_message).into_diagnostic()?
+                let config = bincode::config::standard();
+                bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
             };
             let expected_payload = protocol::compression::compress(&expected_payload).unwrap();
             let mut result_vec: Buffer = vec![];
@@ -858,7 +864,8 @@ pub mod test_handle_client_message {
         // length prefix).
         let expected_payload_bytes = {
             let server_message = ServerMessage::<String, Data>::HandleBroadcast(payload.clone());
-            bincode::serialize(&server_message).into_diagnostic()?
+            let config = bincode::config::standard();
+            bincode::serde::encode_to_vec(&server_message, config).into_diagnostic()?
         };
 
         // Prepare the actual payload.
@@ -869,7 +876,10 @@ pub mod test_handle_client_message {
         .await?;
 
         let actual_payload_bytes = actual_payload
-            .map(|payload| bincode::serialize(&payload).into_diagnostic())
+            .map(|payload| {
+                let config = bincode::config::standard();
+                bincode::serde::encode_to_vec(&payload, config).into_diagnostic()
+            })
             .unwrap()
             .unwrap();
 

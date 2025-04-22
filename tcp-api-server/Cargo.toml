@@ -6,11 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# Async CLI UI.
-r3bl_terminal_async = { version = "0.6.0" }
-r3bl_tui = { version = "0.6.0" }
-r3bl_core = { version = "0.10.0" }
-r3bl_test_fixtures = { git = "https://github.com/r3bl-org/r3bl-open-core" }
+# R3BL awesomeness.
+r3bl_tui = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "tuifyasync", package = "r3bl_tui" }
+# r3bl_tui = { path = "/home/nazmul/github/r3bl-open-core/tui" } # Local path to the r3bl_tui crate.
+
+# Modern ncurses library for Rust.
 crossterm = "0.29.0"
 
 # Command line argument parsing.
@@ -22,7 +22,12 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140" }
 
 # Convert Rust structs to and from binary representation.
-bincode = { version = "2.0.1" }
+# https://github.com/bincode-org/bincode/blob/trunk/docs/migration_guide.md
+bincode = { version = "2.0.1", features = ["serde"] }
+
+# For smallstr & smallvec.
+smallstr = { version = "0.3.0", features = ["serde", "std"] }
+smallvec = { version = "1.15.0", features = ["serde"] }
 
 # Compression for the protocol.
 flate2 = "1.1.1"
@@ -52,25 +57,23 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tokio = { version = "1.44.2", features = ["full", "tracing"] }
 tokio-test = "0.4.4"                                                   # For mock `TcpStream` (`Builder`)
 
-# ⚠️ NOTE ⚠️
+# OTel, jaeger, tracing. Implements the types defined in the Otel spec# ⚠️ NOTE ⚠️
 # DO NOT UPDATE TO THE LATEST VERSION OF THE FOLLOWING CRATES YET THERE ARE
 # SOME INCOMPATIBILITIES WITH THE LATEST VERSIONS (0.24.0, etc)
-
-# OTel, jaeger, tracing. Implements the types defined in the Otel spec
 # Run: `docker run -d -p16686:16686 -p4317:4317 -e COLLECTOR_OTLP_ENABLED=true jaegertracing/all-in-one:latest`
 # Open: http://localhost:16686/search
 # Example: https://github.com/open-telemetry/opentelemetry-rust/blob/main/examples/tracing-jaeger/src/main.rs
 # OpenTelemetry’s API-level view of tracing, spans, etc.
-opentelemetry = { version = "0.29.1" }
+opentelemetry = { version = "0.22.0" }
 # Implements the OpenTelemetry APIs.
-opentelemetry_sdk = { version = "0.29.0", features = ["rt-tokio"] }
+opentelemetry_sdk = { version = "0.22.1", features = ["rt-tokio"] }
 # The OTel protocol (OTLP) implementation to export data to Jaeger or some other backend.
 # tonic is a gRPC crate.
-opentelemetry-otlp = { version = "0.29.0", features = ["tonic"] }
+opentelemetry-otlp = { version = "0.15.0", features = ["tonic"] }
 # Integration between the tracing crate and the opentelemetry crate.
-tracing-opentelemetry = "0.30.0"
+tracing-opentelemetry = "0.23.0"
 # Standardized naming patterns for OpenTelemetry things.
-opentelemetry-semantic-conventions = "0.29.0"
+opentelemetry-semantic-conventions = "0.14.0"
 
 [dev-dependencies]
 tempfile = "3.19.1"

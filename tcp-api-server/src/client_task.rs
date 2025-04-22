@@ -14,12 +14,13 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
+use r3bl_tui::{rla_println, rla_println_prefixed};
 
 use crate::{byte_io, handshake, Buffer, CLIArg, MessageValue, MyClientMessage, MyServerMessage};
 use crossterm::style::Stylize;
 use miette::{Context, IntoDiagnostic};
-use r3bl_core::{generate_friendly_random_id, SharedWriter, StdMutex};
-use r3bl_terminal_async::{ReadlineEvent, Spinner, SpinnerStyle, TerminalAsync};
+use r3bl_tui::{generate_friendly_random_id, ok, SharedWriter, SpinnerTemplate, StdMutex};
+use r3bl_tui::{ReadlineAsync, ReadlineEvent, Spinner, SpinnerStyle};
 use std::{
     io::{stderr, Write},
     ops::ControlFlow,
@@ -45,7 +46,7 @@ const ARTIFICIAL_UI_DELAY: Duration = Duration::from_millis(DELAY_MS * 10);
 #[instrument(skip_all)]
 pub async fn client_entry_point(
     cli_args: CLIArg,
-    mut terminal_async: TerminalAsync,
+    mut readline_async: ReadlineAsync,
 ) -> miette::Result<()> {
     // Connect to the server.
     let address = format!("{}:{}", cli_args.address, cli_args.port);
@@ -53,17 +54,17 @@ pub async fn client_entry_point(
     let message_trying_to_connect = format!("Trying to connect to server on {}", &address);
 
     // Start spinner, pause terminal.
-    terminal_async.pause().await;
+    readline_async.pause().await;
 
     let maybe_spinner = Spinner::try_start(
         message_trying_to_connect.clone(),
         DELAY_UNIT,
         SpinnerStyle {
-            template: r3bl_terminal_async::SpinnerTemplate::Braille,
+            template: SpinnerTemplate::Braille,
             ..Default::default()
         },
         Arc::new(StdMutex::new(stderr())),
-        terminal_async.clone_shared_writer(),
+        readline_async.clone_shared_writer(),
     )
     .await?;
 
@@ -81,7 +82,7 @@ pub async fn client_entry_point(
     if let Some(mut spinner) = maybe_spinner {
         let _ = spinner.stop("Connected to server").await;
     }
-    terminal_async.resume().await;
+    readline_async.resume().await;
 
     info!("{}", message_trying_to_connect);
     let tcp_stream = result?;
@@ -113,7 +114,7 @@ pub async fn client_entry_point(
     // spawned tasks don't block each other (eg: if either of them sleeps).
     tokio::spawn(monitor_tcp_conn_task::event_loop(
         read_half,
-        terminal_async.clone_shared_writer(),
+        readline_async.clone_shared_writer(),
         shutdown_sender.clone(),
         safe_client_id.clone(),
     ));
@@ -121,21 +122,21 @@ pub async fn client_entry_point(
     // DON'T SPAWN TASK: User input event infinite loop.
     let _ = monitor_user_input::event_loop(
         write_half,
-        terminal_async,
+        readline_async,
         shutdown_sender.clone(),
         safe_client_id,
     )
     .await;
 
-    TerminalAsync::print_exit_message("Goodbye! 👋").ok();
-
-    Ok(())
+    ok!()
 }
 
 pub mod monitor_user_input {
     use super::*;
 
     mod spinner_support {
+        use r3bl_tui::SpinnerTemplate;
+
         use super::*;
 
         pub async fn create(
@@ -146,7 +147,7 @@ pub mod monitor_user_input {
                 message,
                 DELAY_UNIT,
                 SpinnerStyle {
-                    template: r3bl_terminal_async::SpinnerTemplate::Block,
+                    template: SpinnerTemplate::Block,
                     ..Default::default()
                 },
                 Arc::new(StdMutex::new(stderr())),
@@ -179,7 +180,7 @@ pub mod monitor_user_input {
     #[instrument(name = "monitor_user_input:event_loop", skip_all, fields(client_id))]
     pub async fn event_loop(
         write_half: OwnedWriteHalf,
-        mut terminal_async: TerminalAsync,
+        mut readline_async: ReadlineAsync,
         shutdown_sender: broadcast::Sender<()>,
         safe_client_id: Arc<StdMutex<String>>,
     ) -> miette::Result<()> {
@@ -189,14 +190,18 @@ pub mod monitor_user_input {
             let mut items = vec![];
             for item in MyClientMessage::iter() {
                 let item = item.to_string().to_lowercase();
-                terminal_async.readline.add_history_entry(item.clone());
+                readline_async.readline.add_history_entry(item.clone());
                 items.push(item.green().bold().to_string());
             }
             items.join(", ")
         };
-        let welcome_message = format!("{}, eg: {}, etc.", "Enter a message".yellow().bold(), items);
 
-        terminal_async.println(welcome_message).await;
+        rla_println!(
+            readline_async,
+            "{}, eg: {}, etc.",
+            "Enter a message".yellow().bold(),
+            items
+        );
 
         let mut buf_writer = BufWriter::new(write_half);
         let mut shutdown_receiver = shutdown_sender.subscribe();
@@ -212,7 +217,7 @@ pub mod monitor_user_input {
                 }
 
                 // Poll user input.
-                result_readline_event = terminal_async.get_readline_event() => {
+                result_readline_event = readline_async.read_line() => {
                     let readline_event = result_readline_event?;
                     match readline_event {
                         ReadlineEvent::Line(input) => {
@@ -235,7 +240,7 @@ pub mod monitor_user_input {
                                         rest,
                                         &mut buf_writer,
                                         shutdown_sender.clone(),
-                                        terminal_async.clone_shared_writer(),
+                                        readline_async.clone_shared_writer(),
                                         safe_client_id.clone(),
                                     )
                                     .await;
@@ -245,12 +250,7 @@ pub mod monitor_user_input {
                                     }
                                 }
                                 Err(_) => {
-                                    terminal_async
-                                        .println_prefixed(format!(
-                                            "Unknown command: {}",
-                                            input.red().bold()
-                                        ))
-                                        .await;
+                                    rla_println_prefixed!(readline_async, "Unknown command: {input}");
                                 }
                             }
                         }
@@ -273,7 +273,12 @@ pub mod monitor_user_input {
 
         info!("Exiting loop");
 
-        terminal_async.flush().await;
+        readline_async.flush().await;
+
+        readline_async
+            .exit(Some("Goodbye! 👋"))
+            .await
+            .into_diagnostic()?;
 
         Ok(())
     }
@@ -438,7 +443,7 @@ pub mod monitor_user_input {
 
                 // Send the insert message to the server.
                 byte_io::try_write(buf_writer, &{
-                    let key = generate_friendly_random_id();
+                    let key = generate_friendly_random_id().to_string();
                     let value = MessageValue {
                         id: rand::random(),
                         description: format!("from: '{}'", safe_client_id.lock().unwrap().clone()),

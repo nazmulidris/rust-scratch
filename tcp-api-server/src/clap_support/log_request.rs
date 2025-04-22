@@ -17,7 +17,7 @@
 
 use std::str::FromStr;
 
-use r3bl_core::{DisplayPreference, WriterConfig};
+use r3bl_tui::{DisplayPreference, WriterConfig};
 
 /// Converts the parsed command line arguments into a [WriterConfig].
 pub fn convert_args_into_writer_config(

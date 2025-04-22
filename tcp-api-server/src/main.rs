@@ -17,12 +17,11 @@
 
 use clap::Parser;
 use miette::IntoDiagnostic;
-use r3bl_core::{
-    setup_default_miette_global_report_handler, tracing_logging, ColorWheel, ColorWheelConfig,
-    ColorWheelSpeed, DisplayPreference, GradientGenerationPolicy, TextColorizationPolicy,
-    TracingConfig, UnicodeString,
+use r3bl_tui::{
+    setup_default_miette_global_report_handler, ColorWheel, ColorWheelConfig, ColorWheelSpeed,
+    DisplayPreference, GradientGenerationPolicy, TextColorizationPolicy, TracingConfig,
 };
-use r3bl_terminal_async::TerminalAsync;
+use r3bl_tui::{try_create_layers, ReadlineAsync};
 use tcp_api_server::{
     clap_args::{self, CLISubcommand},
     convert_args_into_writer_config, jaeger_setup,
@@ -33,6 +32,9 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 const ERROR_REPORT_HANDLER_FOOTER:&str = "If you believe this is a bug, please report it: https://github.com/nazmulidris/rust-scratch/issues";
 
 mod header_banner {
+    use r3bl_tui::InlineString;
+    use smallvec::smallvec;
+
     use super::*;
 
     const TCP_API_SERVER: &str = r#"
@@ -57,7 +59,7 @@ mod header_banner {
     }
 
     /// Gradients: <https://uigradients.com>
-    pub fn get_colorful(header: Header) -> String {
+    pub fn get_colorful(header: Header) -> InlineString {
         let it = match header {
             Header::Server => TCP_API_SERVER,
             Header::Client => TCP_API_CLIENT,
@@ -65,20 +67,18 @@ mod header_banner {
 
         let color_wheel_config = ColorWheelConfig::Rgb(
             // Stops.
-            vec!["#4e54c8", "#9d459a"]
-                .into_iter()
-                .map(String::from)
-                .collect(),
+            smallvec!["#4e54c8".into(), "#9d459a".into()],
             // Speed.
             ColorWheelSpeed::Medium,
             // Steps.
             50,
         );
 
-        ColorWheel::new(vec![color_wheel_config]).colorize_into_string(
-            &UnicodeString::from(it),
+        ColorWheel::new(smallvec![color_wheel_config]).colorize_into_string(
+            it,
             GradientGenerationPolicy::ReuseExistingGradientAndResetIndex,
             TextColorizationPolicy::ColorEachCharacter(None),
+            None,
         )
     }
 }
@@ -103,10 +103,10 @@ async fn main() -> miette::Result<()> {
         }
     }
 
-    // Setup terminal_async.
-    let maybe_terminal_async = match cli_args.subcommand {
+    // Setup readline_async.
+    let maybe_readline_async = match cli_args.subcommand {
         CLISubcommand::Server => None,
-        CLISubcommand::Client => TerminalAsync::try_new("ⴾ ").await?,
+        CLISubcommand::Client => ReadlineAsync::try_new(Some("ⴾ "))?,
     };
 
     // Create a tracing config based on whether this is server or client.
@@ -133,9 +133,9 @@ async fn main() -> miette::Result<()> {
                 "{}_{}.log",
                 cli_args.tracing_log_file_path_and_prefix, cli_args.subcommand
             );
-            let display_preference = match &maybe_terminal_async {
-                Some(terminal_async) => {
-                    let shared_writer = terminal_async.clone_shared_writer();
+            let display_preference = match &maybe_readline_async {
+                Some(readline_async) => {
+                    let shared_writer = readline_async.clone_shared_writer();
                     DisplayPreference::SharedWriter(shared_writer)
                 }
                 None => DisplayPreference::Stdout,
@@ -160,7 +160,7 @@ async fn main() -> miette::Result<()> {
     // that it can be dropped at the end of the program, and the tracer can be shutdown.
     // Don't assign this to `_` because it will be dropped immediately.
     let mut _maybe_drop_tracer = None;
-    if let Some(mut tracing_layers) = tracing_logging::try_create_layers(tracing_config)? {
+    if let Some(mut tracing_layers) = try_create_layers(tracing_config)? {
         if let Some((otel_layer, drop_tracer)) =
             jaeger_setup::try_get_otel_layer(service_name, Some(cli_args.otel_collector_endpoint))
                 .await?
@@ -183,8 +183,8 @@ async fn main() -> miette::Result<()> {
     match cli_args.subcommand {
         CLISubcommand::Server => tcp_api_server::server_task::server_entry_point(cli_args).await?,
         CLISubcommand::Client => {
-            if let Some(terminal_async) = maybe_terminal_async {
-                tcp_api_server::client_task::client_entry_point(cli_args, terminal_async).await?
+            if let Some(readline_async) = maybe_readline_async {
+                tcp_api_server::client_task::client_entry_point(cli_args, readline_async).await?
             }
         }
     }

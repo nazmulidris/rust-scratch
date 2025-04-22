@@ -19,10 +19,9 @@
 //! between a client and a server using a length-prefix, binary payload, protocol. The
 //! generics `K` and `V` are used to specify the exact type of the key and value used in
 //! the messages by whatever module is using this protocol.
-
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 use miette::IntoDiagnostic;
-use r3bl_core::ok;
+use r3bl_tui::ok;
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 use std::str::FromStr;
@@ -202,7 +201,7 @@ pub mod handshake {
 #[cfg(test)]
 mod tests_handshake {
     use super::*;
-    use r3bl_test_fixtures::{get_mock_socket_halves, MockSocket};
+    use r3bl_tui::{get_mock_socket_halves, MockSocket};
 
     #[tokio::test]
     async fn test_handshake() {
@@ -227,6 +226,7 @@ mod tests_handshake {
     }
 }
 
+/// <https://github.com/bincode-org/bincode/blob/trunk/docs/migration_guide.md>
 pub mod byte_io {
     use super::*;
 
@@ -239,7 +239,8 @@ pub mod byte_io {
         data: &T,
     ) -> miette::Result<()> {
         // Try to serialize the data.
-        let payload_buffer = bincode::serialize(data).into_diagnostic()?;
+        let config = bincode::config::standard();
+        let payload_buffer = bincode::serde::encode_to_vec(data, config).into_diagnostic()?;
 
         // Compress the payload.
         let payload_buffer = compression::compress(&payload_buffer)?;
@@ -291,16 +292,18 @@ pub mod byte_io {
         let payload_buffer = compression::decompress(&payload_buffer)?;
 
         // Deserialize the payload.
-        let payload: T = bincode::deserialize(&payload_buffer).into_diagnostic()?;
+        let config = bincode::config::standard();
+        let (payload_buffer, _bytes_read) =
+            bincode::serde::decode_from_slice(&payload_buffer, config).into_diagnostic()?;
 
-        Ok(payload)
+        Ok(payload_buffer)
     }
 }
 
 #[cfg(test)]
 mod tests_byte_io {
     use super::*;
-    use r3bl_test_fixtures::{get_mock_socket_halves, MockSocket};
+    use r3bl_tui::{get_mock_socket_halves, MockSocket};
 
     #[tokio::test]
     async fn test_byte_io() {
@@ -409,19 +412,6 @@ impl<K, V> Default for ServerMessage<K, V> {
     }
 }
 
-pub struct SerializeHelperData {
-    pub size: usize,
-    pub bytes: Buffer,
-}
-
-pub fn serialize_helper(value: &impl Serialize) -> miette::Result<SerializeHelperData> {
-    let bytes: Buffer = bincode::serialize(value).into_diagnostic()?;
-    Ok(SerializeHelperData {
-        size: bytes.len(),
-        bytes,
-    })
-}
-
 #[cfg(test)]
 mod tests_command_to_from_string {
     use super::*;
@@ -476,32 +466,6 @@ mod test_fixtures {
     }
 }
 
-#[cfg(test)]
-mod tests_serialize_helper {
-    use super::test_fixtures::*;
-    use super::*;
-    use pretty_assertions::assert_eq;
-
-    #[test]
-    fn test_serialize_helper() {
-        let sample_data = TestPayload {
-            id: 12.0,
-            description: "foo bar".to_string(),
-            data: vec![0, 1, 2],
-        };
-        let result = serialize_helper(&sample_data);
-
-        assert!(result.is_ok());
-        let data = result.unwrap();
-
-        assert_eq!(data.size, 30);
-        assert_eq!(data.bytes.len(), 30);
-
-        let sample_data_deserialized: TestPayload = bincode::deserialize(&data.bytes).unwrap();
-        pretty_assertions::assert_eq!(sample_data, sample_data_deserialized);
-    }
-}
-
 /// More info:
 /// - [what is bincode](https://docs.rs/bincode/latest/bincode/)
 /// - [what is codec](https://g.co/bard/share/cbf732b548c7)
@@ -524,17 +488,18 @@ mod tests_bincode_serde {
         };
 
         // Struct (MyValueType) -> Bytes (Buffer).
-        let result_struct_to_bytes: Result<Buffer, Box<bincode::ErrorKind>> =
-            bincode::serialize(&value);
+        let config = bincode::config::standard();
+        let result_struct_to_bytes = bincode::serde::encode_to_vec(&value, config);
+
         assert!(result_struct_to_bytes.is_ok());
         let struct_to_bytes: Buffer = result_struct_to_bytes.into_diagnostic()?;
         println!("{:?}", struct_to_bytes);
 
         // Bytes (Buffer) -> Struct (MyValueType).
-        let result_struct_from_bytes: Result<TestPayload, Box<bincode::ErrorKind>> =
-            bincode::deserialize(&struct_to_bytes);
-        assert!(result_struct_from_bytes.is_ok());
-        let struct_from_bytes: TestPayload = result_struct_from_bytes.into_diagnostic()?;
+        let res = bincode::serde::decode_from_slice::<TestPayload, _>(&struct_to_bytes, config);
+        assert!(res.is_ok());
+        let (result_struct_from_bytes, _bytes_read) = res.into_diagnostic()?;
+        let struct_from_bytes: TestPayload = result_struct_from_bytes;
         println!("{:?}", struct_from_bytes);
 
         assert_eq!(value, struct_from_bytes);
