@@ -15,14 +15,13 @@
  *   limitations under the License.
  */
 
-use r3bl_tui::ok;
+use r3bl_tui::{ok};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 
 use crate::{
     protocol::ServerMessage, CLIArg, ClientMessage, MessageKey, MessageValue, MyClientMessage,
     MyServerMessage, CHANNEL_SIZE,
 };
-use crossterm::style::Stylize;
 use kv::Store;
 use miette::{miette, IntoDiagnostic};
 use r3bl_tui::network_io::{byte_io, handshake};
@@ -67,7 +66,7 @@ pub async fn server_entry_point(cli_args: CLIArg) -> miette::Result<()> {
     // end all awaiting running tasks.
     // Use this in favor of:
     // 1. `abort()` - behavior is undefined / inconsistent.
-    // 2. Dropping the task is not reliable.
+    // 2. Dropping the task is unreliable.
     // 3. `CancellationToken` from `tokio_util` crate - does not work the way that
     //    broadcast channel or other channels do. It doesn't block when `is_cancelled()`
     //    is called, and creates a strange behavior in `tokio::select!` blocks, causing
@@ -166,13 +165,10 @@ pub async fn server_entry_point(cli_args: CLIArg) -> miette::Result<()> {
 
             // Branch 3: Monitor Ctrl-C.
             _ = tokio::signal::ctrl_c() => {
-                println!(
-                    "{}",
-                    "Ctrl-C event detected. Gracefully shutting down..."
-                        .yellow()
-                        .bold()
-                );
-                info!("{}", "Ctrl-C event detected. Gracefully shutting down...");
+                let text = "Ctrl-C event detected. Gracefully shutting down...";
+                let fmt_text = r3bl_tui::fg_yellow(text).bold();
+                fmt_text.println();
+                info!("{}", text);
                 shutdown_sender.send(()).ok();
             }
         }

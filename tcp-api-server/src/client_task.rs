@@ -18,9 +18,9 @@ use r3bl_tui::{
     network_io::{byte_io, handshake, protocol_types::Buffer},
     rla_println, rla_println_prefixed,
 };
+use r3bl_tui::{fg_light_yellow_green, fg_pink, fg_lizard_green, fg_frozen_blue, fg_white};
 
 use crate::{CLIArg, MessageValue, MyClientMessage, MyServerMessage};
-use crossterm::style::Stylize;
 use miette::{Context, IntoDiagnostic};
 use r3bl_tui::{generate_friendly_random_id, ok, SharedWriter, SpinnerTemplate, StdMutex};
 use r3bl_tui::{ReadlineAsync, ReadlineEvent, Spinner, SpinnerStyle};
@@ -104,7 +104,7 @@ pub async fn client_entry_point(
     // end all awaiting running tasks.
     // Use this in favor of:
     // 1. `abort()` - behavior is undefined / inconsistent.
-    // 2. Dropping the task is not reliable.
+    // 2. Dropping the task is unreliable.
     // 3. `CancellationToken` from `tokio_util` crate - does not work the way that
     //    broadcast channel or other channels do. It doesn't block when `is_cancelled()`
     //    is called, and creates a strange behavior in `tokio::select!` blocks, causing
@@ -190,19 +190,19 @@ pub mod monitor_user_input {
         info!("Entering loop");
 
         let items = {
-            let mut items = vec![];
+            let mut fmt_items = vec![];
             for item in MyClientMessage::iter() {
-                let item = item.to_string().to_lowercase();
-                readline_async.readline.add_history_entry(item.clone());
-                items.push(item.green().bold().to_string());
+                let item = item.to_string();
+                readline_async.readline.add_history_entry(item.to_lowercase());
+                fmt_items.push(fg_lizard_green(item).bold().to_string());
             }
-            items.join(", ")
+            fmt_items.join(", ")
         };
 
         rla_println!(
             readline_async,
             "{}, eg: {}, etc.",
-            "Enter a message".yellow().bold(),
+            fg_light_yellow_green("Enter a message").bold(),
             items
         );
 
@@ -224,7 +224,7 @@ pub mod monitor_user_input {
                     let readline_event = result_readline_event?;
                     match readline_event {
                         ReadlineEvent::Line(input) => {
-                            // Parse the input into a ClientMessage.
+                            // Parse the input to MyClientMessage enum.
                             let result_parse = MyClientMessage::try_parse_input(&input);
 
                             // Set the client_id for this client task, only once.
@@ -377,8 +377,8 @@ pub mod monitor_user_input {
                 if rest.is_empty() {
                     let msg = format!(
                         "Please provide a key to get, eg: {} {}",
-                        "get".green(),
-                        "<key>".yellow().bold()
+                        fg_lizard_green("get"),
+                        fg_light_yellow_green("<key>").bold()
                     );
                     writeln!(shared_writer, "{}", msg).ok();
                     return control_flow;
@@ -409,8 +409,8 @@ pub mod monitor_user_input {
                 if rest.is_empty() {
                     let msg = format!(
                         "Please provide a key to remove, eg: {} {}",
-                        "remove".green(),
-                        "<key>".yellow().bold()
+                        fg_lizard_green("remove"),
+                        fg_light_yellow_green("<key>").bold()
                     );
                     let _ = writeln!(shared_writer, "{}", msg);
                     return control_flow;
@@ -553,11 +553,10 @@ pub mod monitor_tcp_conn_task {
                             }
                         }
                         Err(error) => {
-                            let client_id_str = safe_client_id.lock().unwrap().clone();
                             let _ = writeln!(
                                 shared_writer,
                                 "Error reading from server for client task w/ 'client_id': {}",
-                                client_id_str.yellow().bold(),
+                                fg_light_yellow_green(safe_client_id.lock().unwrap().as_str()).bold(),
                             );
                             error!(?error);
                             shutdown_sender.send(()).ok();
@@ -592,9 +591,9 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::Exit => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received exit message from server".green().bold(),
-                    "Shutting down client".red().bold(),
+                    fg_light_yellow_green(safe_client_id.lock().unwrap().as_str()).bold(),
+                    fg_lizard_green("Received exit message from server").bold(),
+                    fg_pink("Shutting down client").bold(),
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
 
@@ -602,15 +601,13 @@ pub mod monitor_tcp_conn_task {
                 shutdown_sender.send(()).ok();
             }
             MyServerMessage::SetClientId(ref id) => {
+                // Save the new client ID.
                 *safe_client_id.lock().unwrap() = id.to_string();
                 let msg = format!(
                     "[{}]: {}: {}",
-                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received setclientid message from server"
-                        .on_black()
-                        .yellow()
-                        .bold(),
-                    format!("{:?}", id).magenta().bold(),
+                    fg_light_yellow_green(safe_client_id.lock().unwrap().as_str()).bold(),
+                    fg_lizard_green("Received setclientid message from server").bg_moonlight_blue().bold(),
+                    fg_frozen_blue(&format!("{:?}", id)).bold(),
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
                 return Ok(Some(id.to_string()));
@@ -618,8 +615,8 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::HandleBroadcast(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {:#?}",
-                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received broadcast message from server".green().bold(),
+                    fg_light_yellow_green(safe_client_id.lock().unwrap().as_str()).bold(),
+                    fg_lizard_green("Received broadcast message from server").bold(),
                     data,
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
@@ -627,34 +624,29 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::BroadcastToOthersAck(num_clients) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received ACK for broadcast message from server"
-                        .white()
-                        .on_dark_grey()
-                        .bold(),
-                    format!("Broadcast to {} clients", num_clients)
-                        .magenta()
-                        .bold(),
+                    fg_light_yellow_green(safe_client_id.lock().unwrap().as_str()).bold(),
+                    fg_white("Received ACK for broadcast message from server").bg_moonlight_blue().bold(),
+                    fg_frozen_blue(&format!("Broadcast to {} clients", num_clients)).bold(),
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
             MyServerMessage::Size(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received size message from server".green().bold(),
-                    format!("{:?}", data).magenta().bold(),
+                    fg_light_yellow_green(safe_client_id.lock().unwrap().as_str()).bold(),
+                    fg_lizard_green("Received size message from server").bold(),
+                    fg_frozen_blue(&format!("{:?}", data)).bold(),
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
             MyServerMessage::Clear(success_flag) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received clear message from server".green().bold(),
+                    fg_light_yellow_green(safe_client_id.lock().unwrap().as_str()).bold(),
+                    fg_lizard_green("Received clear message from server").bold(),
                     match success_flag {
-                        true => "✅ Success".green().bold(),
-                        false => "❌ Failure".red().bold(),
+                        true => fg_lizard_green("✅ Success").bold(),
+                        false => fg_pink("❌ Failure").bold(),
                     }
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
@@ -662,20 +654,20 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::Get(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received get message from server".green().bold(),
-                    format!("{:?}", data).magenta().bold(),
+                    fg_light_yellow_green(safe_client_id.lock().unwrap().as_str()).bold(),
+                    fg_lizard_green("Received get message from server").bold(),
+                    fg_frozen_blue(&format!("{:?}", data)).bold(),
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
             }
             MyServerMessage::Remove(success_flag) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received remove message from server".green().bold(),
+                    fg_light_yellow_green(safe_client_id.lock().unwrap().as_str()).bold(),
+                    fg_lizard_green("Received remove message from server").bold(),
                     match success_flag {
-                        true => "✅ Success".green().bold(),
-                        false => "❌ Failure".red().bold(),
+                        true => fg_lizard_green("✅ Success").bold(),
+                        false => fg_pink("❌ Failure").bold(),
                     }
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
@@ -683,11 +675,11 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::Insert(success_flag) => {
                 let msg = format!(
                     "[{}]: {}: {}",
-                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received insert message from server".green().bold(),
+                    fg_light_yellow_green(safe_client_id.lock().unwrap().as_str()).bold(),
+                    fg_lizard_green("Received insert message from server").bold(),
                     match success_flag {
-                        true => "✅ Success".green().bold(),
-                        false => "❌ Failure".red().bold(),
+                        true => fg_lizard_green("✅ Success").bold(),
+                        false => fg_pink("❌ Failure").bold(),
                     }
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
@@ -695,8 +687,8 @@ pub mod monitor_tcp_conn_task {
             MyServerMessage::GetAll(ref data) => {
                 let msg = format!(
                     "[{}]: {}: {:#?}",
-                    safe_client_id.lock().unwrap().to_string().yellow().bold(),
-                    "Received getall message from server".green().bold(),
+                    fg_light_yellow_green(safe_client_id.lock().unwrap().as_str()).bold(),
+                    fg_lizard_green("Received getall message from server").bold(),
                     data,
                 );
                 let _ = writeln!(shared_writer, "{}", msg);
