@@ -15,5 +15,35 @@
  *   limitations under the License.
  */
 
-mod ex_1;
-mod ex_2;
+trait Iter {
+    type Item<'a>
+    where
+        Self: 'a;
+
+    fn g_get<'a>(&'a self) -> Option<Self::Item<'a>>;
+}
+
+pub struct MyContainer {
+    value: String,
+}
+
+impl Iter for MyContainer {
+    type Item<'a>
+        = &'a str
+    where
+        Self: 'a;
+
+    fn g_get<'a>(&'a self) -> Option<Self::Item<'a>> {
+        Some(&self.value.as_ref())
+    }
+}
+
+#[test]
+fn test_g_get() {
+    let instance = MyContainer {
+        value: String::from("abcd"),
+    };
+    println!("{:?}", instance.g_get());
+    assert_eq!(instance.g_get(), Some("abcd"));
+}
+
