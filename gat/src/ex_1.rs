@@ -34,7 +34,7 @@ impl Iter for MyContainer {
         Self: 'a;
 
     fn g_get<'a>(&'a self) -> Option<Self::Item<'a>> {
-        Some(&self.value.as_ref())
+        Some(self.value.as_ref())
     }
 }
 
@@ -46,4 +46,3 @@ fn test_g_get() {
     println!("{:?}", instance.g_get());
     assert_eq!(instance.g_get(), Some("abcd"));
 }
-

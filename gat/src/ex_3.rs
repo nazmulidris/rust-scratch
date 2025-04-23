@@ -14,22 +14,32 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-#[allow(dead_code)]
-#[allow(unused_variables)]
-#[allow(unused_imports)]
-mod ex_1;
 
-#[allow(dead_code)]
-#[allow(unused_variables)]
-#[allow(unused_imports)]
-mod ex_2;
+trait Transformer {
+    type Output<T>;
 
-#[allow(dead_code)]
-#[allow(unused_variables)]
-#[allow(unused_imports)]
-mod ex_3;
+    fn transform<T>(&self, input: T) -> Self::Output<T>;
+}
 
-#[allow(dead_code)]
-#[allow(unused_variables)]
-#[allow(unused_imports)]
-mod ex_4;
+struct Wrapper;
+
+impl Transformer for Wrapper {
+    type Output<T> = Option<T>;
+
+    fn transform<T>(&self, input: T) -> Self::Output<T> {
+        Some(input)
+    }
+}
+
+#[test]
+fn test_transformer() {
+    let wrapper = Wrapper;
+
+    let result: Option<i32> = wrapper.transform(42);
+    println!("Transformed result: {:?}", result);
+    assert_eq!(result, Some(42));
+
+    let result: Option<&str> = wrapper.transform("hello");
+    println!("Transformed result: {:?}", result);
+    assert_eq!(result, Some("hello"));
+}
