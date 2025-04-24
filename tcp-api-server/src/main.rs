@@ -109,7 +109,7 @@ async fn main() -> miette::Result<()> {
     // Setup readline_async.
     let maybe_readline_async = match cli_args.subcommand {
         CLISubcommand::Server => None,
-        CLISubcommand::Client => ReadlineAsync::try_new(Some("ⴾ "))?,
+        CLISubcommand::Client => ReadlineAsync::try_new(Some("ⴾ ")).await?,
     };
 
     // Create a tracing config based on whether this is server or client.
