@@ -15,6 +15,7 @@
  *   limitations under the License.
  */
 
+use r3bl_tui::set_jemalloc_in_main;
 use clap::Parser;
 use miette::IntoDiagnostic;
 use r3bl_tui::{
@@ -85,6 +86,8 @@ mod header_banner {
 
 #[tokio::main]
 async fn main() -> miette::Result<()> {
+    set_jemalloc_in_main!();    
+    
     let cli_args = clap_args::CLIArg::parse();
 
     // Show header banner.
