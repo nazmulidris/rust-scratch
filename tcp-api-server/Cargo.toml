@@ -7,11 +7,8 @@ edition = "2021"
 
 [dependencies]
 # R3BL awesomeness.
-# r3bl_tui = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "tuifyasync", package = "r3bl_tui" }
-r3bl_tui = { path = "/home/nazmul/github/r3bl-open-core/tui" } # Local path to the r3bl_tui crate.
-
-# Modern ncurses library for Rust.
-crossterm = "0.29.0"
+r3bl_tui = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "main", package = "r3bl_tui" }
+# r3bl_tui = { path = "/home/nazmul/github/r3bl-open-core/tui" } # Local path to the r3bl_tui crate.
 
 # Command line argument parsing.
 clap = { version = "4.5.37", features = ["derive"] }
@@ -19,18 +16,9 @@ color-print = "0.3.7"
 
 # Serde for serialization and deserialization support.
 serde = { version = "1.0.219", features = ["derive"] }
-serde_json = { version = "1.0.140" }
-
-# Convert Rust structs to and from binary representation.
-# https://github.com/bincode-org/bincode/blob/trunk/docs/migration_guide.md
-bincode = { version = "2.0.1", features = ["serde"] }
 
 # For smallstr & smallvec.
-smallstr = { version = "0.3.0", features = ["serde", "std"] }
 smallvec = { version = "1.15.0", features = ["serde"] }
-
-# Compression for the protocol.
-flate2 = "1.1.1"
 
 # Enum to string generation.
 strum = "0.27.1"
@@ -41,9 +29,7 @@ strum_macros = "0.27.1"
 kv = { version = "0.24.0", features = ["json-value", "bincode-value"] }
 
 # Error handling.
-thiserror = "2.0.12"
 miette = { version = "7.5.0", features = ["fancy"] }
-pretty_assertions = "1.4.1"
 
 # Random numbers.
 rand = "0.9.1"
@@ -52,10 +38,8 @@ rand = "0.9.1"
 # https://tokio.rs/tokio/topics/tracing
 # https://tokio.rs/tokio/topics/tracing-next-steps
 tracing = "0.1.41"
-tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tokio = { version = "1.44.2", features = ["full", "tracing"] }
-tokio-test = "0.4.4"                                                   # For mock `TcpStream` (`Builder`)
 
 # Replacement for the default global allocator. This one is optimize for multi-threaded
 # use cases where lots of small objects are created and destroyed. The default
@@ -86,5 +70,3 @@ opentelemetry-semantic-conventions = "0.14.0"
 
 [dev-dependencies]
 tempfile = "3.19.1"
-serial_test = "3.2.0"
-# Allows you to export data to Jaeger

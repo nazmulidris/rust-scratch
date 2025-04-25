@@ -33,14 +33,9 @@ tokio = { version = "1.44.2", features = ["full"] }
 
 # Tokio tracing dependencies.
 tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
-tracing-core = "0.1.33"
-chrono = "0.4.40"
-textwrap = "0.16.2"
 
 # Error handling.
 miette = "7.5.0"
-thiserror = "2.0.12"
 
 # Terminal color output.
 crossterm = "0.29.0"
@@ -50,20 +45,9 @@ strum = "0.27.1"
 strum_macros = "0.27.1"
 
 # R3BL awesomeness.
-r3bl_tui = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "tuifyasync", package = "r3bl_tui" }
+r3bl_tui = { git = "https://github.com/r3bl-org/r3bl-open-core.git", branch = "main", package = "r3bl_tui" }
 # r3bl_tui = { path = "/home/nazmul/github/r3bl-open-core/tui" } # Local path to the r3bl_tui crate.
 futures-util = "0.3.31" # Async streams.
 
-# HTTP client library.
-reqwest = { version = "0.12.15", features = ["json"] }
-serde_json = "1.0.140"
-
-# Run tests in serial.
-serial_test = "3.2.0"
-
 # For smallstr & smallvec.
-smallstr = { version = "0.3.0", features = ["serde", "std"] }
 smallvec = { version = "1.15.0", features = ["serde"] }
-
-[dev-dependencies]
-strip-ansi = "0.1.0" # For tracing_support.
