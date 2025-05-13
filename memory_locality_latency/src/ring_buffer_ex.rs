@@ -15,3 +15,8 @@
  *   limitations under the License.
  */
 
+// TODO: show stack alloc ring buffer
+// TODO: show heap alloc ring buffer
+// TODO: And pre-allocate using the pattern buffer: [Option<T>; N], pattern
+// TODO: this constructor magic: buffer: [(); N].map(|_| None),
+// TODO: this generic header: pub struct RingBuffer<T, const N: usize>

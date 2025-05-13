@@ -15,7 +15,9 @@
  *   limitations under the License.
  */
 
-pub mod string_and_vec_ex;
+#![feature(vec_into_raw_parts)] // Needed for into_raw_parts() method on String and Vec.
+
 pub mod allocator_ex;
-pub mod write_into_inline_ex;
 pub mod ring_buffer_ex;
+pub mod string_and_vec_ex;
+pub mod write_into_inline_ex;
