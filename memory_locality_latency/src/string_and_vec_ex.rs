@@ -51,7 +51,7 @@ mod string_and_vec_tests {
         // Unsafely transmute String to Vec of bytes.
         // This will show the Vec representation which includes the UTF-8 bytes
         // (identical to ASCII values for these digits).
-        fg_light_yellow_green("\nUnsafely accessing String as Vec<u8>:").println();
+        fg_light_yellow_green("\nUnsafely accessing String as Vec<u8> (hex dump):").println();
         println!("{:x?}", unsafe {
             std::mem::transmute::<String, Vec<u8>>(s)
         });
@@ -85,8 +85,8 @@ mod string_and_vec_tests {
             let raw_parts: (*const u8, usize) = std::mem::transmute(s);
 
             fg_light_yellow_green("\n&str memory layout:").println();
-            println!("  ptr (location in memory): {:p}", raw_parts.0);
-            println!("  len (bytes in slice): {}", raw_parts.1);
+            println!("  ptr: {:p}", raw_parts.0);
+            println!("  len: {}", raw_parts.1);
 
             // We can also get these values safely
             fg_light_yellow_green("\nSafely accessing &str metadata:").println();
@@ -100,14 +100,15 @@ mod string_and_vec_tests {
     fn mem_layout_str_slice_2() {
         fg_lizard_green("\n=== &str Memory Layout Example 2 ===").println();
 
-        // Demonstrate that &str is just a view into some data
+        // Demonstrate that &str is just a view into some data.
         let owned = String::from("Hello, world!");
         let slice = &owned[0..5]; // "Hello".
 
-        // Safe approach to get the pointer and length
+        // Safe approach to get the pointer and length for slice.
         let slice_ptr = slice.as_ptr();
         let slice_len = slice.len();
 
+        // Safe approach to get the pointer and length for owned.
         let owned_ptr = owned.as_ptr();
         let owned_len = owned.len();
         let owned_capacity = owned.capacity();
