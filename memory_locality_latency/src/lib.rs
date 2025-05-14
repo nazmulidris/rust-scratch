@@ -17,7 +17,8 @@
 
 #![feature(vec_into_raw_parts)] // Needed for into_raw_parts() method on String and Vec.
 
-pub mod allocator_ex;
-pub mod ring_buffer_ex;
-pub mod string_and_vec_ex;
-pub mod write_into_inline_ex;
+pub mod ex_1_string_and_vec;
+pub mod ex_2_alignment;
+pub mod ex_3_allocator_ex;
+pub mod ex_4_ring_buffer_ex;
+pub mod ex_5_write_into_inline_ex;

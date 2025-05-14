@@ -1,7 +1,10 @@
 {
   "cSpell.words": [
     "GDDR",
+    "Iosevka",
     "jemalloc",
-    "repr"
+    "malloc",
+    "repr",
+    "syscalls"
   ]
 }

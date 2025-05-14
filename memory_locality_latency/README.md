@@ -3,32 +3,33 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Memory Latency and Cache Lines](#memory-latency-and-cache-lines)
-  - [Summary of memory latency](#summary-of-memory-latency)
-  - [Summary of Cache Lines](#summary-of-cache-lines)
-  - [Order of Magnitude Latency Differences (Intel 14th Gen, DDR4-5200, PCIe 4 SSD)](#order-of-magnitude-latency-differences-intel-14th-gen-ddr4-5200-pcie-4-ssd)
+- [Memory latency and cache lines](#memory-latency-and-cache-lines)
+  - [Order of magnitude latency differences](#order-of-magnitude-latency-differences)
+  - [Cache line](#cache-line)
 - [Stack vs heap](#stack-vs-heap)
-  - [Stack Memory](#stack-memory)
-  - [Heap Memory](#heap-memory)
-  - [Why Stack Access Is Often Faster](#why-stack-access-is-often-faster)
-  - [Practical Implications in Rust and Linux](#practical-implications-in-rust-and-linux)
-  - [Stack Size in Ubuntu 25.04](#stack-size-in-ubuntu-2504)
+  - [Stack memory](#stack-memory)
+  - [Heap memory](#heap-memory)
+  - [Why stack access is often faster](#why-stack-access-is-often-faster)
+  - [Practical implications in Rust and Linux](#practical-implications-in-rust-and-linux)
+  - [Stack size in Ubuntu 25.04](#stack-size-in-ubuntu-2504)
+  - [Allocation and drop](#allocation-and-drop)
+  - [Heap memory example (String and &str)](#heap-memory-example-string-and-str)
+- [Memory alignment](#memory-alignment)
 - [Global allocators](#global-allocators)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-## Memory Latency and Cache Lines
+## Memory latency and cache lines
 
-### Summary of memory latency
+The CPU's cache hierarchy (L1, L2, and often L3) acts as a crucial intermediary, bridging
+the massive performance gap between the incredibly fast CPU registers and the much slower
+main memory and storage. Cache lines are the fundamental building blocks that enable this
+efficient data movement and significantly impact overall system performance.
 
-**Key Takeaway:** The CPU's cache hierarchy (L1, L2, and often L3) acts as a crucial
-intermediary, bridging the massive performance gap between the incredibly fast CPU
-registers and the much slower main memory and storage. Cache lines are the fundamental
-building blocks that enable this efficient data movement and significantly impact overall
-system performance.
+### Order of magnitude latency differences
 
-**In summary, the relative latencies look something like this (very approximate):** Here's
-a table summarizing the relative latencies:
+The relative latencies look something like this (very approximate) for a machine with
+Intel 14th Gen, DDR5-5200, PCIe 4 SSD:
 
 | Memory Type                  | Relative Latency (vs. Register) |
 | ---------------------------- | ------------------------------- |
@@ -43,37 +44,6 @@ a table summarizing the relative latencies:
 | Internet (Cross-Continental) | 10,000,000x - 100,000,000x      |
 
 ![Memory Latency](memory_latency.svg)
-
-### Summary of Cache Lines
-
-A **cache line** is the fundamental unit of data transfer between the CPU's cache
-hierarchy and the main memory. On the 14th gen Intel CPUs it is 64 bytes, its primary
-function is to enhance performance by fetching and storing data in larger blocks, thereby
-reducing the frequency of slower main memory accesses. It is 128 bytes or twice as large
-on an Apple M4 chip.
-
-**How they work:** When the CPU requires data not present in the cache (a **cache miss**),
-an entire cache line containing that data is retrieved from main memory. Similarly, when
-data is written, the corresponding cache line is updated and eventually written back to
-main memory.
-
-**Impact on Memory Latency:** Cache lines significantly influence memory latency:
-
-- **Spatial Locality:** By fetching a block of contiguous data, cache lines exploit the
-  tendency of programs to access nearby memory locations, minimizing subsequent memory
-  accesses.
-- **Cache Miss Penalty:** While a cache miss incurs a substantial latency penalty to fetch
-  the entire line, this is often offset by the fact that a larger chunk of potentially
-  needed data is brought into the cache at once.
-- **Bandwidth Utilization:** Transferring data in larger cache line units optimizes the
-  use of the available memory bandwidth compared to numerous small transfers.
-
-**Example Benefit:** Accessing elements of an array sequentially demonstrates the
-advantage. With a 64-byte cache line and 4-byte integers, fetching one integer brings 15
-neighboring integers into the cache, likely satisfying future access requests without
-needing to go back to main memory.
-
-### Order of Magnitude Latency Differences (Intel 14th Gen, DDR4-5200, PCIe 4 SSD)
 
 It's important to understand that these are _relative_ order-of-magnitude estimates and
 can vary based on specific workloads, system configurations, and the exact characteristics
@@ -98,8 +68,8 @@ of the components. However, they provide a good sense of the performance hierarc
     - **Latency:** Around 5-20 nanoseconds.
     - **Relative Order of Magnitude:** **~50x - 200x** slower than register access.
 
-4.  **Fetching Data from Main Memory (DDR4-5200):** Accessing RAM is significantly slower
-    than cache access. DDR4-5200 specifies the data transfer rate, but the actual latency
+4.  **Fetching Data from Main Memory (DDR5-5200):** Accessing RAM is significantly slower
+    than cache access. DDR5-5200 specifies the data transfer rate, but the actual latency
     to fetch data involves factors like CAS latency and command cycles.
 
     - **Latency:** Around 50-100 nanoseconds (or even higher depending on the specific
@@ -115,12 +85,63 @@ of the components. However, they provide a good sense of the performance hierarc
     - **Relative Order of Magnitude:** **~10,000x - 100,000x** slower than register
       access.
 
+> | Unit Name   | Symbol | Value in Seconds                  |
+> | ----------- | ------ | --------------------------------- |
+> | second      | s      | 1                                 |
+> | millisecond | ms     | 1/1,000 = 10⁻³ s                  |
+> | microsecond | μs     | 1/1,000,000 = 10⁻⁶ s              |
+> | nanosecond  | ns     | 1/1,000,000,000 = 10⁻⁹ s          |
+> | picosecond  | ps     | 1/1,000,000,000,000 = 10⁻¹² s     |
+> | femtosecond | fs     | 1/1,000,000,000,000,000 = 10⁻¹⁵ s |
+
+### Cache line
+
+A **cache line** is the fundamental unit of data transfer between the CPU's cache
+hierarchy and the main memory. On the 14th gen Intel CPUs it is 64 bytes, its primary
+function is to enhance performance by fetching and storing data in larger blocks, thereby
+reducing the frequency of slower main memory accesses. It is 128 bytes or twice as large
+on an Apple M4 chip.
+
+All CPU accesses to RAM are done in cache line units, even if the CPU only needs a single
+byte or word (e.g., `usize`, or 64 bits / 8 bytes on 14th gen Intel CPU). The cache line
+is the fundamental unit of data transfer between RAM and the CPU cache.
+
+**How it works:** When the CPU needs to read data, it first checks its caches (L1, L2,
+L3):
+
+- If the data is not present (**cache miss**), the CPU fetches the data from RAM.
+- However, it does not fetch just the specific byte or word requested—it fetches an entire
+  **cache line** (e.g., 64 bytes on Intel CPUs).
+- This cache line is then stored in the cache, and the requested data is delivered to the
+  CPU. Similarly, when data is written, the corresponding cache line is updated and
+  eventually written back to main memory.
+
+**Impact on Memory Latency:** Cache lines significantly influence memory latency:
+
+- **Spatial Locality:** By fetching a block of contiguous data, cache lines exploit the
+  tendency of programs to access nearby memory locations, minimizing subsequent memory
+  accesses.
+- **Cache Miss Penalty:** While a cache miss incurs a substantial latency penalty to fetch
+  the entire line, this is often offset by the fact that a larger chunk of potentially
+  needed data is brought into the cache at once.
+- **Bandwidth Utilization:** Transferring data in larger cache line units optimizes the
+  use of the available memory bandwidth compared to numerous small transfers.
+
+**Example Benefit:** Accessing elements of an array sequentially demonstrates the
+advantage. With a 64-byte cache line and 4-byte integers, fetching one integer brings 15
+neighboring integers into the cache, likely satisfying future access requests without
+needing to go back to main memory.
+
+More information on cache placement policies:
+
+- [Wikipedia: CPU Cache placement policies](https://en.wikipedia.org/wiki/Cache_placement_policies#Example_3)
+
 ## Stack vs heap
 
 Both stack and heap are in main memory (RAM). Their differences are logical rather than
 physical.
 
-### Stack Memory
+### Stack memory
 
 - **Cache friendliness**: Stack memory tends to be more cache-friendly.
   - Access patterns are predictable and localized.
@@ -130,7 +151,7 @@ physical.
   - Recently accessed data is likely to be accessed again soon.
 - **Allocation cost**: Essentially free (just incrementing/decrementing a stack pointer).
 
-### Heap Memory
+### Heap memory
 
 - **Cache behavior**: Often less cache-friendly.
   - Allocations can be scattered throughout memory.
@@ -142,13 +163,13 @@ physical.
   - Requires searching for free blocks.
   - May involve complex bookkeeping.
 
-### Why Stack Access Is Often Faster
+### Why stack access is often faster
 
 1. **Predictable access pattern**: The CPU can prefetch stack data more effectively.
 2. **Cache utilization**: Better use of cache lines due to contiguous memory access.
 3. **Allocation overhead**: No complex memory management routines.
 
-### Practical Implications in Rust and Linux
+### Practical implications in Rust and Linux
 
 - Small, fixed-size values benefit from stack allocation.
 - Larger or dynamically-sized values must use heap allocation.
@@ -168,7 +189,7 @@ system memory is exhausted.
 This is why data-oriented design principles often recommend organizing data for better
 cache utilization, regardless of whether it's on stack or heap.
 
-### Stack Size in Ubuntu 25.04
+### Stack size in Ubuntu 25.04
 
 In Ubuntu 25.04 with the latest Linux kernel, the default stack size for:
 
@@ -179,21 +200,254 @@ This is configurable through several mechanisms:
 
 1. Check current stack size in a terminal with:
 
-   ```bash
+   ```shell
+   # Displays the current stack size limit in KB.
    ulimit -s
    ```
 
 2. Modify stack size temporarily:
 
-   ```bash
-   ulimit -s <size_in_KB>
+   ```shell
+   # Set stack size to 8192 KB.
+   ulimit -s 8192
    ```
 
-3. For permanent changes, edit limits.conf:
+3. For permanent changes, edit `/etc/security/limits.conf`:
+   ```ini
+   # <domain> <type> <item> <value>
+   # - domain: * means all users.
+   # - type: soft and hard are the limit types.
+   # - item: stack is the resource.
+   # - value: The value is in kilobytes (KB).
+   * soft stack 8192
+   * hard stack 16384
    ```
-   * soft stack <size_in_KB>
-   * hard stack <size_in_KB>
-   ```
+
+### Allocation and drop
+
+The cost of dropping (deallocating) memory on the heap using Rust’s default allocator
+(`std::alloc::System`, which typically wraps the underlying OS `malloc` / `free` provided
+by `glibc` GNU C Library) is generally much lower than the cost of allocating it, but it
+is not free. Here's an example of the costs involved in allocating and dropping 500KB of
+memory on the heap and stack:
+
+| Operation    | Stack (500 KB) | Heap (500 KB) | Relative Difference |
+| ------------ | -------------- | ------------- | ------------------- |
+| Allocation   | ~10–100 ns     | ~1–10 μs      | 10x–100x slower     |
+| Deallocation | ~10–100 ns     | ~1–10 μs      | 10x–100x slower     |
+
+> Note: 1μs (micro second) = 1,000ns (nano second)
+
+**Heap:**
+
+- **Allocating**: Can be expensive, especially for large or many small allocations, due to
+  searching for free blocks, updating allocator metadata, and possible fragmentation.
+- **Dropping/Deallocating**: Usually faster, as it typically just marks the memory as free
+  and updates allocator metadata. However, the actual cost depends on the allocator’s
+  implementation and fragmentation state.
+
+**Stack:**
+
+- **Allocating**: Very cheap (just moves the stack pointer). However, note that filling it
+  with valid data can be expensive if the data is large.
+- **Dropping/Deallocating**: Also very cheap (just moves the stack pointer back).
+
+### Heap memory example (String and &str)
+
+```rust
+#[cfg(test)]
+mod string_and_vec_tests {
+    use r3bl_tui::{fg_light_yellow_green, fg_lizard_green};
+
+    #[serial_test::serial]
+    #[test]
+    /// Demonstrates the memory layout of String, which contains [ptr, len, capacity].
+    fn mem_layout_string() {
+        fg_lizard_green("\n=== String Memory Layout Example ===").println();
+
+        // Create a String.
+        // ASCII values for digits:
+        // '0': 48 (0x30), '1': 49 (0x31), '2': 50 (0x32), '3': 51 (0x33), '4': 52 (0x34)
+        // '5': 53 (0x35), '6': 54 (0x36), '7': 55 (0x37), '8': 56 (0x38), '9': 57 (0x39)
+        let s = String::from("0123456789");
+
+        // We can get these values safely.
+        fg_light_yellow_green("\nSafely accessing String metadata:").println();
+        println!("  ptr: {:p}", s.as_ptr());
+        println!("  len: {}", s.len());
+        println!("  cap: {}", s.capacity());
+
+        // Unsafely transmute String to Vec of bytes.
+        // This will show the Vec representation which includes the UTF-8 bytes
+        // (identical to ASCII values for these digits).
+        fg_light_yellow_green("\nUnsafely accessing String as Vec<u8> (hex dump):").println();
+        println!("{:x?}", unsafe {
+            std::mem::transmute::<String, Vec<u8>>(s)
+        });
+
+        // Note that transmuting a String to the following does not work:
+        // let (ptr, len, cap): (*mut usize, usize, usize) = unsafe { std::mem::transmute(s) };
+        // - `(*const u8, usize, usize)`
+        // - `(*mut u8, usize, usize)`
+        {
+            fg_light_yellow_green("\nAccessing String with into_raw_parts():").println();
+            let s = String::from("0123456789");
+            let (ptr, len, cap) = s.into_raw_parts();
+            println!("  ptr: {:p}", ptr);
+            println!("  len: {}", len);
+            println!("  cap: {}", cap);
+        }
+    }
+
+    #[serial_test::serial]
+    #[test]
+    /// Demonstrates the memory layout of &str, which contains [ptr, len].
+    fn mem_layout_str_slice() {
+        fg_lizard_green("\n=== &str Memory Layout Example 1 ===").println();
+
+        // Create a string slice
+        let s = "Hello, world!";
+
+        // &str is represented as [ptr, len].
+        unsafe {
+            // Transmute &str to raw parts.
+            let raw_parts: (*const u8, usize) = std::mem::transmute(s);
+
+            fg_light_yellow_green("\n&str memory layout:").println();
+            println!("  ptr: {:p}", raw_parts.0);
+            println!("  len: {}", raw_parts.1);
+
+            // We can also get these values safely
+            fg_light_yellow_green("\nSafely accessing &str metadata:").println();
+            println!("  ptr: {:p}", s.as_ptr());
+            println!("  len: {}", s.len());
+        }
+    }
+
+    #[serial_test::serial]
+    #[test]
+    fn mem_layout_str_slice_2() {
+        fg_lizard_green("\n=== &str Memory Layout Example 2 ===").println();
+
+        // Demonstrate that &str is just a view into some data.
+        let owned = String::from("Hello, world!");
+        let slice = &owned[0..5]; // "Hello".
+
+        // Safe approach to get the pointer and length for slice.
+        let slice_ptr = slice.as_ptr();
+        let slice_len = slice.len();
+
+        // Safe approach to get the pointer and length for owned.
+        let owned_ptr = owned.as_ptr();
+        let owned_len = owned.len();
+        let owned_capacity = owned.capacity();
+
+        fg_light_yellow_green("\nComparing owned String and &str slice (safely):").println();
+        println!("  String ptr: {:p}", owned_ptr);
+        println!("  &str ptr:   {:p}", slice_ptr);
+        println!(
+            "  String points to same memory as slice: {}",
+            slice_ptr == owned_ptr
+        );
+        println!("  String len: {}, slice len: {}", owned_len, slice_len);
+        println!("  String cap: {}", owned_capacity);
+    }
+}
+```
+
+## Memory alignment
+
+Memory alignment refers to arranging data in memory at addresses that are multiples of the
+data type’s alignment requirement.
+
+The alignment of a value specifies what addresses are valid to store the value at.
+
+A value of alignment n must only be stored at an address that is a multiple of `n`. For
+example, a value with an alignment of `2` must be stored at an even address, while a value
+with an alignment of `1` can be stored at any address.
+
+- Alignment is measured in bytes, and must be at least `1`, and always a power of `2`.
+- The alignment of a value can be checked with the
+  [`align_of_val`](https://doc.rust-lang.org/core/mem/fn.align_of_val.html) function.
+
+Rust’s type system and compiler automatically handle memory alignment for safety and
+performance, but understanding alignment is important when working with FFI, low-level
+code, or optimizing data structures.
+
+On a 14th gen Intel CPU (which is a 64-bit x86_64 architecture), the default alignment for
+primitive types in Rust is:
+
+- 8 bytes for types whose size is 8 bytes (e.g., `u64`, `f64`, `usize`, pointers)
+- 4 bytes for types whose size is 4 bytes (e.g., `u32`, `i32`, `f32`)
+- 2 bytes for types whose size is 2 bytes (e.g., `u16`, `i16`)
+- 1 byte for types whose size is 1 byte (e.g., `u8`, `i8`)
+- The alignment of a type is usually equal to its size, but only up to the CPU’s word size
+  (which is 8 bytes on 64-bit Intel CPUs). So, the maximum default alignment for most
+  types is 8 bytes. Custom types (structs, arrays) may have larger alignment if specified
+  with `repr(align(N))`.
+
+Here's an example of how alignment can affect the layout of a struct:
+
+```rust
+use std::mem::{size_of, align_of};
+use r3bl_tui::{fg_light_yellow_green, fg_lizard_green};
+
+#[repr(C)]
+struct Demo {
+    a: u8,  // 1 byte, alignment 1
+    b: u32, // 4 bytes, alignment 4
+    c: u16, // 2 bytes, alignment 2
+}
+
+fn main() {
+    let size = size_of::<Demo>();
+    let align = align_of::<Demo>();
+
+    fg_lizard_green(format!("\nSize of Demo: {size}")).println();
+    fg_light_yellow_green(format!("Alignment of Demo: {align}")).println();
+}
+```
+
+The default alignment of 4 bytes for many types (like `u32` or `i32`) is based on their
+size and the requirements of most modern CPUs, especially 32-bit architectures. The
+alignment ensures that memory accesses are efficient and compatible with the CPU’s
+expectations.
+
+- On a 32-bit CPU, the natural word size is 4 bytes, so types like `u32` and pointers are
+  aligned to 4 bytes.
+- On a 64-bit CPU, the natural word size is 8 bytes, so types like `u64` and pointers are
+  aligned to 8 bytes. However, smaller types (`u32`, `i32`, etc.) still have 4-byte
+  alignment, unless you use a type that requires more.
+
+Here's an example that shows the alignment of different types:
+
+```rust
+use std::mem::{size_of, align_of};
+use r3bl_tui::{fg_light_yellow_green, fg_lizard_green};
+
+fn pretty_print<T: std::fmt::Debug>() {
+    let type_name = std::any::type_name::<T>();
+    let size = size_of::<T>();
+    let align = align_of::<T>();
+
+    fg_lizard_green(format!("\n{type_name}")).println();
+    fg_light_yellow_green(format!("  size = {size}\n  alignment = {align}")).println();
+}
+
+fn main() {
+    pretty_print::<u8>();
+    pretty_print::<u16>();
+    pretty_print::<u32>();
+    pretty_print::<u64>();
+    pretty_print::<usize>();
+    pretty_print::<f64>();
+}
+```
+
+Resources:
+
+- [Rust Reference: Type Layout](https://doc.rust-lang.org/reference/type-layout.html)
+- [Forum discussion](https://users.rust-lang.org/t/type-alignment-understanding-memory-layout/126503/56)
 
 ## Global allocators
 

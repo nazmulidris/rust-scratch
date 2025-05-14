@@ -1,35 +1,41 @@
 <svg width="1300" height="420" xmlns="http://www.w3.org/2000/svg">
     <style>
         svg {
-            background-color: #1e1e1e;
+            background-color: #0e1117;
         }
         .bar {
-            fill: #64b5f6;
-            opacity: 0.9;
+            <!-- fill: #75ec9c; -->
+            opacity: 0.7;
             font-size: 12px;
-            font-family: Iosevka, monospace;
+            font-family: "Iosevka Term Web", Iosevka, monospace;
         }
         .label {
-            font-family: Iosevka, monospace;
+            fill: #75d7ec;
+            font-family: "Iosevka Term Web", Iosevka, monospace;
             font-size: 14px;
-            fill: #e0e0e0;
             dominant-baseline: middle;
         }
         .title {
-            font-family: Iosevka, monospace;
+            fill: #d2e6fa;
+            font-family: "Iosevka Term Web", Iosevka, monospace;
             font-size: 18px;
             font-weight: bold;
-            fill: #ffffff;
             text-anchor: middle;
         }
         .axis-label {
-            font-family: Iosevka, monospace;
+            font-family: "Iosevka Term Web", Iosevka, monospace;
             font-size: 14px;
-            fill: #e0e0e0;
+            fill: #b7c9db;
             text-anchor: middle;
         }
     </style>
-    <rect width="100%" height="100%" fill="#1e1e1e" />
+    <defs>
+        <pattern id="bar-stripes" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+            <rect x="0" y="0" width="4" height="8" fill="#75ec9c" opacity="0.9"/>
+            <rect x="4" y="0" width="4" height="8" fill="#1f242e" opacity="0.9"/>
+        </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="#0e1117" />
     <g transform="translate(60, 30)">
         <text class="title" x="590" y="0">Memory Access Latency (Relative to Register)</text>
 
@@ -37,43 +43,43 @@
         <text class="axis-label" x="590" y="370">Relative Latency</text>
 
         <g transform="translate(0, 50)">
-            <rect class="bar" x="0" y="0" width="3" height="20" />
+            <rect class="bar" fill="url(#bar-stripes)" x="0" y="0" width="3" height="20" />
             <text class="label" x="13" y="15">Register (1x)</text>
         </g>
         <g transform="translate(0, 80)">
-            <rect class="bar" x="0" y="0" width="30" height="20" />
+            <rect class="bar" fill="url(#bar-stripes)" x="0" y="0" width="30" height="20" />
             <text class="label" x="40" y="15">L1 Cache (10x - 50x)</text>
         </g>
         <g transform="translate(0, 110)">
-            <rect class="bar" x="0" y="0" width="125" height="20" />
+            <rect class="bar" fill="url(#bar-stripes)" x="0" y="0" width="125" height="20" />
             <text class="label" x="135" y="15">L2 Cache (50x - 200x)</text>
         </g>
         <g transform="translate(0, 140)">
-            <rect class="bar" x="0" y="0" width="200" height="20" />
+            <rect class="bar" fill="url(#bar-stripes)" x="0" y="0" width="200" height="20" />
             <text class="label" x="210" y="15">L3 Cache (10x - 20x larger than L2)</text>
         </g>
         <g transform="translate(0, 170)">
-            <rect class="bar" x="0" y="0" width="300" height="20" />
+            <rect class="bar" fill="url(#bar-stripes)" x="0" y="0" width="300" height="20" />
             <text class="label" x="310" y="15">RAM (500x - 1Kx)</text>
         </g>
         <g transform="translate(0, 200)">
-            <rect class="bar" x="0" y="0" width="375" height="20" />
+            <rect class="bar" fill="url(#bar-stripes)" x="0" y="0" width="375" height="20" />
             <text class="label" x="385" y="15">GPU HBM/GDDR6 (1Kx - 2Kx)</text>
         </g>
         <g transform="translate(0, 230)">
-            <rect class="bar" x="0" y="0" width="450" height="20" />
+            <rect class="bar" fill="url(#bar-stripes)" x="0" y="0" width="450" height="20" />
             <text class="label" x="460" y="15">SSD (10Kx - 100Kx)</text>
         </g>
         <g transform="translate(0, 260)">
-            <rect class="bar" x="0" y="0" width="525" height="20" />
+            <rect class="bar" fill="url(#bar-stripes)" x="0" y="0" width="525" height="20" />
             <text class="label" x="535" y="15">Local Network (LAN) (100Kx - 1Mx)</text>
         </g>
         <g transform="translate(0, 290)">
-            <rect class="bar" x="0" y="0" width="600" height="20" />
+            <rect class="bar" fill="url(#bar-stripes)" x="0" y="0" width="600" height="20" />
             <text class="label" x="610" y="15">Internet (Same Region) (1Mx - 10Mx)</text>
         </g>
         <g transform="translate(0, 320)">
-            <rect class="bar" x="0" y="0" width="675" height="20" />
+            <rect class="bar" fill="url(#bar-stripes)" x="0" y="0" width="675" height="20" />
             <text class="label" x="685" y="15">Internet (Cross-Continental) (10Mx - 100Mx)</text>
         </g>
     </g>

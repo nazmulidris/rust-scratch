@@ -46,7 +46,7 @@ mod string_and_vec_tests {
         fg_light_yellow_green("\nSafely accessing String metadata:").println();
         println!("  ptr: {:p}", s.as_ptr());
         println!("  len: {}", s.len());
-        println!("  capacity: {}", s.capacity());
+        println!("  cap: {}", s.capacity());
 
         // Unsafely transmute String to Vec of bytes.
         // This will show the Vec representation which includes the UTF-8 bytes
@@ -66,7 +66,7 @@ mod string_and_vec_tests {
             let (ptr, len, cap) = s.into_raw_parts();
             println!("  ptr: {:p}", ptr);
             println!("  len: {}", len);
-            println!("  capacity: {}", cap);
+            println!("  cap: {}", cap);
         }
     }
 
@@ -121,6 +121,6 @@ mod string_and_vec_tests {
             slice_ptr == owned_ptr
         );
         println!("  String len: {}, slice len: {}", owned_len, slice_len);
-        println!("  String capacity: {}", owned_capacity);
+        println!("  String cap: {}", owned_capacity);
     }
 }
