@@ -16,6 +16,7 @@
   - [Heap memory example (String and &str)](#heap-memory-example-string-and-str)
 - [Memory alignment](#memory-alignment)
 - [Global allocators](#global-allocators)
+- [Using arrays for stack or heap allocation](#using-arrays-for-stack-or-heap-allocation)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -254,6 +255,14 @@ memory on the heap and stack:
 
 ### Heap memory example (String and &str)
 
+First add the following dependencies to your project:
+
+```shell
+cargo add r3bl_tui
+```
+
+Then you can run the following code:
+
 ```rust
 #[cfg(test)]
 mod string_and_vec_tests {
@@ -386,7 +395,15 @@ primitive types in Rust is:
   types is 8 bytes. Custom types (structs, arrays) may have larger alignment if specified
   with `repr(align(N))`.
 
-Here's an example of how alignment can affect the layout of a struct:
+Here's an example of how alignment can affect the layout of a struct.
+
+First add the following dependencies to your project:
+
+```shell
+cargo add r3bl_tui
+```
+
+Then you can run the following code:
 
 ```rust
 use std::mem::{size_of, align_of};
@@ -419,7 +436,15 @@ expectations.
   aligned to 8 bytes. However, smaller types (`u32`, `i32`, etc.) still have 4-byte
   alignment, unless you use a type that requires more.
 
-Here's an example that shows the alignment of different types:
+Here's an example that shows the alignment of different types.
+
+First add the following dependencies to your project:
+
+```shell
+cargo add r3bl_tui
+```
+
+Then you can run the following code:
 
 ```rust
 use std::mem::{size_of, align_of};
@@ -459,3 +484,164 @@ default allocator is the system allocator that's optimized for single threaded u
 - <https://news.ycombinator.com/item?id=35473271>
 - <https://crates.io/crates/jemallocator>
 - <https://engineering.fb.com/2011/01/03/core-infra/scalable-memory-allocation-using-jemalloc/>
+
+Here's an example of how to use `jemalloc` as the global allocator in a Rust project.
+
+First add the following dependencies to your project:
+
+```shell
+cargo add tikv-jemallocator r3bl_tui
+```
+
+Then you can use it in your code:
+
+```rust
+use r3bl_tui::set_jemalloc_in_main;
+
+fn main() {
+    set_jemalloc_in_main!();
+    println!("jemalloc allocator is set.");
+}
+```
+
+## Using arrays for stack or heap allocation
+
+A ring buffer is a data structure that uses a fixed-size array to store elements in a
+circular manner. It is often used in scenarios where a fixed-size buffer is needed, such
+as in embedded systems or real-time applications. The ring buffer can be implemented using
+either stack or heap allocation, depending on the requirements of the application.
+
+Regardless of allocating this on the stack or the heap, we are working with a fixed-size
+array, which can't be resized. So instead of using a `Vec`, we can use a fixed-size array.
+
+Here are some tips on how to work with these types of data structures in Rust:
+
+1. Here's the pattern we can use for declaring how the data will be stored in the ring
+   buffer struct: `internal_storage: [Option<T>; N]`. The type is `Option<T>` because any
+   slot in the ring buffer can be empty or contain a value.
+2. In order to construct this struct, we can use the pattern
+   `internal_storage: [(); N].map(|_| None)`, which works for any `T`. Since
+   `internal_storage: [None; N]` does not work unless you are willing to constrain
+   `T: Copy` which can be limiting.
+3. The struct will have to use this generic header:
+   `pub struct RingBuffer<T, const N: usize>`. This allows us to create a ring buffer of
+   any type `T` with a fixed size `N`.
+4. The impl block of this struct will have to use the same generic header:
+   `impl<T, const N: usize> RingBuffer<T, N>`. This allows us to implement methods for the
+   ring buffer that can work with any type `T` and any size `N`.
+
+```rust
+//! - Show stack alloc ring buffer using array allocated on stack.
+//! - And pre-allocate using the pattern `internal_storage: [Option<T>; N]`.
+//! - Show this constructor magic: `internal_storage: [(); N].map(|_| None)`.
+//! - Show this generic header: `pub struct RingBuffer<T, const N: usize>`.
+//! - Show the impl block with the same generic header: `impl<T, const N: usize>`.
+
+pub struct RingBuffer<T, const N: usize> {
+    internal_storage: [Option<T>; N],
+    head: usize,
+    tail: usize,
+    count: usize,
+}
+
+impl<T, const N: usize> RingBuffer<T, N> {
+    pub fn new() -> Self {
+        RingBuffer {
+            internal_storage: [(); N].map(|_| None),
+            head: 0,
+            tail: 0,
+            count: 0,
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.count
+    }
+
+    pub fn cap(&self) -> usize {
+        N
+    }
+
+    pub fn add(&mut self, item: T) {
+        if self.count == N {
+            // Buffer is full, overwrite the oldest item.
+            self.tail = (self.tail + 1) % N;
+        } else {
+            self.count += 1;
+        }
+        self.internal_storage[self.head] = Some(item);
+        self.head = (self.head + 1) % N;
+    }
+
+    pub fn remove(&mut self) -> Option<T> {
+        if self.count == 0 {
+            return None; // Buffer is empty.
+        }
+        let item = self.internal_storage[self.tail].take();
+        self.tail = (self.tail + 1) % N;
+        self.count -= 1;
+        item
+    }
+}
+
+#[cfg(test)]
+mod ring_buffer_inline_tests {
+    use super::*;
+
+    #[test]
+    pub fn test_queue_api() {
+        let mut rb = RingBuffer::<u8, 4>::new();
+
+        // Partially fill the ring buffer.
+        {
+            rb.add(1);
+            rb.add(2);
+            rb.add(3);
+            assert_eq!(rb.len(), 3);
+            assert_eq!(rb.cap(), 4);
+
+            let a = rb.remove();
+            let b = rb.remove();
+            let c = rb.remove();
+
+            assert_eq!(a, Some(1));
+            assert_eq!(b, Some(2));
+            assert_eq!(c, Some(3));
+        }
+
+        // Fill the ring buffer to capacity.
+        {
+            for i in 0..4 {
+                rb.add(i);
+            }
+            assert_eq!(rb.remove(), Some(0));
+            assert_eq!(rb.remove(), Some(1));
+            assert_eq!(rb.remove(), Some(2));
+            assert_eq!(rb.remove(), Some(3));
+            assert_eq!(rb.remove(), None);
+        }
+
+        // Overfill the ring buffer.
+        {
+            rb.add(1);
+            rb.add(2);
+            rb.add(3);
+            rb.add(4);
+            rb.add(5);
+
+            assert_eq!(rb.len(), 4);
+            assert_eq!(rb.cap(), 4);
+
+            assert_eq!(rb.remove(), Some(2));
+            assert_eq!(rb.remove(), Some(3));
+            assert_eq!(rb.remove(), Some(4));
+            assert_eq!(rb.remove(), Some(5));
+            assert_eq!(rb.remove(), None);
+        }
+    }
+}
+```
+
+## Using `smallvec` and `smallstr` crates
+
+TODO: Add this section.

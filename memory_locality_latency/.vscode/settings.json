@@ -6,6 +6,8 @@
     "jemallocator",
     "malloc",
     "repr",
+    "smallstr",
+    "smallvec",
     "syscalls",
     "tikv"
   ]
