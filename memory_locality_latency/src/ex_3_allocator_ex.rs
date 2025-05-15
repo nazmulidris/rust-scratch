@@ -15,4 +15,20 @@
  *   limitations under the License.
  */
 
-// TODO: jemalloc example
+//! Add the following to your Cargo.toml:
+//! ```toml
+//! [dependencies]
+//! tikv-jemallocator = "0.6.0"
+//! ```
+
+#[cfg(test)]
+mod allocator_tests {
+    use r3bl_tui::set_jemalloc_in_main;
+
+    #[serial_test::serial]
+    #[test]
+    fn test_1() {
+        set_jemalloc_in_main!();
+        println!("jemalloc allocator is set.");
+    }
+}

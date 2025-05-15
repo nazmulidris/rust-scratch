@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-r3bl_tui = { git = "https://github.com/r3bl-org/r3bl-open-core", branch = "main", package = "r3bl_tui" }
+r3bl_tui = "0.7.1"
+tikv-jemallocator = "0.6.0"
 
 [dev-dependencies]
 serial_test = "3.0"

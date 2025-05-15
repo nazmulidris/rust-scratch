@@ -3,8 +3,10 @@
     "GDDR",
     "Iosevka",
     "jemalloc",
+    "jemallocator",
     "malloc",
     "repr",
-    "syscalls"
+    "syscalls",
+    "tikv"
   ]
 }

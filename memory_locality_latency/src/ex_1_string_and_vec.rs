@@ -15,12 +15,12 @@
  *   limitations under the License.
  */
 
-//! Make sure to add the following to your lib.rs file:
+//! 1. Make sure to add the following to your `lib.rs` file:
 //! ```rust
 //! #![feature(vec_into_raw_parts)] // Needed for into_raw_parts() method on String and Vec.
 //! ```
 //!
-//! Make sure to add the following `rust-toolchain.toml` file to your project root directory:
+//! 2. Make sure to add the following `rust-toolchain.toml` file to your project root directory:
 //! ```toml
 //! [toolchain]
 //! channel = "nightly"

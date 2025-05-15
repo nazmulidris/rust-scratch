@@ -20,5 +20,5 @@
 pub mod ex_1_string_and_vec;
 pub mod ex_2_alignment;
 pub mod ex_3_allocator_ex;
-pub mod ex_4_ring_buffer_ex;
+pub mod ex_4_ring_buffer_inline_ex;
 pub mod ex_5_write_into_inline_ex;
