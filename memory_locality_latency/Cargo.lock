@@ -1208,6 +1208,8 @@ version = "0.1.0"
 dependencies = [
  "r3bl_tui",
  "serial_test",
+ "smallstr",
+ "smallvec",
  "tikv-jemallocator",
 ]
 

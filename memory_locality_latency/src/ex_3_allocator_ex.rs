@@ -15,10 +15,9 @@
  *   limitations under the License.
  */
 
-//! Add the following to your Cargo.toml:
-//! ```toml
-//! [dependencies]
-//! tikv-jemallocator = "0.6.0"
+//! Run the following command to add the dependencies:
+//! ```shell
+//! cargo add tikv-jemallocator
 //! ```
 
 #[cfg(test)]

@@ -5,6 +5,8 @@ edition = "2024"
 
 [dependencies]
 r3bl_tui = "0.7.1"
+smallstr = "0.3.0"
+smallvec = "1.15.0"
 tikv-jemallocator = "0.6.0"
 
 [dev-dependencies]

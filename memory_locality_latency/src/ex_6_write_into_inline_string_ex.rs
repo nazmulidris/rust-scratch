@@ -14,7 +14,3 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
-// TODO: show how to use smallvec -> InlineVec
-// TODO: show how to use smallstr -> InlineString
-// TODO: use the join_ macros from r3bl_tui

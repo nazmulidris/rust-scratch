@@ -17,6 +17,7 @@
 - [Memory alignment](#memory-alignment)
 - [Global allocators](#global-allocators)
 - [Using arrays for stack or heap allocation](#using-arrays-for-stack-or-heap-allocation)
+- [Using `smallvec` and `smallstr` crates](#using-smallvec-and-smallstr-crates)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -635,7 +636,7 @@ mod ring_buffer_inline_tests {
             assert_eq!(rb.remove(), Some(2));
             assert_eq!(rb.remove(), Some(3));
             assert_eq!(rb.remove(), Some(4));
-            assert_eq!(rb.remove(), Some(5));
+            assert_eq!(rb.remove(), Some(5))
             assert_eq!(rb.remove(), None);
         }
     }
@@ -644,4 +645,4 @@ mod ring_buffer_inline_tests {
 
 ## Using `smallvec` and `smallstr` crates
 
-TODO: Add this section.
+TODO: Add this section based on `ex_5_write_into_inline_ex.rs`
