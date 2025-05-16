@@ -3,6 +3,7 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+- [Rest In Peace, Moore's Law](#rest-in-peace-moores-law)
 - [Memory latency and cache lines](#memory-latency-and-cache-lines)
   - [Order of magnitude latency differences](#order-of-magnitude-latency-differences)
   - [Cache line](#cache-line)
@@ -13,13 +14,49 @@
   - [Practical implications in Rust and Linux](#practical-implications-in-rust-and-linux)
   - [Stack size in Ubuntu 25.04](#stack-size-in-ubuntu-2504)
   - [Allocation and drop](#allocation-and-drop)
-  - [Heap memory example (String and &str)](#heap-memory-example-string-and-str)
+  - [Heap memory example, String and string slice](#heap-memory-example-string-and-string-slice)
 - [Memory alignment](#memory-alignment)
 - [Global allocators](#global-allocators)
 - [Using arrays for stack or heap allocation](#using-arrays-for-stack-or-heap-allocation)
-- [Using `smallvec` and `smallstr` crates](#using-smallvec-and-smallstr-crates)
+- [Using smallvec and smallstr crates](#using-smallvec-and-smallstr-crates)
+  - [smallvec](#smallvec)
+  - [smallstr](#smallstr)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## Rest In Peace, Moore's Law
+
+Moore’s Law—the observation that the number of transistors on a chip doubles roughly every
+two years—has slowed significantly in recent years. While there’s no single official “end”
+date, most experts agree that the exponential pace described by Moore’s Law effectively
+ended around 2015–2020. Modern process nodes (e.g., 7nm, 5nm, 3nm) are much harder and
+more expensive to shrink further, and improvements now take longer than two years.
+
+Implications:
+
+- This means CPU bound code that runs slowly will run slowly on future CPUs.
+- The traditional approach of Big-O analysis and algorithmic improvements is not accurate,
+  since it only accounts for "op-count" and totally ignores the cost of memory access.
+- Modern CPUs have many cores, but each core isn't getting any faster. So using
+  parallelism is another way to get more performance.
+
+Here are some great resources to understand the implication of the end of Moore's Law on
+software performance.
+
+- [New CPUs don't speed up old code](https://youtu.be/m7PVZixO35c)
+- [Data oriented design (YouTube)](https://youtu.be/WwkuAqObplU)
+  - "Flat" data structures are better for memory locality.
+  - Pointer jumps are expensive and can slow down access (e.g., a Unicode string that
+    doesn't own its data and fetches from another slice is slower due to poor locality).
+- [Memory Latency vs CPU operation (YouTube)](https://youtu.be/Dhn-JgZaBWo)
+- [Memory Allocation Tips (YouTube)](https://youtu.be/pJ-FRRB5E84&t=1831)
+  - For `Vec` and `String`, use `.with_capacity()` to pre-allocate memory and reduce
+    reallocations.
+  - Consider using these crates for performance improvements:
+    - [`smallvec`](https://docs.rs/smallvec/latest/smallvec/struct.SmallVec.html) (part of
+      Servo): Store small numbers of elements on the stack.
+    - [`smallstr`](https://docs.rs/smallstr/0.3.0/smallstr/) (based on smallvec): Store
+      small strings on the stack.
 
 ## Memory latency and cache lines
 
@@ -254,7 +291,7 @@ memory on the heap and stack:
   with valid data can be expensive if the data is large.
 - **Dropping/Deallocating**: Also very cheap (just moves the stack pointer back).
 
-### Heap memory example (String and &str)
+### Heap memory example, String and string slice
 
 First add the following dependencies to your project:
 
@@ -643,6 +680,299 @@ mod ring_buffer_inline_tests {
 }
 ```
 
-## Using `smallvec` and `smallstr` crates
+## Using smallvec and smallstr crates
 
-TODO: Add this section based on `ex_5_write_into_inline_ex.rs`
+### smallvec
+
+`smallvec` is a crate that is part of the Servo project (which is now in the Linux
+Foundation) that provides a vector type that can store a small number of elements on the
+stack. If the capacity of the vector exceeds the stack size, it will automatically
+allocate on the heap. You can check this using the `spilled()` method.
+
+This is useful if you want to allocate a small number of `Sized` items on the stack.
+However, if you have a large number of items, then `Vec` is a better choice. Also the size
+of the stack is typically limited to 8MB on most systems, so be careful when using
+`smallvec` with large types or lots of items of a type, to avoid stack overflow.
+
+The `r3bl_tui` crate provides a `InlineVec` type that is a wrapper around
+`smallvec::SmallVec` and a `inline_vec!` macro that can be used to create an `InlineVec`
+with items that are provided inline to the macro.
+
+To run the example below, first add the following dependencies to your project:
+
+```shell
+cargo add smallvec r3bl_tui
+```
+
+Then you can run the following code:
+
+```rust
+//! This module demonstrates the use of `smallvec` crate. And easier to
+//! use version of them: `InlineVec`.
+//!
+//! - Show how to use smallvec -> InlineVec
+//! - Show how to use smallstr -> InlineString
+//! - Use the join_ macros from r3bl_tui
+
+#[cfg(test)]
+mod inline_vec_ex_tests {
+    use r3bl_tui::{Index, InlineVec, Length, fg_lizard_green, inline_vec, len};
+
+    #[serial_test::serial]
+    #[test]
+    fn test_new_inline_vec() {
+        // Using with default capacity. Use `[]` accessor.
+        {
+            let mut inline_vec = InlineVec::new();
+            let length: Length = len(5); // 5
+            let max_index: Index = length.convert_to_index(); // 4
+            for i in 0..=max_index.as_usize() {
+                inline_vec.push(i); // 0, 1, 2, 3, 4
+            }
+            assert_eq!(inline_vec[Index::from(0).as_usize()], 0);
+            assert_eq!(inline_vec[max_index.as_usize()], 4);
+            // assert_eq!(inline_vec[max_index.as_usize() + 1], 0); // OOB error!
+            assert_eq!(inline_vec.get(max_index.as_usize() + 1), None);
+            fg_lizard_green(format!("InlineVec: {:?}", inline_vec)).println();
+            assert_eq!(inline_vec.capacity(), 8);
+            assert_eq!(inline_vec.len(), 5);
+        }
+
+        // Using with macro. Use `get()` accessor.
+        {
+            let length: Length = len(5); // 5
+            let max_index: Index = length.convert_to_index(); // 4
+            let inline_vec = inline_vec!(0, 1, 2, 3, 4);
+            assert_eq!(inline_vec.get(Index::from(0).as_usize()), Some(&0));
+            assert_eq!(inline_vec.get(max_index.as_usize()), Some(&4));
+            assert_eq!(inline_vec.get(max_index.as_usize() + 1), None);
+            fg_lizard_green(format!("InlineVec: {:?}", inline_vec)).println();
+            assert_eq!(inline_vec.capacity(), 8);
+            assert_eq!(inline_vec.len(), 5);
+        }
+
+        // Using with capacity (even though it is pre-allocated). Use `get()` accessor.
+        {
+            let mut inline_vec = InlineVec::with_capacity(5);
+            let length: Length = len(5); // 5
+            let max_index: Index = length.convert_to_index(); // 4
+            for i in 0..=max_index.as_usize() {
+                inline_vec.push(i); // 0, 1, 2, 3, 4
+            }
+            assert_eq!(inline_vec.get(Index::from(0).as_usize()), Some(&0));
+            assert_eq!(inline_vec.get(max_index.as_usize()), Some(&4));
+            assert_eq!(inline_vec.get(max_index.as_usize() + 1), None);
+            fg_lizard_green(format!("InlineVec: {:?}", inline_vec)).println();
+            assert_eq!(inline_vec.capacity(), 8);
+            assert_eq!(inline_vec.len(), 5);
+        }
+    }
+
+    #[serial_test::serial]
+    #[test]
+    fn test_mut_inline_vec() {
+        let mut inline_vec = InlineVec::new();
+
+        let length: Length = len(5); // 5
+        let max_index: Index = length.convert_to_index(); // 4
+        for i in 0..=max_index.as_usize() {
+            inline_vec.push(i); // 0, 1, 2, 3, 4
+        }
+
+        inline_vec[max_index.as_usize()] = 100;
+
+        assert_eq!(inline_vec[0], 0);
+        assert_eq!(inline_vec[max_index.as_usize()], 100);
+
+        fg_lizard_green(format!("InlineVec: {:?}", inline_vec)).println();
+
+        // Remove the first element, and shift the rest.
+        inline_vec.remove(0);
+        assert_eq!(inline_vec.len(), 4);
+        assert_eq!(inline_vec.capacity(), 8);
+        assert_eq!(inline_vec[0], 1);
+        assert_eq!(inline_vec[3], 100);
+        fg_lizard_green(format!("InlineVec: {:?}", inline_vec)).println();
+    }
+
+    #[serial_test::serial]
+    #[test]
+    #[should_panic]
+    fn test_inline_vec_oob() {
+        let mut inline_vec = InlineVec::new();
+
+        assert_eq!(inline_vec.capacity(), 8);
+        assert_eq!(inline_vec.len(), 0);
+
+        let length: Length = len(5); // 5
+        let max_index: Index = length.convert_to_index(); // 4
+        for i in 0..=max_index.as_usize() {
+            inline_vec.push(i); // 0, 1, 2, 3, 4
+        }
+
+        assert_eq!(inline_vec.capacity(), 8);
+        assert_eq!(inline_vec.len(), 5);
+
+        // This should panic because we are trying to access an index that is out of
+        // bounds.
+        inline_vec[max_index.as_usize() + 1] = 100;
+    }
+}
+
+#[cfg(test)]
+mod smallvec_ex_tests {
+    use smallvec::{SmallVec, smallvec};
+
+    // Type alias to reduce typing.
+    type MySmallVec = SmallVec<[u8; 4]>;
+
+    #[serial_test::serial]
+    #[test]
+    fn test_new_smallvec() {
+        // With new.
+        {
+            let mut acc = MySmallVec::new();
+            for i in 0..=2 {
+                acc.push(i); // 0, 1, 2
+            }
+            assert_eq!(acc.len(), 3);
+            assert_eq!(acc.capacity(), 4);
+            assert_eq!(acc.get(0), Some(&0));
+            assert_eq!(acc.get(1), Some(&1));
+            assert_eq!(acc.get(2), Some(&2));
+            assert_eq!(acc.get(3), None);
+        }
+
+        // With macro.
+        {
+            let acc: MySmallVec = smallvec![0, 1, 2];
+            assert_eq!(acc.len(), 3);
+            assert_eq!(acc.capacity(), 4);
+            assert_eq!(acc[0], 0);
+            assert_eq!(acc[1], 1);
+            assert_eq!(acc[2], 2);
+        }
+    }
+
+    #[serial_test::serial]
+    #[test]
+    fn test_mut_smallvec() {
+        let mut acc = MySmallVec::new();
+        for i in 0..=2 {
+            acc.push(i); // 0, 1, 2
+        }
+        assert_eq!(acc.len(), 3);
+        assert_eq!(acc.capacity(), 4);
+
+        acc[2] = 100;
+
+        assert_eq!(acc[0], 0);
+        assert_eq!(acc[1], 1);
+        assert_eq!(acc[2], 100);
+
+        // Remove the first element, and shift the rest.
+        acc.remove(0);
+        assert_eq!(acc.len(), 2);
+        assert_eq!(acc.capacity(), 4);
+        assert_eq!(acc[0], 1);
+        assert_eq!(acc[1], 100);
+    }
+}
+```
+
+### smallstr
+
+The `smallstr` crate is similar to `smallvec`, and it is build on top of `smallvec`. It
+provides a string type that can store a small number of characters on the stack. If the
+capacity of the string exceeds the stack size, it will automatically allocate on the heap.
+This is useful for storing small strings on the stack, but if you have a large string,
+then `String` is a better choice.
+
+The `r3bl_tui` crate provides a `InlineString` type that is a wrapper around
+`smallstr::SmallStr` and a `inline_string!` macro that can be used to create an
+`InlineString` with items that are provided inline to the macro (use it like you would
+`println!` since it uses `FmtArgs` under the hood).
+
+To run the example below, first add the following dependencies to your project:
+
+```shell
+cargo add smallstr r3bl_tui
+```
+
+Then you can run the following code:
+
+```rust
+//! This module demonstrates the use of `smallstr` crate. And easier to
+//! use version of them: `InlineString`.
+//!
+//! Show how to use smallstr -> InlineString
+
+#[cfg(test)]
+mod inline_string_ex_tests {
+    use r3bl_tui::{InlineString, fg_lizard_green, fg_soft_pink, inline_string};
+    use smallstr::SmallString;
+
+    #[serial_test::serial]
+    #[test]
+    fn test_new_inline_string() {
+        // Constructor.
+        {
+            let mut acc = InlineString::new();
+            use std::fmt::Write as _;
+            _ = write!(acc, "Hello, world!").unwrap();
+            assert_eq!(acc, "Hello, world!");
+        }
+
+        // Macro.
+        {
+            let mut acc = inline_string!("Hello,");
+            use std::fmt::Write as _;
+            _ = write!(acc, " world!").unwrap();
+            assert_eq!(acc, "Hello, world!");
+        }
+    }
+
+    /// Demonstrates the use of `inline_string!` macro to create an
+    /// `InlineString` and then format it using the `Display` trait.
+    /// Without allocating a new [String] (on the heap).
+    #[serial_test::serial]
+    #[test]
+    fn test_new_inline_string_display_impl() {
+        struct DemoStruct {
+            id: u8,
+            name: InlineString,
+        }
+
+        impl std::fmt::Display for DemoStruct {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "id: {}, name: {}", self.id, self.name)
+            }
+        }
+
+        let demo = DemoStruct {
+            id: 1,
+            name: inline_string!("Hello, world!"),
+        };
+        let to_inline_string = inline_string!("{}", demo);
+        assert_eq!(to_inline_string, "id: 1, name: Hello, world!");
+        fg_lizard_green(to_inline_string).println();
+    }
+
+    #[serial_test::serial]
+    #[test]
+    fn test_new_smallstr() {
+        let mut acc: SmallString<[u8; 8]> = SmallString::new();
+        assert_eq!(acc.capacity(), 8);
+        assert_eq!(acc.len(), 0);
+        fg_lizard_green(format!("is spilled: {}", acc.spilled())).println();
+
+        use std::fmt::Write as _;
+        _ = write!(acc, "Hello, world!").unwrap();
+        assert_eq!(acc, "Hello, world!");
+
+        assert_eq!(acc.len(), 13);
+        assert_eq!(acc.spilled(), true);
+        fg_soft_pink(format!("is spilled: {}", acc.spilled())).println();
+    }
+}
+```

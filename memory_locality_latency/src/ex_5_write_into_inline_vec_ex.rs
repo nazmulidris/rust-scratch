@@ -15,20 +15,20 @@
  *   limitations under the License.
  */
 
-//! This module demonstrates the use of `smallvec` and `smallstr` crates. And easier to
-//! use versions of them: `InlineVec` and `InlineString`.
+//! This module demonstrates the use of `smallvec` crate. And easier to
+//! use version of them: `InlineVec`.
 //!
 //! Run the following command to add the dependencies:
 //! ```shell
-//! cargo add smallvec smallstr
+//! cargo add smallvec r3bl_tui
 //! ```
-
-// TODO: show how to use smallvec -> InlineVec
-// TODO: show how to use smallstr -> InlineString
-// TODO: use the join_ macros from r3bl_tui
+//!
+//! - Show how to use smallvec -> InlineVec
+//! - Show how to use smallstr -> InlineString
+//! - Use the join_ macros from r3bl_tui
 
 #[cfg(test)]
-mod inline_ex_tests {
+mod inline_vec_ex_tests {
     use r3bl_tui::{Index, InlineVec, Length, fg_lizard_green, inline_vec, len};
 
     #[serial_test::serial]
@@ -98,6 +98,14 @@ mod inline_ex_tests {
         assert_eq!(inline_vec[max_index.as_usize()], 100);
 
         fg_lizard_green(format!("InlineVec: {:?}", inline_vec)).println();
+
+        // Remove the first element, and shift the rest.
+        inline_vec.remove(0);
+        assert_eq!(inline_vec.len(), 4);
+        assert_eq!(inline_vec.capacity(), 8);
+        assert_eq!(inline_vec[0], 1);
+        assert_eq!(inline_vec[3], 100);
+        fg_lizard_green(format!("InlineVec: {:?}", inline_vec)).println();
     }
 
     #[serial_test::serial]
@@ -126,9 +134,60 @@ mod inline_ex_tests {
 
 #[cfg(test)]
 mod smallvec_ex_tests {
+    use smallvec::{SmallVec, smallvec};
+
+    // Type alias to reduce typing.
+    type MySmallVec = SmallVec<[u8; 4]>;
+
     #[serial_test::serial]
     #[test]
     fn test_new_smallvec() {
-        todo!("Test smallvec");
+        // With new.
+        {
+            let mut acc = MySmallVec::new();
+            for i in 0..=2 {
+                acc.push(i); // 0, 1, 2
+            }
+            assert_eq!(acc.len(), 3);
+            assert_eq!(acc.capacity(), 4);
+            assert_eq!(acc.get(0), Some(&0));
+            assert_eq!(acc.get(1), Some(&1));
+            assert_eq!(acc.get(2), Some(&2));
+            assert_eq!(acc.get(3), None);
+        }
+
+        // With macro.
+        {
+            let acc: MySmallVec = smallvec![0, 1, 2];
+            assert_eq!(acc.len(), 3);
+            assert_eq!(acc.capacity(), 4);
+            assert_eq!(acc[0], 0);
+            assert_eq!(acc[1], 1);
+            assert_eq!(acc[2], 2);
+        }
+    }
+
+    #[serial_test::serial]
+    #[test]
+    fn test_mut_smallvec() {
+        let mut acc = MySmallVec::new();
+        for i in 0..=2 {
+            acc.push(i); // 0, 1, 2
+        }
+        assert_eq!(acc.len(), 3);
+        assert_eq!(acc.capacity(), 4);
+
+        acc[2] = 100;
+
+        assert_eq!(acc[0], 0);
+        assert_eq!(acc[1], 1);
+        assert_eq!(acc[2], 100);
+
+        // Remove the first element, and shift the rest.
+        acc.remove(0);
+        assert_eq!(acc.len(), 2);
+        assert_eq!(acc.capacity(), 4);
+        assert_eq!(acc[0], 1);
+        assert_eq!(acc[1], 100);
     }
 }

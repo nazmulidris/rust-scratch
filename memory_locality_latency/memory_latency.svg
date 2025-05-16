@@ -32,7 +32,7 @@
     <defs>
         <pattern id="bar-stripes" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
             <rect x="0" y="0" width="4" height="8" fill="#75ec9c" opacity="0.9"/>
-            <rect x="4" y="0" width="4" height="8" fill="#1f242e" opacity="0.9"/>
+            <rect x="4" y="0" width="4" height="8" fill="#4fc87a" opacity="0.9"/>
         </pattern>
     </defs>
     <rect width="100%" height="100%" fill="#0e1117" />
