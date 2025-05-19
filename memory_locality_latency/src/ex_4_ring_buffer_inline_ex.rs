@@ -46,7 +46,7 @@ impl<T, const N: usize> RingBuffer<T, N> {
         N
     }
 
-    pub fn add(&mut self, item: T) {
+    pub fn enqueue(&mut self, item: T) {
         if self.count == N {
             // Buffer is full, overwrite the oldest item.
             self.tail = (self.tail + 1) % N;
@@ -57,7 +57,7 @@ impl<T, const N: usize> RingBuffer<T, N> {
         self.head = (self.head + 1) % N;
     }
 
-    pub fn remove(&mut self) -> Option<T> {
+    pub fn dequeue(&mut self) -> Option<T> {
         if self.count == 0 {
             return None; // Buffer is empty.
         }
@@ -72,21 +72,22 @@ impl<T, const N: usize> RingBuffer<T, N> {
 mod ring_buffer_inline_tests {
     use super::*;
 
+    /// Add to the tail of the queue and remove from the head of the queue.
     #[test]
     pub fn test_queue_api() {
         let mut rb = RingBuffer::<u8, 4>::new();
 
         // Partially fill the ring buffer.
         {
-            rb.add(1);
-            rb.add(2);
-            rb.add(3);
+            rb.enqueue(1); // Add to the tail of the queue.
+            rb.enqueue(2);
+            rb.enqueue(3);
             assert_eq!(rb.len(), 3);
             assert_eq!(rb.cap(), 4);
 
-            let a = rb.remove();
-            let b = rb.remove();
-            let c = rb.remove();
+            let a = rb.dequeue(); // Remove from the head of the queue.
+            let b = rb.dequeue();
+            let c = rb.dequeue();
 
             assert_eq!(a, Some(1));
             assert_eq!(b, Some(2));
@@ -96,31 +97,31 @@ mod ring_buffer_inline_tests {
         // Fill the ring buffer to capacity.
         {
             for i in 0..4 {
-                rb.add(i);
+                rb.enqueue(i);
             }
-            assert_eq!(rb.remove(), Some(0));
-            assert_eq!(rb.remove(), Some(1));
-            assert_eq!(rb.remove(), Some(2));
-            assert_eq!(rb.remove(), Some(3));
-            assert_eq!(rb.remove(), None);
+            assert_eq!(rb.dequeue(), Some(0));
+            assert_eq!(rb.dequeue(), Some(1));
+            assert_eq!(rb.dequeue(), Some(2));
+            assert_eq!(rb.dequeue(), Some(3));
+            assert_eq!(rb.dequeue(), None);
         }
 
         // Overfill the ring buffer.
         {
-            rb.add(1);
-            rb.add(2);
-            rb.add(3);
-            rb.add(4);
-            rb.add(5);
+            rb.enqueue(1);
+            rb.enqueue(2);
+            rb.enqueue(3);
+            rb.enqueue(4);
+            rb.enqueue(5);
 
             assert_eq!(rb.len(), 4);
             assert_eq!(rb.cap(), 4);
 
-            assert_eq!(rb.remove(), Some(2));
-            assert_eq!(rb.remove(), Some(3));
-            assert_eq!(rb.remove(), Some(4));
-            assert_eq!(rb.remove(), Some(5));
-            assert_eq!(rb.remove(), None);
+            assert_eq!(rb.dequeue(), Some(2));
+            assert_eq!(rb.dequeue(), Some(3));
+            assert_eq!(rb.dequeue(), Some(4));
+            assert_eq!(rb.dequeue(), Some(5));
+            assert_eq!(rb.dequeue(), None);
         }
     }
 }

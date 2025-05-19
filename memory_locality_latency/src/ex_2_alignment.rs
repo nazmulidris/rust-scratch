@@ -20,6 +20,44 @@ mod alignment_tests {
     use r3bl_tui::{fg_light_yellow_green, fg_lizard_green};
     use std::mem::{align_of, size_of};
 
+    #[serial_test::serial]
+    #[test]
+    fn test_1() {
+        struct Demo {
+            a: u8,  // 1 byte, alignment 1
+            b: u32, // 4 bytes, alignment 4
+            c: u16, // 2 bytes, alignment 2
+        }
+
+        let size = size_of::<Demo>();
+        let align = align_of::<Demo>();
+
+        assert_eq!(size, 8);
+        assert_eq!(align, 4);
+
+        fg_lizard_green(format!("\nSize of Demo: {size}")).println();
+        fg_light_yellow_green(format!("Alignment of Demo: {align}")).println();
+    }
+
+    #[test]
+    fn test_1_c() {
+        #[repr(C)]
+        struct Demo {
+            a: u8,  // 1 byte, alignment 1
+            b: u32, // 4 bytes, alignment 4
+            c: u16, // 2 bytes, alignment 2
+        }
+
+        let size = size_of::<Demo>();
+        let align = align_of::<Demo>();
+
+        assert_eq!(size, 12);
+        assert_eq!(align, 4);
+
+        fg_lizard_green(format!("\nSize of Demo: {size}")).println();
+        fg_light_yellow_green(format!("Alignment of Demo: {align}")).println();
+    }
+
     fn pretty_print<T: std::fmt::Debug>() {
         let type_name = std::any::type_name::<T>();
         let size = size_of::<T>();
@@ -31,29 +69,12 @@ mod alignment_tests {
 
     #[serial_test::serial]
     #[test]
-    fn test_1() {
+    fn test_2() {
         pretty_print::<u8>();
         pretty_print::<u16>();
         pretty_print::<u32>();
         pretty_print::<u64>();
         pretty_print::<usize>();
         pretty_print::<f64>();
-    }
-
-    #[serial_test::serial]
-    #[test]
-    fn test_2() {
-        #[repr(C)]
-        struct Demo {
-            a: u8,  // 1 byte, alignment 1
-            b: u32, // 4 bytes, alignment 4
-            c: u16, // 2 bytes, alignment 2
-        }
-
-        let size = size_of::<Demo>();
-        let align = align_of::<Demo>();
-
-        fg_lizard_green(format!("\nSize of Demo: {size}")).println();
-        fg_light_yellow_green(format!("Alignment of Demo: {align}")).println();
     }
 }
