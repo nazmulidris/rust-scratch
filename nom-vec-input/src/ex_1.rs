@@ -20,6 +20,8 @@ use nom::{
     error::{Error, ErrorKind},
 };
 
+use crate::common::StrSliceArray;
+
 #[derive(Debug, PartialEq)]
 pub struct Color {
     pub red: u8,
@@ -27,36 +29,15 @@ pub struct Color {
     pub blue: u8,
 }
 
-/// A slice of string slices.
-///
-/// A reference to an array of string slices, commonly used to represent a sequence of
-/// lines or tokens in parsing tasks.
-///
-/// `StrSliceArray<'a>` is a borrowed reference to a slice (`&[]`) of string slices
-/// (`&str`), all with the same lifetime `'a`.
-///
-/// ```text
-/// ┌────────────────────────────┐
-/// │      &'a [&'a str]         │ // Reference to a slice of string slices
-/// └────────────────────────────┘
-///               │
-///               ▼
-///    ┌──────────────────────┐
-///    │ [ "2f", "14", "df" ] │ // Slice (array) of string slices
-///    └────┬─────┬─────┬─────┘
-///         │     │     │
-///         ▼     ▼     ▼
-///         "2f"  "14"  "df" // Each element is a &str (string slice)
-/// ```
-pub type StrSliceArray<'a> = &'a [&'a str];
-
-/// A general rule for parser functions is that they can't receive an owned struct. They
-/// must receive a reference. However, they are free to return an owned struct, or slices,
-/// or combinations of them.
+/// This parser function can't receive an owned struct due to the generic types that are
+/// declared here. The [StrSliceArray] type is a reference, and doesn't own the data.
 ///
 /// For this reason the [str::lines] method, followed by [Iterator::collect], is called
 /// outside this function. And a reference to this slice is passed into this parser
-/// function.
+/// function by its caller.
+///
+/// However, this function is free to return an owned struct, or slices, or combinations
+/// of them.
 pub fn parse_color<'a>(input: StrSliceArray<'a>) -> IResult<StrSliceArray<'a>, Color> {
     let res = ((parse_hex, parse_hex, parse_hex)).parse(input);
     res.map(|(rem, (red, green, blue))| (rem, Color { red, green, blue }))

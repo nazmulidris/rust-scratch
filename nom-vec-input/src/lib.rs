@@ -15,6 +15,8 @@
  *   limitations under the License.
  */
 
- #[allow(unused)]
+pub mod common;
+#[allow(unused)]
 mod ex_1;
+#[allow(unused)]
 mod ex_2;
