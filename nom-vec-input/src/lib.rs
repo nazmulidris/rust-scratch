@@ -20,3 +20,5 @@ pub mod common;
 mod ex_1;
 #[allow(unused)]
 mod ex_2;
+#[allow(unused)]
+mod ex_3;

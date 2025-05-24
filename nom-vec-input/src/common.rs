@@ -66,3 +66,14 @@
 /// { Ok((input, 0)) }
 /// ```
 pub type StrSliceArray<'a> = &'a [&'a str];
+
+pub type OwnedStringArray<'a> = &'a [String];
+
+#[derive(Debug, PartialEq)]
+pub enum Sentence<'a> {
+    FULL(&'a str),
+    PARTIAL(&'a str),
+    EOL,
+}
+
+pub type Sentences<'a> = Vec<Sentence<'a>>;

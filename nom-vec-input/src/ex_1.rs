@@ -39,7 +39,7 @@ pub struct Color {
 /// However, this function is free to return an owned struct, or slices, or combinations
 /// of them.
 pub fn parse_color<'a>(input: StrSliceArray<'a>) -> IResult<StrSliceArray<'a>, Color> {
-    let res = ((parse_hex, parse_hex, parse_hex)).parse(input);
+    let res = (parse_hex, parse_hex, parse_hex).parse(input);
     res.map(|(rem, (red, green, blue))| (rem, Color { red, green, blue }))
 }
 
@@ -47,17 +47,27 @@ pub fn parse_color<'a>(input: StrSliceArray<'a>) -> IResult<StrSliceArray<'a>, C
 /// - If that fails then return an error. Don't consume the first item.
 /// - If it succeeds then return the rest of the input array and the parsed value. With
 ///   the first item consumed.
+///
+/// The [Slice::split_first()] is equivalent to the following code:
+/// ```
+/// fn split_first<T>(slice: &[T]) -> Option<(&T, &[T])> {
+///     if slice.is_empty() {
+///         None
+///     } else {
+///         Some((&slice[0], &slice[1..]))
+///     }
+/// }
+/// ```
 fn parse_hex<'a>(input: StrSliceArray<'a>) -> IResult<StrSliceArray<'a>, u8> {
-    let maybe_first_item_tuple = input.split_first();
-    match maybe_first_item_tuple {
-        Some((first, rest)) => {
-            let try_parse_first_to_u8 = u8::from_str_radix(first, 16);
-            try_parse_first_to_u8
-                .map(|val| (rest, val))
-                .map_err(|_| nom::Err::Error(Error::new(rest, ErrorKind::HexDigit)))
-        }
-        None => Err(nom::Err::Error(Error::new(input, ErrorKind::Eof))),
-    }
+    let Some((first, rest)) = input.split_first() else {
+        return Err(nom::Err::Error(Error::new(input, ErrorKind::Eof)));
+    };
+
+    let try_parse_first_to_u8 = u8::from_str_radix(first, 16);
+    let it = try_parse_first_to_u8
+        .map(|val| (rest, val))
+        .map_err(|_| nom::Err::Error(Error::new(rest, ErrorKind::HexDigit)));
+    it
 }
 
 #[cfg(test)]
