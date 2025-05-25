@@ -64,10 +64,10 @@ fn parse_hex<'a>(input: StrSliceArray<'a>) -> IResult<StrSliceArray<'a>, u8> {
     };
 
     let try_parse_first_to_u8 = u8::from_str_radix(first, 16);
-    let it = try_parse_first_to_u8
+
+    try_parse_first_to_u8
         .map(|val| (rest, val))
-        .map_err(|_| nom::Err::Error(Error::new(rest, ErrorKind::HexDigit)));
-    it
+        .map_err(|_| nom::Err::Error(Error::new(rest, ErrorKind::HexDigit)))
 }
 
 #[cfg(test)]
