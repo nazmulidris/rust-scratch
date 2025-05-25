@@ -15,14 +15,28 @@
  *   limitations under the License.
  */
 
-pub mod common;
-#[allow(unused)]
-mod ex_0_0;
-#[allow(unused)]
-mod ex_0_1;
-#[allow(unused)]
-mod ex_1;
-#[allow(unused)]
-mod ex_2;
-#[allow(unused)]
-mod ex_normal;
+/// The [Slice::split_first()] is equivalent to this function.
+pub fn split_first<T>(slice: &[T]) -> Option<(&T, &[T])> {
+    if slice.is_empty() {
+        None
+    } else {
+        Some((&slice[0], &slice[1..]))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_split_first() {
+        let slice = [1, 2, 3];
+        let result = split_first(&slice);
+
+        // Compare to array slice.
+        assert_eq!(Some((&1, [2, 3].as_slice())), result);
+
+        // Compare to slice from slice.
+        assert_eq!(Some((&1, &slice[1..])), result);
+    }
+}
