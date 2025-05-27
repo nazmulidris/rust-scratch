@@ -15,14 +15,20 @@
  *   limitations under the License.
  */
 
-pub mod common;
 #[allow(unused)]
 mod ex_0_0;
+
 #[allow(unused)]
 mod ex_0_1;
+
+#[allow(unused)]
+mod ex_0_2;
+
 #[allow(unused)]
 mod ex_1;
+
 #[allow(unused)]
 mod ex_2;
+
 #[allow(unused)]
 mod ex_normal;

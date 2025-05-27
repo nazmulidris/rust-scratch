@@ -41,12 +41,21 @@ use nom::{
     multi::many0,
 };
 
-use crate::common::{OwnedStringArray, Sentence, Sentences};
+type OwnedStringArray<'a> = &'a [String];
+
+#[derive(Debug, PartialEq)]
+enum Sentence<'a> {
+    FULL(&'a str),
+    PARTIAL(&'a str),
+    EOL,
+}
+
+type Sentences<'a> = Vec<Sentence<'a>>;
 
 /// New version of [crate::ex_normal::parse_sentences()] that takes a slice of [String]s and
 /// not a [&str]. Each [String] is expected to be a line from the original input, with
 /// newlines already stripped (e.g., from [str::lines] [Iterator::collect].
-pub fn parse_sentences<'a>(input: OwnedStringArray<'a>) -> Sentences<'a> {
+fn parse_sentences<'a>(input: OwnedStringArray<'a>) -> Sentences<'a> {
     let mut result = Vec::new();
 
     for (idx, line_str_obj) in input.iter().enumerate() {
