@@ -20,7 +20,56 @@ use nom::{
     error::{Error, ErrorKind},
 };
 
-use crate::common::StrSliceArray;
+/// A slice of string slices.
+///
+/// A reference to an array of string slices, commonly used to represent a sequence of
+/// lines or tokens in parsing tasks.
+///
+/// `StrSliceArray<'a>` is a borrowed reference to a slice (`&[]`) of string slices
+/// (`&str`), all with the same lifetime `'a`.
+///
+/// ```text
+/// ┌────────────────────────────┐
+/// │      &'a [&'a str]         │ // Reference to a slice of string slices
+/// └────────────────────────────┘
+///               │
+///               ▼
+///    ┌──────────────────────┐
+///    │ [ "2f", "14", "df" ] │ // Slice (array) of string slices
+///    └────┬─────┬─────┬─────┘
+///         │     │     │
+///         ▼     ▼     ▼
+///         "2f"  "14"  "df" // Each element is a &str (string slice)
+/// ```
+///
+/// Parser functions can receive an input argument of whatever type owned or borrowed.
+/// This is defined in the generic signature of the parser function itself. However, for
+/// parser functions that use this struct, they must receive a reference, since this
+/// `StrSliceArray` is just a type alias (syntactic sugar) that translates to `&[&str]`.
+/// However, they are free to return an owned struct, or slices, or combinations of them;
+/// again this is defined in the generic signature of the parser function itself.
+///
+/// When you use `StrSliceArray`, due to the reason above, the [str::lines] method,
+/// followed by [Iterator::collect], is called outside a parser function that receives
+/// this as an argument. And a reference to this slice is passed into this parser
+/// function.
+type StrSliceArray<'a> = &'a [&'a str];
+
+#[test]
+fn test_str_slice_array_type() {
+    use StrSliceArray;
+    use nom::IResult;
+    pub fn main() {
+        let input = "2f\n14\ndf";
+        let lines_vec: Vec<&str> = input.lines().collect();
+        let lines_vec_slice = lines_vec.as_slice();
+        _ = your_parse_function(lines_vec_slice);
+    }
+
+    pub fn your_parse_function<'a>(input: StrSliceArray<'a>) -> IResult<StrSliceArray<'a>, u8> {
+        Ok((input, 0))
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Color {

@@ -24,9 +24,16 @@ use nom::{
     multi::many0,
 };
 
-use crate::common::{Sentence, Sentences};
+#[derive(Debug, PartialEq)]
+enum Sentence<'a> {
+    FULL(&'a str),
+    PARTIAL(&'a str),
+    EOL,
+}
 
-pub fn parse_sentences(input: &str) -> Sentences {
+type Sentences<'a> = Vec<Sentence<'a>>;
+
+fn parse_sentences(input: &str) -> Sentences {
     // Use many0 to apply parse_single_sentence repeatedly.
     match many0(parse_single_sentence).parse(input) {
         Ok((remainder, mut sentences)) => {

@@ -16,7 +16,7 @@
  */
 
 /// The [Slice::split_first()] is equivalent to this function.
-pub fn split_first<T>(slice: &[T]) -> Option<(&T, &[T])> {
+fn split_first<T>(slice: &[T]) -> Option<(&T, &[T])> {
     if slice.is_empty() {
         None
     } else {
