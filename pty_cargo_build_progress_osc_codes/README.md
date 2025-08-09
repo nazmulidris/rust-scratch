@@ -62,7 +62,6 @@ Here are some useful links for context:
 1. **Goal:**
    - Capture and parse progress information from `cargo build` using OSC escape sequences.
 2. **Key Challenge:**
-
    - Cargo only emits OSC sequences when connected to an interactive TTY, and a compatible
      terminal (like `wezterm`).
    - Spawning a child process using `std::process::Command` and standard process pipes
@@ -128,14 +127,12 @@ Where:
 The Cargo source code is in `/home/nazmul/github/cargo/` folder.
 
 1. **`src/cargo/util/progress.rs`**
-
    - Contains the main progress bar implementation
    - `StatusValue` enum (lines 87-99) defines progress states
    - `Display` implementation (lines 161-179) formats OSC sequences
    - `TerminalIntegration` struct manages OSC emission
 
 2. **`src/cargo/core/shell.rs`**
-
    - Terminal capability detection (lines 594-600)
    - Checks environment variables for terminal support
 
@@ -150,12 +147,18 @@ Cargo detects OSC support by checking environment variables in
 `supports_term_integration()`:
 
 ```rust
-fn supports_term_integration(stream: &dyn IsTerminal) -> bool {
-    let windows_terminal = std::env::var("WT_SESSION").is_ok();
-    let conemu = std::env::var("ConEmuANSI").ok() == Some("ON".into());
-    let wezterm = std::env::var("TERM_PROGRAM").ok() == Some("WezTerm".into());
+fn supports_term_integration(
+    stream: &dyn IsTerminal
+) -> bool {
+    let windows_terminal = std::env::var("WT_SESSION")
+        .is_ok();
+    let conemu = std::env::var("ConEmuANSI").ok() == 
+        Some("ON".into());
+    let wezterm = std::env::var("TERM_PROGRAM").ok() == 
+        Some("WezTerm".into());
 
-    (windows_terminal || conemu || wezterm) && stream.is_terminal()
+    (windows_terminal || conemu || wezterm) && 
+        stream.is_terminal()
 }
 ```
 
@@ -183,7 +186,8 @@ Users can control OSC emission via `.cargo/config.toml`:
 
 ```toml
 [term]
-progress.term-integration = true   # Enable OSC sequences (auto-detected by default)
+progress.term-integration = true   # Enable OSC sequences
+                                   # (auto-detected by default)
 # or
 progress.term-integration = false  # Disable OSC sequences
 
@@ -224,7 +228,8 @@ cmd.arg("build")
    .env("TERM_PROGRAM", "WezTerm")
    .stdin(Stdio::inherit())
    .stdout(Stdio::inherit())
-   .stderr(Stdio::inherit());  // Uses real TTY, OSC goes directly to terminal
+   .stderr(Stdio::inherit());  // Uses real TTY, OSC goes
+                               // directly to terminal
 
 let mut child = cmd.spawn()?;
 child.wait()?;
@@ -299,11 +304,14 @@ OSC emission AND capturing the sequences for programmatic processing.
 
 ````rust
 // Cargo.toml dependencies:
-// portable-pty = "0.8"
+// portable-pty = "0.9.0"
 // tokio = { version = "1.0", features = ["full"] }
-use portable_pty::{CommandBuilder, PtySize, native_pty_system};
-use tokio::io::AsyncReadExt;
-
+// miette = { version = "7.0", features = ["fancy"] }
+use portable_pty::{
+    CommandBuilder, PtySize, native_pty_system
+};
+use miette::IntoDiagnostic;
+use std::io::Read; // For reading from the PTY controller
 
 /// ```
 /// ┌─────────────────┐    ┌──────────────┐    ┌───────────────────┐
@@ -314,72 +322,145 @@ use tokio::io::AsyncReadExt;
 /// │ controller      │    │   Controlled │◄──►│ to controlled     │
 /// └─────────────────┘    └──────────────┘    └───────────────────┘
 /// ```
-async fn spawn_with_pty() -> Result<(), Box<dyn std::error::Error>> {
+async fn spawn_with_pty() -> miette::Result<()> {
     // Create a pseudo-terminal
     let pty_system = native_pty_system();
-    let pair = pty_system.openpty(PtySize {
-        rows: 24,           // Terminal height: 24 lines of text (classic terminal size)
-                            // Cargo uses this for vertical scrolling behavior
-        cols: 80,           // Terminal width: 80 characters per line (standard terminal width)
-                            // Cargo formats progress bars and output to fit within this width
-        pixel_width: 0,     // Pixel width: Not needed for text-based output capture
-        pixel_height: 0,    // Pixel height: Not needed for text-based output capture
-    }).into_diagnostic()?;
+    let pty_pair = pty_system.openpty(PtySize {
+        rows: 30,           // Terminal height for cargo's
+                            // output formatting
+        cols: 80,           // Terminal width for progress
+                            // bar display
+        pixel_width: 0,     // Not needed for text-based
+                            // output
+        pixel_height: 0,    // Not needed for text-based
+                            // output
+    }).map_err(|e| 
+        miette::miette!("Failed to open PTY: {}", e)
+    )?;
 
     // Extract endpoints with descriptive names
-    let controller = pair.master;  // Where your program reads/writes
-    let controlled = pair.slave;   // Where the spawned process connects
+    let controller = pty_pair.master;  // Where your program
+                                       // reads/writes
+    let controlled = pty_pair.slave;   // Where the spawned
+                                       // process connects
 
     // Configure the command
     let mut cmd = CommandBuilder::new("cargo");
     cmd.arg("build");
-    cmd.env("TERM_PROGRAM", "WezTerm");
+    cmd.env("TERM_PROGRAM", "WezTerm"); // Without this Cargo
+                                      // won't emit OSC
+                                      // sequences
+
+    // CRITICAL: Set working directory - without this, PTY
+    // spawns in home folder!
+    let current_dir = std::env::current_dir()
+        .map_err(|e| 
+            miette::miette!(
+                "Failed to get current directory: {}", e
+            )
+        )?;
+    cmd.cwd(current_dir);
 
     // Spawn with PTY (this makes is_terminal() return true!)
-    // Note: The cargo child process uses 'controlled' as its stdin/stdout/stderr
-    // This makes cargo believe it's connected to a real terminal
-    let mut controlled_child = controlled.spawn_command(cmd)?;
+    // Note: The cargo child process uses 'controlled' as its
+    // stdin/stdout/stderr
+    // This makes cargo believe it's connected to a real
+    // terminal
+    let mut controlled_child = controlled.spawn_command(cmd)
+        .map_err(|e| 
+            miette::miette!(
+                "Failed to spawn cargo build: {}", e
+            )
+        )?;
 
-    // Read output with OSC sequences (async version)
-    // Note: controller is the "controller" endpoint where your program reads from
-    let mut controller_reader = controller.try_clone_reader()?;
+    // Read output with OSC sequences
+    // Note: controller is the "controller" endpoint where
+    // your program reads from
+    let mut controller_reader = controller
+        .try_clone_reader()
+        .map_err(|e| 
+            miette::miette!("Failed to clone reader: {}", e)
+        )?;
 
-    // Spawn the reading operation on a separate green thread/task
-    // NOTE: This approach reads ALL output into a string at once after the process completes.
-    // This is simple but NOT ideal for real-time progress monitoring since OSC sequences
-    // are only processed after the entire build finishes. For real-time progress updates,
-    // use the buffered reading approach shown in the main example below.
+    // Spawn the reading operation on a separate async task
+    // NOTE: This approach reads ALL output into a string at
+    // once after the process completes.
+    // This is simple but NOT ideal for real-time progress
+    // monitoring since OSC sequences
+    // are only processed after the entire build finishes.
+    // For real-time progress updates,
+    // use the buffered reading approach shown in the full
+    // example.
     let read_handle = tokio::spawn(async move {
         let mut output = String::new();
-        // Read entire output stream into a single string (blocks until EOF)
-        controller_reader.read_to_string(&mut output).await?;
-        Ok::<String, Box<dyn std::error::Error + Send + Sync>>(output)
+        // Read entire output stream into a single string
+        // (blocks until EOF)
+        controller_reader.read_to_string(&mut output)
+            .map_err(|e| 
+                miette::miette!("Failed to read from PTY: {}", e)
+            )?;
+
+        // Check for OSC codes
+        let has_osc_codes = output.contains("\x1b]");
+
+        // Build report
+        let mut report = String::new();
+        report.push_str(&format!(
+            "Total bytes read: {}\n", output.len()
+        ));
+        report.push_str(&format!(
+            "OSC codes found: {}\n",
+            if has_osc_codes { "YES ✓" } else { "NO ✗" }
+        ));
+
+        Ok::<String, miette::Error>(report)
     });
 
     // Wait for the child process to complete
     //
-    // IMPORTANT: Use spawn_blocking because child.wait() is a synchronous blocking operation.
-    // If we called controlled_child.wait() directly in this async context, it would block
-    // the entire tokio runtime thread, preventing other async tasks from running.
-    // spawn_blocking moves the blocking operation to a dedicated thread pool.
-    // The `??` double question mark operator handles two layers of Result unwrapping:
-    // - First `?` unwraps the JoinResult from spawn_blocking (handles task panics/cancellation)
-    // - Second `?` unwraps the Result from child.wait() (handles process wait errors)
+    // IMPORTANT: Use spawn_blocking because child.wait() is
+    // a synchronous blocking operation.
+    // If we called controlled_child.wait() directly in this
+    // async context, it would block
+    // the entire tokio runtime thread, preventing other
+    // async tasks from running.
+    // spawn_blocking moves the blocking operation to a
+    // dedicated thread pool.
+    // The `.into_diagnostic()?.into_diagnostic()?` handles
+    // two layers of Result unwrapping:
+    // - First `?` unwraps the JoinResult from spawn_blocking
+    //   (handles task panics/cancellation)
+    // - Second `?` unwraps the Result from child.wait()
+    //   (handles process wait errors)
     //
-    // NOTE: portable-pty doesn't have native async support, but provides async-compatible methods:
-    // - try_clone_reader() returns readers that work with tokio::io::AsyncReadExt
-    // - child.wait() is blocking, so we use spawn_blocking to avoid blocking the async runtime
-    // - For fully async PTY operations, consider alternatives like tokio-ptyprocess (experimental)
-    let status = tokio::task::spawn_blocking(move || controlled_child.wait()).await??;
+    // NOTE: portable-pty doesn't have native async support,
+    // but provides async-compatible methods:
+    // - try_clone_reader() returns readers that work with
+    //   std::io::Read
+    // - child.wait() is blocking, so we use spawn_blocking
+    //   to avoid blocking the async runtime
+    // - For fully async PTY operations, consider
+    //   alternatives like tokio-ptyprocess (experimental)
+    let status = tokio::task::spawn_blocking(
+        move || controlled_child.wait()
+    )
+        .await
+        .into_diagnostic()?
+        .into_diagnostic()?;
 
-    // Wait for the reading task to complete and get the output
-    // The `??` operator handles two layers of Result unwrapping:
-    // - First `?` unwraps the JoinResult from tokio::spawn (handles task panics/cancellation)
-    // - Second `?` unwraps the Result<String, Error> from the task's return value
-    let output = read_handle.await??;
+    // Wait for the reading task to complete and get the
+    // report
+    // The `.into_diagnostic()??` handles two layers of
+    // Result unwrapping:
+    // - First `?` unwraps the JoinResult from tokio::spawn
+    //   (handles task panics/cancellation)
+    // - Second `?` unwraps the Result<String, Error> from
+    //   the task's return value
+    let report = read_handle.await.into_diagnostic()??;
 
-    println!("Output with OSC: {}", output);
     println!("Build completed with status: {}", status);
+    println!("{}", report);
+
     Ok(())
 }
 ````
@@ -398,12 +479,15 @@ async fn spawn_with_pty() -> Result<(), Box<dyn std::error::Error>> {
 Save this as `src/main.rs`:
 
 ```rust
-use portable_pty::{CommandBuilder, PtySize, native_pty_system};
+use portable_pty::{
+    CommandBuilder, PtySize, native_pty_system
+};
 use tokio::io::AsyncReadExt;
 use std::convert::TryFrom;
 use miette::{IntoDiagnostic, Result};
 
-/// Represents the different types of OSC progress events that Cargo can emit
+/// Represents the different types of OSC progress events
+/// that Cargo can emit
 #[derive(Debug, Clone, PartialEq)]
 enum OscEvent {
     /// Clear/remove progress indicator (OSC state 0)
@@ -412,28 +496,32 @@ enum OscEvent {
     ProgressUpdate(f64),
     /// Build error occurred (OSC state 2)
     BuildError(f64),
-    /// Indeterminate progress - build is running but no specific progress (OSC state 3)
+    /// Indeterminate progress - build is running but no
+    /// specific progress (OSC state 3)
     IndeterminateProgress,
     /// Unknown or unsupported OSC state
     Unknown(u8, f64),
 }
 
 impl OscEvent {
-    /// Check if two events are of the same variant type (ignoring data)
+    /// Check if two events are of the same variant type
+    /// (ignoring data)
     fn is_same_kind(&self, other: &OscEvent) -> bool {
         matches!(
             (self, other),
             (Self::ProgressCleared, Self::ProgressCleared)
             | (Self::ProgressUpdate(_), Self::ProgressUpdate(_))
             | (Self::BuildError(_), Self::BuildError(_))
-            | (Self::IndeterminateProgress, Self::IndeterminateProgress)
+            | (Self::IndeterminateProgress, 
+               Self::IndeterminateProgress)
             | (Self::Unknown(_, _), Self::Unknown(_, _))
         )
     }
 }
 
 impl From<(u8, f64)> for OscEvent {
-    /// Convert raw OSC state and progress values into a typed event
+    /// Convert raw OSC state and progress values into a
+    /// typed event
     fn from((state, progress): (u8, f64)) -> Self {
         match state {
             0 => OscEvent::ProgressCleared,
@@ -448,9 +536,11 @@ impl From<(u8, f64)> for OscEvent {
 impl TryFrom<&str> for OscEvent {
     type Error = String;
 
-    /// Parse OSC 9;4 progress sequences from text and return typed event
+    /// Parse OSC 9;4 progress sequences from text and return
+    /// typed event
     fn try_from(text: &str) -> Result<Self, Self::Error> {
-        // OSC sequence format: \x1b]9;4;{state};{progress}\x1b\\
+        // OSC sequence format:
+        // \x1b]9;4;{state};{progress}\x1b\\
         let osc_start = "\x1b]9;4;";
         let osc_end = "\x1b\\";
 
@@ -461,25 +551,35 @@ impl TryFrom<&str> for OscEvent {
 
         // Find the end of the sequence
         let end_idx = after_start.find(osc_end)
-            .ok_or_else(|| "OSC sequence not terminated".to_string())?;
+            .ok_or_else(
+                || "OSC sequence not terminated".to_string()
+            )?;
         let params = &after_start[..end_idx];
 
         // Parse state;progress
         let parts: Vec<&str> = params.split(';').collect();
         if parts.len() != 2 {
-            return Err(format!("Invalid OSC parameter count: expected 2, got {}", parts.len()));
+            return Err(format!(
+                "Invalid OSC parameter count: expected 2, got {}",
+                parts.len()
+            ));
         }
 
         let state = parts[0].parse::<u8>()
-            .map_err(|e| format!("Failed to parse state: {}", e))?;
+            .map_err(|e| 
+                format!("Failed to parse state: {}", e)
+            )?;
         let progress = parts[1].parse::<f64>()
-            .map_err(|e| format!("Failed to parse progress: {}", e))?;
+            .map_err(|e| 
+                format!("Failed to parse progress: {}", e)
+            )?;
 
         Ok(OscEvent::from((state, progress)))
     }
 }
 
-/// Tracks progress state and handles display logic with intelligent filtering
+/// Tracks progress state and handles display logic with
+/// intelligent filtering
 #[derive(Debug)]
 struct ProgressTracker {
     last_percentage: f64,
@@ -494,14 +594,19 @@ impl ProgressTracker {
         }
     }
 
-    /// Process an OSC event and display updates when significant changes occur
+    /// Process an OSC event and display updates when
+    /// significant changes occur
     fn handle_event(&mut self, event: OscEvent) {
-        // Determine if this event should trigger a display update
+        // Determine if this event should trigger a display
+        // update
         let should_display = match (&self.current_state, &event) {
-            // Always display state changes (different event types)
-            (Some(prev), current) if !prev.is_same_kind(current) => true,
+            // Always display state changes (different event
+            // types)
+            (Some(prev), current) if !prev.is_same_kind(current)
+                => true,
 
-            // For progress updates, only display if change is significant (> 0.1%)
+            // For progress updates, only display if change is
+            // significant (> 0.1%)
             (_, OscEvent::ProgressUpdate(percentage)) => {
                 (percentage - self.last_percentage).abs() > 0.1
             },
@@ -527,7 +632,8 @@ impl ProgressTracker {
         }
     }
 
-    /// Display the event with appropriate formatting and emoji
+    /// Display the event with appropriate formatting and
+    /// emoji
     fn display_event(&self, event: &OscEvent) {
         match event {
             OscEvent::ProgressCleared => {
@@ -537,13 +643,21 @@ impl ProgressTracker {
                 println!("📊 Build progress: {:.1}%", percentage);
             },
             OscEvent::BuildError(last_progress) => {
-                println!("\n❌ Build error (progress was at {:.1}%)", last_progress);
+                println!(
+                    "\n❌ Build error (progress was at {:.1}%)",
+                    last_progress
+                );
             },
             OscEvent::IndeterminateProgress => {
-                println!("⏳ Build in progress (indeterminate)");
+                println!(
+                    "⏳ Build in progress (indeterminate)"
+                );
             },
             OscEvent::Unknown(state, value) => {
-                println!("❓ Unknown OSC state: {} (value: {:.1})", state, value);
+                println!(
+                    "❓ Unknown OSC state: {} (value: {:.1})",
+                    state, value
+                );
             },
         }
     }
@@ -560,12 +674,20 @@ async fn run_cargo_with_osc_capture() -> Result<()> {
     // Create a pseudo-terminal with reasonable dimensions
     let pty_system = native_pty_system();
     let pair = pty_system.openpty(PtySize {
-        rows: 24,           // Terminal height: 24 lines of text (classic terminal size)
-                            // Cargo uses this for vertical scrolling behavior
-        cols: 80,           // Terminal width: 80 characters per line (standard terminal width)
-                            // Cargo formats progress bars and output to fit within this width
-        pixel_width: 0,     // Pixel width: Not needed for text-based output capture
-        pixel_height: 0,    // Pixel height: Not needed for text-based output capture
+        rows: 24,           // Terminal height: 24 lines of
+                            // text (classic terminal size)
+                            // Cargo uses this for vertical
+                            // scrolling behavior
+        cols: 80,           // Terminal width: 80 characters
+                            // per line (standard terminal
+                            // width)
+                            // Cargo formats progress bars
+                            // and output to fit within this
+                            // width
+        pixel_width: 0,     // Pixel width: Not needed for
+                            // text-based output capture
+        pixel_height: 0,    // Pixel height: Not needed for
+                            // text-based output capture
     }).into_diagnostic()?;
 
     // Configure the cargo build command
@@ -574,15 +696,21 @@ async fn run_cargo_with_osc_capture() -> Result<()> {
     // CRITICAL: Set TERM_PROGRAM to trigger OSC emission
     cmd.env("TERM_PROGRAM", "WezTerm");
 
-    // Spawn the command with PTY (makes is_terminal() return true)
-    // The controlled endpoint (pair.slave) is where the cargo process connects
-    let mut child = pair.slave.spawn_command(cmd).into_diagnostic()?;
+    // Spawn the command with PTY (makes is_terminal() return
+    // true)
+    // The controlled endpoint (pair.slave) is where the
+    // cargo process connects
+    let mut child = pair.slave.spawn_command(cmd)
+        .into_diagnostic()?;
 
     // Read and parse output in a separate async task
-    // The controller endpoint (pair.master) is where we read the output
-    let mut reader = pair.master.try_clone_reader().into_diagnostic()?;
+    // The controller endpoint (pair.master) is where we
+    // read the output
+    let mut reader = pair.master.try_clone_reader()
+        .into_diagnostic()?;
     let handle = tokio::spawn(async move {
-        // 4KB buffer: Optimal size for terminal output (page-aligned, handles OSC + context)
+        // 4KB buffer: Optimal size for terminal output
+        // (page-aligned, handles OSC + context)
         let mut buffer = [0u8; 4096];
         let mut progress_tracker = ProgressTracker::new();
 
@@ -590,15 +718,21 @@ async fn run_cargo_with_osc_capture() -> Result<()> {
             match reader.read(&mut buffer).await {
                 Ok(/* bytes read */ 0) => break, // EOF
                 Ok(/* bytes read */ n) => {
-                    let text = String::from_utf8_lossy(&buffer[..n]);
+                    let text = String::from_utf8_lossy(
+                        &buffer[..n]
+                    );
 
-                    // Parse OSC sequences and update progress tracker
-                    if let Ok(osc_event) = OscEvent::try_from(text.as_ref()) {
+                    // Parse OSC sequences and update
+                    // progress tracker
+                    if let Ok(osc_event) = 
+                        OscEvent::try_from(text.as_ref()) {
                         progress_tracker.handle_event(osc_event);
                     }
 
-                    // Also display regular cargo output (optional)
-                    // Commented out to focus on OSC sequences
+                    // Also display regular cargo output
+                    // (optional)
+                    // Commented out to focus on OSC
+                    // sequences
                     // print!("{}", text);
                 },
                 Err(e) => {
@@ -611,7 +745,9 @@ async fn run_cargo_with_osc_capture() -> Result<()> {
 
     // Wait for the build to complete using a blocking task
     // since child.wait() is a blocking operation
-    let status = tokio::task::spawn_blocking(move || child.wait())
+    let status = tokio::task::spawn_blocking(
+        move || child.wait()
+    )
         .await
         .into_diagnostic()?
         .into_diagnostic()?;
@@ -677,14 +813,12 @@ Starting Cargo build with OSC capture...
 ### Troubleshooting
 
 1. **No OSC sequences detected:**
-
    - Ensure the project being built has enough compilation units to trigger progress
      reporting
    - Try building a larger project or one with dependencies
    - Verify the TERM_PROGRAM environment variable is set correctly
 
 2. **Build output mixed with progress:**
-
    - Uncomment the `print!("{}", text);` line to see full cargo output
    - OSC sequences are embedded in the normal output stream
 
