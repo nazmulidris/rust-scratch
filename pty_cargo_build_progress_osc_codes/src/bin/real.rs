@@ -50,6 +50,9 @@ const RED: &str = "\x1b[31m";
 const YELLOW: &str = "\x1b[33m";
 const RESET: &str = "\x1b[0m";
 
+// Buffer size for reading PTY output.
+const READ_BUFFER_SIZE: usize = 4096;
+
 // Type aliases for better readability.
 type Controlled = Box<dyn SlavePty + Send>;
 type Controller = Box<dyn MasterPty>;
@@ -240,11 +243,34 @@ impl PtyCommandBuilder {
         self
     }
 
-    /// Enables OSC sequence emission by setting `TERM_PROGRAM=WezTerm`.
+    /// Enables OSC sequence emission by setting appropriate environment variables.
     ///
-    /// Required for cargo and other tools to emit OSC 9;4 progress sequences.
+    /// Cargo requires specific terminal environment variables to emit OSC 9;4 progress
+    /// sequences. This method automatically detects and configures the appropriate
+    /// environment based on the current terminal:
+    ///
+    /// - **Windows Terminal**: Detected via `WT_SESSION` (no additional config needed)
+    /// - **ConEmu**: Detected via `ConEmuANSI=ON` (no additional config needed)
+    /// - **WezTerm**: Set via `TERM_PROGRAM=WezTerm` (fallback for all platforms)
+    ///
+    /// This approach ensures maximum compatibility across different terminals and
+    /// operating systems, particularly on Windows where Windows Terminal is the
+    /// default in Windows 11.
+    ///
+    /// Here is a link to the Cargo source code that emits these sequences:
+    /// - <https://github.com/rust-lang/cargo/blob/master/src/cargo/core/shell.rs#L594-L600>
     fn enable_osc_sequences(self) -> Self {
-        self.env("TERM_PROGRAM", "WezTerm")
+        // Windows Terminal sets WT_SESSION automatically, so we don't need to override it.
+        if std::env::var("WT_SESSION").is_ok() {
+            // Already in Windows Terminal, no need to set anything.
+            self
+        } else if std::env::var("ConEmuANSI").ok() == Some("ON".into()) {
+            // Already in ConEmu with ANSI enabled.
+            self
+        } else {
+            // Fall back to WezTerm which works on all platforms.
+            self.env("TERM_PROGRAM", "WezTerm")
+        }
     }
 
     /// Builds the final `CommandBuilder` with all configurations applied.
@@ -489,95 +515,101 @@ fn spawn_cargo_task_with_osc_capture(
 
         // [SPAWN 2] Spawn the reader task to process OSC sequences.
         //
-        // CRITICAL DIFFERENCE FROM simple.rs:
-        // =====================================
-        // In simple.rs, the reader task:
-        //   1. Uses `read_to_string()` which blocks until EOF
-        //   2. Returns a JoinHandle that is awaited
-        //   3. Processes all output AFTER cargo completes
+        // CRITICAL: PTY LIFECYCLE AND FILE DESCRIPTOR MANAGEMENT
+        // ========================================================
+        // Understanding how PTYs handle EOF is crucial to avoiding deadlocks.
         //
-        // In real.rs, we need REAL-TIME event processing, so we:
-        //   1. Use a loop with `read()` to process data as it arrives
-        //   2. Spawn as a DETACHED task (no JoinHandle stored)
-        //   3. Process OSC events DURING the build, not after
+        // ## The PTY File Descriptor Reference Counting Problem
         //
-        // WHY WE DON'T WAIT FOR THE READER TASK:
-        // ----------------------------------------
-        // The fundamental issue with PTYs and blocking I/O:
+        // A PTY consists of two sides: master (controller) and slave (controlled).
+        // The kernel's PTY implementation requires BOTH conditions for EOF:
         //
-        // 1. `try_clone_reader()` creates an INDEPENDENT file descriptor
-        //    - This FD is not closed when we drop the controller
-        //    - It has its own reference to the PTY
+        // 1. The slave side must be closed (happens when the child process exits)
+        // 2. The reader must be the ONLY remaining reference to the master
         //
-        // 2. The `read()` call in the loop is BLOCKING
-        //    - When cargo exits, the PTY child side closes
-        //    - But the cloned reader FD keeps the PTY "alive" from the kernel's perspective
-        //    - The next `read()` blocks forever waiting for data that will never come
+        // ## How File Descriptors Work in Our Code
         //
-        // 3. `spawn_blocking` tasks CANNOT be cancelled in Rust
-        //    - Calling abort() on them doesn't actually stop the blocking operation
-        //    - The OS thread continues to exist, blocked on the read() syscall
+        // 1. When we split the PTY pair (line 502-503):
+        //    - `controller`: Holds the master side file descriptor
+        //    - `controlled`: Holds the slave side file descriptor
         //
-        // THE SOLUTION - DETACHED TASK PATTERN:
-        // --------------------------------------
-        // Instead of trying to coordinate shutdown (which would require timeouts,
-        // drop() calls, or other workarounds), we use a simpler approach:
+        // 2. The controller is MOVED into spawn_blocking (line 561):
+        //    - Inside the closure, `controller.try_clone_reader()` creates a cloned FD
+        //    - Both controller and controller_reader reference the same master PTY
+        //    - When the closure ends, controller drops, leaving only controller_reader
         //
-        // 1. Spawn the reader as a "fire and forget" detached task
-        // 2. Only wait for the cargo child process to complete
-        // 3. Once cargo exits, we have all the data we need - we can return immediately
-        // 4. The reader task will eventually:
-        //    - Get EOF when the PTY fully closes (may take time)
-        //    - Get an error if it tries to read from a closed PTY
-        //    - Exit cleanly on its own
-        // 5. The Tokio runtime will clean up the abandoned task
+        // 3. The controlled side spawns cargo (line 512-514):
+        //    - Cargo inherits the slave FD for its stdin/stdout/stderr
+        //    - When cargo exits, it closes its copy of the slave FD
+        //    - BUT our `controlled` variable STILL holds the original slave FD!
         //
-        // This approach is safe because:
-        // - We've already processed all events sent before cargo exited
-        // - The channel receiver in main will stop receiving once we exit the select loop
-        // - The detached task will terminate on its own without blocking our program
+        // ## Why We Need drop(controlled)
         //
-        let mut controller_reader = controller
-            .try_clone_reader()
-            .map_err(|e| miette::miette!("Failed to clone pty reader: {}", e))?;
+        // Even though cargo has exited and closed its slave FD, our `controlled`
+        // variable keeps the slave side open. The PTY won't send EOF to the master
+        // until ALL slave file descriptors are closed. Without explicitly dropping
+        // `controlled`, it would remain open until this entire function returns,
+        // causing the reader to block forever waiting for EOF that never comes.
+        //
+        // ## The Solution: Explicit Resource Management
+        //
+        // 1. Move controller into spawn_blocking - ensures it drops after creating reader
+        // 2. Explicitly drop controlled after cargo exits - closes our slave FD
+        // 3. This allows the reader to receive EOF and exit cleanly
+        //
+        let blocking_reader_task_join_handle =
+            tokio::task::spawn_blocking(move || -> miette::Result<()> {
+                // Controller is MOVED into this closure, so it will be dropped
+                // when this task completes, allowing proper PTY cleanup.
+                let mut controller_reader = controller
+                    .try_clone_reader()
+                    .map_err(|e| miette::miette!("Failed to clone pty reader: {}", e))?;
 
-        // Spawn as detached task - we deliberately don't store the JoinHandle
-        let _ = tokio::task::spawn_blocking(move || {
-            let mut read_buffer = [0u8; 4096];
-            let mut osc_buffer = OscBuffer::new();
+                let mut read_buffer = [0u8; READ_BUFFER_SIZE];
+                let mut osc_buffer = OscBuffer::new();
 
-            loop {
-                match controller_reader.read(&mut read_buffer) {
-                    Ok(0) => break, // EOF - PTY closed
-                    Ok(n) => {
-                        // Process the buffer for OSC sequences in real-time
-                        for event in osc_buffer.append_and_extract(&read_buffer, n) {
-                            // Send events through channel for real-time display
-                            // Ignore send errors (channel may be closed if main exited)
-                            let _ = event_sender.send(event);
+                loop {
+                    // This is a synchronous blocking read operation.
+                    // It will receive EOF when:
+                    // 1. The slave side (controlled) is closed/dropped
+                    // 2. No other references to the master exist
+                    match controller_reader.read(&mut read_buffer) {
+                        Ok(0) => break, // EOF - PTY closed
+                        Ok(n) => {
+                            // Process the buffer for OSC sequences in real-time
+                            for event in osc_buffer.append_and_extract(&read_buffer, n) {
+                                // Send events through channel for real-time display
+                                // Ignore send errors (channel may be closed if main exited)
+                                let _ = event_sender.send(event);
+                            }
                         }
+                        Err(_) => break, // Error reading - PTY likely closed
                     }
-                    Err(_) => break, // Error reading - PTY likely closed
                 }
-            }
-            // Task exits here and cleans itself up
-        });
 
-        // [WAIT 1] Wait for the build to complete using a blocking task.
-        // This is the ONLY task we wait for - when cargo exits, we're done.
+                // Controller drops here automatically when the closure ends,
+                // decrementing the master side's reference count.
+                drop(controller);
+
+                Ok(())
+            });
+
+        // [WAIT 1] Wait for the cargo build to complete.
         let status = tokio::task::spawn_blocking(move || controlled_child.wait())
             .await
             .into_diagnostic()?
             .into_diagnostic()?;
 
-        // [NO-WAIT 2] We deliberately DON'T wait for the reader task.
-        // This is the key difference from simple.rs which does:
-        //   let summary_report = read_task_handle.await.into_diagnostic()??;
-        //
-        // We can't wait because the reader's blocking read() won't return until
-        // the PTY fully closes, which may not happen immediately when cargo exits.
-        // Since we only care about events during the build, and cargo has exited,
-        // we can safely return here. The detached reader task will clean itself up.
+        // Explicitly drop the controlled (slave) side after cargo exits.
+        // This closes the slave end of the PTY, which is necessary for the
+        // reader to receive EOF. Without this, the slave FD would remain open
+        // until this function returns, preventing EOF delivery to the reader.
+        drop(controlled);
+
+        // [WAIT 2] Wait for the reader task to complete.
+        // Now that controlled is dropped, the reader will get EOF on its next
+        // read() call and exit cleanly. This wait should complete quickly.
+        let _unused = blocking_reader_task_join_handle.await.into_diagnostic()??;
 
         Ok(status)
     }))
