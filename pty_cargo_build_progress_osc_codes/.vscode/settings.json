@@ -4,6 +4,7 @@
     "conemu",
     "openpty",
     "ptyprocess",
+    "syscall",
     "taskbars",
     "wezterm"
   ]
