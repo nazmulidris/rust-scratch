@@ -15,33 +15,14 @@
  *   limitations under the License.
  */
 
-//! Binary for capturing and displaying OSC progress sequences from cargo builds.
-//!
-//! This program demonstrates how to capture OSC (Operating System Command) sequences
-//! emitted by cargo when running in a terminal that supports progress reporting.
-//! It uses a pseudo-terminal (PTY) to make cargo think it's running in an interactive
-//! terminal, which triggers the emission of OSC 9;4 progress sequences.
-//!
-//! # OSC Sequence Format
-//!
-//! Cargo emits OSC sequences in the format: `ESC]9;4;{state};{progress}ESC\\`
-//!
-//! Where:
-//! - `state` 0: Clear/remove progress
-//! - `state` 1: Set specific progress (0-100%)
-//! - `state` 2: Build error occurred
-//! - `state` 3: Indeterminate progress
-//!
-//! # Usage
-//!
-//! Run this binary to see cargo build progress in real-time:
-//! ```bash
-//! cargo run --bin real
-//! ```
-
 use miette::IntoDiagnostic;
 use portable_pty::{CommandBuilder, MasterPty, PtySize, SlavePty, native_pty_system};
-use std::{io::Read, path::PathBuf, pin::Pin};
+use std::{
+    io::Read,
+    ops::{Add, AddAssign},
+    path::PathBuf,
+    pin::Pin,
+};
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
 
 // ANSI color codes for better readability.
@@ -61,7 +42,7 @@ type ControlledChild = Box<dyn portable_pty::Child>;
 /// Represents the different types of OSC progress events
 /// that Cargo can emit.
 #[derive(Debug, Clone, PartialEq)]
-enum OscEvent {
+pub enum OscEvent {
     /// Set specific progress value 0-100% (OSC state 1).
     ProgressUpdate(u8),
     /// Clear/remove progress indicator (OSC state 0).
@@ -71,6 +52,18 @@ enum OscEvent {
     /// Indeterminate progress - build is running but no
     /// specific progress (OSC state 3).
     IndeterminateProgress,
+}
+
+/// Unified event type for PTY output that can contain both
+/// OSC sequences and raw output data.
+#[derive(Debug, Clone)]
+pub enum PtyEvent {
+    /// OSC sequence event (if OSC capture is enabled)
+    Osc(OscEvent),
+    /// Raw output data (stdout/stderr combined)
+    Output(Vec<u8>),
+    /// Process exited with status
+    Exit(portable_pty::ExitStatus),
 }
 
 /// OSC 9;4 sequence constants wrapped in a dedicated module for clarity.
@@ -212,6 +205,168 @@ struct PtyCommandBuilder {
     env_vars: Vec<(String, String)>,
 }
 
+/// Configuration options that can be combined to build a PTY configuration.
+///
+/// These options are the building blocks that combine using the `+` operator
+/// to create a [`PtyConfig`]. The combination follows a "last write wins per field"
+/// strategy - each option modifies only the fields it cares about:
+///
+/// - `Osc` only sets `capture_osc` to true
+/// - `Output` only sets `capture_output` to true
+/// - `Size` only modifies `pty_size`
+/// - `NoCaptureOutput` sets both capture flags to false
+///
+/// # Examples
+///
+/// ```
+/// use PtyConfigOption::*;
+///
+/// // Single option (automatically converts to PtyConfig)
+/// spawn_pty(cmd, Osc, sender);
+///
+/// // Combine multiple options
+/// spawn_pty(cmd, Osc + Output, sender);
+///
+/// // With custom size (last size wins)
+/// spawn_pty(cmd, Osc + Output + Size(custom_size), sender);
+///
+/// // NoCaptureOutput overrides previous capture settings
+/// let config = Osc + Output + NoCaptureOutput; // Both captures disabled
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum PtyConfigOption {
+    /// Capture and parse OSC sequences
+    Osc,
+    /// Capture raw output data
+    Output,
+    /// Set custom PTY dimensions
+    Size(PtySize),
+    /// Disable all capture (sets both capture flags to false)
+    NoCaptureOutput,
+}
+
+/// Final configuration for PTY command execution.
+///
+/// This struct is built by combining [`PtyConfigOption`] values using the `+` operator.
+/// It represents the complete configuration state after all options have been applied.
+///
+/// # Examples
+///
+/// ```
+/// use PtyConfigOption::*;
+///
+/// // Build from options
+/// let config = Osc + Output; // Creates a PtyConfig
+///
+/// // Can continue adding to an existing config
+/// let config = config + Size(custom_size);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PtyConfig {
+    pub capture_osc: bool,
+    pub capture_output: bool,
+    pub pty_size: PtySize,
+}
+
+impl Default for PtyConfig {
+    fn default() -> Self {
+        Self {
+            capture_osc: false,
+            capture_output: true,
+            pty_size: PtySize {
+                rows: 24,
+                cols: 80,
+                pixel_width: 0,
+                pixel_height: 0,
+            },
+        }
+    }
+}
+
+impl PtyConfig {
+    /// Check if OSC capture is enabled
+    pub fn is_osc_capture_enabled(&self) -> bool {
+        self.capture_osc
+    }
+
+    /// Check if output capture is enabled
+    pub fn is_output_capture_enabled(&self) -> bool {
+        self.capture_output
+    }
+
+    /// Get the PTY size configuration
+    pub fn get_pty_size(&self) -> PtySize {
+        self.pty_size
+    }
+
+    /// Apply a configuration option to this config.
+    /// Uses "last write wins per field" strategy.
+    fn apply(&mut self, option: PtyConfigOption) {
+        match option {
+            PtyConfigOption::Osc => self.capture_osc = true,
+            PtyConfigOption::Output => self.capture_output = true,
+            PtyConfigOption::Size(size) => self.pty_size = size,
+            PtyConfigOption::NoCaptureOutput => {
+                self.capture_osc = false;
+                self.capture_output = false;
+            }
+        }
+    }
+}
+
+/// Convert a single option into a complete PtyConfig
+impl From<PtyConfigOption> for PtyConfig {
+    fn from(option: PtyConfigOption) -> Self {
+        let mut config = PtyConfig::default();
+        config.apply(option);
+        config
+    }
+}
+
+/// Combine two options to create a PtyConfig
+impl Add for PtyConfigOption {
+    type Output = PtyConfig;
+
+    fn add(self, rhs: Self) -> PtyConfig {
+        let mut config = PtyConfig::from(self);
+        config.apply(rhs);
+        config
+    }
+}
+
+/// Add an option to an existing config
+impl Add<PtyConfigOption> for PtyConfig {
+    type Output = PtyConfig;
+
+    fn add(mut self, rhs: PtyConfigOption) -> PtyConfig {
+        self.apply(rhs);
+        self
+    }
+}
+
+/// Add a config to an option (for symmetry)
+impl Add<PtyConfig> for PtyConfigOption {
+    type Output = PtyConfig;
+
+    fn add(self, rhs: PtyConfig) -> PtyConfig {
+        rhs + self
+    }
+}
+
+/// Implement AddAssign for `+=` operator on PtyConfig
+impl AddAssign<PtyConfigOption> for PtyConfig {
+    fn add_assign(&mut self, rhs: PtyConfigOption) {
+        self.apply(rhs);
+    }
+}
+
+/// Allow creating PtyConfig from PtySize via PtyConfigOption
+impl From<PtySize> for PtyConfigOption {
+    fn from(size: PtySize) -> Self {
+        PtyConfigOption::Size(size)
+    }
+}
+
 impl PtyCommandBuilder {
     /// Creates a new PTY command builder for the specified command.
     fn new(command: impl Into<String>) -> Self {
@@ -231,7 +386,7 @@ impl PtyCommandBuilder {
 
     /// Sets the working directory.
     ///
-    /// If not called, defaults to the current directory when `build()` is invoked.
+    /// If not called, defaults to the current directory when [`build()`](Self::build) is invoked.
     fn cwd(mut self, path: impl Into<PathBuf>) -> Self {
         self.cwd = Some(path.into());
         self
@@ -273,7 +428,7 @@ impl PtyCommandBuilder {
         }
     }
 
-    /// Builds the final `CommandBuilder` with all configurations applied.
+    /// Builds the final [`CommandBuilder`] with all configurations applied.
     ///
     /// Always sets a working directory - uses the provided one or defaults to current
     /// directory. This is critical to ensure the PTY starts in the expected location,
@@ -310,210 +465,134 @@ impl PtyCommandBuilder {
     }
 }
 
-#[tokio::main]
-async fn main() -> miette::Result<()> {
-    /// Runs cargo clean to ensure a fresh build.
-    fn run_cargo_clean() -> miette::Result<()> {
-        println!(
-            "{}🧹 Running 'cargo clean' to ensure a fresh build...{}",
-            YELLOW, RESET
-        );
 
-        let status = std::process::Command::new("cargo")
-            .arg("clean")
-            .arg("-q") // Quiet flag to suppress cargo's output
-            .status()
-            .map_err(|e| miette::miette!("Failed to run command 'cargo clean': {}", e))?;
-
-        miette::ensure!(
-            status.success(),
-            "Command 'cargo clean' failed with exit code: {:?}",
-            status.code()
-        );
-
-        println!("{}✓ Cargo clean completed successfully{}\n", GREEN, RESET);
-        Ok(())
-    }
-
-    /// Runs a single cargo build with OSC capture.
-    async fn run_build_with_osc_capture() -> miette::Result<()> {
-        println!("{}========================================", YELLOW);
-        println!("{}Starting Cargo build with OSC capture...", YELLOW);
-        println!(
-            "{}========================================{}",
-            YELLOW, RESET
-        );
-
-        // Create channel for OSC events.
-        let (sender, mut receiver) = unbounded_channel::<OscEvent>();
-
-        // Spawn the cargo build task - it's already pinned and spawned internally.
-        let cargo_args = &["build"];
-        let mut pinned_join_handle_cargo_task = spawn_cargo_task_with_osc_capture(
-            /* move */ cargo_args.iter().map(ToString::to_string).collect(),
-            /* move */ sender,
-        );
-
-        // Handle events as they arrive until cargo completes.
-        let exit_status = loop {
-            tokio::select! {
-                // Handle cargo build completion - this takes priority.
-                build_result = &mut pinned_join_handle_cargo_task => {
-                    match build_result {
-                        Ok(status_result) => {
-                            let status = status_result?;
-                            // Exit the loop and return the status.
-                            break Some(status);
-                        }
-                        Err(e) => {
-                            return Err(miette::miette!("Cargo task failed: {}", e));
-                        }
-                    }
-                }
-                // Handle incoming OSC events. Don't break on these - let the cargo task
-                // completion handle the exit.
-                Some(event) = receiver.recv() => {
-                    match event {
-                        OscEvent::ProgressUpdate(percentage) => {
-                            println!(
-                                "{}📊 cargo {} progress: {}%{}",
-                                GREEN,
-                                cargo_args.join(" "),
-                                percentage,
-                                RESET
-                            );
-                        }
-                        OscEvent::ProgressCleared => {
-                            println!("{}✓ Progress tracking cleared{}", GREEN, RESET);
-                        }
-                        OscEvent::BuildError => {
-                            println!("{}❌ Build error occurred{}", RED, RESET);
-                        }
-                        OscEvent::IndeterminateProgress => {
-                            println!("{}⏳ Build in progress (indeterminate){}", GREEN, RESET);
-                        }
-                    }
-                }
-            }
-        };
-
-        // Print final status.
-        println!(
-            "{}✅ Build completed with status: {:?}{}",
-            GREEN, exit_status, RESET
-        );
-
-        Ok(())
-    }
-
-    // Run twice to demonstrate both scenarios:
-    // 1. First run with cargo clean - should show progress
-    // 2. Second run without clean - should not show progress (everything cached)
-
-    println!(
-        "\n{}╔══════════════════════════════════════════════════════╗",
-        YELLOW
-    );
-    println!(
-        "{}║  RUN 1: With cargo clean (expect progress updates)  ║",
-        YELLOW
-    );
-    println!(
-        "{}╚══════════════════════════════════════════════════════╝{}\n",
-        YELLOW, RESET
-    );
-
-    // Clean the build to ensure we have work to do
-    run_cargo_clean()?;
-
-    // Run the first build - should show progress
-    run_build_with_osc_capture().await?;
-
-    println!(
-        "\n{}╔══════════════════════════════════════════════════════╗",
-        YELLOW
-    );
-    println!(
-        "{}║  RUN 2: Without clean (expect no progress updates)  ║",
-        YELLOW
-    );
-    println!(
-        "{}╚══════════════════════════════════════════════════════╝{}\n",
-        YELLOW, RESET
-    );
-
-    // Run the second build - should not show progress (everything cached)
-    run_build_with_osc_capture().await?;
-
-    Ok(())
-}
-
-/// Spawns a cargo command in a PTY and captures OSC progress sequences.
+/// Spawns a command in a PTY to capture output without providing input.
 ///
-/// It is typically used to run cargo commands like:
-/// 1. `cargo build`
-/// 2. `cargo install`
+/// This is a read-only PTY command spawner that can:
+/// 1. Run any command (not just cargo)
+/// 2. Optionally capture and parse OSC sequences
+/// 3. Optionally capture raw output data
+/// 4. Use custom PTY dimensions
 ///
-/// Note that other programs like `rustup` do not emit OSC sequences.
-///
-/// This function spawns itself in a separate task and returns a pinned `JoinHandle` that
-/// the caller can await. This design:
-/// 1. **Simplifies usage**: No need for manual `tokio::spawn` and pinning at call site
-/// 2. **Blocking operations**: Uses `spawn_blocking` for PTY I/O operations internally
-/// 3. **Concurrent execution**: Automatically runs in parallel with event handling
-/// 4. **Resource management**: Ensures proper cleanup of PTY resources
+/// Note: This function does not allow sending input to the spawned process.
+/// For interactive PTY sessions, a future `spawn_pty_interactive` function would be needed.
 ///
 /// # Arguments
-/// * `cargo_args` - Arguments to pass to the cargo command
-/// * `event_sender` - Channel sender for OSC events
+/// * `command` - The command to execute (configured via [`CommandBuilder`])
+/// * `config` - Configuration for what to capture (implements [`Into<PtyConfig>`])
+/// * `event_sender` - Channel sender for [`PtyEvent`]s
 ///
 /// # Returns
-/// A pinned `JoinHandle` that resolves to the cargo process exit status.
+/// A pinned [`JoinHandle`](tokio::task::JoinHandle) that resolves to the process exit status.
 ///
-/// The `JoinHandle` is pinned to the heap using `Box::pin` rather than the stack-based
-/// `pin!` macro because this function returns the pinned value. Stack pinning with `pin!`
-/// would create a value that cannot outlive the function's stack frame, making it
-/// impossible to return. Heap pinning ensures the pinned future remains valid after the
-/// function returns.
+/// ## Why Pinning is Required
 ///
-/// The pinning is necessary because `JoinHandle` does not implement `Unpin`, and
-/// `tokio::select!` requires futures to be `Unpin`. By returning it pre-pinned, callers
-/// can use it directly in `tokio::select!` blocks without additional pinning.
+/// The [`JoinHandle`](tokio::task::JoinHandle) is pinned to the heap using [`Box::pin`] for two important reasons:
 ///
-/// # Environment
-/// Sets `TERM_PROGRAM=WezTerm` to trigger OSC sequence emission from cargo.
-fn spawn_cargo_task_with_osc_capture(
-    /* move */ cargo_args: Vec<String>,
-    /* move */ event_sender: UnboundedSender<OscEvent>,
+/// 1. **[`tokio::select!`] requirement**: The [`JoinHandle`](tokio::task::JoinHandle) doesn't implement [`Unpin`], and
+///    [`tokio::select!`] requires all futures to be [`Unpin`]. By returning a pre-pinned handle,
+///    callers can use it directly in [`select!`](tokio::select!) blocks without additional pinning:
+///    ```rust
+///    let mut handle = spawn_pty_capture_output_no_input(cmd, config, sender);
+///    tokio::select! {
+///        result = &mut handle => { /* handle completion */ }
+///        event = receiver.recv() => { /* handle events */ }
+///    }
+///    ```
+///
+/// 2. **Heap vs Stack pinning**: We use [`Box::pin`] (heap pinning) rather than the [`pin!`](std::pin::pin!)
+///    macro (stack pinning) because this function returns the pinned value. Stack pinning
+///    with [`pin!`](std::pin::pin!) creates a value that cannot outlive the function's stack frame, making it
+///    impossible to return. Heap pinning ensures the pinned future remains valid after the
+///    function returns and can be safely moved between async contexts.
+///
+/// This design simplifies usage by eliminating the need for manual pinning at the call site
+/// while ensuring the future can be safely polled across await points.
+///
+/// # Examples
+///
+/// ## Basic command with output capture
+/// ```
+/// use PtyConfigOption::*;
+///
+/// let cmd = PtyCommandBuilder::new("ls")
+///     .args(["-la"])
+///     .build()?;
+///
+/// let (sender, mut receiver) = unbounded_channel();
+/// let handle = spawn_pty_capture_output_no_input(cmd, Output, sender);
+///
+/// // Process events
+/// while let Some(event) = receiver.recv().await {
+///     match event {
+///         PtyEvent::Output(data) => print!("{}", String::from_utf8_lossy(&data)),
+///         PtyEvent::Exit(status) => println!("Exited with: {:?}", status),
+///         _ => {}
+///     }
+/// }
+/// ```
+///
+/// ## Cargo build with OSC progress tracking
+/// ```
+/// use PtyConfigOption::*;
+///
+/// let cmd = PtyCommandBuilder::new("cargo")
+///     .args(["build"])
+///     .enable_osc_sequences()
+///     .build()?;
+///
+/// let config = Osc + Output;
+/// let (sender, mut receiver) = unbounded_channel();
+/// let handle = spawn_pty_capture_output_no_input(cmd, config, sender);
+///
+/// while let Some(event) = receiver.recv().await {
+///     match event {
+///         PtyEvent::Osc(OscEvent::ProgressUpdate(pct)) => {
+///             println!("Build progress: {}%", pct);
+///         }
+///         PtyEvent::Output(data) => {
+///             // Also see the actual cargo output
+///             print!("{}", String::from_utf8_lossy(&data));
+///         }
+///         _ => {}
+///     }
+/// }
+/// ```
+///
+/// ## Custom PTY dimensions
+/// ```
+/// use PtyConfigOption::*;
+///
+/// let config = Size(PtySize { rows: 40, cols: 120, pixel_width: 0, pixel_height: 0 })
+///     + Output;
+/// ```
+///
+/// The function handles all PTY lifecycle management internally, including proper
+/// cleanup of file descriptors to avoid deadlocks.
+pub fn spawn_pty_capture_output_no_input(
+    /* move */ command: CommandBuilder,
+    /* move */ config: impl Into<PtyConfig>,
+    /* move */ event_sender: UnboundedSender<PtyEvent>,
 ) -> Pin<Box<tokio::task::JoinHandle<miette::Result<portable_pty::ExitStatus>>>> {
+    let config = config.into();
+
     Box::pin(tokio::spawn(async move {
-        // Create a pseudo-terminal with reasonable dimensions.
+        // Create a pseudo-terminal with configured dimensions.
         let pty_system = native_pty_system();
         let pty_pair = pty_system
-            .openpty(PtySize {
-                rows: 24,        // Terminal height: 24 lines of text
-                cols: 80,        // Terminal width: 80 characters per line
-                pixel_width: 0,  // Not needed for text-based output
-                pixel_height: 0, // Not needed for text-based output
-            })
+            .openpty(config.get_pty_size())
             .map_err(|e| miette::miette!("Failed to open PTY: {}", e))?;
 
         // Extract the endpoints of the PTY using type aliases.
         let controller: Controller = pty_pair.master;
         let controlled: Controlled = pty_pair.slave;
 
-        // Configure the cargo command using our builder to ensure critical settings.
-        let cmd = PtyCommandBuilder::new("cargo")
-            .args(cargo_args)
-            .enable_osc_sequences()
-            .build()?;
-
         // [SPAWN 1] Spawn the command with PTY (makes is_terminal() return true).
         let mut controlled_child: ControlledChild = controlled
-            .spawn_command(cmd)
-            .map_err(|e| miette::miette!("Failed to spawn cargo command: {}", e))?;
+            .spawn_command(command)
+            .map_err(|e| miette::miette!("Failed to spawn command: {}", e))?;
 
-        // [SPAWN 2] Spawn the reader task to process OSC sequences.
+        // [SPAWN 2] Spawn the reader task to process output.
         //
         // CRITICAL: PTY LIFECYCLE AND FILE DESCRIPTOR MANAGEMENT
         // ========================================================
@@ -527,36 +606,26 @@ fn spawn_cargo_task_with_osc_capture(
         // 1. The slave side must be closed (happens when the child process exits)
         // 2. The reader must be the ONLY remaining reference to the master
         //
-        // ## How File Descriptors Work in Our Code
+        // ## Why We Need Explicit Resource Management
         //
-        // 1. When we split the PTY pair (line 502-503):
-        //    - `controller`: Holds the master side file descriptor
-        //    - `controlled`: Holds the slave side file descriptor
-        //
-        // 2. The controller is MOVED into spawn_blocking (line 561):
-        //    - Inside the closure, `controller.try_clone_reader()` creates a cloned FD
-        //    - Both controller and controller_reader reference the same master PTY
-        //    - When the closure ends, controller drops, leaving only controller_reader
-        //
-        // 3. The controlled side spawns cargo (line 512-514):
-        //    - Cargo inherits the slave FD for its stdin/stdout/stderr
-        //    - When cargo exits, it closes its copy of the slave FD
-        //    - BUT our `controlled` variable STILL holds the original slave FD!
-        //
-        // ## Why We Need drop(controlled)
-        //
-        // Even though cargo has exited and closed its slave FD, our `controlled`
+        // Even though the child process has exited and closed its slave FD, our `controlled`
         // variable keeps the slave side open. The PTY won't send EOF to the master
         // until ALL slave file descriptors are closed. Without explicitly dropping
         // `controlled`, it would remain open until this entire function returns,
         // causing the reader to block forever waiting for EOF that never comes.
         //
-        // ## The Solution: Explicit Resource Management
+        // ## The Solution
         //
         // 1. Move controller into spawn_blocking - ensures it drops after creating reader
-        // 2. Explicitly drop controlled after cargo exits - closes our slave FD
+        // 2. Explicitly drop controlled after process exits - closes our slave FD
         // 3. This allows the reader to receive EOF and exit cleanly
         //
+        let capture_osc = config.is_osc_capture_enabled();
+        let capture_output = config.is_output_capture_enabled();
+
+        // Clone the sender for the blocking task
+        let reader_sender = event_sender.clone();
+
         let blocking_reader_task_join_handle =
             tokio::task::spawn_blocking(move || -> miette::Result<()> {
                 // Controller is MOVED into this closure, so it will be dropped
@@ -566,51 +635,242 @@ fn spawn_cargo_task_with_osc_capture(
                     .map_err(|e| miette::miette!("Failed to clone pty reader: {}", e))?;
 
                 let mut read_buffer = [0u8; READ_BUFFER_SIZE];
-                let mut osc_buffer = OscBuffer::new();
+                let mut osc_buffer = if capture_osc {
+                    Some(OscBuffer::new())
+                } else {
+                    None
+                };
 
                 loop {
                     // This is a synchronous blocking read operation.
-                    // It will receive EOF when:
-                    // 1. The slave side (controlled) is closed/dropped
-                    // 2. No other references to the master exist
                     match controller_reader.read(&mut read_buffer) {
                         Ok(0) => break, // EOF - PTY closed
                         Ok(n) => {
-                            // Process the buffer for OSC sequences in real-time
-                            for event in osc_buffer.append_and_extract(&read_buffer, n) {
-                                // Send events through channel for real-time display
-                                // Ignore send errors (channel may be closed if main exited)
-                                let _ = event_sender.send(event);
+                            let data = &read_buffer[..n];
+
+                            // Send raw output if configured
+                            if capture_output {
+                                let _ = reader_sender.send(PtyEvent::Output(data.to_vec()));
+                            }
+
+                            // Process OSC sequences if configured
+                            if let Some(ref mut osc_buf) = osc_buffer {
+                                for event in osc_buf.append_and_extract(data, n) {
+                                    let _ = reader_sender.send(PtyEvent::Osc(event));
+                                }
                             }
                         }
                         Err(_) => break, // Error reading - PTY likely closed
                     }
                 }
 
-                // Controller drops here automatically when the closure ends,
-                // decrementing the master side's reference count.
+                // Controller drops here automatically when the closure ends.
                 drop(controller);
 
                 Ok(())
             });
 
-        // [WAIT 1] Wait for the cargo build to complete.
+        // [WAIT 1] Wait for the command to complete.
         let status = tokio::task::spawn_blocking(move || controlled_child.wait())
             .await
             .into_diagnostic()?
             .into_diagnostic()?;
 
-        // Explicitly drop the controlled (slave) side after cargo exits.
-        // This closes the slave end of the PTY, which is necessary for the
-        // reader to receive EOF. Without this, the slave FD would remain open
-        // until this function returns, preventing EOF delivery to the reader.
+        // Store exit code before moving status into event
+        let exit_code = status.exit_code();
+
+        // Send exit event (moves status)
+        let _ = event_sender.send(PtyEvent::Exit(status));
+
+        // Explicitly drop the controlled (slave) side after process exits.
         drop(controlled);
 
         // [WAIT 2] Wait for the reader task to complete.
-        // Now that controlled is dropped, the reader will get EOF on its next
-        // read() call and exit cleanly. This wait should complete quickly.
-        let _unused = blocking_reader_task_join_handle.await.into_diagnostic()??;
+        blocking_reader_task_join_handle.await.into_diagnostic()??;
 
-        Ok(status)
+        // Recreate status for return value
+        Ok(portable_pty::ExitStatus::with_exit_code(exit_code))
     }))
+}
+
+/// Binary for capturing and displaying OSC progress sequences from cargo builds.
+///
+/// This program demonstrates how to capture OSC (Operating System Command) sequences
+/// emitted by cargo when running in a terminal that supports progress reporting.
+/// It uses a pseudo-terminal (PTY) to make cargo think it's running in an interactive
+/// terminal, which triggers the emission of OSC 9;4 progress sequences.
+///
+/// # OSC Sequence Format
+///
+/// Cargo emits OSC sequences in the format: `ESC]9;4;{state};{progress}ESC\\`
+///
+/// Where:
+/// - `state` 0: Clear/remove progress
+/// - `state` 1: Set specific progress (0-100%)
+/// - `state` 2: Build error occurred
+/// - `state` 3: Indeterminate progress
+///
+/// # Usage
+///
+/// Run this binary to see cargo build progress in real-time:
+/// ```bash
+/// cargo run --bin real
+/// ```
+#[tokio::main]
+async fn main() -> miette::Result<()> {
+    /// Runs cargo clean using the generic PTY command.
+    async fn run_cargo_clean() -> miette::Result<()> {
+        println!(
+            "{}🧹 Running 'cargo clean' to ensure a fresh build...{}",
+            YELLOW, RESET
+        );
+
+        let cmd = PtyCommandBuilder::new("cargo")
+            .args(["clean", "-q"])
+            .build()?;
+
+        let (sender, mut receiver) = unbounded_channel();
+        let mut handle =
+            spawn_pty_capture_output_no_input(cmd, PtyConfigOption::NoCaptureOutput, sender);
+
+        // Wait for completion
+        tokio::select! {
+            result = &mut handle => {
+                let status = result.into_diagnostic()??;
+                if status.success() {
+                    println!("{}✓ Cargo clean completed successfully{}\n", GREEN, RESET);
+                } else {
+                    return Err(miette::miette!("Cargo clean failed"));
+                }
+            }
+            Some(event) = receiver.recv() => {
+                if let PtyEvent::Exit(status) = event {
+                    if !status.success() {
+                        return Err(miette::miette!("Cargo clean failed"));
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Runs a single cargo build with OSC capture.
+    async fn run_build_with_osc_capture(run_number: u32) -> miette::Result<()> {
+        println!("{}========================================", YELLOW);
+        println!(
+            "{}Starting Cargo build #{} with OSC capture...",
+            YELLOW, run_number
+        );
+        println!(
+            "{}========================================{}",
+            YELLOW, RESET
+        );
+
+        // Configure cargo build command with OSC sequences enabled
+        let cmd = PtyCommandBuilder::new("cargo")
+            .args(["build"])
+            .enable_osc_sequences()
+            .build()?;
+
+        // Create channel for PTY events
+        let (sender, mut receiver) = unbounded_channel();
+
+        // Use generic PTY command with OSC capture only
+        let mut handle = spawn_pty_capture_output_no_input(cmd, PtyConfigOption::Osc, sender);
+
+        // Track if we saw any progress updates
+        let mut saw_progress = false;
+
+        // Handle events as they arrive until cargo completes
+        loop {
+            tokio::select! {
+                // Handle cargo build completion
+                result = &mut handle => {
+                    let status = result.into_diagnostic()??;
+
+                    // Print summary
+                    if saw_progress {
+                        println!(
+                            "{}✅ Build #{} completed with progress tracking (status: {:?}){}",
+                            GREEN, run_number, status, RESET
+                        );
+                    } else {
+                        println!(
+                            "{}✅ Build #{} completed (no progress - everything cached) (status: {:?}){}",
+                            GREEN, run_number, status, RESET
+                        );
+                    }
+                    break;
+                }
+                // Handle incoming PTY events
+                Some(event) = receiver.recv() => {
+                    match event {
+                        PtyEvent::Osc(osc_event) => {
+                            match osc_event {
+                                OscEvent::ProgressUpdate(percentage) => {
+                                    saw_progress = true;
+                                    println!(
+                                        "{}📊 Build #{} progress: {}%{}",
+                                        GREEN, run_number, percentage, RESET
+                                    );
+                                }
+                                OscEvent::ProgressCleared => {
+                                    println!("{}✓ Progress tracking cleared{}", GREEN, RESET);
+                                }
+                                OscEvent::BuildError => {
+                                    println!("{}❌ Build error occurred{}", RED, RESET);
+                                }
+                                OscEvent::IndeterminateProgress => {
+                                    println!("{}⏳ Build in progress (indeterminate){}", GREEN, RESET);
+                                }
+                            }
+                        }
+                        PtyEvent::Exit(_) => {
+                            // Exit event will be handled by the handle completion above
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    println!(
+        "\
+        {}╔═══════════════════════════════════════════════════════════════╗\n\
+        {}║  Demo: Cargo Build OSC Progress Sequences with Generic API    ║\n\
+        {}╚═══════════════════════════════════════════════════════════════╝{}",
+        YELLOW, YELLOW, YELLOW, RESET
+    );
+
+    // Step 1: Run cargo clean to ensure the following build generates OSC sequences
+    println!(
+        "\n{}▶ Step 1: Running cargo clean to ensure fresh build{}",
+        YELLOW, RESET
+    );
+    run_cargo_clean().await?;
+
+    // Step 2: Run cargo build - should generate OSC sequences
+    println!(
+        "\n{}▶ Step 2: First cargo build (expect progress updates){}",
+        YELLOW, RESET
+    );
+    run_build_with_osc_capture(1).await?;
+
+    // Step 3: Run cargo build again - should NOT generate OSC sequences (cached)
+    println!(
+        "\n{}▶ Step 3: Second cargo build (expect no progress - cached){}",
+        YELLOW, RESET
+    );
+    run_build_with_osc_capture(2).await?;
+
+    println!(
+        "\n{}✨ Demo complete! The generic spawn_pty_command successfully captured OSC sequences.{}",
+        GREEN, RESET
+    );
+
+    Ok(())
 }
