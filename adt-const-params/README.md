@@ -19,6 +19,17 @@ generics into the realm of **Type Theory** and **Compiler Engineering**.
     Monomorphization Coordinates.
 3.  **Hardware Proof**: We use `cargo-asm` to prove that the compiler physically deletes
     unreachable code through Algebraic Branch Pruning.
+4.  **The Architectural Boundary**: We establish the "Golden Rule" for this pattern—ADT Const Params are for toggling **behavior** (logic branches), whereas standard Generic Traits are for swapping **memory layouts**.
+
+### The "Why": Behavior vs. Memory Layout (The Golden Rule)
+
+Why does this video exist? Because developers often confuse *when* to use ADT Const Params versus standard Trait bounds. 
+
+Here is the **Golden Rule** that drives the need for this pattern:
+- **Use ADT Const Params (like `ScopedMutex<const P: Policy>`)** when you want to change the **behavior** (pruning logic branches) of a struct at compile time, but the **memory layout (fields)** of the struct remains exactly the same.
+- **Use Generic Traits (like `OfsBuf<S: BufferStorage>`)** when you need to completely swap out the underlying data structures and **memory layouts** (e.g., swapping a flat `Vec` for a `VecDeque`).
+
+We will spend the rest of this video proving *why* this rule works and how to implement it to achieve zero-cost abstractions.
 
 ---
 
@@ -296,6 +307,28 @@ impl SharedLedger {
 `ScopedMutex::read` or `write` can be partially evaluated at compile-time. If you use
 `OptOut`, the entire thread-local lookup and state machine logic is physically deleted
 from that specific monomorphized version of the function.
+
+---
+
+## Scene 7: Applying the Golden Rule (When NOT to Use ADT Const Params)
+
+Let's recall the **Golden Rule** from the beginning of the video. It is tempting to use ADT Const Params for everything to achieve static dispatch, but there is a strict architectural boundary where they stop being the right tool: **When the memory layout of the struct must change.**
+
+ADT Const Params (like `ScopedMutex<const P: Policy>`) are perfect when you want to change the behavior of a struct at compile time, but the memory layout (fields) of the struct remains exactly the same.
+
+Let's look at an example of when this is not necessary, such as the `BufferStorage` system from `r3bl-open-core`:
+
+In the case of our `BufferStorage`, the two implementations have completely different memory layouts:
+
+- `Flat2DArray` stores a flat `Vec<PixelChar>`.
+- `GrowableBuffer` stores a `VecDeque<PixelCharLine>` and tracks viewport offsets.
+
+If we tried to use `OfsBuf<const S: StorageType>`, we wouldn't be able to easily change the fields of the struct based on the enum variant without falling back to traits to map the const to a specific type anyway.
+
+By using standard Rust generics with a trait bound (`OfsBuf<S: BufferStorage>`), we are already achieving 100% static dispatch. When the code compiles, the Rust compiler performs monomorphization. It creates two completely separate, optimized versions of the code:
+
+1. `OfsBuf<Flat2DArray>`
+2. `OfsBuf<GrowableBuffer>`
 
 ---
 
