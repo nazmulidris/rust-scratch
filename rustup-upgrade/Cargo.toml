@@ -1,0 +1,13 @@
+[package]
+name = "rustup-upgrade"
+version = "0.1.0"
+edition = "2024"
+description = "General-purpose PTY-driven rustup toolchain updater and cargo install with live OSC progress parsing and animated spinner."
+authors = ["Nazmul Idris <idris@developerlife.com>"]
+
+[dependencies]
+r3bl_tui = { path = "/home/nazmul/github/roc/tui", version = "0.7.8" }
+tokio = { version = "1.48", features = ["full"] }
+smallvec = "1.14"
+miette = { version = "7.6", features = ["fancy"] }
+tracing = "0.1"
