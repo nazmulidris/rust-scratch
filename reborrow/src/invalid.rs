@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 fn run() {
     let mut c = Counter::default();
     println!("{}", c.inc());

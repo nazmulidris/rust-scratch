@@ -1,5 +1,7 @@
 mod invalid;
 mod valid;
 
-fn main() {}
+fn main() {
+    valid::run();
+}
 

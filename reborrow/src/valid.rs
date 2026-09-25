@@ -47,11 +47,11 @@
 
 #[derive(Debug, Default)]
 pub struct Player {
-    score: i32,
+    score: u8,
 }
 
 impl Player {
-    pub fn add_score(&mut self, points: i32) {
+    pub fn add_score(&mut self, points: u8) {
         self.score += points;
 
         // Calling another `&mut self` method is completely legal due to REBORROWING.
@@ -59,33 +59,33 @@ impl Player {
         // What happens behind the scenes:
         //
         // 1. Desugaring:
-        //    Rust desugars `self.log_score()` into `Player::log_score(&mut *self)`.
+        //    Rust desugars `self.print_score()` into `Player::print_score(&mut *self)`.
         //
         // 2. Child borrow creation:
         //    Instead of moving `self` (which would consume it permanently), Rust creates
         //    a temporary, short-lived child reference `&mut *self` with a shorter lifetime.
         //
         // 3. Parent borrow suspension:
-        //    While `log_score()` executes, the parent reference `self` in `add_score()`
+        //    While `print_score()` executes, the parent reference `self` in `add_score()`
         //    is temporarily suspended (like a shadow binding). It cannot be used directly
         //    until the child borrow ends.
         //
         // 4. Aliasing guarantee preserved:
-        //    Because `add_score()` is paused on the call stack waiting for `log_score()`
+        //    Because `add_score()` is paused on the call stack waiting for `print_score()`
         //    to return, at no point do two references touch the memory simultaneously.
         //    Aliasing XOR Mutability is never violated.
         //
         // 5. Parent borrow restoration:
-        //    As soon as `log_score()` returns, the child borrow is destroyed. The parent
+        //    As soon as `print_score()` returns, the child borrow is destroyed. The parent
         //    reference `self` wakes up and regains full exclusive mutable access.
-        self.log_score();
+        self.print_score();
 
         // `self` is restored and fully usable again here.
         // For example, `self.score += 1;` is completely valid here.
     }
 
-    pub fn log_score(&mut self) {
-        println!("Score is now: {}", self.score);
+    pub fn print_score(&mut self) {
+        println!("Score is now: {:#?}", self.score);
     }
 }
 

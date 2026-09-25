@@ -1,3 +1,6 @@
+> This has been promoted into a developerlife.com article here 
+> <https://developerlife.com/2026/09/25/rust-reborrowing/> 
+
 # Understanding Rust Reborrowing: `valid.rs` vs `invalid.rs`
 
 This repository demonstrates how Rust's borrow checker handles mutable references
@@ -19,7 +22,7 @@ Under normal move semantics, any non-`Copy` value is consumed when passed to a f
 ```rust
 // Hypothetical Rust without reborrowing:
 fn add_score(&mut self) {
-    self.log_score(); // If this MOVED `self`, `self` would be destroyed!
+    self.print_score(); // If this MOVED `self`, `self` would be destroyed!
     self.score += 1;  // ERROR: use of moved value `self`
 }
 ```
@@ -91,23 +94,23 @@ method:
 
 ```rust
 impl Player {
-    pub fn add_score(&mut self, points: i32) {
+    pub fn add_score(&mut self, points: u8) {
         self.score += points;
-        self.log_score(); // Perfectly legal!
+        self.print_score(); // Perfectly legal!
     }
 
-    pub fn log_score(&mut self) {
-        println!("Score is now: {}", self.score);
+    pub fn print_score(&mut self) {
+        println!("Score is now: {:#?}", self.score);
     }
 }
 ```
 
 #### What this accomplishes:
 
-- Demonstrates that `self.log_score()` desugars to `Player::log_score(&mut *self)`.
+- Demonstrates that `self.print_score()` desugars to `Player::print_score(&mut *self)`.
 - Proves that multiple `&mut self` methods can call one another sequentially without
   borrow errors.
-- Explains why the **call stack** and **reborrowing** work together: while `log_score`
+- Explains why the **call stack** and **reborrowing** work together: while `print_score`
   runs on the stack, `add_score` is paused. At no point in time do two references access
   the underlying memory simultaneously.
 
